@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String version = "1.3.0";
+    public static final String version = "1.3.1";
     
     //// Settings
     
@@ -373,7 +373,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             obj_out.writeObject(l);
 
             this.log("Saving DB to disk.");
-        } catch (IOException iOException)
+        } 
+        catch (IOException iOException)
         {
             this.log("Could not save DB. " + iOException.getMessage());
         }

@@ -602,7 +602,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {        
         if (this.activeLoc != null)
         {
-            this.activeLoc.setF(fn, state);
+            new Thread(() -> {
+                this.activeLoc.setF(fn, state);
+            }).start();
             //repaintLoc();
         }
     }
@@ -917,7 +919,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null)
         {
-            this.activeLoc.setSpeed(speed);
+            new Thread(() -> {
+                this.activeLoc.setSpeed(speed);
+            }).start();
             //repaintLoc();  not needed because the network will update it
         }
     }     
@@ -926,7 +930,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null)
         {
-            this.activeLoc.stop();
+            new Thread(() -> {
+                this.activeLoc.stop();
+            }).start();
             //repaintLoc();
         }
     }
@@ -935,10 +941,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null && this.activeLoc.goingForward())
         {
-            this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
-            this.Forward.setSelected(false);
-            this.Backward.setSelected(true);
-            //repaintLoc();  
+            new Thread(() -> {
+                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
+                this.Forward.setSelected(false);
+                this.Backward.setSelected(true);
+                //repaintLoc();  
+            }).start();
         } 
     }
     
@@ -946,10 +954,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if(this.activeLoc != null && this.activeLoc.goingBackward())
         {
-            this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
-            this.Forward.setSelected(true);
-            this.Backward.setSelected(false);
-            //repaintLoc();  
+            new Thread(() -> {
+                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
+                this.Forward.setSelected(true);
+                this.Backward.setSelected(false);
+                //repaintLoc();  
+            }).start();
         }
     }
     
@@ -4701,7 +4711,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         Integer switchId = Integer.parseInt(b.getText());
 
-        this.model.setAccessoryState(switchId, b.isSelected());
+        new Thread(() -> {
+            this.model.setAccessoryState(switchId, b.isSelected());
+        }).start();
     }//GEN-LAST:event_UpdateSwitchState
 
     private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_FiveButtonActionPerformed

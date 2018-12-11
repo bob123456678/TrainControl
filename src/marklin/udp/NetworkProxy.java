@@ -80,7 +80,7 @@ public class NetworkProxy
      * @param message, a raw byte array
      * @return true on success, else false
      */
-     private boolean sendMessage(byte[] message)
+    synchronized private boolean sendMessage(byte[] message)
     {    	
 	// Generate a packet containing the message
     	DatagramPacket packet = new DatagramPacket(message, message.length, 
