@@ -352,6 +352,7 @@ public class CS2File
             case "gerade":
                 return MarklinLayoutComponent.componentType.STRAIGHT;
             case "signal":
+            case "signal_sh01":
                 return MarklinLayoutComponent.componentType.SIGNAL;
             case "doppelbogen":
                 return MarklinLayoutComponent.componentType.DOUBLE_CURVE;
@@ -446,6 +447,7 @@ public class CS2File
                         state = Integer.parseInt(m.get("zustand"));
                     }
                     
+                    // This will fail for unknown components.  Catch errors?
                     layout.addComponent(
                        getComponentType(type),
                        x, y, orient, state, address, rawAddress

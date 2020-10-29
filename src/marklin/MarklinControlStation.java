@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String version = "1.3.1";
+    public static final String version = "1.3.2";
     
     //// Settings
     
