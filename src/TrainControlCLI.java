@@ -10,6 +10,11 @@ import marklin.file.CS2File;
 import marklin.udp.NetworkProxy;
 import util.Exec;
 
+/**
+ * An example of how to control locomotives progammatically
+ * TODO - needs cleanup
+ * @author Adam
+ */
 public class TrainControlCLI 
 {
         private static void execCode(MarklinControlStation data)
