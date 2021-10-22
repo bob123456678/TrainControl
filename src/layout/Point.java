@@ -7,7 +7,7 @@ import base.Feedback;
 import base.Locomotive;
 
 /**
- *
+ * TODO - Old code to represent layout as a graph, convert to Java
  * @author Adam
  */
 public class Point

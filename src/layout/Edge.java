@@ -5,7 +5,7 @@
 package layout;
 
 /**
- *
+ * TODO - Old code to represent layout as a graph, convert to Java
  * @author Adam
  */
 public class Edge
