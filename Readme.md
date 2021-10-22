@@ -9,7 +9,7 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3.
 
-!(UI)[https://github.com/bob123456678/TrainControl/blob/master/interface.png?raw=true]
+(UI)[interface.png]
 
 Features:
 
