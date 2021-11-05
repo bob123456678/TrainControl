@@ -6,6 +6,7 @@
 package gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
@@ -31,7 +32,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         
         this.ExtLayoutPanel.setLayout(new FlowLayout());
         
-        new LayoutGrid(l, size,
+        LayoutGrid grid = new LayoutGrid(l, size,
                 this.ExtLayoutPanel, 
                 this,
                 true);
@@ -40,6 +41,9 @@ public class LayoutPopupUI extends javax.swing.JFrame {
                 
         setTitle(l.getName());
         
+        // Scale the popup according to the size of the layout
+        this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
+          
         pack();
      
         setVisible(true);

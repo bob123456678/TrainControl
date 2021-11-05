@@ -18,6 +18,8 @@ import marklin.MarklinLayoutComponent;
 public class LayoutGrid
 {
     public LayoutLabel[][] grid;
+    public final int maxWidth;
+    public final int maxHeight;
 
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
@@ -61,6 +63,9 @@ public class LayoutGrid
         container.setSize(width * size, height * size);
         container.setMaximumSize(new Dimension(width * size, height * size));
         
+        maxWidth = width * size;
+        maxHeight = height * size;
+               
         grid = new LayoutLabel[width][height];
                 
         for(int y = 0; y < height; y++)
