@@ -3,6 +3,10 @@ package marklin;
 import base.Accessory;
 import base.RemoteDevice;
 import gui.LayoutLabel;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import marklin.udp.CS2Message;
 import util.Conversion;
 
@@ -14,15 +18,16 @@ public class MarklinAccessory extends Accessory
     implements java.io.Serializable, RemoteDevice<Accessory, CS2Message>
 {
     // Calculated UID
-    private int UID;
+    private final int UID;
     
     // Raw address
-    private int address;
+    private final int address;
     
     // Network reference
-    private MarklinControlStation network;
+    private final MarklinControlStation network;
     
     // Gui reference
+    private final Set<LayoutLabel> tiles;
     private LayoutLabel tile;
     
     /**
@@ -48,6 +53,8 @@ public class MarklinAccessory extends Accessory
         
         // Set state
         this._setSwitched(state);
+        
+        this.tiles = new HashSet<>();
     }
     
     public static int UIDfromAddress(int address)
@@ -55,9 +62,45 @@ public class MarklinAccessory extends Accessory
         return address + 0x3000;
     }
     
-    public void setTile(LayoutLabel l)
-    {
-        this.tile = l;
+    /**
+     * Adds a UI tile to be updated whenever a CS2 event fires
+     * @param l 
+     * @param dynamic set to true if the component is being added to a popup window
+     */
+    public void addTile(LayoutLabel l, boolean dynamic)
+    {   
+        if (dynamic)
+        {
+            this.tiles.add(l);
+        }
+        else
+        {
+            this.tile = l;
+        }
+    }
+        
+    /**
+     * Refreshes tile images on all tiles in the list
+     * Deletes tiles that are no longer visible (e.g., from closed windows)
+     */
+    public void updateTiles()
+    {        
+        Iterator<LayoutLabel> i = this.tiles.iterator();
+        while (i.hasNext())
+        {
+            LayoutLabel nxtTile = i.next();
+            nxtTile.updateImage();
+
+            if (!nxtTile.isParentVisible())
+            {
+                i.remove();
+            }
+        }
+        
+        if (this.tile != null)
+        {
+            this.tile.updateImage();
+        }
     }
     
     @Override
@@ -86,10 +129,7 @@ public class MarklinAccessory extends Accessory
                     this._setSwitched(false);
                 }
                 
-                if (this.tile != null)
-                {
-                    this.tile.updateImage();
-                }
+                this.updateTiles();
                 
                 this.network.log("Setting " + this.getName() + " " +
                      (this.isSignal() ? 
@@ -107,11 +147,8 @@ public class MarklinAccessory extends Accessory
     {
         this._setSwitched(state);
         
-        if (this.tile != null)
-        {
-            this.tile.updateImage();
-            this.network.getGUI().repaintSwitches(); // dirty workaround
-        }
+        this.updateTiles();
+        this.network.getGUI().repaintSwitches(); // dirty workaround
         
         this.network.exec(new CS2Message(
             CS2Message.CMD_ACC_SWITCH,

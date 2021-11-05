@@ -3,6 +3,9 @@ package marklin;
 import base.Feedback;
 import base.RemoteDevice;
 import gui.LayoutLabel;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import marklin.udp.CS2Message;
 
 /**
@@ -13,12 +16,13 @@ public class MarklinFeedback extends Feedback
     implements RemoteDevice<MarklinFeedback, CS2Message>, java.io.Serializable
 {
     // Feedback identifier
-    private int UID;
+    private final int UID;
         
     // Control station reference
-    private MarklinControlStation network;
+    private final MarklinControlStation network;
     
     // Gui reference
+    private final Set<LayoutLabel> tiles;
     private LayoutLabel tile;
         
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
@@ -32,11 +36,48 @@ public class MarklinFeedback extends Feedback
         {
             this.parseMessage(m);
         }
+        
+        this.tiles = new HashSet<>();
+    }
+
+    /**
+     * Adds a UI tile to be updated whenever a CS2 event fires
+     * @param l 
+     */
+    public void addTile(LayoutLabel l, boolean dynamic)
+    {   
+        if (dynamic)
+        {
+            this.tiles.add(l);
+        }
+        else
+        {
+            this.tile = l;
+        }
     }
     
-    public void setTile(LayoutLabel l)
-    {
-        this.tile = l;
+    /**
+     * Refreshes tile images on all tiles in the list
+     * Deletes tiles that are no longer visible (e.g., from closed windows)
+     */
+    public void updateTiles()
+    {        
+        Iterator<LayoutLabel> i = this.tiles.iterator();
+        while (i.hasNext())
+        {
+            LayoutLabel nxtTile = i.next();
+            nxtTile.updateImage();
+
+            if (!nxtTile.isParentVisible())
+            {
+                i.remove();
+            }
+        }
+        
+        if (this.tile != null)
+        {
+            this.tile.updateImage();
+        }
     }
         
     @Override
@@ -54,14 +95,11 @@ public class MarklinFeedback extends Feedback
                                    
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
-                    this._setState(state == 1 ? true : false);
+                    this._setState((state == 1));
                     
                     this.network.log("Feedback " + this.getName() + " to " + (state == 1 ? "Set" : "Not set"));
                     
-                    if (this.tile != null)
-                    {
-                        this.tile.updateImage();
-                    }
+                    this.updateTiles();
                 }                
             }  
         }
@@ -71,10 +109,7 @@ public class MarklinFeedback extends Feedback
     {
         this._setState(val);
         
-        if (this.tile != null)
-        {
-            this.tile.updateImage();
-        }
+        this.updateTiles();
     }
     
     /**

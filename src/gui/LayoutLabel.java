@@ -5,11 +5,13 @@
 package gui;
 
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 import marklin.MarklinLayoutComponent;
@@ -22,11 +24,11 @@ public final class LayoutLabel extends JLabel
 {
     private MarklinLayoutComponent component;
     
-    private JTabbedPane parent;
+    private Container parent;
     private String imageName;
     private int size;
     
-    public LayoutLabel(MarklinLayoutComponent c, JTabbedPane parent, int size)
+    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size)
     {
         this.component = c;
         this.size = size;
@@ -52,6 +54,16 @@ public final class LayoutLabel extends JLabel
                 }); 
             }
         }
+    }
+    
+    /**
+     * Checks if the parent window is visible
+     * Used for pruning old label references
+     * @return 
+     */
+    public boolean isParentVisible()
+    {
+        return this.parent.isVisible();
     }
     
     public void setImage()

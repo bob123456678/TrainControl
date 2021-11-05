@@ -1,10 +1,13 @@
 package gui;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 
@@ -16,7 +19,15 @@ public class LayoutGrid
 {
     public LayoutLabel[][] grid;
 
-    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, JTabbedPane master)
+    /**
+     * This class draws the train layout and ensures that proper event references are set in the model
+     * @param layout reference to the layout from the model
+     * @param size size of each tile, in pixels
+     * @param parent panel to contain the layout
+     * @param master container with the panel
+     * @param popup is this layout being rendered in a separate window?
+     */
+    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup)
     {  
         // Calculate boundaries
         int offsetX = layout.getMinx();
@@ -32,7 +43,7 @@ public class LayoutGrid
         
         // We need a non scaling panel for small layouts
         if (width * size < parent.getWidth() 
-                || height * size < parent.getHeight())
+                || height * size < parent.getHeight() || popup)
         {
             container = new JPanel();
             container.setBackground(Color.white);
@@ -48,6 +59,7 @@ public class LayoutGrid
         // Generate grid
         container.setLayout(new GridLayout(height, width, 0, 0));
         container.setSize(width * size, height * size);
+        container.setMaximumSize(new Dimension(width * size, height * size));
         
         grid = new LayoutLabel[width][height];
                 
@@ -64,19 +76,20 @@ public class LayoutGrid
                 // Set references for each tile accessory
                 if (c != null)
                 {
+                    // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
                     if (c.isSwitch() || c.isSignal())
                     {
-                        c.getAccessory().setTile(grid[x][y]);
+                        c.getAccessory().addTile(grid[x][y], popup);
                     }
                     
                     if (c.isFeedback())
                     {
-                        c.getFeedback().setTile(grid[x][y]);
+                        c.getFeedback().addTile(grid[x][y], popup);
                     }
                     
                     if (c.isThreeWay())
                     {
-                        c.getAccessory2().setTile(grid[x][y]); 
+                        c.getAccessory2().addTile(grid[x][y], popup); 
                     }                    
                 }
             }

@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String version = "1.3.2";
+    public static final String VERSION = "1.4.0";
     
     //// Settings
     
@@ -95,7 +95,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.NetworkInterface = network;
         this.view = view;
         
-        this.log("Marklin Control v" + version);
+        this.log("Marklin Control v" + VERSION);
         
         this.log("Restoring state...");
         
@@ -125,12 +125,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newSwitch(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.FEEDBACK)
-            {
+            {   
                 newFeedback(c.getAddress(), null);
                 
-                // Don't restore the state because it might be invalid...?
-                // Solved by making feedbacks clickable
-                //this.feedbackDB.getById(c.getAddress()).setState(c.getState());
+                // It would be more consistent not to restore this...
+                // When we restore the state, it might be invalid if the CS2 was used without this program running
+                // Feedbacks are clickable and should be synced manually
+                this.feedbackDB.getById(c.getAddress()).setState(c.getState());
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {

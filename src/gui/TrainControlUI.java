@@ -41,6 +41,8 @@ import javax.swing.KeyStroke;
 import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
+import marklin.MarklinControlStation;
+import marklin.MarklinLayout;
 import model.View;
 import model.ViewListener;
 
@@ -313,7 +315,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
            
         // Changing tabs
         //setupTabTraversalKeys(this.KeyboardTab);
-      
     }
     
     /*private static void setupTabTraversalKeys(JTabbedPane tabbedPane)
@@ -381,6 +382,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     /**
      * Restores list of initialized components from a file
+     * @return 
      */
     public final List<Map<Integer,String>> restoreState()
     {
@@ -1130,6 +1132,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         InnerLayoutPanel = new javax.swing.JPanel();
         sizeLabel = new javax.swing.JLabel();
         SizeList = new javax.swing.JComboBox();
+        jButton1 = new javax.swing.JButton();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         DeleteRouteButton = new javax.swing.JButton();
@@ -1292,7 +1295,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane1.setViewportView(jList1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        setTitle("Marklin Loc Control");
+        setTitle("Marklin Layout Controller v" + MarklinControlStation.VERSION);
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
@@ -1846,7 +1849,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel6.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
         UpArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        UpArrow.setText("^");
+        UpArrow.setText("↑");
         UpArrow.setToolTipText("Increase Speed");
         UpArrow.setFocusable(false);
         UpArrow.addActionListener(new java.awt.event.ActionListener() {
@@ -1856,7 +1859,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         DownArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        DownArrow.setText("V");
+        DownArrow.setText("↓");
         DownArrow.setToolTipText("Decrease Speed");
         DownArrow.setFocusable(false);
         DownArrow.addActionListener(new java.awt.event.ActionListener() {
@@ -1866,7 +1869,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         RightArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        RightArrow.setText(">");
+        RightArrow.setText("→");
         RightArrow.setToolTipText("Switch Direction");
         RightArrow.setFocusable(false);
         RightArrow.addActionListener(new java.awt.event.ActionListener() {
@@ -1876,7 +1879,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         LeftArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        LeftArrow.setText("<");
+        LeftArrow.setText("←");
         LeftArrow.setFocusable(false);
         LeftArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2241,6 +2244,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        jButton1.setText("Show in new window");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layoutPanelLayout = new javax.swing.GroupLayout(layoutPanel);
         layoutPanel.setLayout(layoutPanelLayout);
         layoutPanelLayout.setHorizontalGroup(
@@ -2248,7 +2258,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LayoutArea)
+                    .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
                     .addGroup(layoutPanelLayout.createSequentialGroup()
                         .addComponent(layoutListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -2257,7 +2267,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(sizeLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jButton1)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
@@ -2270,7 +2281,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(layoutListLabel)
                     .addComponent(sizeLabel)
-                    .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton1))
                 .addContainerGap())
         );
 
@@ -2320,7 +2332,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(RoutePanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
+                    .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
@@ -2334,7 +2346,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 432, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 433, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(DeleteRouteButton)
                 .addContainerGap())
@@ -3154,7 +3166,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel10.setFocusable(false);
 
         PrevKeyboard.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        PrevKeyboard.setText("<<< ,");
+        PrevKeyboard.setText("<<< -");
         PrevKeyboard.setFocusable(false);
         PrevKeyboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3167,7 +3179,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardNumberLabel.setFocusable(false);
 
         NextKeyboard.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        NextKeyboard.setText(". >>>");
+        NextKeyboard.setText("+ >>>");
         NextKeyboard.setFocusable(false);
         NextKeyboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3626,13 +3638,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SpeedSlider.setToolTipText(null);
         SpeedSlider.setValue(0);
         SpeedSlider.setFocusable(false);
-        SpeedSlider.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+        SpeedSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
                 SpeedSliderDragged(evt);
             }
         });
-        SpeedSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
+        SpeedSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
                 SpeedSliderDragged(evt);
             }
         });
@@ -4309,13 +4321,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.NineButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_COMMA)
+        else if (keyCode == KeyEvent.VK_MINUS || keyCode == KeyEvent.VK_UNDERSCORE)
         {
-            if (this.KeyboardTab.getSelectedIndex() == 0)
-            {
-                this.PrevLocMappingActionPerformed(null);
-            }
-            else if (this.KeyboardTab.getSelectedIndex() == 1)
+            if (this.KeyboardTab.getSelectedIndex() == 1)
             {
                 int currentIndex = this.LayoutList.getSelectedIndex();
                 
@@ -4330,13 +4338,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.PrevKeyboardActionPerformed(null);
             }
         }
-        else if (keyCode == KeyEvent.VK_PERIOD)
+        else if (keyCode == KeyEvent.VK_EQUALS || keyCode == KeyEvent.VK_PLUS)
         {
-            if (this.KeyboardTab.getSelectedIndex() == 0)
-            {
-                this.NextLocMappingActionPerformed(null);
-            }
-            else if (this.KeyboardTab.getSelectedIndex() == 1)
+            if (this.KeyboardTab.getSelectedIndex() == 1)
             {
                 int currentIndex = this.LayoutList.getSelectedIndex();
                 
@@ -4349,7 +4353,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             else
             {
                 this.NextKeyboardActionPerformed(null);
-            }
+            } 
+        }
+        else if (keyCode == KeyEvent.VK_COMMA)
+        {
+            //if (this.KeyboardTab.getSelectedIndex() == 0)
+            //{
+            this.PrevLocMappingActionPerformed(null);
+            //}    
+        }
+        else if (keyCode == KeyEvent.VK_PERIOD)
+        {
+            //if (this.KeyboardTab.getSelectedIndex() == 0)
+            // {
+            this.NextLocMappingActionPerformed(null);
+            // }
         }
         else if (keyCode == KeyEvent.VK_NUMPAD0 || (keyCode == KeyEvent.VK_0 && altPressed))
         {
@@ -4916,6 +4934,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         repaintLoc();
     }//GEN-LAST:event_SyncLocomotiveActionPerformed
 
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        
+        LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
+                Integer.parseInt(this.SizeList.getSelectedItem().toString()));
+    }//GEN-LAST:event_jButton1ActionPerformed
+
     private void refreshRouteList()
     {
         DefaultTableModel tableModel = new DefaultTableModel() {
@@ -5174,6 +5198,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel changeLocomotiveLabel;
     private javax.swing.JButton clearButton;
     private javax.swing.JTextArea debugArea;
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -5208,8 +5233,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     @Override
     public void repaintLayout()
-    {
-        this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab);
+    {        
+        this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab, false);
         
         // Important!
         this.KeyboardTab.repaint();        
