@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.4.0";
+    public static final String VERSION = "1.4.1";
     
     //// Settings
     
@@ -40,7 +40,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private static boolean debug = false;
     
     // Load images
-    private static boolean loadImages = true;
+    private static final boolean LOAD_IMAGES = true;
     
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -48,25 +48,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     //// State
     
     // Locomotive database
-    private RemoteDeviceCollection<MarklinLocomotive, Integer> locDB;
+    private final RemoteDeviceCollection<MarklinLocomotive, Integer> locDB;
 
     // Switch/signal database
-    private RemoteDeviceCollection<MarklinAccessory, Integer> accDB;
+    private final RemoteDeviceCollection<MarklinAccessory, Integer> accDB;
 
     // Feedback database
-    private RemoteDeviceCollection<MarklinFeedback, Integer> feedbackDB;
+    private final RemoteDeviceCollection<MarklinFeedback, Integer> feedbackDB;
     
     // Route database
-    private RemoteDeviceCollection<MarklinRoute, String> routeDB;
+    private final RemoteDeviceCollection<MarklinRoute, String> routeDB;
     
     // Layouts
-    private RemoteDeviceCollection<MarklinLayout, String> layoutDB;
+    private final RemoteDeviceCollection<MarklinLayout, String> layoutDB;
 
     // Network proxy reference
-    private NetworkProxy NetworkInterface;
+    private final NetworkProxy NetworkInterface;
     
     // GUI reference
-    private View view;
+    private final View view;
     
     // Is network communication on?
     private boolean on;
@@ -75,7 +75,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private boolean powerState;
         
     // Unique ID of the central station (0 for all stations)
-    private int UID;
+    private final int UID;
     
     // Last message output
     private String lastMessage;
@@ -288,7 +288,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 
                 // Set current locomotive icon
-                if (loadImages && this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                if (LOAD_IMAGES && this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
                 {
                     this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
                 }
@@ -383,6 +383,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Restores list of initialized components from a file
+     * @return 
      */
     public final List<MarklinSimpleComponent> restoreState()
     {
@@ -488,6 +489,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Adds a new signal
      * @param name
      * @param address
+     * @param state
      * @return 
      */
     public final MarklinAccessory newSignal(String name, int address, boolean state)
@@ -499,6 +501,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Adds a new switch
      * @param name
      * @param address
+     * @param state
      * @return 
      */
     public final MarklinAccessory newSwitch(String name, int address, boolean state)
@@ -739,6 +742,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Disables all active functions
+     * @param locomotives
      */
     @Override
     public void lightsOn(List<String> locomotives)
@@ -891,6 +895,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Renames a locomotive in the database
+     * @param name
+     * @param newName
      * @return 
      */
     @Override

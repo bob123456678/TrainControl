@@ -1132,7 +1132,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         InnerLayoutPanel = new javax.swing.JPanel();
         sizeLabel = new javax.swing.JLabel();
         SizeList = new javax.swing.JComboBox();
-        jButton1 = new javax.swing.JButton();
+        layoutNewWindow = new javax.swing.JButton();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         DeleteRouteButton = new javax.swing.JButton();
@@ -2244,10 +2244,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jButton1.setText("Show in new window");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        layoutNewWindow.setText("Show in new window");
+        layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                layoutNewWindowActionPerformed(evt);
             }
         });
 
@@ -2268,7 +2268,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton1)))
+                        .addComponent(layoutNewWindow)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
@@ -2282,7 +2282,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(layoutListLabel)
                     .addComponent(sizeLabel)
                     .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1))
+                    .addComponent(layoutNewWindow))
                 .addContainerGap())
         );
 
@@ -4256,7 +4256,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
-        
+
         if (this.buttonMapping.containsKey(keyCode))
         {
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
@@ -4369,45 +4369,73 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.NextLocMappingActionPerformed(null);
             // }
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD0 || (keyCode == KeyEvent.VK_0 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD0 || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed))
         {
             this.switchF(0);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD1 || (keyCode == KeyEvent.VK_1 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD1 || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed))
         {
             this.switchF(1);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD2 || (keyCode == KeyEvent.VK_2 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD2 || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed))
         {
             this.switchF(2);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD3 || (keyCode == KeyEvent.VK_3 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD3 || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed))
         {
             this.switchF(3);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD4 || (keyCode == KeyEvent.VK_4 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD4 || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed))
         {
             this.switchF(4);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD5 || (keyCode == KeyEvent.VK_5 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD5 || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed))
         {
             this.switchF(5);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD6 || (keyCode == KeyEvent.VK_6 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD6 || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed))
         {
             this.switchF(6);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD7 || (keyCode == KeyEvent.VK_7 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD7 || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed))
         {
             this.switchF(7);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD8 || (keyCode == KeyEvent.VK_8 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD8 || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed))
         {
             this.switchF(8);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD9 || (keyCode == KeyEvent.VK_9 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD9 || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed))
         {
             this.switchF(9);
+        }
+        else if (keyCode == KeyEvent.VK_F10)
+        {
+            this.switchF(10);
+        }
+        else if (keyCode == KeyEvent.VK_F11)
+        {
+            this.switchF(11);
+        }
+        else if (keyCode == KeyEvent.VK_F12)
+        {
+            this.switchF(12);
+        }
+        else if (keyCode == KeyEvent.VK_F13)
+        {
+            this.switchF(13);
+        }
+        else if (keyCode == KeyEvent.VK_F14)
+        {
+            this.switchF(14);
+        }
+        else if (keyCode == KeyEvent.VK_F15)
+        {
+            this.switchF(15);
+        }
+        else if (keyCode == KeyEvent.VK_F16)
+        {
+            this.switchF(16);
         }
         else if (keyCode == KeyEvent.VK_ESCAPE)
         {
@@ -4934,11 +4962,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         repaintLoc();
     }//GEN-LAST:event_SyncLocomotiveActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
+    {
+        this.LocControlPanelKeyPressed(evt);
+    }
+    
+    private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
-        LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
-                Integer.parseInt(this.SizeList.getSelectedItem().toString()));
-    }//GEN-LAST:event_jButton1ActionPerformed
+        LayoutPopupUI popup = new LayoutPopupUI(
+                this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
+                Integer.parseInt(this.SizeList.getSelectedItem().toString()), 
+                this
+        );
+        
+        popup.render();
+    }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void refreshRouteList()
     {
@@ -5198,7 +5236,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel changeLocomotiveLabel;
     private javax.swing.JButton clearButton;
     private javax.swing.JTextArea debugArea;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -5225,6 +5262,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JLabel layoutListLabel;
+    private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
     private javax.swing.JLabel locIcon;
     private javax.swing.JPanel logPanel;

@@ -5,14 +5,12 @@
  */
 package gui;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
-import javax.swing.JTable;
 import marklin.MarklinLayout;
 
 /**
@@ -21,25 +19,36 @@ import marklin.MarklinLayout;
  */
 public class LayoutPopupUI extends javax.swing.JFrame {
 
+    TrainControlUI parent;
+    int size;
+    MarklinLayout layout;
+    
     /**
      * Popup window showing train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
+     * @param ui
      */
-    public LayoutPopupUI(MarklinLayout l, int size)
+    public LayoutPopupUI(MarklinLayout l, int size, TrainControlUI ui)
     {
         initComponents();
         
         this.ExtLayoutPanel.setLayout(new FlowLayout());
-        
-        LayoutGrid grid = new LayoutGrid(l, size,
+        this.parent = ui;
+        this.size = size;
+        this.layout = l;
+    }
+    
+    public void render()
+    {
+        LayoutGrid grid = new LayoutGrid(this.layout, size,
                 this.ExtLayoutPanel, 
                 this,
                 true);
         
         this.setAlwaysOnTop(true);
                 
-        setTitle(l.getName());
+        setTitle(this.layout.getName());
         
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
@@ -51,6 +60,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         // Hide the window on close so that LayoutLabels know they can be deleted
         addWindowListener(new WindowAdapter()
         {
+            @Override
             public void windowClosing(WindowEvent e)
             {
                 e.getComponent().setVisible(false);
@@ -78,8 +88,18 @@ public class LayoutPopupUI extends javax.swing.JFrame {
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setPreferredSize(new java.awt.Dimension(800, 600));
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                formKeyPressed(evt);
+            }
+        });
 
         ExtLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
+        ExtLayoutPanel.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ExtLayoutPanelKeyPressed(evt);
+            }
+        });
 
         javax.swing.GroupLayout ExtLayoutPanelLayout = new javax.swing.GroupLayout(ExtLayoutPanel);
         ExtLayoutPanel.setLayout(ExtLayoutPanelLayout);
@@ -113,6 +133,14 @@ public class LayoutPopupUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void ExtLayoutPanelKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_ExtLayoutPanelKeyPressed
+        
+    }//GEN-LAST:event_ExtLayoutPanelKeyPressed
+
+    private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
+        parent.childWindowKeyEvent(evt);
+    }//GEN-LAST:event_formKeyPressed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
