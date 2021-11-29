@@ -801,6 +801,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 new Thread(() -> {
                     repaintIcon(this.currentButton, this.activeLoc);
+                    
+                    System.out.println(this.activeLoc.getImageURL());
 
                     if (this.activeLoc.getImageURL() != null)
                     {
@@ -811,7 +813,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             ));      
                             locIcon.setText("");
                         }
-                        catch (Exception e) {}
+                        catch (Exception e)
+                        {
+                            locIcon.setIcon(null);
+                        }
+                    }
+                    else
+                    {
+                        locIcon.setIcon(null);
                     }
 
                 }).start();
