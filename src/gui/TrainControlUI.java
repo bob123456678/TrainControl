@@ -802,8 +802,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 new Thread(() -> {
                     repaintIcon(this.currentButton, this.activeLoc);
                     
-                    System.out.println(this.activeLoc.getImageURL());
-
                     if (this.activeLoc.getImageURL() != null)
                     {
                         try 
