@@ -1714,9 +1714,9 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" attributes="0">
                                       <Group type="102" attributes="0">
-                                          <Component id="SwitchButton29" min="-2" pref="63" max="-2" attributes="0"/>
-                                          <EmptySpace type="separate" max="-2" attributes="0"/>
                                           <Component id="SwitchButton28" min="-2" pref="63" max="-2" attributes="0"/>
+                                          <EmptySpace type="separate" max="-2" attributes="0"/>
+                                          <Component id="SwitchButton29" min="-2" pref="63" max="-2" attributes="0"/>
                                       </Group>
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Group type="102" alignment="0" attributes="0">
@@ -1897,8 +1897,8 @@
                           </Group>
                           <EmptySpace type="separate" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="SwitchButton28" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                               <Component id="SwitchButton29" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
+                              <Component id="SwitchButton28" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                               <Component id="SwitchButton30" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                               <Component id="SwitchButton31" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                               <Component id="SwitchButton32" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -2249,7 +2249,7 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="UpdateSwitchState"/>
                   </Events>
                 </Component>
-                <Component class="javax.swing.JToggleButton" name="SwitchButton28">
+                <Component class="javax.swing.JToggleButton" name="SwitchButton29">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Tahoma" size="11" style="1"/>
@@ -2261,7 +2261,7 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="UpdateSwitchState"/>
                   </Events>
                 </Component>
-                <Component class="javax.swing.JToggleButton" name="SwitchButton29">
+                <Component class="javax.swing.JToggleButton" name="SwitchButton28">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Tahoma" size="11" style="1"/>

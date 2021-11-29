@@ -1173,8 +1173,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SwitchButton24 = new javax.swing.JToggleButton();
         SwitchButton26 = new javax.swing.JToggleButton();
         SwitchButton27 = new javax.swing.JToggleButton();
-        SwitchButton28 = new javax.swing.JToggleButton();
         SwitchButton29 = new javax.swing.JToggleButton();
+        SwitchButton28 = new javax.swing.JToggleButton();
         SwitchButton30 = new javax.swing.JToggleButton();
         SwitchButton31 = new javax.swing.JToggleButton();
         SwitchButton32 = new javax.swing.JToggleButton();
@@ -2598,19 +2598,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SwitchButton28.setText("3");
-        SwitchButton28.setFocusable(false);
-        SwitchButton28.addActionListener(new java.awt.event.ActionListener() {
+        SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton29.setText("3");
+        SwitchButton29.setFocusable(false);
+        SwitchButton29.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
             }
         });
 
-        SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SwitchButton29.setText("3");
-        SwitchButton29.setFocusable(false);
-        SwitchButton29.addActionListener(new java.awt.event.ActionListener() {
+        SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton28.setText("3");
+        SwitchButton28.setFocusable(false);
+        SwitchButton28.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
             }
@@ -2968,9 +2968,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(jPanel9Layout.createSequentialGroup()
                         .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
-                                .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addGroup(jPanel9Layout.createSequentialGroup()
                                     .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -3123,8 +3123,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
