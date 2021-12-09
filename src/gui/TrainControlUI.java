@@ -3697,6 +3697,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         FunctionTabs.setBackground(new java.awt.Color(255, 255, 255));
         FunctionTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
+        FunctionTabs.setFocusable(false);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
 
