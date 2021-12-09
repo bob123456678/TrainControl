@@ -2252,6 +2252,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         layoutNewWindow.setText("Show in new window");
+        layoutNewWindow.setFocusable(false);
         layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 layoutNewWindowActionPerformed(evt);
@@ -2303,6 +2304,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         DeleteRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         DeleteRouteButton.setText("Delete Route");
+        DeleteRouteButton.setFocusable(false);
         DeleteRouteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteRouteButtonActionPerformed(evt);
