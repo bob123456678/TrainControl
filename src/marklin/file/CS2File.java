@@ -27,6 +27,7 @@ public class CS2File
     /**
      * Constructor
      * @param IP 
+     * @param control 
      */
     public CS2File(String IP, MarklinControlStation control)
     {
@@ -353,6 +354,8 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.STRAIGHT;
             case "signal":
             case "signal_sh01":
+            case "k84_einfach":    
+            case "sonstige_gbs":
                 return MarklinLayoutComponent.componentType.SIGNAL;
             case "doppelbogen":
                 return MarklinLayoutComponent.componentType.DOUBLE_CURVE;
@@ -368,6 +371,15 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.TUNNEL;
             case "kreuzung":
                 return MarklinLayoutComponent.componentType.CROSSING;
+            case "unterfuehrung":
+                return MarklinLayoutComponent.componentType.OVERPASS;
+            case "dkweiche":
+            case "dkweiche_2":
+                return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
+            // Unsupported components
+            case "fahrstrasse": // Route
+            case "pfeil":       // Link to another page
+                return null;
         }
         
         throw new Exception("Unsupported component: " + name);        
@@ -425,7 +437,17 @@ public class CS2File
                     Integer orient = 0;
                     Integer state = 0;
                     String type = m.get("typ");
-                    Integer rawAddress = Integer.parseInt(m.get("artikel"));
+                    Integer rawAddress = 0;
+                    
+                    try
+                    {
+                        rawAddress = Integer.parseInt(m.get("artikel"));
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        this.control.log(String.format("Component at %s, %s has no address", x, y));
+                    }
+                    
                     Integer address = rawAddress;
                     
                     if (address % 2 == 0)
@@ -448,10 +470,13 @@ public class CS2File
                     }
                     
                     // This will fail for unknown components.  Catch errors?
-                    layout.addComponent(
-                       getComponentType(type),
-                       x, y, orient, state, address, rawAddress
-                    );  
+                    if (getComponentType(type) != null)
+                    {
+                        layout.addComponent(
+                           getComponentType(type),
+                           x, y, orient, state, address, rawAddress
+                        );  
+                    }
                 }
             }
             

@@ -20,6 +20,8 @@ abstract public class Accessory
     
     /**
      * Simple constructors
+     * @param name
+     * @param type
      * @param state 
      */
     public Accessory(String name, accessoryType type, boolean state)
@@ -32,6 +34,7 @@ abstract public class Accessory
     /**
      * Sets the state; _setSwitched should be called from this method
      * @param state 
+     * @return  
      */
     abstract public Accessory setSwitched(boolean state);
     
@@ -46,6 +49,7 @@ abstract public class Accessory
     
     /**
      * Sets to green
+     * @return 
      */
     public Accessory green()
     {
@@ -54,6 +58,7 @@ abstract public class Accessory
     
     /**
      * Sets to red
+     * @return 
      */
     public Accessory red()
     {
@@ -104,6 +109,7 @@ abstract public class Accessory
     
     /**
      * Switches to straight
+     * @return 
      */
     public Accessory straight()
     {
@@ -157,6 +163,7 @@ abstract public class Accessory
     
     /**
      * The name of this switch
+     * @return 
      */
     public String getName()
     {

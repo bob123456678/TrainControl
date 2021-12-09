@@ -17,9 +17,9 @@ public class MarklinLayoutComponent
 {
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
-        FEEDBACK_CURVE, FEEDBACK, END, TUNNEL};
+        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL};
     
-    private String resourcePath = "/gui/resources/icons";
+    private final String resourcePath = "/gui/resources/icons";
     
     // Rotation of the component
     private int orientation;
@@ -138,6 +138,7 @@ public class MarklinLayoutComponent
         return 
                 this.type == componentType.SWITCH_LEFT ||
                 this.type == componentType.SWITCH_RIGHT ||
+                this.type == componentType.SWITCH_CROSSING ||
                 this.type == componentType.SWITCH_THREE;
     }   
     
@@ -282,6 +283,10 @@ public class MarklinLayoutComponent
                 return "tunnel";
             case CROSSING:
                 return "cross";
+            case OVERPASS:
+                return "overpass";
+            case SWITCH_CROSSING:
+                return "crossswitch";
         }
         
         return "";

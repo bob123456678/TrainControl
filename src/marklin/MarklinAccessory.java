@@ -130,7 +130,7 @@ public class MarklinAccessory extends Accessory
                 }
                 
                 this.updateTiles();
-                
+                                
                 this.network.log("Setting " + this.getName() + " " +
                      (this.isSignal() ? 
                         (this.isSwitched() ? "red" : "green")
