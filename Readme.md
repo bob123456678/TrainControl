@@ -38,6 +38,29 @@ Requires JDK 1.8+.
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
-**Running the application from JAR (build or release):**
+**Running the application (build or release JAR):**
 
 ```java -jar TrainControl.jar [CS2 IP address]```
+
+## Changelog
+
+* v1.4.5 [12/9/21]
+    - Fixed incorrect thumbnails for locomotives with the same MM2 address
+    - Added support for double slip switches in layouts
+    - Added support for less common Marklin layout components
+    - Removed unwanted focusable elements in UI
+
+* v1.4.3 [11/13/21]
+    - Fix bug affecting locomotive thumbnail refreshes
+    - Swapped mislabeled keyboard buttons 28/29
+
+* v1.4.0 [11/5/21]
+    - Support for viewing layouts in (unlimited) pop-up windows
+    - Added function hotkeys (F1-F16)
+    - Mapped `~` to F0
+    - `,` and `.` hotkeys for switching between locomotive pages are now active across all tabs
+    - Changed keyboard pagination hotkeys to `-` and `+`
+
+* v1.3.2
+    - First public release
+
