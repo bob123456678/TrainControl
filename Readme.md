@@ -13,7 +13,7 @@ downloaded from the CS2/CS3.
 
 ![UI screenshot: layout](assets/interface2.png?raw=true)
 
-Features:
+**Features:**
 
 * Configure hotkeys for different locomotives, accessories, and functions
 * Control locomotives, signals, and switches
@@ -22,11 +22,22 @@ Features:
 * View and control the entire layout just like on the CS2/CS3
 * Progammatic layout control via API (uses CAN protocol)
 
-Requirements:
+**Requirements:**
 
 * Must be on the same Wi-Fi network as the CS2/CS3
+* CS2/CS2 CAN bus and broadcasting must be enabled
 
-Limitations:
+**Limitations:**
 
 * This program has currently only been tested with the CS2
-* CS2 IP address must be manually entered
+* CS2 IP address must be manually entered (recommend configurating a static IP in your router)
+
+**Building the project from source:**
+
+Requires JDK 1.8+.
+
+```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
+
+**Running the application from JAR (build or release):**
+
+```java -jar TrainControl.jar [CS2 IP address]```
