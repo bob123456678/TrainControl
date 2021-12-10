@@ -292,10 +292,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     num++;
                 }
                 
-                // Set current locomotive icon
-                if (LOAD_IMAGES && this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                // Set current locomotive icon - use name for MM2 due to risk of address collision
+                if (l.getDecoderType() == MarklinLocomotive.decoderType.MM2)
                 {
-                    this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
+                    if (LOAD_IMAGES && this.locDB.getByName(l.getName()) != null && l.getImageURL() != null)
+                    {
+                        this.locDB.getByName(l.getName()).setImageURL(l.getImageURL());                         
+                    }
+                }
+                else
+                {
+                    if (LOAD_IMAGES && this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                    {
+                        this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
+                    }
                 }
             }
             
