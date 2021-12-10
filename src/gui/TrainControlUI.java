@@ -53,7 +53,7 @@ import model.ViewListener;
 public class TrainControlUI extends javax.swing.JFrame implements View 
 {
     // Preferences fields
-    public static String IP_PREF = "initI2P";
+    public static String IP_PREF = "initIP";
     
     // View listener (model) reference
     ViewListener model;

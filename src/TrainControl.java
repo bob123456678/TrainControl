@@ -35,34 +35,33 @@ public class TrainControl {
                 {
                     try
                     {
-                          if (initIP == null)
-                          {
-                              initIP = JOptionPane.showInputDialog("Enter CS2 IP Address: ");
+                        if (initIP == null)
+                        {
+                            initIP = JOptionPane.showInputDialog("Enter CS2 IP Address: ");
 
-                              if (initIP == null)
-                              {
-                                  System.out.println("No IP entered - shutting down.");
-                                  System.exit(1);
-                              }
-                          }
+                            if (initIP == null)
+                            {
+                                System.out.println("No IP entered - shutting down.");
+                                System.exit(1);
+                            }
+                        }
 
-                          if (!CS2File.ping(initIP))
-                          {
-                              JOptionPane.showMessageDialog(null, "No response from " + initIP);
-
-                              initIP = null; 
-                          }
-                          else
-                          {
-                              ui.getPrefs().put(TrainControlUI.IP_PREF, initIP);
-                              break;
-                          }
+                        if (!CS2File.ping(initIP))
+                        {
+                            JOptionPane.showMessageDialog(null, "No response from " + initIP);
+                        }
+                        else
+                        {
+                            ui.getPrefs().put(TrainControlUI.IP_PREF, initIP);
+                            break;
+                        }
                     }
                     catch (Exception e)
                     {
                         System.out.println("Invalid IP Specified");
-                        initIP = null;
                     }
+                    
+                    initIP = null;
                 }
             }
             else
@@ -88,6 +87,12 @@ public class TrainControl {
 
             // Start execution
             proxy.setModel(model);
+            
+            // Connection failed - ask for IP on next run
+            if (!model.getNetworkCommState())
+            {
+                ui.getPrefs().remove(TrainControlUI.IP_PREF);
+            }
         } 
         catch (Exception e)
         {

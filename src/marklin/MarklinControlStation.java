@@ -677,6 +677,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.on = on;   
     }
     
+    public boolean getNetworkCommState()
+    {
+        return this.on;
+    }
+    
     /**
      * Logs a message
      * @param message 
