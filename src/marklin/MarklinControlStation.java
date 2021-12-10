@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.4.4";
+    public static final String VERSION = "1.4.5";
     
     //// Settings
     
@@ -141,13 +141,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.log("State restored.");
         
-        this.log("Connected to CS2 at " + network.getIP());
-        
-        syncWithCS2();
-        
-        // Turn on network communication and turn on the power
-        this.on = true;
-        this.go();
+        if (syncWithCS2() >= 0)
+        {
+            this.log("Connected to CS2 at " + network.getIP());
+
+            // Turn on network communication and turn on the power
+            this.on = true;
+            this.go();
+        }
+        else
+        {
+            this.log("Network connection not established");
+        }   
     }
     
     /**
@@ -307,8 +312,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         catch (Exception e)
         {
              this.log("Failed to sync locomotive DB.");
-             this.log(e.getMessage());
-             e.printStackTrace();
+             
+             if (debug)
+             {
+                this.log(e.getMessage());
+                e.printStackTrace();
+             }
+             
+             return -1;
         }
         
         this.log("Sync complete.");

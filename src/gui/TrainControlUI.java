@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -51,6 +52,9 @@ import model.ViewListener;
  */
 public class TrainControlUI extends javax.swing.JFrame implements View 
 {
+    // Preferences fields
+    public static String IP_PREF = "initI2P";
+    
     // View listener (model) reference
     ViewListener model;
     
@@ -94,7 +98,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private static final String DATA_FILE_NAME = "UIState.data";
     
     // Image cache
-    private HashMap<String, Image> imageCache;
+    private final HashMap<String, Image> imageCache;
+    
+    // Preferences
+    private final Preferences prefs;
 
     /**
      * Creates new form MarklinUI
@@ -124,6 +131,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         initComponents();
         
+        this.prefs = Preferences.userNodeForPackage(TrainControlUI.class);
+        
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
         this.rButtonMapping = new HashMap<>();
@@ -137,7 +146,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
         for (int i = 0; i < TrainControlUI.NUM_LOC_MAPPINGS; i++)
         {
-            this.locMapping.add(new HashMap<JButton, Locomotive>());
+            this.locMapping.add(new HashMap<>());
         }
 
         // Map function buttons to numbers
@@ -337,6 +346,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
       inputMap.put(ctrlTab, "navigateNext");
       inputMap.put(ctrlShiftTab, "navigatePrevious");
     }*/
+    
+    public Preferences getPrefs()
+    {
+        return this.prefs;
+    }
     
     /**
      * Saves initialized component database to a file

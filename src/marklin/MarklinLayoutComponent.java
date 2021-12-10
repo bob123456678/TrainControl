@@ -1,5 +1,6 @@
 package marklin;
 
+import base.Accessory;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.geom.AffineTransform;
@@ -357,9 +358,16 @@ public class MarklinLayoutComponent
     {
         this.type = type;
     }
-
+    
     public void setAccessory(MarklinAccessory accessory)
     {
+        // Type can be wrong if a switch is changed to a signal in the CS2
+        // Solution: reboot CS2 :), or update the state here
+        //if (this.isSignal() && !accessory.isSignal())
+        //{
+        
+        //}
+        
         this.accessory = accessory;
     }
 
