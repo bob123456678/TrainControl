@@ -4916,8 +4916,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route + "?", "Route Execution", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
-                this.model.execRoute(route);
-                refreshRouteList();
+                new Thread(() -> {
+                    this.model.execRoute(route);
+                    refreshRouteList();
+                }).start();
             }
         }   
     }//GEN-LAST:event_RouteListMouseClicked
