@@ -3725,9 +3725,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             public Object getElementAt(int i) { return strings[i]; }
         });
         LocomotiveList.setFocusable(false);
-        LocomotiveList.setMaximumSize(new java.awt.Dimension(49, 308));
-        LocomotiveList.setMinimumSize(new java.awt.Dimension(49, 308));
-        LocomotiveList.setPreferredSize(new java.awt.Dimension(49, 308));
+        LocomotiveList.setMaximumSize(null);
+        LocomotiveList.setMinimumSize(null);
+        LocomotiveList.setPreferredSize(null);
         LocomotiveList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 LocomotiveListMouseClicked(evt);
