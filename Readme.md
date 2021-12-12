@@ -45,7 +45,8 @@ Requires JDK 1.8+.
 ## Changelog
 
 * v1.5.0 (Beta)
-    - Function types are now read from CS2 file
+    - Function types are now read from the CS2 file
+    - Automatic recognition of pulse/momentary functions
     - Added function icons to UI
 
 * v1.4.6 

@@ -21,6 +21,8 @@ public class MarklinLocomotive extends Locomotive
     public static int MM2_MAX_ADDR = 80;
     public static int MFX_MAX_ADDR = 0x3FFF;
     
+    public static int PULSE_FUNCTION_DURATION = 300;
+    
     // Function icon colors
     public static final String[] COLOR_YELLOW = {"i_gr", "a_ge"};
     public static final String[] COLOR_WHITE = {"i_we", "a_we"};
@@ -136,13 +138,23 @@ public class MarklinLocomotive extends Locomotive
         String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
         
         // > 128 just means it's a pulse function
-        // TODO - add method to check if > 128, so that UI can support pulse functions
+        // TODO - add method to check if > 128, so that UI can support pulse 
         if (fType > 112)
         {
             fType = fType % 128;
         }
         
         return "http://" + this.network.getIP() + "/fcticons/FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
+    }
+    
+    /**
+     * Checks if the given function is supposed to only stay on for a short period
+     * @param fNo
+     * @return 
+     */
+    public boolean isFunctionPulse(int fNo)
+    {
+        return this.getFunctionType(fNo) > 128;
     }
     
     /**

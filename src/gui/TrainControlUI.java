@@ -625,10 +625,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void fireF(int fn, boolean state)
     {        
         if (this.activeLoc != null)
-        {
-            new Thread(() -> {
-                this.activeLoc.setF(fn, state);
-            }).start();
+        {            
+            if (this.activeLoc.isFunctionPulse(fn))
+            {
+                new Thread(() -> {
+                    this.activeLoc.toggleF(fn, MarklinLocomotive.PULSE_FUNCTION_DURATION);
+                }).start();
+            }
+            else
+            {
+                new Thread(() -> {
+                    this.activeLoc.setF(fn, state);
+                }).start();
+            }
+            
             //repaintLoc();
         }
     }
