@@ -279,7 +279,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public Locomotive stop()
+    synchronized public Locomotive stop()
     {
         //this._setSpeed(0);
         
@@ -306,7 +306,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public Locomotive syncFromNetwork()
+    synchronized public Locomotive syncFromNetwork()
     {
         // Query speed
         this.network.exec(new CS2Message(
@@ -352,7 +352,7 @@ public class MarklinLocomotive extends Locomotive
     }
 
     @Override
-    public Locomotive syncFromState()
+    synchronized public Locomotive syncFromState()
     {
         // Send out speed command
         this.setSpeed(this.getSpeed());
@@ -370,7 +370,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public Locomotive setSpeed(int speed)
+    synchronized public Locomotive setSpeed(int speed)
     {
         super._setSpeed(speed);
         
@@ -393,7 +393,7 @@ public class MarklinLocomotive extends Locomotive
     }
 
     @Override
-    public Locomotive setDirection(locDirection direction)
+    synchronized public Locomotive setDirection(locDirection direction)
     {
         super._setDirection(direction);
         
@@ -415,7 +415,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public Locomotive setF(int fNumber, boolean state)
+    synchronized public Locomotive setF(int fNumber, boolean state)
     {
         if (this.validF(fNumber))
         {
@@ -439,7 +439,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public Locomotive setAccessoryState(int id, boolean state)
+    synchronized public Locomotive setAccessoryState(int id, boolean state)
     {
         this.network.setAccessoryState(id, state);
         

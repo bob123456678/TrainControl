@@ -143,7 +143,7 @@ public class MarklinAccessory extends Accessory
     }
     
     @Override
-    public Accessory setSwitched(boolean state)
+    synchronized public Accessory setSwitched(boolean state)
     {
         this._setSwitched(state);
         
@@ -167,7 +167,7 @@ public class MarklinAccessory extends Accessory
     }
 
     @Override
-    public Accessory syncFromState()
+    synchronized public Accessory syncFromState()
     {
         return this.setSwitched(this.isSwitched());        
     }
