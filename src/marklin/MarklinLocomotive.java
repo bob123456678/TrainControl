@@ -16,23 +16,27 @@ public class MarklinLocomotive extends Locomotive
     
     /* Constants */
     
-    public static int MFX_NUM_FN = 32;
+    public static int MFX_NUM_FN = 33;
     public static int MM2_NUM_FN = 5;
     public static int MM2_MAX_ADDR = 80;
     public static int MFX_MAX_ADDR = 0x3FFF;
     
+    // Function icon colors
+    public static final String[] COLOR_YELLOW = {"i_gr", "a_ge"};
+    public static final String[] COLOR_WHITE = {"i_we", "a_we"};
+    
     // The raw locomotive address
-    private int address;
+    private final int address;
     
     // Calculated UID
-    private int UID;
+    private final int UID;
     
     // The locomotive's decoder
-    private decoderType type;
+    private final decoderType type;
     
     // Reference to the network
-    private MarklinControlStation network;    
-    
+    private final MarklinControlStation network;    
+            
     /**
      * Constructor with name, type, and address
      * @param network
@@ -42,49 +46,118 @@ public class MarklinLocomotive extends Locomotive
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name)
-    {
-        super(name, type == decoderType.MM2 ? MM2_NUM_FN : MFX_NUM_FN);
+    {        
+        super(name, getMaxNumF(type));
 
         this.network = network;
         this.type = type;
         this.address = address;
+        this.UID = calculateUID();
+    }
+    
+    /**
+     * Constructor with name, type, address, and function types
+     * @param network
+     * @param address
+     * @param type
+     * @param name
+     * @param functionTypes
+     */
+    public MarklinLocomotive(MarklinControlStation network, int address, 
+        decoderType type, String name, int[] functionTypes)
+    {        
+        super(name, getMaxNumF(type), functionTypes);
+
+        this.network = network;
+        this.type = type;
+        this.address = address;
+        this.UID = calculateUID();
         
-        this.configureUID();
+        assert this.functionTypes.length == getMaxNumF(type);
     }
     
     /**
      * Constructor with full state
+     * @param network
+     * @param address
+     * @param type
+     * @param dir
+     * @param name
+     * @param functions
+     * @param functionTypes
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
-        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions)
+        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes)
     {
-        super(name, 0, dir, functions);
+        super(name, 0, dir, functions, functionTypes);
 
         this.network = network;
         this.type = type;
         this.address = address;
-        this.configureUID();
+        this.UID = calculateUID();
+        
+        assert this.functionTypes.length == getMaxNumF(type);
+        assert functions.length == getMaxNumF(type);
     }
     
     /**
-     * Sets the Marklin UID based on address and protocol
+     * Determines the Marklin UID based on address and protocol
      */
-    private void configureUID()
+    private int calculateUID()
     {
-         // Verify MM2 address range
+        // Verify MM2 address range
         if (this.type == decoderType.MM2)
         {
             assert this.address <= 80;
             
-            UID = this.address;
+            return this.address;
         } 
         // Verify MFX address range
         else if (this.type == decoderType.MFX)
         {
             assert this.address <= 0x3FFF;
 
-            UID = this.address + 0x4000;            
+            return this.address + 0x4000;            
         }  
+        
+        return 0;
+    }
+    
+    /**
+     * Returns the image URL for a function icon, if any
+     * @param fType
+     * @param active
+     * @param yellow
+     * @return 
+     */
+    public String getFunctionIconUrl(int fType, boolean active, boolean yellow)
+    {
+        int index = active ? 1 : 0;
+        String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
+        
+        // > 128 just means it's a pulse function
+        // TODO - add method to check if > 128, so that UI can support pulse functions
+        if (fType > 112)
+        {
+            fType = fType % 128;
+        }
+        
+        return "http://" + this.network.getIP() + "/fcticons/FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
+    }
+    
+    /**
+     * Gets the maximum number of functions for a given decoder type
+     * @param decoder
+     * @return 
+     */
+    public static int getMaxNumF(decoderType decoder)
+    {
+        if (decoder == decoderType.MM2)
+        {
+            return MM2_NUM_FN;
+        }
+        
+        return MFX_NUM_FN;
     }
     
     /**

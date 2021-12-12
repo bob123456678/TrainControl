@@ -44,6 +44,13 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.0 (Beta)
+    - Function types are now read from CS2 file
+    - Added function icons to UI
+
+* v1.4.6 
+    - Added 200ms delay between route commands
+
 * v1.4.5 [12/9/21]
     - Fixed incorrect thumbnails for locomotives with the same MM2 address
     - Added support for double slip switches in layouts

@@ -23,7 +23,7 @@ public class CS2File
     
     // Control station
     MarklinControlStation control;
-    
+        
     /**
      * Constructor
      * @param IP 
@@ -103,7 +103,7 @@ public class CS2File
         return "http://" + this.IP + "/config/gleisbilder/" 
                 + sanitizeURL(layoutName) + ".cs2";
     }
-
+    
     /**
      * Opens a URL and returns a string stream
      * @param url
@@ -125,7 +125,7 @@ public class CS2File
      * @return
      * @throws Exception 
      */
-    private List<Map<String, String> > parseFile(BufferedReader in) throws Exception
+    public static List<Map<String, String> > parseFile(BufferedReader in) throws Exception
     {
         List<Map<String, String> > items = new ArrayList <>();
                 
@@ -153,7 +153,7 @@ public class CS2File
             }
             else
             {
-                if (array.size() > 0)
+                if (array.size() > 0 && item != null)
                 {
                     String current = "";
                     if (item.containsKey(lastKey))
@@ -210,15 +210,24 @@ public class CS2File
         return items;
     }
     
+    public List<MarklinRoute> parseRoutes() throws Exception
+    {
+        return parseRoutes(parseFile(fetchURL(getRouteURL())));
+    }
+    
+    public List<MarklinLocomotive> parseLocomotives() throws Exception
+    {
+        return parseLocomotives(parseFile(fetchURL(getLocURL())));
+    }
+    
     /**
      * Reads a route database
+     * @param l parsed data
      * @return list of routes
      * @throws Exception 
      */
-    public List<MarklinRoute> parseRoutes() throws Exception
-    {
-        List<Map<String, String> > l = parseFile(fetchURL(getRouteURL()));
-        
+    public List<MarklinRoute> parseRoutes(List<Map<String, String> > l) throws Exception
+    {        
         List<MarklinRoute> out = new ArrayList<>();
         
         for (Map<String, String> m : l)
@@ -276,16 +285,58 @@ public class CS2File
         
         return out;
     }
+    
+    /**
+     * Extracts functions information from a function string parsed by parseFile
+     * 
+     * In CS2, if the function type is known, 
+     * an integer value for "typ" will be present in the file 
+     * @param functionList
+     * @return 
+     */
+    public static int[] parseLocomotiveFunctions(String functionList)
+    {
+        String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
+        
+        int[] output = new int[data.length];
+        
+        // TODO - improve the original parsing approach to make this unnecessary
+        // Loop through each function
+        for (String functionInfo : data)
+        {
+            int fn = 0;
+            int type = 0;
+            
+            // Loop through the keys in each function
+            for (String functionItem : functionInfo.split(","))
+            {
+                String[] item = functionItem.split("=");
+                
+                if ("nr".equals(item[0]))
+                {
+                    fn = Integer.parseInt(item[1]);
+                }
+                
+                if ("typ".equals(item[0]))
+                {
+                    type = Integer.parseInt(item[1]);
+                }
+            }
+            
+            output[fn] = type;
+        }
+        
+        return output;
+    }
         
     /**
      * Reads a locomotive database
+     * @param l data from parseFile
      * @return
      * @throws Exception 
      */
-    public List<MarklinLocomotive> parseLocomotives() throws Exception
-    {
-        List<Map<String, String> > l = parseFile(fetchURL(getLocURL()));
-                
+    public List<MarklinLocomotive> parseLocomotives(List<Map<String, String> > l) throws Exception
+    {                
         List<MarklinLocomotive> out = new ArrayList<>();
         
         for (Map<String, String> m : l)
@@ -295,13 +346,15 @@ public class CS2File
                 int address = Integer.decode(m.get("adresse"));
                 boolean isMFX = m.get("typ").equals("mfx");
                 String name = m.get("name");
+                int[] functionTypes = parseLocomotiveFunctions(m.get("funktionen"));
                 
                 MarklinLocomotive loc = new MarklinLocomotive(
                     control, 
                     address, 
                     isMFX ? MarklinLocomotive.decoderType.MFX 
                         : MarklinLocomotive.decoderType.MM2,
-                    name
+                    name,
+                    functionTypes
                 );
                 
                 if (m.get("icon") != null)
@@ -338,6 +391,12 @@ public class CS2File
         return out;
     }
     
+    /**
+     * Converts a component name from the MCS2 file to an internal componentType
+     * @param name
+     * @return
+     * @throws Exception 
+     */
     private MarklinLayoutComponent.componentType getComponentType(String name) throws Exception
     {
         switch(name)
@@ -397,8 +456,7 @@ public class CS2File
         List<MarklinLayout> out = new ArrayList<>();
         
         for (String name : names)
-        {
-            
+        { 
             List<Map<String, String> > l = parseFile(fetchURL(getLayoutURL(name)));
             
             int maxX = 0;

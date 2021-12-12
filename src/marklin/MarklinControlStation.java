@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.4.6";
+    public static final String VERSION = "1.5.0 (Beta)";
     
     //// Settings
     
@@ -38,10 +38,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Debug mode
     private static boolean debug = false;
-    
-    // Load images
-    private static final boolean LOAD_IMAGES = true;
-    
+        
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
     
@@ -107,14 +104,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MFX, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions());                
+                    c.getFunctions(), c.getFunctionTypes());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.LOC_MM2)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MM2, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions());                
+                    c.getFunctions(), c.getFunctionTypes());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -288,21 +285,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             + " from CS2"
                     );
 
-                    newLocomotive(l.getName(), l.getAddress(), l.getDecoderType());
+                    newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());
                     num++;
                 }
                 
                 // Set current locomotive icon - use name for MM2 due to risk of address collision
                 if (l.getDecoderType() == MarklinLocomotive.decoderType.MM2)
                 {
-                    if (LOAD_IMAGES && this.locDB.getByName(l.getName()) != null && l.getImageURL() != null)
+                    if (this.locDB.getByName(l.getName()) != null && l.getImageURL() != null)
                     {
                         this.locDB.getByName(l.getName()).setImageURL(l.getImageURL());                         
                     }
                 }
                 else
                 {
-                    if (LOAD_IMAGES && this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                    if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
                     {
                         this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
                     }
@@ -821,7 +818,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Adds a new locomotive to the internal database
+     * Adds a new locomotive to the internal database with no known state
      * @param name
      * @param address
      * @param type
@@ -836,6 +833,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         return newLoc; 
     }
+    
+    /**
+     * Adds a new locomotive to the internal database with no state exception function types
+     * @param name
+     * @param address
+     * @param type
+     * @return 
+     */
+    private MarklinLocomotive newLocomotive(String name, int address, 
+        MarklinLocomotive.decoderType type, int[] functionTypes)
+    {
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, functionTypes);
+        
+        this.locDB.add(newLoc, name, newLoc.getUID());
+        
+        return newLoc; 
+    }
+    
     /**
      * Adds a new locomotive with expanded state
      * @param name
@@ -843,13 +858,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param type
      * @param dir
      * @param functions
+     * @param functionTypes
      * @return 
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
-        boolean[] functions)
+        boolean[] functions, int[] functionTypes)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         
@@ -967,6 +983,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             a.straight();
         }             
+    }
+    
+    /**
+     *
+     * @return
+     */
+    public String getIP()
+    {
+        return this.NetworkInterface.getIP();
     }
     
     @Override

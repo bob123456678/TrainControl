@@ -10,13 +10,16 @@ public class MarklinSimpleComponent implements java.io.Serializable
 {
     public enum Type {LOC_MFX, LOC_MM2, SWITCH, SIGNAL, ROUTE, FEEDBACK};
     
-    private String name;
-    private int address;
-    private Type type;
+    private final String name;
+    private final int address;
+    private final Type type;
     
     // Switch state or loc directions
     private boolean state;
+    
+    // Locomotive function state and types
     private boolean[] functions;
+    private int[] functionTypes;
     
     // Route state
     private Map<Integer, Boolean> route;
@@ -52,6 +55,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.type = Type.ROUTE;
         
         this.route = r.getRoute();
+        this.address = 0;
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -67,8 +71,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
         
         this.name = l.getName();
         this.address = l.getAddress();
-        this.state = l.goingForward() ? true : false;
+        this.state = l.goingForward();
         this.functions = l.getFunctionState();
+        this.functionTypes = l.getFunctionTypes();
     }
     
     public Map<Integer, Boolean> getRoute()
@@ -79,6 +84,11 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public boolean[] getFunctions()
     {
         return functions;
+    }
+    
+    public int[] getFunctionTypes()
+    {
+        return functionTypes;
     }
     
     public boolean getState()

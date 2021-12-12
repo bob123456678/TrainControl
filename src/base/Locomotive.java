@@ -21,16 +21,19 @@ public abstract class Locomotive
     private locDirection direction;
     
     // Number of functions
-    private int numF;
+    private final int numF;
        
     // State of functions
-    private boolean[] functionState;
+    private final boolean[] functionState;
     
     // Name of this locomotive
     private String name;
     
     // Picture of this locomotive
     private String imageURL;
+    
+    // Types of functions
+    protected final int[] functionTypes;
     
     /**
      * Constructor with name and all functions off
@@ -44,21 +47,66 @@ public abstract class Locomotive
         this.functionState = new boolean[numFunctions];
         this.numF = numFunctions;
         this._setSpeed(0);
+        this.functionTypes = new int[numFunctions];
+    }
+    
+    /**
+     * Constructor with name and all functions off
+     * @param name
+     * @param numFunctions 
+     * @param functionTypes 
+     */
+    public Locomotive(String name, int numFunctions, int[] functionTypes)
+    {
+        this.name = name;
+        this.direction = locDirection.DIR_FORWARD;
+        this.functionState = new boolean[numFunctions];
+        this.numF = numFunctions;
+        this._setSpeed(0);
+        this.functionTypes = functionTypes;
+    }
+    
+    /**
+     * Gets the function type list
+     * @return 
+     */    
+    public int[] getFunctionTypes()
+    {
+        return this.functionTypes;        
+    }
+    
+    /**
+     * Gets the function type for a given slot
+     * @param fno
+     * @return 
+     */    
+    public int getFunctionType(int fno)
+    {
+        if (fno < this.functionTypes.length)
+        {
+            return this.functionTypes[fno];
+        }
+        
+        return -1;        
     }
     
     /**
      * Constructor with full state
      * @param name
+     * @param speed
+     * @param direction
      * @param functionState 
+     * @param functionTypes 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState)
+        boolean[] functionState, int[] functionTypes)
     {
         this.name = name;
         this.direction = direction;
         this.functionState = functionState;
         this.numF = functionState.length;
         this._setSpeed(speed);
+        this.functionTypes = functionTypes;
     }
 
     /* Internal functionality */
@@ -453,6 +501,7 @@ public abstract class Locomotive
     
     /**
      * Returns the image URL, if any
+     * @return 
      */
     public String getImageURL()
     {
