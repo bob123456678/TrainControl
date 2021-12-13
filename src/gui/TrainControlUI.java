@@ -1,18 +1,11 @@
 package gui;
 
 import base.Locomotive;
-import java.awt.AWTKeyStroke;
 import java.awt.Color;
 import java.awt.Image;
 import java.awt.Insets;
-import java.awt.KeyboardFocusManager;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
-import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,33 +14,23 @@ import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
-import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
-import javax.swing.JViewport;
 import javax.swing.KeyStroke;
-import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
-import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
-import marklin.file.CS2File;
 import model.View;
 import model.ViewListener;
 
@@ -896,7 +879,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                         )
                                     );
 
-                                    bt.setText("");
+                                    bt.setText("");                                    
                                     bt.setMargin(new Insets(0,0,0,0));
                                 }
                             }
