@@ -51,7 +51,7 @@ Requires JDK 1.8+.
     - Extra function tabs are now hidden for mm2 locomotives
     - Removed "stop" button in locomotive pane
 
-* v1.4.6 
+* v1.4.6 [12/10/21]
     - Added 200ms delay between route commands
 
 * v1.4.5 [12/9/21]
