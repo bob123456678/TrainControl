@@ -48,6 +48,8 @@ Requires JDK 1.8+.
     - Function types are now read from the CS2 file
     - Automatic recognition of pulse/momentary functions
     - Added function icons to UI
+    - Extra function tabs are now hidden for mm2 locomotives
+    - Removed "stop" button in locomotive pane
 
 * v1.4.6 
     - Added 200ms delay between route commands
