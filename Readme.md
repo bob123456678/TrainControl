@@ -1,6 +1,7 @@
 # Marklin Train Control
 
-This program allows you to use your computer to control your Marklin layout.  
+This program allows you to use your computer to easily control your entire Marklin layout.
+It connects to a Central Station 2/3 over the network.
 It is primarily designed for users with a large layout / many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
 overly tedious.
@@ -9,27 +10,32 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3.
 
-![UI screenshot: locomotive control](assets/interface.png?raw=true)
+![UI screenshot: locomotive control](assets/interface3.png?raw=true)
 
-![UI screenshot: layout](assets/interface2.png?raw=true)
+![UI screenshot: layout](assets/interface4.png?raw=true)
+
+![UI screenshot: keyboard](assets/interface5.png?raw=true)
 
 **Features:**
 
-* Configure hotkeys for different locomotives, accessories, and functions
-* Control locomotives, signals, and switches
-* View S88 feedback
+* Easily control locomotives, signals, switches, and routes
+* View and interact with layout diagrams, with support for multiple windows
+* Configure key mappings for up to 104 locomotives
+* Convenient hotkeys for power off, emergency stop, and smooth deceleration
+* Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
-* View and control the entire layout just like on the CS2/CS3
-* Progammatic layout control via API (uses CAN protocol)
+* View S88 feedback
+* Progammatic layout control/automation via Java API (uses CAN protocol)
 
 **Requirements:**
 
-* Must be on the same Wi-Fi network as the CS2/CS3
-* CS2/CS2 CAN bus and broadcasting must be enabled
+* Requires a Marklin Central Station 2 or Central Station 3 connected to your network
+* Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
+* CS2/CS3 CAN bus and broadcasting must be enabled in the settings
 
 **Limitations:**
 
-* This program has currently only been tested with the CS2
+* This current version has only been tested with the CS2
 * CS2 IP address must be manually entered (recommend configurating a static IP in your router)
 
 **Building the project from source:**
