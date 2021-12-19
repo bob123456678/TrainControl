@@ -52,6 +52,7 @@ Requires JDK 1.8+.
 
 * v1.5.1 [12/19/21]
     - Connection will no longer fail upon encountering unknown layout objects
+    - Fixed a possible crash if an S88 event fires without existing on any layout
 
 * v1.5.0 [12/13/21]
     - Function types are now read from the CS2 file
