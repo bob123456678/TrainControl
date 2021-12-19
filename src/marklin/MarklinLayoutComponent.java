@@ -18,7 +18,7 @@ public class MarklinLayoutComponent
 {
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
-        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL};
+        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL, TURNTABLE};
     
     private final String resourcePath = "/gui/resources/icons";
     
@@ -255,6 +255,10 @@ public class MarklinLayoutComponent
          return img;
     }
     
+    /**
+     * Currently used to determine the icon name
+     * @return 
+     */
     public String getTypeName()
     {
         switch(this.type)
@@ -289,6 +293,8 @@ public class MarklinLayoutComponent
                 return "overpass";
             case SWITCH_CROSSING:
                 return "crossswitch";
+            case TURNTABLE:
+                return "turntable";
         }
         
         return "";

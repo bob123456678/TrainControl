@@ -435,13 +435,13 @@ public class CS2File
             case "dkweiche":
             case "dkweiche_2":
                 return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
-            
+            case "drehscheibe": // Turntable
+                return MarklinLayoutComponent.componentType.TURNTABLE;
             // Unsupported components
             case "fahrstrasse": // Route
             case "pfeil":       // Link to another page
-            case "drehscheibe": // Turntable
-            case "standard":    // Turntable
             case "lampe":       // Lamp
+            case "standard":       
             default:
                 this.control.log("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");
