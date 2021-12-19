@@ -227,6 +227,7 @@ public class MarklinLayoutComponent
         }
             
         // TODO - check if folder exists, else use a default
+        // TODO - switch to /gbsicons/ 
         return this.resourcePath + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
     }
     

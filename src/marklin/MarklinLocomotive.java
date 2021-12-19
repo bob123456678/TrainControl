@@ -138,7 +138,6 @@ public class MarklinLocomotive extends Locomotive
         String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
         
         // > 128 just means it's a pulse function
-        // TODO - add method to check if > 128, so that UI can support pulse 
         if (fType > 112)
         {
             fType = fType % 128;
@@ -252,7 +251,7 @@ public class MarklinLocomotive extends Locomotive
             if (m.getLength() == 6)
             {
                 int fNumber = m.getData()[4];
-                boolean fValue = m.getData()[5] == 0 ? false : true;
+                boolean fValue = m.getData()[5] != 0;
                 
                 this._setF(fNumber, fValue);
                 

@@ -14,14 +14,14 @@ public class TrainControl {
      * Ensures that informative error messages are printed in the event that an
      * error occurs
      * 
-     * Usage: TrainControl.java [IP] [simulate connection [debug]]
+     * Usage: TrainControl.java [IP] [debug [simulate connection]]
      * 
      * @param args, command line arguments
      */
     public static void main(String[] args)
     {            
         // Set to true to test application without a CS2
-        boolean simulate = (args.length >= 2);
+        boolean simulate = (args.length >= 3);
 
         try 
         {
@@ -77,7 +77,7 @@ public class TrainControl {
               new MarklinControlStation(proxy, ui, 0);
 
             // Enables debug mode
-            if (args.length >= 3)
+            if (args.length >= 2)
             {
                 model.debug(true);
             }

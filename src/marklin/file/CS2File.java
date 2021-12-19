@@ -435,13 +435,20 @@ public class CS2File
             case "dkweiche":
             case "dkweiche_2":
                 return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
+            
             // Unsupported components
             case "fahrstrasse": // Route
             case "pfeil":       // Link to another page
+            case "drehscheibe": // Turntable
+            case "standard":    // Turntable
+            case "lampe":       // Lamp
+            default:
+                this.control.log("Layout: warning - component " + name + 
+                                 " is not supported and will not be displayed");
                 return null;
         }
         
-        throw new Exception("Unsupported component: " + name);        
+        //throw new Exception("Unsupported component: " + name);        
     }
     
     /**
@@ -503,7 +510,7 @@ public class CS2File
                     }
                     catch (NumberFormatException e)
                     {
-                        this.control.log(String.format("Component at %s, %s has no address", x, y));
+                        this.control.log(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
                     }
                     
                     Integer address = rawAddress;

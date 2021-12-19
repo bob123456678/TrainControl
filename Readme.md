@@ -50,6 +50,9 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.1 [12/19/21]
+    - Connection will no longer fail upon encountering unknown layout objects
+
 * v1.5.0 [12/13/21]
     - Function types are now read from the CS2 file
     - Automatic recognition of pulse/momentary functions
