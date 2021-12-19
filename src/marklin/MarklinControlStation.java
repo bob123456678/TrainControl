@@ -696,7 +696,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void log(String message)
     {
-        if (!message.equals(this.lastMessage))
+        if (message != null && !message.equals(this.lastMessage))
         {
             // TODO - write to file, suppress, etc.
             this.view.log(message);    

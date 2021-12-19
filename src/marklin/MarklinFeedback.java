@@ -31,18 +31,18 @@ public class MarklinFeedback extends Feedback
         
         this.network=network;
         this.UID = id;
-        
+        this.tiles = new HashSet<>();
+
         if (m != null)
         {
             this.parseMessage(m);
         }
-        
-        this.tiles = new HashSet<>();
     }
 
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
      * @param l 
+     * @param dynamic 
      */
     public void addTile(LayoutLabel l, boolean dynamic)
     {   
