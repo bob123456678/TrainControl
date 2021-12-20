@@ -25,7 +25,7 @@ public class CS2Message
     // Data payload
     private byte[] data;
     // CAN message length
-    public static final int messageLength = 13;
+    public static final int MESSAGE_LENGTH = 13;
 
     /* Command constants */
     

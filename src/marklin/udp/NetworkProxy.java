@@ -11,15 +11,15 @@ import model.ModelListener;
 public class NetworkProxy
 {
     // Ports as defined in the marklin protocol
-    public static final int rxPort = 15730;
-    public static final int txPort = 15731;
+    public static final int RX_PORT = 15730;
+    public static final int TX_PORT = 15731;
     
     // UDP socket used to send and receive packets
     private DatagramSocket socket;
     
     // Transmission IP/port
-    private InetAddress transmitIP;
-    private int transmitPort;
+    private final InetAddress transmitIP;
+    private final int transmitPort;
     
     // Model listener class reference
     private ModelListener model;
@@ -33,9 +33,9 @@ public class NetworkProxy
      */
     public NetworkProxy(InetAddress transmitIP) throws IOException
     { 
-        this.socket = new DatagramSocket(NetworkProxy.rxPort);
+        this.socket = new DatagramSocket(NetworkProxy.RX_PORT);
         this.transmitIP = transmitIP;
-        this.transmitPort = NetworkProxy.txPort;       
+        this.transmitPort = NetworkProxy.TX_PORT;       
     }
     
     /**
@@ -93,7 +93,7 @@ public class NetworkProxy
             
             if (this.socket.isClosed())
             {
-                this.socket = new DatagramSocket(NetworkProxy.rxPort);
+                this.socket = new DatagramSocket(NetworkProxy.RX_PORT);
             }
         }
         catch (IOException e)
@@ -130,7 +130,7 @@ public class NetworkProxy
             try
             {
                 // Create a read buffer based on the protocol message length
-                byte[] buffer = new byte[CS2Message.messageLength];
+                byte[] buffer = new byte[CS2Message.MESSAGE_LENGTH];
 
                 // Create a packet to receive the data
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
