@@ -437,10 +437,11 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
             case "drehscheibe": // Turntable
                 return MarklinLayoutComponent.componentType.TURNTABLE;
+            case "lampe":       // Lamp
+                return MarklinLayoutComponent.componentType.LAMP;
             // Unsupported components
             case "fahrstrasse": // Route
             case "pfeil":       // Link to another page
-            case "lampe":       // Lamp
             case "standard":       
             default:
                 this.control.log("Layout: warning - component " + name + 

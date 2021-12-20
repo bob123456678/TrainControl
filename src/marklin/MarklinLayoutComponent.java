@@ -18,7 +18,8 @@ public class MarklinLayoutComponent
 {
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
-        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL, TURNTABLE};
+        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL, 
+        TURNTABLE, LAMP};
     
     private final String resourcePath = "/gui/resources/icons";
     
@@ -30,9 +31,9 @@ public class MarklinLayoutComponent
     private int y;
     
     // State
-    private int state;
-    private int address;
-    private int rawAddress;
+    private final int state;
+    private final int address;
+    private final int rawAddress;
     
     // Type
     private componentType type;
@@ -150,7 +151,8 @@ public class MarklinLayoutComponent
     
     public boolean isSignal()
     {
-        return this.type == componentType.SIGNAL;
+        return this.type == componentType.SIGNAL ||
+                this.type == componentType.LAMP;
     }
 
     public boolean isFeedback()
@@ -190,6 +192,7 @@ public class MarklinLayoutComponent
     
     /**
      * Gets the image corresponding to the current state of the accessory
+     * @param size
      * @return 
      */
     public String getImageName(int size)
@@ -295,6 +298,8 @@ public class MarklinLayoutComponent
                 return "crossswitch";
             case TURNTABLE:
                 return "turntable";
+            case LAMP:
+                return "lamp";
         }
         
         return "";
