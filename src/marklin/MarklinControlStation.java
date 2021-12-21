@@ -324,7 +324,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
              this.log("Failed to sync locomotive DB.");
              
-             //if (debug)
+             if (debug)
              {
                 this.log(e.getMessage());
                 e.printStackTrace();
