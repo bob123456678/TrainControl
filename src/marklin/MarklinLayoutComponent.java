@@ -19,7 +19,7 @@ public class MarklinLayoutComponent
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
         SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL, 
-        TURNTABLE, LAMP};
+        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT};
     
     private final String resourcePath = "/gui/resources/icons";
     
@@ -34,6 +34,7 @@ public class MarklinLayoutComponent
     private final int state;
     private final int address;
     private final int rawAddress;
+    private String label= "";
     
     // Type
     private componentType type;
@@ -42,6 +43,7 @@ public class MarklinLayoutComponent
     private MarklinAccessory accessory;
     private MarklinAccessory accessory2;
     private MarklinFeedback feedback;
+    private MarklinRoute route;
     
     /**
      * Constructor
@@ -133,6 +135,33 @@ public class MarklinLayoutComponent
                 this.feedback.setState(true);
             }
         }
+        else if (this.isRoute())
+        {
+            if (this.route != null)
+            {
+                this.route.execRoute();
+            }
+        }
+    }
+    
+    public void setLabel(String label)
+    {
+        this.label = label;
+    }
+    
+    public String getLabel()
+    {
+        return this.label;
+    }
+    
+    public boolean isText()
+    {
+        return this.type == componentType.TEXT;
+    }
+    
+    public boolean isRoute()
+    {
+        return this.type == componentType.ROUTE;
     }
     
     public boolean isSwitch()
@@ -141,7 +170,8 @@ public class MarklinLayoutComponent
                 this.type == componentType.SWITCH_LEFT ||
                 this.type == componentType.SWITCH_RIGHT ||
                 this.type == componentType.SWITCH_CROSSING ||
-                this.type == componentType.SWITCH_THREE;
+                this.type == componentType.SWITCH_THREE ||
+                this.type == componentType.SWITCH_Y;
     }   
     
     public boolean isUncoupler()
@@ -300,6 +330,10 @@ public class MarklinLayoutComponent
                 return "turntable";
             case LAMP:
                 return "lamp";
+            case SWITCH_Y:
+                return "switch_y";
+            case ROUTE:
+                return "route";
         }
         
         return "";
@@ -329,6 +363,11 @@ public class MarklinLayoutComponent
     public MarklinFeedback getFeedback()
     {
         return feedback;
+    }
+    
+    public MarklinRoute getRoute()
+    {
+        return route;
     }
     
      public int getOrientation()
@@ -369,6 +408,11 @@ public class MarklinLayoutComponent
     public void setType(componentType type)
     {
         this.type = type;
+    }
+    
+    public void setRoute(MarklinRoute route)
+    {
+        this.route = route;
     }
     
     public void setAccessory(MarklinAccessory accessory)

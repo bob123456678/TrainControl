@@ -6,6 +6,7 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -42,7 +43,8 @@ public final class LayoutLabel extends JLabel
         if (this.component != null)
         {
             if (this.component.isSwitch() || this.component.isSignal() 
-                    || this.component.isUncoupler() || this.component.isFeedback())
+                    || this.component.isUncoupler() || this.component.isFeedback()
+                    || this.component.isRoute())
             {
                 this.addMouseListener(new MouseAdapter()  
                 {  
@@ -69,18 +71,28 @@ public final class LayoutLabel extends JLabel
     public void setImage()
     {
         if (this.component != null)
-        {            
-            try
+        {       
+            // Special handling for text labels
+            if (this.component.isText())
             {
-                this.setIcon(new javax.swing.ImageIcon(
-                        this.component.getImage(size)
-                ));
-            } catch (IOException ex)
-            {
-                Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
+                this.setText(this.component.getLabel());
+                this.setForeground(Color.black);
+                this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));                
             }
-            
-            this.imageName = component.getImageName(size);      
+            else
+            {
+                try
+                {
+                    this.setIcon(new javax.swing.ImageIcon(
+                            this.component.getImage(size)
+                    ));
+                } catch (IOException ex)
+                {
+                    Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                this.imageName = component.getImageName(size);  
+            }
         }
     }
     

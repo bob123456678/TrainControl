@@ -14,6 +14,9 @@ public class MarklinRoute extends Route
     // Control station reference
     private final MarklinControlStation network;
     
+    // Internal identifier used by CS2
+    private final int id;
+    
     // Extra delay between route commands
     // TODO - make this configurable in the future
     private static final int EXTRA_SLEEP_MS = 150;
@@ -22,11 +25,13 @@ public class MarklinRoute extends Route
      * Simple constructor
      * @param network
      * @param name 
+     * @param id 
      */
-    public MarklinRoute(MarklinControlStation network, String name)
+    public MarklinRoute(MarklinControlStation network, String name, int id)
     { 
         super(name);
         
+        this.id = id;
         this.network = network;    
     }
     
@@ -34,13 +39,24 @@ public class MarklinRoute extends Route
      * Complete constructor
      * @param network
      * @param name 
+     * @param id 
      * @param route 
      */
-    public MarklinRoute(MarklinControlStation network, String name, Map<Integer, Boolean> route)
+    public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route)
     { 
         super(name, route);
         
+        this.id = id;
         this.network = network;    
+    }
+    
+    /**
+     * Returns the CS2 route ID
+     * @return 
+     */
+    public int getId()
+    {
+        return this.id;
     }
     
     /**
@@ -48,6 +64,8 @@ public class MarklinRoute extends Route
      */
     public void execRoute()
     {
+        this.network.log("Executing route " + this.getName());
+        
         for (Integer id : this.route.keySet())
         {
             Boolean state = this.route.get(id);

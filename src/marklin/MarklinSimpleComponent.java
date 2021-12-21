@@ -55,7 +55,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.type = Type.ROUTE;
         
         this.route = r.getRoute();
-        this.address = 0;
+        this.address = r.getId();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)

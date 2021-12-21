@@ -11,7 +11,7 @@ import java.util.Map;
 abstract public class Route
 {
     // Name of this route
-    private String name;
+    private final String name;
     
     // Route map
     protected Map<Integer, Boolean> route;

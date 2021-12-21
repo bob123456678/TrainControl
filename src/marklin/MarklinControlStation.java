@@ -29,7 +29,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.1";
+    public static final String VERSION = "1.5.2";
     
     //// Settings
     
@@ -54,7 +54,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private final RemoteDeviceCollection<MarklinFeedback, Integer> feedbackDB;
     
     // Route database
-    private final RemoteDeviceCollection<MarklinRoute, String> routeDB;
+    private final RemoteDeviceCollection<MarklinRoute, Integer> routeDB;
     
     // Layouts
     private final RemoteDeviceCollection<MarklinLayout, String> layoutDB;
@@ -132,7 +132,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
-                newRoute(c.getName(), c.getRoute());
+                newRoute(c.getName(), c.getAddress(), c.getRoute());
             }
         }
         
@@ -168,6 +168,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Fetch CS2's databases
         try
         {
+            for (MarklinRoute r : fileParser.parseRoutes())
+            {
+                if (!this.routeDB.hasId(r.getId()))
+                {
+                    this.log("Added route " + r.getName());
+                    newRoute(r);
+                    num++;
+                }
+            }
+                        
             if (this.layoutDB.getItemNames().isEmpty())
             {
                 for (MarklinLayout l : fileParser.parseLayout())
@@ -269,7 +279,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             
                             // CS2 gives us no state info :(
                             c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
-                        }    
+                        }   
+                        else if (c.isRoute())
+                        {
+                            c.setRoute(this.routeDB.getById(c.getAddress()));
+                        }
                     }
                 }
             }
@@ -305,22 +319,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                 }
             }
-            
-            for (MarklinRoute r : fileParser.parseRoutes())
-            {
-                if (!this.routeDB.hasId(r.getName()))
-                {
-                    this.log("Added route " + r.getName());
-                    newRoute(r);
-                    num++;
-                }
-            }
         }
         catch (Exception e)
         {
              this.log("Failed to sync locomotive DB.");
              
-             if (debug)
+             //if (debug)
              {
                 this.log(e.getMessage());
                 e.printStackTrace();
@@ -444,17 +448,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final void newRoute(MarklinRoute r)
     {
-        this.routeDB.add(r, r.getName(), r.getName());
+        this.routeDB.add(r, r.getName(), r.getId());
     }
     
     /**
      * Adds a new route from user input
      * @param name
+     * @param id
      * @param route 
      */
-    public final void newRoute(String name, Map<Integer, Boolean> route)
+    public final void newRoute(String name, int id, Map<Integer, Boolean> route)
     {
-        this.routeDB.add(new MarklinRoute(this, name, route), name, name);        
+        this.routeDB.add(new MarklinRoute(this, name, id, route), name, id);        
     }
     
      /**
@@ -999,7 +1004,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         this.log("Executing route " + name);
         
-        this.routeDB.getById(name).execRoute();
+        this.routeDB.getByName(name).execRoute();
     }
     
     @Override
@@ -1011,7 +1016,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public List<String> getRouteList()
     {
-        List<String> l = this.routeDB.getItemIds();
+        List<String> l = this.routeDB.getItemNames();
         Collections.sort(l);
                 
         return l;

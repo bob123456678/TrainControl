@@ -234,7 +234,7 @@ public class CS2File
         {
             if ("fahrstrasse".equals(m.get("_type")))
             {
-                MarklinRoute r = new MarklinRoute(control, m.get("name"));
+                MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
                 
                 String route = m.get("item").replace("{", "").replace("}","");
                 String[] pieces = route.split("\\|");
@@ -424,6 +424,8 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.SWITCH_LEFT;
             case "rechtsweiche":
                 return MarklinLayoutComponent.componentType.SWITCH_RIGHT;
+            case "yweiche":
+                return MarklinLayoutComponent.componentType.SWITCH_Y;
             case "dreiwegweiche":
                 return MarklinLayoutComponent.componentType.SWITCH_THREE;
             case "tunnel":
@@ -439,8 +441,11 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.TURNTABLE;
             case "lampe":       // Lamp
                 return MarklinLayoutComponent.componentType.LAMP;
-            // Unsupported components
             case "fahrstrasse": // Route
+                return MarklinLayoutComponent.componentType.ROUTE;
+            case "text":
+                return MarklinLayoutComponent.componentType.TEXT;
+            // Unsupported components
             case "pfeil":       // Link to another page
             case "standard":       
             default:
@@ -503,6 +508,20 @@ public class CS2File
                     Integer orient = 0;
                     Integer state = 0;
                     String type = m.get("typ");
+                    
+                    // Handle missing type
+                    if (type == null)
+                    {
+                        if (m.get("text") != null)
+                        {
+                            type = "text";
+                        }
+                        else
+                        {
+                            type = "unknown";
+                        }
+                    }
+                    
                     Integer rawAddress = 0;
                     
                     try
@@ -542,6 +561,12 @@ public class CS2File
                            getComponentType(type),
                            x, y, orient, state, address, rawAddress
                         );  
+                        
+                        // Add text, if any
+                        if (m.get("text") != null)
+                        {
+                            layout.getComponent(x, y).setLabel(m.get("text"));
+                        }
                     }
                 }
             }

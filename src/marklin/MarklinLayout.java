@@ -10,11 +10,11 @@ import java.util.List;
  */
 public class MarklinLayout
 {
-    private String name;
+    private final String name;
     
     // Size
-    private int sx;
-    private int sy;
+    private final int sx;
+    private final int sy;
     
     int minx = 0;
     int miny = 0;
@@ -42,10 +42,10 @@ public class MarklinLayout
     }
    
     // Corresponding accessory reference
-    private List<List<MarklinLayoutComponent>> grid;
+    private final List<List<MarklinLayoutComponent>> grid;
     
      // Network reference
-    private MarklinControlStation network;
+    private final MarklinControlStation network;
    
     /**
      * Constructor
@@ -81,6 +81,8 @@ public class MarklinLayout
     
     /**
      * Called upon user request, i.e. GUI button press
+     * @param x
+     * @param y
      */
     public void execStateChange(int x, int y)
     {
