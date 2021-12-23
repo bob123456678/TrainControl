@@ -28,6 +28,9 @@ public class MarklinAccessory extends Accessory
     // Gui reference
     private final Set<LayoutLabel> tiles;
     
+    // Delay between threeway switches
+    public static final int THREEWAY_DELAY_MS = 350;
+    
     /**
      * Constructor
      * @param network

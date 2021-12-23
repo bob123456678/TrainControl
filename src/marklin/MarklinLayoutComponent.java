@@ -108,19 +108,19 @@ public class MarklinLayoutComponent
             if (this.accessory.isStraight() && this.accessory2.isStraight())
             {
                 this.accessory2.setSwitched(false);
-                this.accessory.setSwitched(true);
+                this.accessory.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(true);
             }
             else
             {
                 if (this.accessory2.isStraight())
                 {
                     this.accessory.setSwitched(false);
-                    this.accessory2.setSwitched(true);
+                    this.accessory2.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(true);
                 }
                 else
                 {
                     this.accessory.setSwitched(false);
-                    this.accessory2.setSwitched(false);
+                    this.accessory2.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(false);
                 }                      
             }  
         }
