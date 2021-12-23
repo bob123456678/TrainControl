@@ -3,7 +3,6 @@ package marklin;
 import base.Accessory;
 import base.RemoteDevice;
 import gui.LayoutLabel;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -28,7 +27,6 @@ public class MarklinAccessory extends Accessory
     
     // Gui reference
     private final Set<LayoutLabel> tiles;
-    private LayoutLabel tile;
     
     /**
      * Constructor
@@ -65,18 +63,10 @@ public class MarklinAccessory extends Accessory
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
      * @param l 
-     * @param dynamic set to true if the component is being added to a popup window
      */
-    public void addTile(LayoutLabel l, boolean dynamic)
+    public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
-        if (dynamic)
-        {
-            this.tiles.add(l);
-        }
-        else
-        {
-            this.tile = l;
-        }
+        this.tiles.add(l);
     }
         
     /**
@@ -95,11 +85,6 @@ public class MarklinAccessory extends Accessory
             {
                 i.remove();
             }
-        }
-        
-        if (this.tile != null)
-        {
-            this.tile.updateImage();
         }
     }
     

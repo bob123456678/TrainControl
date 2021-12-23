@@ -23,7 +23,6 @@ public class MarklinFeedback extends Feedback
     
     // Gui reference
     private final Set<LayoutLabel> tiles;
-    private LayoutLabel tile;
         
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
     { 
@@ -42,18 +41,10 @@ public class MarklinFeedback extends Feedback
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
      * @param l 
-     * @param dynamic 
      */
-    public void addTile(LayoutLabel l, boolean dynamic)
+    public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
-        if (dynamic)
-        {
-            this.tiles.add(l);
-        }
-        else
-        {
-            this.tile = l;
-        }
+        this.tiles.add(l);
     }
     
     /**
@@ -72,11 +63,6 @@ public class MarklinFeedback extends Feedback
             {
                 i.remove();
             }
-        }
-        
-        if (this.tile != null)
-        {
-            this.tile.updateImage();
         }
     }
         
