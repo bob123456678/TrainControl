@@ -51,7 +51,7 @@ Requires JDK 1.8+.
 ## Changelog
 
 * v1.5.3 [12/22/21]
-    - Alt-G is now mapped to the "go" button (turns on the power)
+    - Alt-G is now mapped to the "go" button (turns on the power, was F2 prior to v1.4.0)
     - Added forward and reverse labels to loc direction buttons
     - Fix layout display bug when multiple instance of the same accessory were present
 
