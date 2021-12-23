@@ -3724,6 +3724,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         OnButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         OnButton.setText("ON");
+        OnButton.setToolTipText("Alt-G");
         OnButton.setFocusable(false);
         OnButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3733,6 +3734,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         PowerOff.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         PowerOff.setText("Power OFF");
+        PowerOff.setToolTipText("Escape");
         PowerOff.setFocusable(false);
         PowerOff.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3781,7 +3783,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         Backward.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        Backward.setText("<<<<<");
+        Backward.setText("<<<<< REV");
         Backward.setFocusable(false);
         Backward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3790,7 +3792,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         Forward.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        Forward.setText(">>>>>");
+        Forward.setText("FWD >>>>>");
         Forward.setFocusable(false);
         Forward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4101,12 +4103,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(F10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(0, 0, 0)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel14)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel21)
                         .addComponent(jLabel22)
-                        .addComponent(jLabel23)))
+                        .addComponent(jLabel23))
+                    .addComponent(jLabel14))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
 
@@ -4606,12 +4608,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(F30, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F31, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(2, 2, 2)
-                .addGroup(F24PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel36)
+                .addGroup(F24PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(F24PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel44)
                         .addComponent(jLabel35)
-                        .addComponent(jLabel45)))
+                        .addComponent(jLabel45))
+                    .addComponent(jLabel36))
                 .addGap(0, 0, 0)
                 .addComponent(F32, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, 0)
@@ -4710,8 +4712,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
-
-        if (this.buttonMapping.containsKey(keyCode))
+        
+        if (altPressed && keyCode == KeyEvent.VK_G)
+        {
+            go();
+        }
+        else if (this.buttonMapping.containsKey(keyCode))
         {
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
         }
@@ -4894,10 +4900,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (keyCode == KeyEvent.VK_ESCAPE)
         {
             stop();
-        }
-        else if (keyCode == KeyEvent.VK_F2)
-        {
-            go();
         }
         else if (keyCode == KeyEvent.VK_SHIFT)
         {

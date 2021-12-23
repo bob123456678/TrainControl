@@ -50,12 +50,14 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.5.2 [12/21/21]
+* v1.5.2 [12/22/21]
     - Connection will no longer fail upon encountering text labels in the layout
     - Support for new layout components
         * Y switches
         * Clickable routes
         * Text labels
+    - Alt-G is now mapped to the "go" button (turns on the power)
+    - Added forward and reverse labels to loc direction buttons
 
 * v1.5.1 [12/19/21]
     - Connection will no longer fail upon encountering unknown layout objects

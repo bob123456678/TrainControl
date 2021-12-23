@@ -3430,6 +3430,7 @@
               <Font name="Tahoma" size="11" style="1"/>
             </Property>
             <Property name="text" type="java.lang.String" value="ON"/>
+            <Property name="toolTipText" type="java.lang.String" value="Alt-G"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
@@ -3442,6 +3443,7 @@
               <Font name="Tahoma" size="11" style="1"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Power OFF"/>
+            <Property name="toolTipText" type="java.lang.String" value="Escape"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <AccessibilityProperties>
@@ -3523,7 +3525,7 @@
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Tahoma" size="11" style="1"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="&lt;&lt;&lt;&lt;&lt;"/>
+            <Property name="text" type="java.lang.String" value="&lt;&lt;&lt;&lt;&lt; REV"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
@@ -3535,7 +3537,7 @@
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Tahoma" size="11" style="1"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="&gt;&gt;&gt;&gt;&gt;"/>
+            <Property name="text" type="java.lang.String" value="FWD &gt;&gt;&gt;&gt;&gt;"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
@@ -3719,13 +3721,13 @@
                               <Component id="F11" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="jLabel14" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Group type="103" alignment="3" groupAlignment="3" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Group type="103" alignment="0" groupAlignment="3" attributes="0">
                                   <Component id="jLabel21" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel22" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel23" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
+                              <Component id="jLabel14" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                       </Group>
@@ -4673,13 +4675,13 @@
                               <Component id="F31" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="-2" pref="2" max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="jLabel36" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Group type="103" alignment="3" groupAlignment="3" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Group type="103" alignment="0" groupAlignment="3" attributes="0">
                                   <Component id="jLabel44" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel35" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel45" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
+                              <Component id="jLabel36" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
                           <Component id="F32" min="-2" max="-2" attributes="0"/>
