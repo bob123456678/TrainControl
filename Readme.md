@@ -55,6 +55,7 @@ Requires JDK 1.8+.
     - Added forward and reverse labels to loc direction buttons
     - Fixed layout display bug when multiple copies of the same accessory were present
     - Added delay to threeway switch commands
+    - Prettified crossing, tunnel, and decoupler icons
 
 * v1.5.2 [12/20/21]
     - Connection will no longer fail upon encountering text labels in the layout
