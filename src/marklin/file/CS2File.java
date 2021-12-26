@@ -402,6 +402,7 @@ public class CS2File
         switch(name)
         {
             case "entkuppler":
+            case "entkuppler_1":
                 return MarklinLayoutComponent.componentType.UNCOUPLER;
             case "prellbock":
                 return MarklinLayoutComponent.componentType.END;                
@@ -411,8 +412,19 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.FEEDBACK_CURVE;
             case "gerade":
                 return MarklinLayoutComponent.componentType.STRAIGHT;
-            case "signal":
+            case "signal":        // Standard signals
             case "signal_sh01":
+            case "signal_hp02":   // TODO - add support for green/yellow signals
+            case "signal_hp012":
+            case "signal_hp012s":
+            case "signal_p_hp012":
+            case "signal_f_hp01": // Semaphore style signals
+            case "signal_f_hp012":
+            case "signal_f_hp02":
+            case "signal_f_hp012s":
+            case "std_rot_gruen_0":
+            case "std_rot_gruen_1":
+            case "std_rot":
             case "k84_einfach":    
             case "sonstige_gbs":
                 return MarklinLayoutComponent.componentType.SIGNAL;
@@ -436,10 +448,15 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.OVERPASS;
             case "dkweiche":
             case "dkweiche_2":
+            case "andreaskreuz":// Special double slip ?
                 return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
             case "drehscheibe": // Turntable
                 return MarklinLayoutComponent.componentType.TURNTABLE;
             case "lampe":       // Lamp
+            case "lampe_rt":    // Red light
+            case "lampe_bl":    // Blue light
+            case "lampe_gn":    // Green light
+            case "lampe_ge":    // Yellow light
                 return MarklinLayoutComponent.componentType.LAMP;
             case "fahrstrasse": // Route
                 return MarklinLayoutComponent.componentType.ROUTE;
@@ -447,6 +464,7 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.TEXT;
             // Unsupported components
             case "pfeil":       // Link to another page
+            case "bahnschranke":// Railroad crossing
             case "standard":       
             default:
                 this.control.log("Layout: warning - component " + name + 
