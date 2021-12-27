@@ -26,7 +26,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public MarklinSimpleComponent(MarklinAccessory a)
     {
-        if (a.getType() == MarklinAccessory.accessoryType.SIGNAL)
+        if (a.isSignal())
         {
             this.type = Type.SIGNAL;
         }

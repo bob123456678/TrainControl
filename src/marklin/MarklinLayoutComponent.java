@@ -370,7 +370,7 @@ public class MarklinLayoutComponent
         return route;
     }
     
-     public int getOrientation()
+    public int getOrientation()
     {
         return orientation;
     }
@@ -472,5 +472,15 @@ public class MarklinLayoutComponent
                 "#" + Integer.toString(this.address)
             ;
         }
+    }
+    
+    /**
+     * Returns a unique string for this component's image, suitable for caching
+     * @param size
+     * @return 
+     */
+    public String getImageKey(int size)
+    {
+        return this.getImageName(size) + "_" + Integer.toString(orientation);
     }
 }

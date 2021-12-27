@@ -7,14 +7,14 @@ package gui;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JTabbedPane;
 import marklin.MarklinLayoutComponent;
 
 /**
@@ -25,9 +25,9 @@ public final class LayoutLabel extends JLabel
 {
     private MarklinLayoutComponent component;
     
-    private Container parent;
+    private final Container parent;
     private String imageName;
-    private int size;
+    private final int size;
     
     public LayoutLabel(MarklinLayoutComponent c, Container parent, int size)
     {
@@ -38,7 +38,7 @@ public final class LayoutLabel extends JLabel
         this.setSize(size, size);
         this.setForeground(Color.white);
         
-        this.setImage();
+        this.setImage(false);
         
         if (this.component != null)
         {
@@ -68,44 +68,77 @@ public final class LayoutLabel extends JLabel
         return this.parent.isVisible();
     }
     
-    public void setImage()
+    /**
+     * Sets the image based on the component's state
+     * @param update are we updating an existing image?
+     */
+    private synchronized void setImage(boolean update)
     {
-        if (this.component != null)
-        {       
-            // Special handling for text labels
-            if (this.component.isText())
-            {
-                this.setText(this.component.getLabel());
-                this.setForeground(Color.black);
-                this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));                
-            }
-            else
-            {
-                try
+        new Thread(() -> {
+            if (this.component != null)
+            {       
+                // Special handling for text labels
+                if (this.component.isText())
                 {
-                    this.setIcon(new javax.swing.ImageIcon(
-                            this.component.getImage(size)
-                    ));
-                } catch (IOException ex)
-                {
-                    Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
+                    this.setText(this.component.getLabel());
+                    this.setForeground(Color.black);
+                    this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));                
                 }
+                else
+                {
+                    try
+                    {
+                        // Cache icons in memory to speed up rendering
+                        Map<String,Image> imageCache = TrainControlUI.getImageCache();
+                        String key = this.component.getImageKey(size);
+                        
+                        Image img;
+                        
+                        if (!imageCache.containsKey(key))
+                        {
+                            img = this.component.getImage(size);
 
-                this.imageName = component.getImageName(size);  
+                            imageCache.put(key, img);
+                        }
+                        else
+                        {
+                            img = imageCache.get(key);
+                        }
+                        
+                        this.setIcon(new javax.swing.ImageIcon(
+                            img     
+                        )); 
+                    }
+                    catch (IOException ex)
+                    {
+                        Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
+                    this.imageName = component.getImageName(size);  
+                }
+                
+                if (update)
+                {
+                    this.repaint();
+                    this.parent.repaint(); 
+                }
             }
-        }
+        }).start();
     }
     
+    /**
+     * Refreshes the tile's image
+     */
     public void updateImage()
     {
-        if (this.component != null)
-        {
-            if (!this.component.getImageName(size).equals(this.imageName))
+        new Thread(() -> {
+            if (this.component != null)
             {
-                this.setImage();
-                this.repaint();
-                this.parent.repaint(); 
+                if (!this.component.getImageName(size).equals(this.imageName))
+                {
+                    this.setImage(true);    
+                }
             }
-        }
+        }).start();
     }
 }

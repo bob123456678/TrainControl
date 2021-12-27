@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
@@ -88,11 +87,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private static final String DATA_FILE_NAME = "UIState.data";
     
     // Image cache
-    private final HashMap<String, Image> imageCache;
+    private static HashMap<String, Image> imageCache;
     
     // Preferences
     private final Preferences prefs;
-
+        
     /**
      * Creates new form MarklinUI
      */
@@ -130,7 +129,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.switchMapping = new HashMap<>();
         this.functionMapping = new HashMap<>();
         this.rFunctionMapping = new HashMap<>();
-        this.imageCache = new HashMap<>();
         
         this.locMapping = new ArrayList<>();
     
@@ -425,9 +423,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Returns a reference to the image cache, initializing it if needed
+     * @return 
+     */
+    public static Map<String,Image> getImageCache()
+    {
+        if (imageCache == null)
+        {
+            imageCache = new HashMap<>();
+        }
+        
+        return imageCache;
+    }
+    
+    /**
      * Logs a message
      * @param message 
      */
+    @Override
     public void log(String message)
     {
         this.debugArea.insert(message + "\n", 0);
@@ -748,18 +761,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         String key = url + Integer.toString(size);
         
-        if (!this.imageCache.containsKey(key))
+        if (!this.getImageCache().containsKey(key))
         {
             Image img = ImageIO.read(new URL(url));
             
             if (img != null)
             {
                 float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-                this.imageCache.put(key, img.getScaledInstance(size, (int) (size * aspect), 1));
+                this.getImageCache().put(key, img.getScaledInstance(size, (int) (size * aspect), 1));
             }
         }
 
-        return this.imageCache.get(key);        
+        return this.getImageCache().get(key);        
     }
     
     /**
