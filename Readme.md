@@ -50,9 +50,10 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.5.4 [12/27/21]
+* v1.5.4 [12/28/21]
     - Improved layout rendering performance
     - Added (simulated) instant stop support for MM2 locomotives
+    - Accessory type changes in the CS2 are now automatically synchronized
 
 * v1.5.3 [12/25/21]
     - Alt-G is now mapped to the "go" button (turns on the power, was F2 prior to v1.4.0)
@@ -61,6 +62,7 @@ Requires JDK 1.8+.
     - Added delay to threeway switch commands
     - Prettified crossing, tunnel, and decoupler icons
     - Added support for various new signal and lamp types
+
 * v1.5.2 [12/20/21]
     - Connection will no longer fail upon encountering text labels in the layout
     - Support for new layout components

@@ -5785,11 +5785,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // End of variables declaration//GEN-END:variables
 
     @Override
-    public void repaintLayout()
-    {        
-        this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab, false);
+    public synchronized void repaintLayout()
+    {      
+        new Thread(() -> {
+            this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab, false);
         
-        // Important!
-        this.KeyboardTab.repaint();        
+            // Important!
+            this.KeyboardTab.repaint();    
+        }).start();
     }
 }

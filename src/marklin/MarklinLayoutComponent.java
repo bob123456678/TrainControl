@@ -417,13 +417,6 @@ public class MarklinLayoutComponent
     
     public void setAccessory(MarklinAccessory accessory)
     {
-        // Type can be wrong if a switch is changed to a signal in the CS2
-        // Solution: reboot CS2 :), or update the state here
-        //if (this.isSignal() && !accessory.isSignal())
-        //{
-        
-        //}
-        
         this.accessory = accessory;
     }
 

@@ -13,10 +13,10 @@ abstract public class Accessory
     protected boolean switched;
     
     // The type of this accessory
-    private accessoryType type;
+    private final accessoryType type;
     
     // Name of this accessory
-    private String name;
+    private final String name;
     
     /**
      * Simple constructors
@@ -205,10 +205,15 @@ abstract public class Accessory
              return "Signal " + this.name + "\n" +
             "State: " + (this.isGreen() ? "Green" : "Red");
         }
-        else
+        else if (this.isSwitch())
         {
              return "Switch " + this.name + "\n" +
             "State: " + (this.isStraight() ? "Straight" : "Turned");
+        }
+        else
+        {
+            return "Accessory " + this.name + "\n" +
+            "State: " + (this.isGreen()? "Off" : "On");
         }
     }
 }

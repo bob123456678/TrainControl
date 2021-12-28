@@ -194,7 +194,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
                             
                             // Make sure all components are added
-                            if (!this.accDB.hasId(targetAddress))
+                            if (!this.accDB.hasId(targetAddress) ||
+                               // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
+                               (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal())
+                            )
                             {
                                 if (c.isSwitch() || c.isUncoupler())
                                 {
