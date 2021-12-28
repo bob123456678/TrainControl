@@ -1041,7 +1041,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (this.activeLoc != null)
         {
             new Thread(() -> {
-                this.activeLoc.stop();
+                //this.activeLoc.stop();
+                this.activeLoc.instantStop();
             }).start();
             //repaintLoc();
         }

@@ -277,6 +277,22 @@ public class MarklinLocomotive extends Locomotive
         }
     }
     
+    /**
+     * Simulates instant stop functionality for MM2 locomotives
+     * @return 
+     */
+    synchronized public Locomotive instantStop()
+    {
+        if (this.type == MarklinLocomotive.decoderType.MM2)
+        {
+            /.return this.switchDirection().switchDirection().stop();
+        }
+        else
+        {
+            return stop();
+        }
+    }
+    
     @Override
     synchronized public Locomotive stop()
     {
