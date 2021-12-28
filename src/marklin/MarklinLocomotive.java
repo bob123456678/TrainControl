@@ -285,7 +285,7 @@ public class MarklinLocomotive extends Locomotive
     {
         if (this.type == MarklinLocomotive.decoderType.MM2)
         {
-            /.return this.switchDirection().switchDirection().stop();
+            return this.switchDirection().switchDirection().stop();
         }
         else
         {
