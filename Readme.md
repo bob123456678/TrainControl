@@ -50,10 +50,14 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.5.4 [12/28/21]
+* v1.5.4 [01/02/22]
     - Improved layout rendering performance
     - Added (simulated) instant stop support for MM2 locomotives
     - Accessory type changes in the CS2 are now automatically synchronized
+    - Added parsing support for locomotives with no "addresse" field in the CS2 file
+    - Fixed bug when parsing layouts with a component at 0,0
+    - Added alerts for locomotives with duplicate MM addresses
+    - Prevent renaming a locomotive to an existing name
 
 * v1.5.3 [12/25/21]
     - Alt-G is now mapped to the "go" button (turns on the power, was F2 prior to v1.4.0)

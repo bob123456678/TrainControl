@@ -5020,6 +5020,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         "Please enter a locomotive name under 30 characters");
                     return;
                 }
+                
+                if (this.model.getLocByName(newName) != null)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        "Locomotive " + newName + " already exists in the locomotive DB.  Rename or delete it first.");
+                    return;    
+                }
 
                 this.model.renameLoc(l.getName(), newName);
 

@@ -343,9 +343,32 @@ public class CS2File
         {
             if ("lokomotive".equals(m.get("_type")))
             {
-                int address = Integer.decode(m.get("adresse"));
+                int address;
+                String name = "";
+                
+                if (m.get("name") != null)
+                {
+                    name = m.get("name");
+                }
+                
+                if (m.get("adresse") != null)
+                {
+                    address = Integer.decode(m.get("adresse"));
+                }
+                else if (m.get("uid") != null)
+                {
+                    address = Integer.decode(m.get("uid"));
+
+                    this.control.log("Locomotive " + name + " has no address field in config file, using UID of " + Integer.toString(address));
+                }
+                else
+                {
+                    this.control.log("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
+                    continue;
+                }
+                
                 boolean isMFX = m.get("typ").equals("mfx");
-                String name = m.get("name");
+                
                 int[] functionTypes = parseLocomotiveFunctions(m.get("funktionen"));
                 
                 MarklinLocomotive loc = new MarklinLocomotive(
@@ -497,15 +520,25 @@ public class CS2File
             {
                 if ("element".equals(m.get("_type")))
                 {
-                    Integer coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                    Integer coord = 0;
+
+                    if (m.get("id") != null)
+                    {
+                        coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                    }
+                    else
+                    {
+                        this.control.log("Layout: element has no coordinate info, assuming 0,0 (" + m + ")");
+                    }
+                    
                     Integer x = coord % 256;
                     Integer y = (coord >> 8) % 256;
-                    
+
                     if (x > maxX)
                     {
                         maxX = x;
                     }
-                    
+
                     if (y > maxY)
                     {
                         maxY = y;
@@ -519,7 +552,13 @@ public class CS2File
             {
                 if ("element".equals(m.get("_type")))
                 {
-                    Integer coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                    Integer coord = 0;
+                    
+                    if (m.get("id") != null)
+                    {
+                        coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                    }
+
                     Integer x = coord % 256;
                     Integer y = (coord >> 8) % 256;
                     

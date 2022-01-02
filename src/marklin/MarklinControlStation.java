@@ -306,6 +306,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     num++;
                 }
                 
+                // Show message that we did not sync a loc with a duplicate address
+                if (this.locDB.hasId(l.getUID()) && !this.locDB.getById(l.getUID()).getName().equals(l.getName()))
+                {
+                    this.log("Locomotive " + l.getName() +
+                            " was not imported because database already contains a locomotive with the same address: " + 
+                            this.locDB.getById(l.getUID()).getName() + " (" + l.getUID() + ")");
+                }
+                
                 // Set current locomotive icon - use name for MM2 due to risk of address collision
                 if (l.getDecoderType() == MarklinLocomotive.decoderType.MM2)
                 {
@@ -327,7 +335,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
              this.log("Failed to sync locomotive DB.");
              
-             if (debug)
+             //if (debug)
              {
                 this.log(e.getMessage());
                 e.printStackTrace();
