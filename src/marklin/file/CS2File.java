@@ -427,6 +427,7 @@ public class CS2File
             case "std_rot":
             case "k84_einfach":    
             case "sonstige_gbs":
+            case "standard":       
                 return MarklinLayoutComponent.componentType.SIGNAL;
             case "doppelbogen":
                 return MarklinLayoutComponent.componentType.DOUBLE_CURVE;
@@ -457,6 +458,7 @@ public class CS2File
             case "lampe_bl":    // Blue light
             case "lampe_gn":    // Green light
             case "lampe_ge":    // Yellow light
+            case "bahnschranke":// Railroad crossing - TODO add dedicated icon
                 return MarklinLayoutComponent.componentType.LAMP;
             case "fahrstrasse": // Route
                 return MarklinLayoutComponent.componentType.ROUTE;
@@ -464,8 +466,6 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.TEXT;
             // Unsupported components
             case "pfeil":       // Link to another page
-            case "bahnschranke":// Railroad crossing
-            case "standard":       
             default:
                 this.control.log("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");
