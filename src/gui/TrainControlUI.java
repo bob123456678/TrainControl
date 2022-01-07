@@ -5795,8 +5795,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public synchronized void repaintLayout()
     {      
         new Thread(() -> {
+            InnerLayoutPanel.setVisible(false);
             this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab, false);
-        
+            InnerLayoutPanel.setVisible(true);
+
             // Important!
             this.KeyboardTab.repaint();    
         }).start();
