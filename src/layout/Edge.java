@@ -4,76 +4,95 @@
  */
 package layout;
 
+import java.util.function.Function;
+import model.ViewListener;
+
 /**
- * TODO - Old code to represent layout as a graph, convert to Java
+ * Graph edge - includes start and end point and occupied state
  * @author Adam
  */
 public class Edge
 {
-    /*
-    __slots__ = ('control','name','configureFunc','startPoint','endPoint','occupied');
+    private final String name;
+    private boolean occupied;
+    private final Point start;
+    private final Point end;
+    private final Function<ViewListener, Boolean> configureFunc;
     
-    def __init__(self, control, startPoint, endPoint, configureFunc):
-        """
-            control : reference to rocrail interface
-            configureFunc : function to configure the track such that this edge connects points as expected
-            startPoint : point at the start
-            endPoint : point at the end
-        """
-        
-        self.control = control
-        self.configureFunc = configureFunc
-        self.startPoint = startPoint
-        self.endPoint = endPoint
-        self.name = startPoint.name + '-' + endPoint.name
-        
-        self.setUnOccupied()
-        
-    def __str__(self):
-        """
-            Pretty printing
-        """
-        
-        return "%s" % (self.name)
+    /**
+     * @param start
+     * @param end
+     * @param configureFunc lambda which will configure the edge 
+     *                      (i.e., set switches and signals correctly to 
+     *                       ensure the train can reach its destination)
+     */
+    public Edge(Point start, Point end, Function<ViewListener, Boolean> configureFunc)
+    {
+        this.start = start;
+        this.end = end;
+        this.name = getEdgeName(start, end);
+        this.configureFunc = configureFunc;
+        this.occupied = false;
+    }
     
-    def __repr__(self):
-        
-        return self.__str__()
+    public void configure(ViewListener control)
+    {
+        if (configureFunc != null)
+        {
+            this.configureFunc.apply(control);
+        }
+    }
     
-    def __eq__(self, other):
-        """
-            Check for equivalence
-        """
-        
-        return self.name == other.name
-        
-    def configure(self):
-        """
-            Fires the configuration function
-        """    
-        
-        if self.configureFunc != None and not self.isOccupied():
-            self.configureFunc(self.control)
-       
-    def isOccupied(self):
-        """
-            Returns true if a train currently occupies or may occupy this edge
-        """
-        
-        return self.occupied
+    public String getName()
+    {
+        return name;
+    }
     
-    def setOccupied(self):
-        """
-            Marks the edge as occupied
-        """
-        
-        self.occupied = True
-        
-    def setUnOccupied(self):
-        """
-            Marks the edge as clear
-        """
-        
-        self.occupied = False*/
+    @Override
+    public String toString()
+    {
+        return "Edge: " + getName();
+    }
+    
+    public boolean equals(Edge other)
+    {
+        return this.getName().equals(other.getName());
+    }
+    
+    public Point getStart()
+    {
+        return start;
+    }
+    
+    public Point getEnd()
+    {
+        return end;
+    }
+    
+    /**
+     * Gets the name of an edge based on two points
+     * @param start
+     * @param end 
+     * @return  
+     */
+    public static String getEdgeName(Point start, Point end)
+    {
+        return start.getName() + "_" + end.getName(); 
+    }
+    
+    public boolean isOccupied()
+    {
+        return occupied;
+    }
+    
+    public void setOccupied()
+    {
+        occupied = true;
+    }
+    
+    public void setUnoccuplied()
+    {
+        occupied = false;
+    }
 }
             

@@ -1,5 +1,6 @@
 package model;
 
+import base.Feedback;
 import java.util.List;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
@@ -36,4 +37,6 @@ public interface ViewListener
     public List<String> getLayoutList();
     public MarklinLayout getLayout(String name);
     public void syncLocomotive(String name);
+    public boolean isFeedbackSet(String name);
+    public boolean getFeedbackState(String name);
 }

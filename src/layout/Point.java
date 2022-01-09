@@ -13,16 +13,16 @@ import base.Locomotive;
 public class Point
 {
     private Locomotive currentLoc;
-    private boolean isDestination;
-    private String name;
-    private Feedback s88;
+    private final boolean isDestination;
+    private final String name;
+    private final String s88;
     
-    public Point(String name, boolean isDestination, Feedback s88, Locomotive currentLoc)
+    public Point(String name, boolean isDestination, String s88)
     {
         this.name = name;
         this.isDestination = isDestination;
         this.s88 = s88;
-        this.currentLoc = currentLoc;
+        this.currentLoc = null;
     }
     
     public boolean equals(Point other)
@@ -55,8 +55,14 @@ public class Point
         this.currentLoc = l;
     }
     
-    public Feedback getS88()
+    public String getS88()
     {
         return this.s88;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return this.getName();
     }
 }

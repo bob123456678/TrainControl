@@ -1,6 +1,7 @@
 package marklin;
 
 import base.Accessory;
+import base.Feedback;
 import base.RemoteDeviceCollection;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -29,7 +30,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.4";
+    public static final String VERSION = "1.5.5";
     
     //// Settings
     
@@ -563,6 +564,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @return 
      */
+    @Override
     public final boolean isFeedbackSet(String name)
     {
         return this.feedbackDB.hasName(name);
@@ -573,6 +575,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @return 
      */
+    @Override
     public final boolean getFeedbackState(String name)
     {
         MarklinFeedback fb = this.feedbackDB.getByName(name);
