@@ -6,6 +6,7 @@ package layout;
 
 import base.Locomotive;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,6 +71,15 @@ public class Layout
         return this.edges.get(name);
     }
     
+    /**
+     * Creates a new point
+     * @param name
+     * @param isDest
+     * @param feedback
+     * @param loc
+     * @return
+     * @throws Exception
+     */
     public Point createPoint(String name, boolean isDest, String feedback, Locomotive loc) throws Exception
     {        
         if (feedback != null && !this.control.isFeedbackSet(feedback))
@@ -96,6 +106,7 @@ public class Layout
     
     /**
      * Adds a (directed) Edge to the graph and updates adjacency list
+     * Requires points to be added first
      * @param startPoint
      * @param endPoint
      * @param configureFunc 
@@ -183,7 +194,7 @@ public class Layout
      * Marks all the edges in a path as unoccupied
      * @param path
      */
-    public void unlockPath(List<Edge> path)
+    synchronized public void unlockPath(List<Edge> path)
     {
         for (Edge e : path)
         {
@@ -226,6 +237,7 @@ public class Layout
                 if (next.getEnd().equals(end))
                 {
                     path.add(next);
+                    this.control.log("Path: " + path.toString());
                     return path;
                 }
                 else if (!visited.contains(next.getEnd()))
@@ -237,6 +249,8 @@ public class Layout
                 }
             }
         }
+        
+        this.control.log("Path: []");
         
         return null;   
     }
@@ -273,10 +287,16 @@ public class Layout
 
     */
     
+    /**
+     * Picks a random (valid and unoccupied) path and executes it
+     * @param speed 
+     */
     public void pickAndExecutePath(int speed)
     {
         List<Point> starts = new LinkedList<>(this.points.values());
+        Collections.shuffle(starts);
         List<Point> ends = new LinkedList<>(this.points.values());
+        Collections.shuffle(ends);
         
         for (Point start : starts)
         {
@@ -308,7 +328,7 @@ public class Layout
         this.control.log("Layout: no free paths at the moment");
     }
   
-    public void executePath(List<Edge> path, Locomotive loc, int speed)
+    synchronized public void executePath(List<Edge> path, Locomotive loc, int speed)
     {        
         if (path.isEmpty())
         {
@@ -335,7 +355,8 @@ public class Layout
         
         if (!result)
         {
-            this.control.log("Error: path is partially occuplied");
+            this.control.log("Error: path is occuplied");
+            return;
         }
         else
         {
@@ -343,15 +364,15 @@ public class Layout
         }
         
         end.setLocomotive(loc);
-                
-        loc.lightsOn().setSpeed(speed).waitForOccupiedFeedback(end.getS88()).stop().lightsOff();
-        
         start.setLocomotive(null);
-        
+
+        // TODO - make the delay & loc functions configurable
+        loc.lightsOn().setSpeed(speed).waitForOccupiedFeedback(end.getS88()).stop().lightsOff().delay((long) (Math.random() * 5000));
+
+
         this.unlockPath(path);
-        
-        this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());
-        
+
+        this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());        
     }
        
     /*def executePath(self, path, loc, speed = None):

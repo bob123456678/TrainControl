@@ -80,17 +80,17 @@ public class Edge
         return start.getName() + "_" + end.getName(); 
     }
     
-    public boolean isOccupied()
+    synchronized public boolean isOccupied()
     {
         return occupied;
     }
     
-    public void setOccupied()
+    synchronized public void setOccupied()
     {
         occupied = true;
     }
     
-    public void setUnoccuplied()
+    synchronized public void setUnoccuplied()
     {
         occupied = false;
     }

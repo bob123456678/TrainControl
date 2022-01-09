@@ -6,6 +6,8 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import layout.Edge;
 import layout.Layout;
@@ -29,8 +31,8 @@ public class AutoRunTrainsExample
             Layout layout = new Layout(data);
             
             // Define our stations & current location of locomotives
-            layout.createPoint("Station", true, "1011", null);
-            layout.createPoint("OtherSide", true, "2011", data.getLocByName("BR182 005-9"));
+            layout.createPoint("Station", true, "1011", data.getLocByName("BR182 005-9"));
+            layout.createPoint("OtherSide", true, "2011", null);
             layout.createPoint("PreStation", true, "8", null);
 
             // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
@@ -39,12 +41,21 @@ public class AutoRunTrainsExample
             layout.createEdge("PreStation", "Station", null);
 
             //List<Edge> path = layout.bfs(layout.getPoint("Station"), layout.getPoint("OtherSide"));
-            //layout.executePath(path, path.get(0).getStart().getCurrentLocomotive(), 20);
+            //layout.executePath(path, path.get(0).getStart().getCurrentLocomotive(), 45);
             
-            while (true)
+            // Automatically pick a valid path and continuously execute
+            for (int i = 0; i < 2; i++)
             {
-                layout.pickAndExecutePath(20);
-                Thread.sleep(2000);
+                new Thread(() -> {
+                    while (true)
+                    {
+                        layout.pickAndExecutePath(45);
+                        try {
+                            Thread.sleep((long) (Math.random() * 5000 + 1000));
+                        } catch (InterruptedException ex) {
+                        }
+                    }
+                }).start();
             }
         }
     

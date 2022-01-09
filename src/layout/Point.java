@@ -35,7 +35,7 @@ public class Point
         return this.name;
     }
     
-    public boolean isOccupied()
+    synchronized public boolean isOccupied()
     {
         return this.currentLoc != null;
     }
@@ -50,7 +50,7 @@ public class Point
         return this.currentLoc;
     }
     
-    public void setLocomotive(Locomotive l)
+    synchronized public void setLocomotive(Locomotive l)
     {
         this.currentLoc = l;
     }
