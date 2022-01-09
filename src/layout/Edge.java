@@ -1,14 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package layout;
 
 import java.util.function.Function;
 import model.ViewListener;
 
 /**
- * Graph edge - includes start and end point and occupied state
+ * Graph edge - includes start and end points and occupied state
  * @author Adam
  */
 public class Edge

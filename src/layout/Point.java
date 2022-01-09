@@ -1,13 +1,8 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package layout;
-import base.Feedback;
 import base.Locomotive;
 
 /**
- * TODO - Old code to represent layout as a graph, convert to Java
+ * Represent stations/stops as graph points
  * @author Adam
  */
 public class Point

@@ -254,39 +254,7 @@ public class Layout
         
         return null;   
     }
-    
-    
-    /*
-    def bfs(self, start, end):
-        """
-            Searches the graph for a path from start to end
-        """
-        
-        start = self.ps[start]
-        end = self.ps[end]
-        
-        if not end.isDestination or end.isOccupied():
-            return False
-        
-        visited = []
-        q = [(start, [])]
-        
-        while len(q) > 0:
-            (point, path) = q.pop(0)
-            
-            visited.append(point)
-            
-            for next in self.getNeighbors(point):
-            
-                if next.endPoint == end:
-                    return path + [next]
-                elif next not in visited:
-                    q.append((next.endPoint, path + [next]))
-                    
-        return False
-
-    */
-    
+       
     /**
      * Picks a random (valid and unoccupied) path and executes it
      * @param speed 
@@ -374,61 +342,4 @@ public class Layout
 
         this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());        
     }
-       
-    /*def executePath(self, path, loc, speed = None):
-        """
-            Moves a train along a path
-        """        
-        def func(control, layout, path, loc, speed):
-
-            result = layout.configureAndLockPath(path)
-            
-            if result == False:
-                
-                layout.log("Error: path is partially occupied")
-                
-            else:
-                
-                layout.log("Executing path %s for loc %s" % (path, loc))
-            
-                path[-1].endPoint.setCurrentLoc(loc)
-    
-                if (speed != None):
-                    loc.setV(speed)
-                else:
-                    loc.setV(loc.getVar('tspeed'))
-                
-                control.waitForFeedback(path[-1].endPoint.s88)
-                
-                loc.stop()
-                
-                layout.unlockPath(path)
-                
-                path[0].startPoint.setCurrentLoc(None)
-                
-                layout.log("Finished path %s for loc %s" % (path, loc))
-
-        def simulateFeedback(control, layout, path):
-            
-            layout.log("Simulating feedback...") 
-            
-            control.sleep(random.randint(5,10))
-            
-            control.getFeedback(path[-1].endPoint.s88).setAttr('state', 'true')
-
-            layout.log("Feedback %s sent" % (path[-1].endPoint.s88)) 
-
-        # Main exec (parallel)         
-        self.control.run(func, self, path, loc, speed)      
-            
-        #self.control.run(simulateFeedback, self, path)   
-        
-    def log(self, text):
-        """
-            Logs a message
-        """
-        
-        print "Layout: " + str(text)   
-            
-     */
 }
