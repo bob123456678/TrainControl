@@ -76,11 +76,10 @@ public class Layout
      * @param name
      * @param isDest
      * @param feedback
-     * @param loc
      * @return
      * @throws Exception
      */
-    public Point createPoint(String name, boolean isDest, String feedback, Locomotive loc) throws Exception
+    public Point createPoint(String name, boolean isDest, String feedback) throws Exception
     {        
         if (feedback != null && !this.control.isFeedbackSet(feedback))
         {
@@ -93,11 +92,6 @@ public class Layout
         }
         
         Point p = new Point(name, isDest, feedback);
-        
-        if (loc != null)
-        {
-            p.setLocomotive(loc);
-        }
         
         this.points.put(p.getName(), p);
         
@@ -129,7 +123,9 @@ public class Layout
            
         if (!this.adjacency.containsKey(newEdge.getStart().getName()))
         {
-            this.adjacency.put(newEdge.getStart().getName(), Arrays.asList(newEdge));
+            List<Edge> newList = new LinkedList<>();
+            newList.add(newEdge);
+            this.adjacency.put(newEdge.getStart().getName(), newList);
         }
         else
         {
@@ -296,7 +292,7 @@ public class Layout
         this.control.log("Layout: no free paths at the moment");
     }
   
-    synchronized public void executePath(List<Edge> path, Locomotive loc, int speed)
+    public synchronized void executePath(List<Edge> path, Locomotive loc, int speed)
     {        
         if (path.isEmpty())
         {
@@ -335,11 +331,12 @@ public class Layout
         start.setLocomotive(null);
 
         // TODO - make the delay & loc functions configurable
-        loc.lightsOn().setSpeed(speed).waitForOccupiedFeedback(end.getS88()).stop().lightsOff().delay((long) (Math.random() * 5000));
+        new Thread(() -> {
+            loc.lightsOn().setSpeed(speed).waitForOccupiedFeedback(end.getS88()).setSpeed(0).lightsOff().delay((long) (Math.random() * 5000));
 
+            this.unlockPath(path);
 
-        this.unlockPath(path);
-
-        this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());        
+            this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());  
+        }).start();
     }
 }
