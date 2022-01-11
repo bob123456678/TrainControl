@@ -67,7 +67,7 @@ public class MarklinFeedback extends Feedback
     }
         
     @Override
-    public final void parseMessage(CS2Message m)
+    synchronized public final void parseMessage(CS2Message m)
     {
         if (m.getCommand() == CS2Message.CMD_ACC_SENSOR)
         {

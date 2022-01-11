@@ -593,7 +593,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param message
      */
     @Override
-    public void receiveMessage(CS2Message message)
+    synchronized public void receiveMessage(CS2Message message)
     {
         // Prints out each message
         if (MarklinControlStation.debug)

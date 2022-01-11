@@ -217,7 +217,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public void parseMessage(CS2Message m)
+    synchronized public void parseMessage(CS2Message m)
     {
         // Double-check the UID just in case        
         if (m.extractUID() != UID)
