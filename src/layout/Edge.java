@@ -78,6 +78,11 @@ public class Edge
     
     synchronized public boolean isOccupied()
     {
+        if (this.end.isOccupied())
+        {
+            return true;
+        }
+        
         return occupied;
     }
     

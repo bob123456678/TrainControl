@@ -12,12 +12,17 @@ public class Point
     private final String name;
     private final String s88;
     
-    public Point(String name, boolean isDestination, String s88)
+    public Point(String name, boolean isDestination, String s88) throws Exception
     {
         this.name = name;
         this.isDestination = isDestination;
         this.s88 = s88;
         this.currentLoc = null;
+        
+        if (isDestination && !hasS88())
+        {
+            throw new Exception("Destination point must have S88");
+        }
     }
     
     public boolean equals(Point other)
@@ -53,6 +58,11 @@ public class Point
     public String getS88()
     {
         return this.s88;
+    }
+    
+    public boolean hasS88()
+    {
+        return this.s88 != null;
     }
     
     @Override

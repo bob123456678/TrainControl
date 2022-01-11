@@ -5,7 +5,6 @@
 package layout;
 
 import base.Locomotive;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import model.ViewListener;
 
 /**
@@ -159,6 +156,7 @@ public class Layout
     /**
      * Marks all the edges in a path as occupied
      * @param path a list of edges to traverse
+     * @return 
      */
     synchronized public boolean configureAndLockPath(List<Edge> path)
     {
@@ -172,15 +170,15 @@ public class Layout
             
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
-                control.log("Path: expecting feedback " + e.getEnd().getS88() + " to be clear");
+                control.log("Path " + path.toString() + " expects feedback " + e.getEnd().getS88() + " to be clear");
                 return false;
             }
         }
         
         for (Edge e : path)
         {
-            e.configure(control);
             e.setOccupied();
+            e.configure(control);
         }
         
         return true;
@@ -198,12 +196,19 @@ public class Layout
         }
     }
     
+    /**
+     * Finds the shortest path between two points using BFS
+     * @param start
+     * @param end
+     * @return
+     * @throws Exception 
+     */
     public List<Edge> bfs(Point start, Point end) throws Exception
     {
         start = this.getPoint(start.getName());
         end = this.getPoint(end.getName());
         
-        this.control.log("Trying path " + start.getName() + " -> " + end.getName());
+        // this.control.log("Trying path " + start.getName() + " -> " + end.getName());
         
         if (start == null || end == null)
         {
@@ -233,7 +238,7 @@ public class Layout
                 if (next.getEnd().equals(end))
                 {
                     path.add(next);
-                    this.control.log("Path: " + path.toString());
+                    //this.control.log("Path: " + path.toString());
                     return path;
                 }
                 else if (!visited.contains(next.getEnd()))
@@ -246,25 +251,50 @@ public class Layout
             }
         }
         
-        this.control.log("Path: []");
+        //this.control.log("Path: []");
         
         return null;   
+    }
+    
+    /**
+     * Continuously looks for a valid path for the given locomotive, and executes the path when found
+     * @param loc
+     * @param speed
+     * @param sleepMin
+     * @param sleepMax 
+     */
+    public void runLocomotive(Locomotive loc, int speed, int sleepMin, int sleepMax)
+    {
+        new Thread( () -> {
+            
+            while(true)
+            {
+                List<Edge> path = this.pickPath(loc);
+                
+                loc.delay(sleepMin, sleepMax);
+                
+                if (path != null)
+                {
+                    this.executePath(path, loc, speed);
+                }
+            }
+            
+        }).start();
     }
        
     /**
      * Picks a random (valid and unoccupied) path and executes it
-     * @param speed 
+     * @param loc 
+     * @return  
      */
-    public void pickAndExecutePath(int speed)
+    public List<Edge> pickPath(Locomotive loc)
     {
-        List<Point> starts = new LinkedList<>(this.points.values());
-        Collections.shuffle(starts);
         List<Point> ends = new LinkedList<>(this.points.values());
         Collections.shuffle(ends);
         
-        for (Point start : starts)
+        for (Point start : this.points.values())
         {
-            if (start.getCurrentLocomotive() != null)
+            if (loc.equals(start.getCurrentLocomotive()))
             {
                 for (Point end : ends)
                 {
@@ -276,8 +306,7 @@ public class Layout
                             
                             if (path != null)
                             {
-                                this.executePath(path, start.getCurrentLocomotive(), speed);
-                                return;
+                                return path;
                             }
                         }
                         catch (Exception e)
@@ -289,10 +318,18 @@ public class Layout
             }
         }
         
-        this.control.log("Layout: no free paths at the moment");
+        this.control.log(loc.getName() + " has no free paths at the moment");
+        
+        return null;
     }
   
-    public synchronized void executePath(List<Edge> path, Locomotive loc, int speed)
+    /**
+     * Locks a path and runs the locomotive from the start to the end
+     * @param path
+     * @param loc
+     * @param speed 
+     */
+    public void executePath(List<Edge> path, Locomotive loc, int speed)
     {        
         if (path.isEmpty())
         {
@@ -311,7 +348,7 @@ public class Layout
           
         if (!loc.equals(start.getCurrentLocomotive()))
         {
-            this.control.log("Locomotive does not currently occupy the start");
+            this.control.log("Locomotive does not currently occupy the start of the path");
             return;
         }
         
@@ -331,12 +368,32 @@ public class Layout
         start.setLocomotive(null);
 
         // TODO - make the delay & loc functions configurable
-        new Thread(() -> {
-            loc.lightsOn().setSpeed(speed).waitForOccupiedFeedback(end.getS88()).setSpeed(0).lightsOff().delay((long) (Math.random() * 5000));
+        loc.lightsOn().delay(1, 3).setSpeed(speed);
 
-            this.unlockPath(path);
+        for (int i = 0; i < path.size(); i++)
+        {
+            Point current = path.get(i).getEnd();
 
-            this.control.log("Finished executing path " + path.toString() + " for locomotive " + loc.getName());  
-        }).start();
+            if (i != path.size() - 1)
+            {
+                // Intermediate points - wait for feedback to be triggered and to clear
+                if (current.hasS88())
+                {
+                    loc.waitForOccupiedThenClear(current.getS88());
+                    this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());
+                }
+            }
+            else
+            {
+                // Destination is next - reduce speed and wait for occupied feedback
+                loc.setSpeed(loc.getSpeed() / 2);
+
+                loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0).delay(1, 3).lightsOff().delay(1, 3);
+            }    
+        }
+
+        this.unlockPath(path);
+
+        this.control.log("Locomotive " + loc.getName() + " finished its path: " + path.toString());              
     }
 }
