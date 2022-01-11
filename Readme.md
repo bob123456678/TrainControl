@@ -53,6 +53,7 @@ Requires JDK 1.8+.
 * v1.5.5 [01/10/22]
     - Implemented basic classes/API for autonomous train operation
     - Improved S88 icons
+    - Added support for S88 "double curve" icons
 
 * v1.5.4 [01/02/22]
     - Improved layout rendering performance

@@ -433,6 +433,8 @@ public class CS2File
                 return MarklinLayoutComponent.componentType.FEEDBACK;
             case "s88bogen":
                 return MarklinLayoutComponent.componentType.FEEDBACK_CURVE;
+            case "s88doppelbogen":
+                return MarklinLayoutComponent.componentType.FEEDBACK_DOUBLE_CURVE;
             case "gerade":
                 return MarklinLayoutComponent.componentType.STRAIGHT;
             case "signal":        // Standard signals

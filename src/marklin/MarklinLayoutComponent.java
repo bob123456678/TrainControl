@@ -18,7 +18,7 @@ public class MarklinLayoutComponent
 {
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
-        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK, END, TUNNEL, 
+        SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK_DOUBLE_CURVE, FEEDBACK, END, TUNNEL, 
         TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT};
     
     private final String resourcePath = "/gui/resources/icons";
@@ -188,7 +188,8 @@ public class MarklinLayoutComponent
     public boolean isFeedback()
     {
         return this.type == componentType.FEEDBACK 
-                || this.type == componentType.FEEDBACK_CURVE;
+                || this.type == componentType.FEEDBACK_CURVE
+                || this.type == componentType.FEEDBACK_DOUBLE_CURVE;
     }
     
     public boolean isThreeWay()
@@ -304,6 +305,8 @@ public class MarklinLayoutComponent
                 return "s88";
             case FEEDBACK_CURVE:
                 return "s88_curve";
+            case FEEDBACK_DOUBLE_CURVE:
+                return "s88_double_curve";
             case STRAIGHT:
                 return "straight";
             case SIGNAL:
