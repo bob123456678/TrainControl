@@ -6,7 +6,8 @@ package base;
  */
 public abstract class Feedback
 {
-    public static final int IGNORE_SUB_INTERVAL = 1000;
+    // Minimum delay between feedback updates, in ms
+    public static final int IGNORE_SUB_INTERVAL = 0;
     
     // The feedback state
     private boolean set;
@@ -35,7 +36,7 @@ public abstract class Feedback
      */
     protected boolean readyForUpdate(long time)
     {
-        if (time - this.lastEvent <= IGNORE_SUB_INTERVAL)
+        if (time - this.lastEvent < IGNORE_SUB_INTERVAL)
         {
             return false;
         }

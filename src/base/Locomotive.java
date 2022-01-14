@@ -12,7 +12,10 @@ public abstract class Locomotive
     public static enum locDirection {DIR_FORWARD, DIR_BACKWARD};
     
     // The number of ms to wait while polling
-    public static final long WAIT_INTERVAL = 20;
+    public static final long POLL_INTERVAL = 20;
+
+    // Default ms between s88 state changes    
+    public static final int FEEDBACK_DELAY = 1000;
     
     // Speed from 0 to 100 (percent)
     private int speed;
@@ -174,12 +177,14 @@ public abstract class Locomotive
     
     /**
      * Returns whether or not a given feedback name is set (string but most likely a number)
+     * @param name
      * @return 
      */
     public abstract boolean isFeedbackSet(String name);
         
     /**
      * Returns the state of a given feedback name (string but most likely a number)
+     * @param name
      * @return 
      */
     public abstract boolean getFeedbackState(String name);
@@ -211,7 +216,7 @@ public abstract class Locomotive
      */
     public Locomotive waitForClearThenOccuplied(String name)
     {
-        return this.waitForClearFeedback(name).waitForOccupiedFeedback(name);
+        return this.waitForClearThenOccuplied(name, FEEDBACK_DELAY);
     }
     
     /**
@@ -222,7 +227,31 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedThenClear(String name)
     {
-        return this.waitForOccupiedFeedback(name).waitForClearFeedback(name);
+        return this.waitForOccupiedThenClear(name, FEEDBACK_DELAY);
+    }
+    
+    /**
+     * Chains two feedback commands together
+     * waitForClearFeedback then waitForOccupiedFeedback
+     * @param name
+     * @param delay minimum time between s88 state change, in ms
+     * @return 
+     */
+    public Locomotive waitForClearThenOccuplied(String name, int delay)
+    {
+        return this.waitForClearFeedback(name).delay(delay).waitForOccupiedFeedback(name);
+    }
+    
+    /**
+     * Chains two feedback commands together:
+     * waitForOccupiedFeedback then waitForClearFeedback
+     * @param name
+     * @param delay minimum time between s88 state change, in ms
+     * @return 
+     */
+    public Locomotive waitForOccupiedThenClear(String name, int delay)
+    {
+        return this.waitForOccupiedFeedback(name).delay(delay).waitForClearFeedback(name);
     }
     
     /**
@@ -243,7 +272,7 @@ public abstract class Locomotive
     {        
         while (this.getAccessoryState(id) != state)
         {
-            this.delay(Locomotive.WAIT_INTERVAL);
+            this.delay(Locomotive.POLL_INTERVAL);
         }    
         
         return this;
@@ -259,7 +288,7 @@ public abstract class Locomotive
     {        
         while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
         {
-            this.delay(Locomotive.WAIT_INTERVAL);
+            this.delay(Locomotive.POLL_INTERVAL);
         }    
         
         return this;
@@ -274,7 +303,7 @@ public abstract class Locomotive
     {        
         while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
         {
-            this.delay(Locomotive.WAIT_INTERVAL);
+            this.delay(Locomotive.POLL_INTERVAL);
         }    
         
         return this;

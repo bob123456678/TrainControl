@@ -54,6 +54,7 @@ Requires JDK 1.8+.
     - Implemented basic classes/API for autonomous train operation
     - Improved S88 icons
     - Added support for S88 "double curve" layout icons
+    - Eliminated delay between S88 state changes (was 1s)
 
 * v1.5.4 [01/02/22]
     - Improved layout rendering performance
@@ -68,7 +69,7 @@ Requires JDK 1.8+.
     - Alt-G is now mapped to the "go" button (turns on the power, was F2 prior to v1.4.0)
     - Added forward and reverse labels to loc direction buttons
     - Fixed layout display bug when multiple copies of the same accessory were present
-    - Added delay to threeway switch commands
+    - Added delay to three-way turnout switch commands
     - Prettified crossing, tunnel, and decoupler icons
     - Added basic support for various new signal and lamp types
 
