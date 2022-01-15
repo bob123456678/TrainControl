@@ -51,10 +51,11 @@ Requires JDK 1.8+.
 ## Changelog
 
 * v1.5.5 [01/14/22]
-    - Implemented basic classes/API for autonomous train operation
+    - Implemented basic classes/graph API for autonomous train operation
     - Improved S88 icons
     - Added support for S88 "double curve" layout icons
-    - Eliminated delay between S88 state changes (was 1s)
+    - Fixed "sticky feedback" bug triggered by flickering feedback signals
+    - Improved reliability of Locomotive S88 events
 
 * v1.5.4 [01/02/22]
     - Improved layout rendering performance

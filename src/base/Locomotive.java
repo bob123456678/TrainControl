@@ -1,6 +1,9 @@
 package base;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Abstract locomotive class
@@ -14,8 +17,9 @@ public abstract class Locomotive
     // The number of ms to wait while polling
     public static final long POLL_INTERVAL = 20;
 
-    // Default ms between s88 state changes    
-    public static final int FEEDBACK_DELAY = 1000;
+    // Minimum time feedback state must remain unchanged to register a s88 state change
+    // Should be > the CS2 polling interval.  Can be overriden when calling waitForOccupiedFeedback / waitForClearFeedback directly
+    public static final int FEEDBACK_DURATION_THRESHOLD = 150;
     
     // Speed from 0 to 100 (percent)
     private int speed;
@@ -38,6 +42,9 @@ public abstract class Locomotive
     // Types of functions
     protected final int[] functionTypes;
     
+    // custom Event callbacks
+    protected Map<String, Consumer<Locomotive>> callbacks;
+    
     /**
      * Constructor with name and all functions off
      * @param name
@@ -51,6 +58,8 @@ public abstract class Locomotive
         this.numF = numFunctions;
         this._setSpeed(0);
         this.functionTypes = new int[numFunctions];
+        
+        this.callbacks = new HashMap<>();
     }
     
     /**
@@ -67,6 +76,8 @@ public abstract class Locomotive
         this.numF = numFunctions;
         this._setSpeed(0);
         this.functionTypes = functionTypes;
+        
+        this.callbacks = new HashMap<>();
     }
     
     /**
@@ -110,6 +121,8 @@ public abstract class Locomotive
         this.numF = functionState.length;
         this._setSpeed(speed);
         this.functionTypes = functionTypes;
+        
+        this.callbacks = new HashMap<>();
     }
 
     /* Internal functionality */
@@ -133,7 +146,7 @@ public abstract class Locomotive
      */
     protected final void _setF(int fNumber, boolean state)
     {
-        if (fNumber < numF)
+        if (fNumber < numF && fNumber >= 0)
         {
             functionState[fNumber] = state;
         }
@@ -207,53 +220,7 @@ public abstract class Locomotive
             "Speed: " + this.speed + "\n" +
             "Direction: " + (this.goingForward() ? "Forward" : "Backward");
     }
-    
-    /**
-     * Chains two feedback commands together
-     * waitForClearFeedback then waitForOccupiedFeedback
-     * @param name
-     * @return 
-     */
-    public Locomotive waitForClearThenOccuplied(String name)
-    {
-        return this.waitForClearThenOccuplied(name, FEEDBACK_DELAY);
-    }
-    
-    /**
-     * Chains two feedback commands together:
-     * waitForOccupiedFeedback then waitForClearFeedback
-     * @param name
-     * @return 
-     */
-    public Locomotive waitForOccupiedThenClear(String name)
-    {
-        return this.waitForOccupiedThenClear(name, FEEDBACK_DELAY);
-    }
-    
-    /**
-     * Chains two feedback commands together
-     * waitForClearFeedback then waitForOccupiedFeedback
-     * @param name
-     * @param delay minimum time between s88 state change, in ms
-     * @return 
-     */
-    public Locomotive waitForClearThenOccuplied(String name, int delay)
-    {
-        return this.waitForClearFeedback(name).delay(delay).waitForOccupiedFeedback(name);
-    }
-    
-    /**
-     * Chains two feedback commands together:
-     * waitForOccupiedFeedback then waitForClearFeedback
-     * @param name
-     * @param delay minimum time between s88 state change, in ms
-     * @return 
-     */
-    public Locomotive waitForOccupiedThenClear(String name, int delay)
-    {
-        return this.waitForOccupiedFeedback(name).delay(delay).waitForClearFeedback(name);
-    }
-    
+        
     /**
      * Sets an accessory state
      * @param id
@@ -282,14 +249,26 @@ public abstract class Locomotive
      * Blocks until a certain feedback value is set
      * If feedback is undefined, blocks until it is set
      * @param name
+     * @param minDuration for now many ms must the feedback indicate occupied?
      * @return 
      */
-    public Locomotive waitForOccupiedFeedback(String name)
+    public Locomotive waitForOccupiedFeedback(String name, int minDuration)
     {        
         while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
         {
             this.delay(Locomotive.POLL_INTERVAL);
         }    
+        
+        if (minDuration > 0)
+        {
+            this.delay(minDuration);
+
+            // Feedback should still be occupied.  Otherwise, start over
+            if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
+            {
+                return this.waitForOccupiedFeedback(name, minDuration);
+            }
+        }
         
         return this;
     }
@@ -297,16 +276,70 @@ public abstract class Locomotive
      * Blocks until a certain feedback value is not set
      * If feedback is undefined, blocks until it is set
      * @param name
+     * @param minDuration for now many ms must the feedback indicate clear?
      * @return 
      */
-    public Locomotive waitForClearFeedback(String name)
+    public Locomotive waitForClearFeedback(String name, int minDuration)
     {        
         while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
         {
             this.delay(Locomotive.POLL_INTERVAL);
         }    
         
+        if (minDuration > 0)
+        {
+            this.delay(minDuration);
+
+            // Feedback should still be clear.  Otherwise, start over
+            if (!this.isFeedbackSet(name) || this.getFeedbackState(name))
+            {
+                return this.waitForClearFeedback(name, minDuration);
+            }
+        }
+                
         return this;
+    }
+    
+    /**
+     * Waits for clear feedback lasting the default feedback duration threshold
+     * @param name
+     * @return 
+     */
+    public Locomotive waitForClearFeedback(String name)
+    {
+        return waitForClearFeedback(name, FEEDBACK_DURATION_THRESHOLD);
+    }
+    
+    /**
+     * Waits for occupied feedback lasting the default feedback duration threshold
+     * @param name
+     * @return
+     */
+    public Locomotive waitForOccupiedFeedback(String name)
+    {
+        return waitForOccupiedFeedback(name, FEEDBACK_DURATION_THRESHOLD);
+    }
+    
+    /**
+     * Chains two feedback commands together
+     * waitForClearFeedback then waitForOccupiedFeedback
+     * @param name
+     * @return 
+     */
+    public Locomotive waitForClearThenOccuplied(String name)
+    {
+        return this.waitForClearFeedback(name).waitForOccupiedFeedback(name);
+    }
+    
+    /**
+     * Chains two feedback commands together:
+     * waitForOccupiedFeedback then waitForClearFeedback
+     * @param name
+     * @return 
+     */
+    public Locomotive waitForOccupiedThenClear(String name)
+    {
+        return this.waitForOccupiedFeedback(name).waitForClearFeedback(name);
     }
     
     /**
@@ -479,7 +512,7 @@ public abstract class Locomotive
      */
     public boolean validF(int fNumber)
     {
-        return fNumber < numF;
+        return fNumber < numF && fNumber >= 0;
     }
     
     /**
@@ -544,5 +577,35 @@ public abstract class Locomotive
     public void setImageURL(String u)
     {
         this.imageURL = u;
+    }
+         
+    /**
+     * Checks if the specified callback has been defined
+     * @param callbackName 
+     * @return  
+     */
+    public boolean hasCallback(String callbackName)
+    {
+        return this.callbacks.containsKey(callbackName);
+    }
+    
+    /**
+     * Returns the requested callback function
+     * @param callbackName
+     * @return 
+     */
+    public Consumer<Locomotive> getCallback(String callbackName)
+    {
+        return this.callbacks.get(callbackName);
+    }
+    
+    /**
+     * Sets a new callback function for a given name
+     * @param callbackName
+     * @param callback 
+     */
+    public void setCallback(String callbackName, Consumer<Locomotive> callback)
+    {
+        this.callbacks.put(callbackName, callback);
     }
 }

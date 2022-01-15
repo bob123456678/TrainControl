@@ -462,6 +462,17 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * Turns a function on for the default pulse function duration, then back off
+     * @param f
+     * @return 
+     */
+    @Override
+    public Locomotive toggleF(int f)
+    {
+        return this.toggleF(f, PULSE_FUNCTION_DURATION);
+    }
+    
+    /**
      * Prints a human-readable address (>= 1) based on a raw UID
      * @param UID
      * @return 

@@ -1,6 +1,7 @@
 package layout;
 
-import java.util.function.Function;
+import base.Locomotive;
+import java.util.function.Consumer;
 import model.ViewListener;
 
 /**
@@ -13,7 +14,7 @@ public class Edge
     private boolean occupied;
     private final Point start;
     private final Point end;
-    private final Function<ViewListener, Boolean> configureFunc;
+    private final Consumer<ViewListener> configureFunc;
     
     /**
      * @param start
@@ -22,7 +23,7 @@ public class Edge
      *                      (i.e., set switches and signals correctly to 
      *                       ensure the train can reach its destination)
      */
-    public Edge(Point start, Point end, Function<ViewListener, Boolean> configureFunc)
+    public Edge(Point start, Point end, Consumer<ViewListener> configureFunc)
     {
         this.start = start;
         this.end = end;
@@ -35,8 +36,17 @@ public class Edge
     {
         if (configureFunc != null)
         {
-            this.configureFunc.apply(control);
+            this.configureFunc.accept(control);
         }
+    }
+    
+    /**
+     * Returns the name of the same edge going in the opposite direction
+     * @return 
+     */
+    public String getOppositeName()
+    {
+        return getEdgeName(end, start);
     }
     
     public String getName()
@@ -76,9 +86,9 @@ public class Edge
         return start.getName() + "_" + end.getName(); 
     }
     
-    synchronized public boolean isOccupied()
+    synchronized public boolean isOccupied(Locomotive loc)
     {
-        if (this.end.isOccupied())
+        if (this.end.isOccupied() && !this.end.getCurrentLocomotive().equals(loc))
         {
             return true;
         }
@@ -91,7 +101,7 @@ public class Edge
         occupied = true;
     }
     
-    synchronized public void setUnoccuplied()
+    synchronized public void setUnoccupied()
     {
         occupied = false;
     }

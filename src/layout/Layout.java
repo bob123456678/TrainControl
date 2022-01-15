@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package layout;
 
 import base.Locomotive;
@@ -11,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import model.ViewListener;
 
 /**
@@ -20,6 +16,14 @@ import model.ViewListener;
  */
 public class Layout
 {
+    // Callback names
+    public static final String CB_ROUTE_END = "routeEnd";
+    public static final String CB_ROUTE_START = "routeStart";
+    public static final String CB_PRE_ARRIVAL = "preArrival";
+    
+    // ms to wait between configuration commands
+    public static final int CONFIGURE_SLEEP = 200;
+    
     /**
      * Helper class for BFS
      */
@@ -101,8 +105,9 @@ public class Layout
      * @param startPoint
      * @param endPoint
      * @param configureFunc 
+     * @throws java.lang.Exception 
      */
-    public void createEdge(String startPoint, String endPoint, Function<ViewListener, Boolean> configureFunc) throws Exception
+    public void createEdge(String startPoint, String endPoint, Consumer<ViewListener> configureFunc) throws Exception
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
@@ -143,7 +148,7 @@ public class Layout
         {
             for (Edge e : this.adjacency.get(p.getName()))
             {
-                if (!e.isOccupied() && !e.getEnd().equals(p) && !e.getEnd().isOccupied())
+                if (!e.isOccupied(null) && !e.getEnd().equals(p) && !e.getEnd().isOccupied())
                 {
                     neighbors.add(e);
                 }
@@ -156,15 +161,24 @@ public class Layout
     /**
      * Marks all the edges in a path as occupied
      * @param path a list of edges to traverse
+     * @param loc
      * @return 
      */
-    synchronized public boolean configureAndLockPath(List<Edge> path)
+    synchronized public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
     {
         // Return if this path isn't clear
         for (Edge e : path)
         {
-            if (e.isOccupied())
+            if (e.isOccupied(loc))
             {
+                control.log("Edge is occupied: " + e.getName());
+                return false;
+            }
+            
+            // The same edge going in the opposite direction
+            if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
+            {
+                control.log("Edge is occupied: " + e.getOppositeName());
                 return false;
             }
             
@@ -179,6 +193,7 @@ public class Layout
         {
             e.setOccupied();
             e.configure(control);
+            loc.delay(CONFIGURE_SLEEP);
         }
         
         return true;
@@ -192,10 +207,10 @@ public class Layout
     {
         for (Edge e : path)
         {
-            e.setUnoccuplied();
+            e.setUnoccupied();
         }
     }
-    
+        
     /**
      * Finds the shortest path between two points using BFS
      * @param start
@@ -260,23 +275,21 @@ public class Layout
      * Continuously looks for a valid path for the given locomotive, and executes the path when found
      * @param loc
      * @param speed
-     * @param sleepMin
-     * @param sleepMax 
-     */
-    public void runLocomotive(Locomotive loc, int speed, int sleepMin, int sleepMax)
+s     */
+    public void runLocomotive(Locomotive loc, int speed)
     {
         new Thread( () -> {
             
             while(true)
             {
                 List<Edge> path = this.pickPath(loc);
-                
-                loc.delay(sleepMin, sleepMax);
+         
+                loc.delay(1000);
                 
                 if (path != null)
-                {
-                    this.executePath(path, loc, speed);
-                }
+                {                                     
+                    this.executePath(path, loc, speed);                    
+                }  
             }
             
         }).start();
@@ -298,7 +311,7 @@ public class Layout
             {
                 for (Point end : ends)
                 {
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                    if ((!end.equals(start)) && !end.isOccupied() && end.isDestination())
                     {
                         try 
                         {
@@ -352,11 +365,11 @@ public class Layout
             return;
         }
         
-        boolean result = configureAndLockPath(path);
+        boolean result = configureAndLockPath(path, loc);
         
         if (!result)
         {
-            this.control.log("Error: path is occuplied");
+            this.control.log("Error: path is occupied");
             return;
         }
         else
@@ -368,7 +381,13 @@ public class Layout
         start.setLocomotive(null);
 
         // TODO - make the delay & loc functions configurable
-        loc.lightsOn().delay(1, 3).setSpeed(speed);
+        
+        if (loc.hasCallback(CB_ROUTE_START))
+        {
+            loc.getCallback(CB_ROUTE_START).accept(loc);
+        }
+        
+        loc.setSpeed(speed);
 
         for (int i = 0; i < path.size(); i++)
         {
@@ -379,17 +398,30 @@ public class Layout
                 // Intermediate points - wait for feedback to be triggered and to clear
                 if (current.hasS88())
                 {
-                    loc.waitForOccupiedThenClear(current.getS88());
+                    loc.waitForOccupiedFeedback(current.getS88());
                     this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());
                 }
+                
+                // We can clear this edges dyamically 
+                // path.get(i).setUnoccupied();
             }
             else
             {
                 // Destination is next - reduce speed and wait for occupied feedback
                 loc.setSpeed(loc.getSpeed() / 2);
 
-                loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0).delay(1, 3).lightsOff().delay(1, 3);
+                if (loc.hasCallback(CB_PRE_ARRIVAL))
+                {
+                    loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
+                }
+                
+                loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0);
             }    
+        }
+        
+        if (loc.hasCallback(CB_ROUTE_END))
+        {
+            loc.getCallback(CB_ROUTE_END).accept(loc);
         }
 
         this.unlockPath(path);
