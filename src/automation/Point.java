@@ -1,4 +1,4 @@
-package layout;
+package automation;
 import base.Locomotive;
 
 /**

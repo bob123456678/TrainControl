@@ -1,4 +1,4 @@
-package layout;
+package automation;
 
 import base.Locomotive;
 import java.util.Collections;
@@ -311,7 +311,7 @@ s     */
             {
                 for (Point end : ends)
                 {
-                    if ((!end.equals(start)) && !end.isOccupied() && end.isDestination())
+                    if (!end.equals(start) && !end.isOccupied() && end.isDestination())
                     {
                         try 
                         {
