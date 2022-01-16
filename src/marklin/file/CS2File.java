@@ -3,6 +3,7 @@ package marklin.file;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +146,9 @@ public class CS2File
                 s = "__done";
             }
             
+            // F17-32 get a different key on the CS2
+            s = s.replace(".funktionen_2", ".funktionen");
+                        
             if (s.matches("^ \\.\\.[a-z]+=.+$"))
             {
                 String[] parts = s.substring(3).split("=");
@@ -366,16 +370,37 @@ public class CS2File
                     this.control.log("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
                     continue;
                 }
+                                
+                MarklinLocomotive.decoderType type;
                 
-                boolean isMFX = m.get("typ").equals("mfx");
+                // Multi-units
+                if (m.get("traktion") != null)
+                {
+                    type = MarklinLocomotive.decoderType.MULTI_UNIT;
+                    
+                    address = Integer.decode(m.get("uid"));
+                    
+                    this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
+                }
+                // Others
+                else
+                {
+                    if (m.get("typ").equals("mfx"))
+                    {
+                        type = MarklinLocomotive.decoderType.MFX;
+                    }
+                    else
+                    {
+                        type = MarklinLocomotive.decoderType.MM2;
+                    }
+                }
                 
                 int[] functionTypes = parseLocomotiveFunctions(m.get("funktionen"));
-                
+                                
                 MarklinLocomotive loc = new MarklinLocomotive(
                     control, 
                     address, 
-                    isMFX ? MarklinLocomotive.decoderType.MFX 
-                        : MarklinLocomotive.decoderType.MM2,
+                    type,
                     name,
                     functionTypes
                 );

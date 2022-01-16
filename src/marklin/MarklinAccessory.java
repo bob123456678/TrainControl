@@ -136,7 +136,11 @@ public class MarklinAccessory extends Accessory
         this._setSwitched(state);
         
         this.updateTiles();
-        this.network.getGUI().repaintSwitches(); // dirty workaround
+        
+        if (this.network.getGUI() != null)
+        {
+            this.network.getGUI().repaintSwitches(); // dirty workaround
+        }
         
         this.network.exec(new CS2Message(
             CS2Message.CMD_ACC_SWITCH,

@@ -239,7 +239,7 @@ public class AutoRunTrainsExample
               
 	      // Initialize the central station
 	      MarklinControlStation model = 
-                new MarklinControlStation(proxy, ui, 0);
+                new MarklinControlStation(proxy, ui, 0, true);
               
               // Enables debug mode
               if (args.length >= 2)

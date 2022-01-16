@@ -2,6 +2,7 @@ package marklin;
 
 import base.Locomotive;
 import base.RemoteDevice;
+import java.util.Arrays;
 import marklin.udp.CS2Message;
 import util.Conversion;
 
@@ -12,7 +13,7 @@ import util.Conversion;
 public class MarklinLocomotive extends Locomotive
     implements java.io.Serializable, RemoteDevice<Locomotive, CS2Message>
 {        
-    public static enum decoderType {MFX, MM2};
+    public static enum decoderType {MFX, MM2, MULTI_UNIT};
     
     /* Constants */
     
@@ -38,7 +39,7 @@ public class MarklinLocomotive extends Locomotive
     
     // Reference to the network
     private final MarklinControlStation network;    
-            
+                
     /**
      * Constructor with name, type, and address
      * @param network
@@ -74,7 +75,7 @@ public class MarklinLocomotive extends Locomotive
         this.type = type;
         this.address = address;
         this.UID = calculateUID();
-        
+                
         assert this.functionTypes.length == getMaxNumF(type);
     }
     
@@ -121,7 +122,13 @@ public class MarklinLocomotive extends Locomotive
 
             return this.address + 0x4000;            
         }  
-        
+        else if (this.type == decoderType.MULTI_UNIT)
+        {
+            assert this.address <= 0x4000 && this.address > 80;
+
+            return this.address;
+        }    
+            
         return 0;
     }
     

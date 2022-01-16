@@ -75,8 +75,14 @@ public abstract class Locomotive
         this.functionState = new boolean[numFunctions];
         this.numF = numFunctions;
         this._setSpeed(0);
-        this.functionTypes = functionTypes;
+        this.functionTypes = new int[numFunctions];
         
+        // Safely copy function types - raw data is often shorter or longer than needed
+        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
+        { 
+            this.functionTypes[i] = functionTypes[i];
+        }
+  
         this.callbacks = new HashMap<>();
     }
     
@@ -120,7 +126,13 @@ public abstract class Locomotive
         this.functionState = functionState;
         this.numF = functionState.length;
         this._setSpeed(speed);
-        this.functionTypes = functionTypes;
+        this.functionTypes = new int[numF];
+        
+        // Safely copy function types - raw data is often shorter or longer than needed
+        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
+        { 
+            this.functionTypes[i] = functionTypes[i];
+        }
         
         this.callbacks = new HashMap<>();
     }

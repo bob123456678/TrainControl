@@ -30,7 +30,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.5";
+    public static final String VERSION = "1.5.6";
     
     //// Settings
     
@@ -78,7 +78,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Last message output
     private String lastMessage;
     
-    public MarklinControlStation(NetworkProxy network, View view, int UID)
+    public MarklinControlStation(NetworkProxy network, View view, int UID, boolean autoPowerOn)
     {        
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
@@ -114,6 +114,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
                     c.getFunctions(), c.getFunctionTypes());                
             }
+            else if (c.getType() == MarklinSimpleComponent.Type.LOC_MULTI_UNIT)
+            {
+                newLocomotive(c.getName(), c.getAddress(), 
+                    MarklinLocomotive.decoderType.MULTI_UNIT, 
+                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
+                    c.getFunctions(), c.getFunctionTypes());                
+            }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
                 newSignal(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState());                
@@ -145,7 +152,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // Turn on network communication and turn on the power
             this.on = true;
-            this.go();
+            
+            if (autoPowerOn) this.go();
         }
         else
         {
@@ -615,7 +623,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 
                 if (message.getResponse())
                 {
-                    this.view.repaintLoc();
+                    if (this.view != null) this.view.repaintLoc();
                 }
             }
             else if (!this.locDB.hasId(id))
@@ -632,7 +640,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.accDB.getById(id).parseMessage(message);
                 
-                this.view.repaintSwitches();
+                 if (this.view != null) this.view.repaintSwitches();
             }
         }
         else if (message.isFeedbackCommand())
@@ -654,14 +662,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.powerState = true;
                 
-                this.view.updatePowerState();
+                 if (this.view != null) this.view.updatePowerState();
                 this.log("Power On");
             }
             else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
             {
                 this.powerState = false;
                 
-                this.view.updatePowerState();
+                if (this.view != null) this.view.updatePowerState();
                 this.log("Power Off");
             }
         }
@@ -718,7 +726,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (message != null && !message.equals(this.lastMessage))
         {
             // TODO - write to file, suppress, etc.
-            this.view.log(message);    
+            if (this.view != null)
+            {
+                this.view.log(message);    
+            }
+            
             System.out.println(message);
             this.lastMessage = message;
         }
@@ -731,7 +743,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void logPartial(String message)
     {
         // TODO - write to file, suppress, etc.
-        this.view.log(message);    
+        if (this.view != null)
+        {
+            this.view.log(message);    
+        }
+        
         System.out.print(message);   
     }
     
@@ -942,7 +958,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinLocomotive l = this.locDB.getByName(name);
         String address;
         
-        if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
+        if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX 
+                || l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
             address = "0x" + Integer.toHexString(l.getAddress());
         }

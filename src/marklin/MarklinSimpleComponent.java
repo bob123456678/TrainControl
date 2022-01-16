@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class MarklinSimpleComponent implements java.io.Serializable
 {
-    public enum Type {LOC_MFX, LOC_MM2, SWITCH, SIGNAL, ROUTE, FEEDBACK};
+    public enum Type {LOC_MFX, LOC_MM2, LOC_MULTI_UNIT, SWITCH, SIGNAL, ROUTE, FEEDBACK};
     
     private final String name;
     private final int address;
@@ -63,6 +63,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
         {
             this.type = Type.LOC_MFX;
+        }
+        else if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            this.type = Type.LOC_MULTI_UNIT;
         }
         else
         {
