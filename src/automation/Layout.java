@@ -24,6 +24,9 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 200;
     
+    // How often will each locomotive attempt to pick a new path?
+    private final int locDelay;
+    
     /**
      * Helper class for BFS
      */
@@ -44,12 +47,14 @@ public class Layout
     private final Map<String, Point> points;
     private final Map<String, List<Edge>> adjacency;
     
-    public Layout(ViewListener control)
+    public Layout(ViewListener control, int locDelay)
     {
         this.control = control;
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
         this.adjacency = new HashMap<>();
+        
+        this.locDelay = locDelay;
     }
     
     /**
@@ -148,37 +153,27 @@ public class Layout
         {
             for (Edge e : this.adjacency.get(p.getName()))
             {
-                if (!e.isOccupied(null) && !e.getEnd().equals(p) && !e.getEnd().isOccupied())
-                {
-                    neighbors.add(e);
-                }
+                neighbors.add(e);
             }
         }
         
         return neighbors;
     }
 
-    /**
-     * Marks all the edges in a path as occupied
-     * @param path a list of edges to traverse
-     * @param loc
-     * @return 
-     */
-    synchronized public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
+    public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
-        // Return if this path isn't clear
         for (Edge e : path)
         {
             if (e.isOccupied(loc))
             {
-                control.log("Edge is occupied: " + e.getName());
+                // control.log("Edge is occupied: " + e.getName());
                 return false;
             }
             
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
-                control.log("Edge is occupied: " + e.getOppositeName());
+                // control.log("Edge is occupied: " + e.getOppositeName());
                 return false;
             }
             
@@ -189,9 +184,27 @@ public class Layout
             }
         }
         
+        return true;
+    }
+    
+    /**
+     * Marks all the edges in a path as occupied
+     * @param path a list of edges to traverse
+     * @param loc
+     * @return 
+     */
+    synchronized public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
+    {
+        // Return if this path isn't clear
+        if (!this.isPathClear(path, loc))
+        {
+            return false;
+        }
+                
         for (Edge e : path)
         {
             e.setOccupied();
+            e.getEnd().setLocomotive(loc);
             e.configure(control);
             loc.delay(CONFIGURE_SLEEP);
         }
@@ -205,9 +218,21 @@ public class Layout
      */
     synchronized public void unlockPath(List<Edge> path)
     {
-        for (Edge e : path)
+        for (int i = 0; i < path.size(); i++)
         {
+            Edge e = path.get(i);
+            
+            if (i == 0)
+            {
+                e.getStart().setLocomotive(null);
+            }
+            
             e.setUnoccupied();
+            
+            if (i < path.size() - 1)
+            {
+                e.getEnd().setLocomotive(null);
+            }
         }
     }
         
@@ -230,7 +255,7 @@ public class Layout
             throw new Exception("Invalid points specified");
         }
         
-        if (!end.isDestination() || end.isOccupied())
+        if (!end.isDestination())
         {
             return null;
         }
@@ -283,9 +308,7 @@ s     */
             while(true)
             {
                 List<Edge> path = this.pickPath(loc);
-         
-                loc.delay(1000);
-                
+                         
                 if (path != null)
                 {                                     
                     this.executePath(path, loc, speed);                    
@@ -317,7 +340,7 @@ s     */
                         {
                             List<Edge> path = this.bfs(start, end);
                             
-                            if (path != null)
+                            if (path != null && this.isPathClear(path, loc))
                             {
                                 return path;
                             }
@@ -331,7 +354,9 @@ s     */
             }
         }
         
+        
         this.control.log(loc.getName() + " has no free paths at the moment");
+        loc.delay(locDelay);
         
         return null;
     }
@@ -377,9 +402,6 @@ s     */
             this.control.log("Executing path " + path.toString() + " for " + loc.getName());
         }
         
-        end.setLocomotive(loc);
-        start.setLocomotive(null);
-
         // TODO - make the delay & loc functions configurable
         
         if (loc.hasCallback(CB_ROUTE_START))
@@ -402,8 +424,11 @@ s     */
                     this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());
                 }
                 
-                // We can clear this edges dyamically 
+                // We can also clear this edges dynamically 
+                // This can be useful, but extra care needs to be taken if any paths cross over
                 // path.get(i).setUnoccupied();
+                // path.get(i).getStart().setLocomotive(null);
+                // path.get(i).getEnd().setLocomotive(null);
             }
             else
             {

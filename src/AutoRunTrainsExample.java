@@ -1,21 +1,13 @@
-import base.Locomotive;
 import gui.TrainControlUI;
 import java.io.FileReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.util.List;
 import java.util.Scanner;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import automation.Edge;
 import automation.Layout;
-import automation.Point;
 import marklin.MarklinControlStation;
 import marklin.file.CS2File;
 import marklin.udp.NetworkProxy;
-import util.Exec;
 
 /**
  * An example of how to set up and execute automatic layout control
@@ -28,7 +20,7 @@ public class AutoRunTrainsExample
             data.log("Custom code running...");
             
             // Initialize the graph
-            Layout layout = new Layout(data);
+            Layout layout = new Layout(data, 3000);
             
             // Define our stations and shared track segments
             layout.createPoint("ParkingFrontPre", false, "5");
@@ -143,9 +135,9 @@ public class AutoRunTrainsExample
             data.getLocByName("BR 143 606-2").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).lightsOff();});
             data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).setF(2, false).delay(minDelay, maxDelay).lightsOff();});
    
-            layout.getPoint("BottomMainB").setLocomotive(data.getLocByName("SNCF 422365"));
-            layout.getPoint("BottomSecondary").setLocomotive(data.getLocByName("140 024-1 DB AG"));
-            layout.getPoint("BottomMainA").setLocomotive(data.getLocByName("OBB 2016"));
+            layout.getPoint("BottomMainA").setLocomotive(data.getLocByName("SNCF 422365"));
+            layout.getPoint("TopMainR1").setLocomotive(data.getLocByName("140 024-1 DB AG"));
+            layout.getPoint("TopMainR1Pre").setLocomotive(data.getLocByName("OBB 2016"));
             layout.getPoint("BottomInner").setLocomotive(data.getLocByName("BR 143 606-2"));
             layout.getPoint("ParkingFront").setLocomotive(data.getLocByName("BR182 005-9"));
             
