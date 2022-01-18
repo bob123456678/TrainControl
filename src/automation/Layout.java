@@ -68,7 +68,7 @@ public class Layout
     }
     
     /**
-     * Retrieves a saved edge by its name (note: can also 
+     * Retrieves a saved edge by its name 
      * @param name
      * @return 
      */
@@ -77,6 +77,17 @@ public class Layout
         return this.edges.get(name);
     }
     
+    /**
+     * Retrieve a saved edge by its start and end points
+     * @param startPointName
+     * @param endPointName
+     * @return 
+     */
+    public Edge getEdge(String startPointName, String endPointName)
+    {
+        return this.edges.get(Edge.getEdgeName(this.getPoint(startPointName), this.getPoint(endPointName)));
+    }
+        
     /**
      * Creates a new point
      * @param name

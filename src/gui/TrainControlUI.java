@@ -562,7 +562,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (l != null && b != null)
                 {
-                    this.model.log("Loading mapping for page " + Integer.toString(j + 1) + ", " + l.getName());
+                    // this.model.log("Loading mapping for page " + Integer.toString(j + 1) + ", " + l.getName());
                     this.locMapping.get(j).put(b, l);
                 }
             }

@@ -303,6 +303,15 @@ public class CS2Message
     {
         return this.command == CMD_SYSTEM;
     }
+    
+    /**
+     * Is the message a ping command?
+     * @return 
+     */
+    public boolean isPingCommand()
+    {
+        return this.command == CAN_CMD_PING;
+    }
 
     /**
      * Merges bytes into a single integer (high-order first)
@@ -371,7 +380,7 @@ public class CS2Message
     public boolean isOtherComannd()
     {
         return !(this.isFeedbackCommand() || this.isAccessoryCommand()
-            || this.isLocCommand() || this.isSysCommand());
+            || this.isLocCommand() || this.isSysCommand() || this.isPingCommand());
     }
 
     /**
@@ -423,6 +432,7 @@ public class CS2Message
     
     /**
      * Pretty printing
+     * @return 
      */
     @Override
     public String toString()
@@ -441,6 +451,10 @@ public class CS2Message
         else if (this.isFeedbackCommand())
         {
             type = "Feedback";
+        }
+        else if (this.isPingCommand())
+        {
+            type = "Ping";
         }
         else if (this.isSysCommand())
         {

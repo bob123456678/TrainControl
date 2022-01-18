@@ -19,7 +19,8 @@ public abstract class Locomotive
 
     // Minimum time feedback state must remain unchanged to register a s88 state change
     // Should be > the CS2 polling interval.  Can be overriden when calling waitForOccupiedFeedback / waitForClearFeedback directly
-    public static final int FEEDBACK_DURATION_THRESHOLD = 150;
+    // TODO - make configurable
+    public static final int FEEDBACK_DURATION_THRESHOLD = 201;
     
     // Speed from 0 to 100 (percent)
     private int speed;
@@ -217,6 +218,7 @@ public abstract class Locomotive
     /**
      * Returns the state of a given accessory id (int)
      * This can be a switch or a signal
+     * @param id
      * @return 
      */
     public abstract boolean getAccessoryState(int id);

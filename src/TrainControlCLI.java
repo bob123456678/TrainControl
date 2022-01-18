@@ -20,7 +20,7 @@ public class TrainControlCLI
         private static void execCode(MarklinControlStation data)
         {
             data.log("Custom code running...");
-            
+                        
             new Exec<MarklinControlStation>(data)
             {
                 @Override
@@ -46,7 +46,7 @@ public class TrainControlCLI
                             .waitForOccupiedFeedback("40")
                             .setSpeed(0);
                 }
-             }.start();   
+             }.start();
         }
     
 	/**
@@ -132,7 +132,7 @@ public class TrainControlCLI
               
 	      // Initialize the central station
 	      MarklinControlStation model = 
-                new MarklinControlStation(proxy, ui, 0, true);
+                new MarklinControlStation(proxy, ui, true);
               
               // Enables debug mode
               if (args.length >= 2)

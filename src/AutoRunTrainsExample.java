@@ -1,3 +1,4 @@
+import automation.Edge;
 import gui.TrainControlUI;
 import java.io.FileReader;
 import java.io.PrintWriter;
@@ -31,12 +32,8 @@ public class AutoRunTrainsExample
             layout.createPoint("BottomMainPost", false, "2013");
             
             layout.createPoint("BottomInner", true, "1011");
-            layout.createPoint("BottomInnerVirtualA", false, null);
-            layout.createPoint("BottomInnerVirtualB", false, null);
             
-            layout.createPoint("BottomInnerOtherside", false, "2011");
-            layout.createPoint("BottomInnerOthersidePost1", false, null);
-            layout.createPoint("BottomInnerOthersidePost2", false, null);
+            layout.createPoint("BottomInnerOtherside", true, "2011");
 
             layout.createPoint("BottomCrossover", false, "14");
 
@@ -62,7 +59,7 @@ public class AutoRunTrainsExample
             
             // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
             layout.createEdge("BottomInnerOtherside", "BottomCrossover", (control) -> {control.getAccessoryByName("Switch 52").turn();});
-            layout.createEdge("BottomCrossover", "BottomInnerVirtualA", null);
+            layout.createEdge("BottomCrossover", "BottomSecondaryVirtual", null);
 
             layout.createEdge("RampUp", "TopMainR1Pre", (control) -> {control.getAccessoryByName("Switch 9").turn();});
             layout.createEdge("RampUp", "TopMainR2Pre", (control) -> {control.getAccessoryByName("Switch 9").straight();});
@@ -78,24 +75,16 @@ public class AutoRunTrainsExample
             layout.createEdge("RampDown", "BottomSecondaryVirtual", (control) -> {control.getAccessoryByName("Signal 39").green(); control.getAccessoryByName("Switch 12").straight();});
             
             // Equivalent to going to BottomInner
-            layout.createEdge("RampDown", "BottomInnerVirtualA", (control) -> {control.getAccessoryByName("Signal 39").red(); control.getAccessoryByName("Switch 12").turn();});
+            layout.createEdge("RampDown", "BottomInner", (control) -> {control.getAccessoryByName("Signal 39").red(); control.getAccessoryByName("Switch 12").turn();});
 
             // Cycle creates a shared edge between paths that cross each other but don't otherwise conflict (without connecting unwanted connections)
-            layout.createEdge("BottomInnerVirtualB", "BottomInner", null);
-            layout.createEdge("BottomInnerVirtualA", "BottomInnerVirtualB", null);
-            layout.createEdge("BottomInnerVirtualB", "BottomSecondaryVirtual", null);
-            
             
             layout.createEdge("BottomSecondaryVirtual", "BottomSecondaryPre", null);
             layout.createEdge("BottomSecondaryPre", "BottomSecondary", (control) -> {control.getAccessoryByName("Signal 62").red();});
             
             layout.createEdge("BottomInner", "BottomInnerOtherside", null);
-            layout.createEdge("BottomInnerOtherside", "BottomInnerOthersidePost1", (control) -> {control.getAccessoryByName("Switch 52").setSwitched(false);});
+            layout.createEdge("BottomInnerOtherside", "BottomInner", (control) -> {control.getAccessoryByName("Switch 52").setSwitched(false);});
             
-            // Make this path long so that it's never picked over bottomcrossover
-            layout.createEdge("BottomInnerOthersidePost1", "BottomInnerOthersidePost2", null);
-            layout.createEdge("BottomInnerOthersidePost2", "BottomInnerVirtualA", null);
-
             layout.createEdge("BottomSecondary", "Tunnel", (control) -> {control.getAccessoryByName("Switch 58").setSwitched(false); control.getAccessoryByName("Signal 62").green();}   );
 
             layout.createEdge("Tunnel", "BottomMainAPre", (control) -> {control.getAccessoryByName("Signal 86").green(); control.getAccessoryByName("Signal 87").red(); control.getAccessoryByName("Switch 1").turn(); control.getAccessoryByName("Signal 40").red();}   );
@@ -122,6 +111,26 @@ public class AutoRunTrainsExample
             int minDelay = 2;
             int maxDelay = 4;
             
+            layout.getEdge("BottomInnerOtherside", "BottomCrossover").addLockEdge(
+                layout.getEdge("RampDown", "BottomSecondaryVirtual")
+            );
+            
+            layout.getEdge("BottomInnerOtherside", "BottomCrossover").addLockEdge(
+                layout.getEdge("RampDown", "BottomInner")
+            );
+            
+            layout.getEdge("RampDown", "BottomInner").addLockEdge(
+                layout.getEdge("BottomInnerOtherside", "BottomCrossover")
+            );
+            
+            layout.getEdge("BottomInnerOtherside", "BottomInner").addLockEdge(
+                layout.getEdge("BottomInnerOtherside", "BottomCrossover")
+            );
+            
+            layout.getEdge("BottomInnerOtherside", "BottomInner").addLockEdge(
+                layout.getEdge("RampDown", "BottomInner")
+            );
+            
             data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(minDelay, maxDelay);});
             data.getLocByName("OBB 2016").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(minDelay, maxDelay);});
             data.getLocByName("BR 143 606-2").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(minDelay, maxDelay);});
@@ -135,17 +144,17 @@ public class AutoRunTrainsExample
             data.getLocByName("BR 143 606-2").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).lightsOff();});
             data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).setF(2, false).delay(minDelay, maxDelay).lightsOff();});
    
-            layout.getPoint("BottomMainA").setLocomotive(data.getLocByName("SNCF 422365"));
-            layout.getPoint("TopMainR1").setLocomotive(data.getLocByName("140 024-1 DB AG"));
-            layout.getPoint("TopMainR1Pre").setLocomotive(data.getLocByName("OBB 2016"));
-            layout.getPoint("BottomInner").setLocomotive(data.getLocByName("BR 143 606-2"));
-            layout.getPoint("ParkingFront").setLocomotive(data.getLocByName("BR182 005-9"));
+            layout.getPoint("TopMainR1").setLocomotive(data.getLocByName("SNCF 422365"));
+            layout.getPoint("BottomSecondary").setLocomotive(data.getLocByName("140 024-1 DB AG"));
+            layout.getPoint("BottomMainB").setLocomotive(data.getLocByName("OBB 2016"));
+            layout.getPoint("TopMainR2Pre").setLocomotive(data.getLocByName("BR 143 606-2"));
+            layout.getPoint("TopMainR2").setLocomotive(data.getLocByName("BR182 005-9"));
             
             layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
             layout.runLocomotive(data.getLocByName("BR 143 606-2"), 30);
             layout.runLocomotive(data.getLocByName("OBB 2016"), 30);
             layout.runLocomotive(data.getLocByName("140 024-1 DB AG"), 50);
-            //layout.runLocomotive(data.getLocByName("BR182 005-9"), 40, 0, 1);
+            //layout.runLocomotive(data.getLocByName("BR182 005-9"), 40);
         }
     
 	/**
@@ -231,7 +240,7 @@ public class AutoRunTrainsExample
               
 	      // Initialize the central station
 	      MarklinControlStation model = 
-                new MarklinControlStation(proxy, ui, 0, true);
+                new MarklinControlStation(proxy, ui, true);
               
               // Enables debug mode
               if (args.length >= 2)

@@ -18,6 +18,7 @@ import marklin.udp.NetworkProxy;
 import model.ModelListener;
 import model.View;
 import model.ViewListener;
+import util.Conversion;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.
@@ -73,12 +74,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private boolean powerState;
         
     // Unique ID of the central station (0 for all stations)
-    private final int UID;
+    private int UID = 0;
+    private int serialNumber;
     
     // Last message output
     private String lastMessage;
-    
-    public MarklinControlStation(NetworkProxy network, View view, int UID, boolean autoPowerOn)
+        
+    public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn)
     {        
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
@@ -88,7 +90,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.layoutDB = new RemoteDeviceCollection<>();
         
         // Set references
-        this.UID = UID;
         this.on = false;
         this.NetworkInterface = network;
         this.view = view;
@@ -148,10 +149,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (syncWithCS2() >= 0)
         {
-            this.log("Connected to CS2 at " + network.getIP());
+            this.log("Connected to Central Station at " + network.getIP());
 
             // Turn on network communication and turn on the power
             this.on = true;
+            
+            this.sendPing();
             
             if (autoPowerOn) this.go();
         }
@@ -198,7 +201,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     for (MarklinLayoutComponent c : l.getAll())
                     {
                         if (c.isSwitch() || c.isSignal() || c.isUncoupler())
-                        {
+                        {                            
                             int newAddress = c.getAddress() - 1;
                             int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
                             
@@ -208,6 +211,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal())
                             )
                             {
+                                // Skip components without a digital address
+                                if (c.getAddress() == 0) continue;
+                                
                                 if (c.isSwitch() || c.isUncoupler())
                                 {
                                     newSwitch(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
@@ -673,6 +679,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.log("Power Off");
             }
         }
+        else if (message.isPingCommand())
+        {
+            // Set the serial number if it is not already set
+            if (this.UID == 0 && message.getResponse() && message.getLength() == 8)
+            {
+                int payload = CS2Message.mergeBytes(
+                        new byte[]{message.getData()[6], message.getData()[7]}
+                );
+                
+                // 0x0000 means this is the central station
+                if (payload == 0)
+                {
+                    this.UID = message.extractUID();
+                    this.serialNumber = (message.extractUID() - 0x43533200) / 2;
+
+                    this.log("Connected to Central Station with serial number " + this.serialNumber);
+                }
+            }
+        }
     }
         
     /**
@@ -749,6 +774,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         System.out.print(message);   
+    }
+    
+    /**
+     * Pings the Central Station so that we can discover its UID
+     */
+    private void sendPing()
+    {        
+        this.exec(new CS2Message(
+            CS2Message.CAN_CMD_PING,
+            new byte[0]
+        ));
     }
     
     /**
