@@ -50,10 +50,12 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.5.6 [01/15/22]
+* v1.5.6 [01/17/22]
     - Function icons will now correctly be shown for F17-F32
     - Added support for multi-unit locomotives
     - API can now be used without opening UI
+    - Central Station UID is now extracted over the network
+    - Automation API: added support for mutually exclusive graph edges
 
 * v1.5.5 [01/12/22]
     - Implemented basic classes/graph API for autonomous train operation

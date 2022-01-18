@@ -144,11 +144,11 @@ public class AutoRunTrainsExample
             data.getLocByName("BR 143 606-2").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).lightsOff();});
             data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(minDelay, maxDelay).setF(2, false).delay(minDelay, maxDelay).lightsOff();});
    
-            layout.getPoint("TopMainR1").setLocomotive(data.getLocByName("SNCF 422365"));
+            layout.getPoint("BottomMainB").setLocomotive(data.getLocByName("SNCF 422365"));
             layout.getPoint("BottomSecondary").setLocomotive(data.getLocByName("140 024-1 DB AG"));
-            layout.getPoint("BottomMainB").setLocomotive(data.getLocByName("OBB 2016"));
-            layout.getPoint("TopMainR2Pre").setLocomotive(data.getLocByName("BR 143 606-2"));
-            layout.getPoint("TopMainR2").setLocomotive(data.getLocByName("BR182 005-9"));
+            layout.getPoint("TopMainR1").setLocomotive(data.getLocByName("OBB 2016"));
+            layout.getPoint("TopMainR2").setLocomotive(data.getLocByName("BR 143 606-2"));
+            layout.getPoint("ParkingFront").setLocomotive(data.getLocByName("BR182 005-9"));
             
             layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
             layout.runLocomotive(data.getLocByName("BR 143 606-2"), 30);
