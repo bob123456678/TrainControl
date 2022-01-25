@@ -25,7 +25,8 @@ downloaded from the CS2/CS3.
 * Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
-* Progammatic layout control/automation via Java API (uses CAN protocol)
+* Progammatic layout control via Java API (uses CAN protocol)
+* Graph model for dynamic layout modeling and fully autonomous train operation
 
 **Requirements:**
 
@@ -35,7 +36,7 @@ downloaded from the CS2/CS3.
 
 **Limitations:**
 
-* This current version has only been tested with the CS2
+* The current version has only been tested with the CS2
 * CS2 IP address must be manually entered (recommend configurating a static IP in your router)
 
 **Building the project from source:**
@@ -53,7 +54,7 @@ Requires JDK 1.8+.
 * v1.5.7 [01/24/22]
     - Added self-contained initialization function
     - Cleaned up examples and documentation
-    - Added (API & automation readme/tutorial)[examples/Readme.md]
+    - Added [API & automation readme/tutorial](examples/Readme.md)
 
 * v1.5.6 [01/17/22]
     - Function icons will now correctly be shown for F17-F32
