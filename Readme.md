@@ -54,7 +54,7 @@ Requires JDK 1.8+.
 * v1.5.7 [01/24/22]
     - Added self-contained initialization function
     - Cleaned up examples and documentation
-    - Added [API & automation readme/tutorial](examples/Readme.md)
+    - Added [API & automation readme/tutorial](src/examples/Readme.md)
 
 * v1.5.6 [01/17/22]
     - Function icons will now correctly be shown for F17-F32

@@ -11,7 +11,7 @@ The `MarklinControlStation` class is your gateway to the CS2/CS3's database of l
 
 Let's consider a minimal layout with two stations.
 
-![Sample layout](assets/sample_layout.gif?raw=true)
+![Sample layout](../assets/sample_layout.gif?raw=true)
 
 # Basic automation
 
@@ -89,7 +89,7 @@ We define a point for each station and for every other S88 feedback sensor, and 
 
 Notice the shared edge from "Main Track" to "Pre Arrival": this design ensures that the routes are mutually exclusive (the two trains won't be able to run simultaneously, and therefore can't crash).
 
-![Sample layout represented as a graph](assets/graph.png?raw=true)
+![Sample layout represented as a graph](../assets/graph.png?raw=true)
 
 This graph representation can then easily be translated into code (full example can be found in `FullAutonomyExample.java`.  
 Note that the edge definitions also include accessory commands, such as setting turnouts and signals correctly.  
