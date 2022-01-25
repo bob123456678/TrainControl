@@ -3,15 +3,19 @@ package marklin;
 import base.Accessory;
 import base.Feedback;
 import base.RemoteDeviceCollection;
+import gui.TrainControlUI;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import javax.swing.JOptionPane;
 import marklin.file.CS2File;
 import marklin.udp.CS2Message;
 import marklin.udp.NetworkProxy;
@@ -31,7 +35,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.6";
+    public static final String VERSION = "1.5.7";
     
     //// Settings
     
@@ -585,8 +589,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Returns the state of the passed feedbacks
-     * @param name
+     * Returns the state of the passed feedback
+     * @param name (the feedback module number)
      * @return 
      */
     @Override
@@ -1129,5 +1133,104 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public View getGUI()
     {
         return this.view;
+    }
+    
+    /**
+     * Initialize with default values
+     * @return
+     * @throws UnknownHostException
+     * @throws IOException 
+     */
+    public static MarklinControlStation init() throws UnknownHostException, IOException
+    {
+        return init(null, false, false, true, true);
+    }
+    
+    /**
+     * Main initialization method
+     * @param initIP
+     * @param simulate
+     * @param debug
+     * @param showUI
+     * @param autoPowerOn
+     * @return
+     * @throws UnknownHostException
+     * @throws IOException 
+     */
+    public static MarklinControlStation init(String initIP, boolean simulate, boolean debug, boolean showUI, boolean autoPowerOn) throws UnknownHostException, IOException
+    {
+        // User interface
+        TrainControlUI ui = new TrainControlUI();
+        
+        if (initIP == null)
+        {
+            initIP = ui.getPrefs().get(TrainControlUI.IP_PREF, null);
+        }
+
+        if (!simulate)
+        {
+            while (true)
+            {
+                try
+                {
+                    if (initIP == null)
+                    {
+                        initIP = JOptionPane.showInputDialog("Enter CS2 IP Address: ");
+
+                        if (initIP == null)
+                        {
+                            System.out.println("No IP entered - shutting down.");
+                            System.exit(1);
+                        }
+                    }
+
+                    if (!CS2File.ping(initIP))
+                    {
+                        JOptionPane.showMessageDialog(null, "No response from " + initIP);
+                    }
+                    else
+                    {
+                        ui.getPrefs().put(TrainControlUI.IP_PREF, initIP);
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.out.println("Invalid IP Specified");
+                }
+
+                initIP = null;
+            }
+        }
+        else
+        {
+            initIP = null;
+        }
+
+        // Delegate the hard part
+        NetworkProxy proxy = new NetworkProxy(InetAddress.getByName(initIP));
+
+        // Initialize the central station
+        MarklinControlStation model = 
+          new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn);
+
+        model.debug(debug);
+
+        // Set model
+        if (showUI)
+        {
+            ui.setViewListener(model);
+        }
+        
+        // Start execution
+        proxy.setModel(model);
+
+        // Connection failed - ask for IP on next run
+        if (!model.getNetworkCommState())
+        {
+            ui.getPrefs().remove(TrainControlUI.IP_PREF);
+        }
+        
+        return model;
     }
 }

@@ -206,6 +206,14 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
+    public Locomotive execRoute(String name)
+    {
+        this.network.execRoute(name);
+        
+        return this;
+    }
+    
+    @Override
     public boolean isFeedbackSet(String name)
     {
         return this.network.isFeedbackSet(name);

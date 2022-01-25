@@ -223,6 +223,12 @@ public abstract class Locomotive
      */
     public abstract boolean getAccessoryState(int id);
     
+    /**
+     * Executes a route by the given name
+     * @param name
+     * @return 
+     */
+    public abstract Locomotive execRoute(String name);
     
     /* Public functionality */
     

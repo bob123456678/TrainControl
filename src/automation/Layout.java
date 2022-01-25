@@ -23,14 +23,11 @@ public class Layout
     
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 200;
-    
-    // How often will each locomotive attempt to pick a new path?
-    private final int locDelay;
-    
+        
     /**
      * Helper class for BFS
      */
-    class PointPath
+    private class PointPath
     {
         public Point start;
         public List<Edge> path;
@@ -47,14 +44,16 @@ public class Layout
     private final Map<String, Point> points;
     private final Map<String, List<Edge>> adjacency;
     
-    public Layout(ViewListener control, int locDelay)
+    /**
+     * Initialize the layout model 
+     * @param control Reference to the CS2 controller
+     */
+    public Layout(ViewListener control)
     {
         this.control = control;
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
-        this.adjacency = new HashMap<>();
-        
-        this.locDelay = locDelay;
+        this.adjacency = new HashMap<>();        
     }
     
     /**
@@ -311,19 +310,27 @@ public class Layout
      * Continuously looks for a valid path for the given locomotive, and executes the path when found
      * @param loc
      * @param speed
-s     */
+s
+     * @param locDelay     */
     public void runLocomotive(Locomotive loc, int speed)
     {
         new Thread( () -> {
             
             while(true)
             {
-                List<Edge> path = this.pickPath(loc);
-                         
-                if (path != null)
-                {                                     
-                    this.executePath(path, loc, speed);                    
-                }  
+                try {
+                    List<Edge> path = this.pickPath(loc);
+                    
+                    if (path != null)
+                    {
+                        this.executePath(path, loc, speed);
+                    }
+                    
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException ex)
+                {
+                }
             }
             
         }).start();
@@ -367,7 +374,6 @@ s     */
         
         
         this.control.log(loc.getName() + " has no free paths at the moment");
-        loc.delay(locDelay);
         
         return null;
     }
