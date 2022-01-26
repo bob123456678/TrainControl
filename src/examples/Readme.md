@@ -5,7 +5,7 @@ Beyond its GUI, the TrainControl software can be used to progammatically control
 ## API
 
 Before jumping into layout automation, it is important to understand the basics of the TrainControl Java API.  
-The `MarklinControlStation` class is your gateway to the CS2/CS3's database of locomotives, switches, signals, and accessories. Several examples are provided in `ProgrammaticControlExample.java`, where it is initialized and accessible via the `data` variable.
+The `MarklinControlStation` class is your gateway to the CS2/CS3's database of locomotives, switches, signals, and accessories. Several examples are provided in [`ProgrammaticControlExample.java`](ProgrammaticControlExample.java), where it is initialized and accessible via the `data` variable.
 
 ## Sample Layout
 
