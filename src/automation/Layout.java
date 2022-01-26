@@ -88,10 +88,10 @@ public class Layout
     }
         
     /**
-     * Creates a new point
-     * @param name
-     * @param isDest
-     * @param feedback
+     * Creates a new point (i.e., a station or other landmark on your layout)
+     * @param name a unique identifier for the point
+     * @param isDest are trains allowed to stop at this point?  Requires s88 feedback to work properly.
+     * @param feedback address of the corresponding feedback module, or null if none
      * @return
      * @throws Exception
      */
@@ -117,9 +117,9 @@ public class Layout
     /**
      * Adds a (directed) Edge to the graph and updates adjacency list
      * Requires points to be added first
-     * @param startPoint
-     * @param endPoint
-     * @param configureFunc 
+     * @param startPoint name of the starting point
+     * @param endPoint name of the ending point
+     * @param configureFunc optional, a lambda that configures all accessories needed to connecte the two points
      * @throws java.lang.Exception 
      */
     public void createEdge(String startPoint, String endPoint, Consumer<ViewListener> configureFunc) throws Exception
@@ -170,6 +170,12 @@ public class Layout
         return neighbors;
     }
 
+    /**
+     * Checks if the provided path is unoccupied
+     * @param path
+     * @param loc
+     * @return 
+     */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
         for (Edge e : path)
@@ -198,7 +204,7 @@ public class Layout
     }
     
     /**
-     * Marks all the edges in a path as occupied
+     * Marks all the edges in a path as occupied, effectively locking it
      * @param path a list of edges to traverse
      * @param loc
      * @return 
@@ -223,7 +229,8 @@ public class Layout
     }
     
     /**
-     * Marks all the edges in a path as unoccupied
+     * Marks all the edges in a path as unoccupied, 
+     * unlocking it so that other trains may pass
      * @param path
      */
     synchronized public void unlockPath(List<Edge> path)
@@ -309,11 +316,16 @@ public class Layout
     /**
      * Continuously looks for a valid path for the given locomotive, and executes the path when found
      * @param loc
-     * @param speed
-s
-     * @param locDelay     */
-    public void runLocomotive(Locomotive loc, int speed)
+     * @param speed how fast the locomotive should travel, 1-100
+     * @throws java.lang.Exception
+     */
+    public void runLocomotive(Locomotive loc, int speed) throws Exception
     {
+        if (speed < 1 || speed > 100)
+        {
+            throw new Exception("Invalid speed specified");
+        }
+        
         new Thread( () -> {
             
             while(true)
@@ -337,7 +349,8 @@ s
     }
        
     /**
-     * Picks a random (valid and unoccupied) path and executes it
+     * Picks a random (valid and unoccupied) path for a given locomotive
+     * and returns the path
      * @param loc 
      * @return  
      */
@@ -371,7 +384,6 @@ s
                 }
             }
         }
-        
         
         this.control.log(loc.getName() + " has no free paths at the moment");
         
