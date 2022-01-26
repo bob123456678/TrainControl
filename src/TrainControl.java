@@ -1,4 +1,5 @@
 import javax.swing.JOptionPane;
+import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 
 public class TrainControl {
@@ -22,8 +23,12 @@ public class TrainControl {
             boolean debug = (args.length >= 2);
             String initIP = args.length >= 1 ? args[0] : null;
 
-            init(initIP, simulate, debug, true, true);
-        
+            MarklinControlStation model = init(initIP, simulate, true, true);
+            
+            if (debug)
+            {
+                model.debug(true);
+            }
         } 
         catch (Exception e)
         {

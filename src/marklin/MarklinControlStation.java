@@ -1143,21 +1143,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init() throws UnknownHostException, IOException
     {
-        return init(null, false, false, true, true);
+        return init(null, false, true, true);
     }
     
     /**
      * Main initialization method
      * @param initIP
      * @param simulate
-     * @param debug
      * @param showUI
      * @param autoPowerOn
      * @return
      * @throws UnknownHostException
      * @throws IOException 
      */
-    public static MarklinControlStation init(String initIP, boolean simulate, boolean debug, boolean showUI, boolean autoPowerOn) throws UnknownHostException, IOException
+    public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn) throws UnknownHostException, IOException
     {
         // User interface
         TrainControlUI ui = new TrainControlUI();
@@ -1213,8 +1212,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Initialize the central station
         MarklinControlStation model = 
           new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn);
-
-        model.debug(debug);
 
         // Set model
         if (showUI)

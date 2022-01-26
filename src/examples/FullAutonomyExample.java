@@ -90,7 +90,7 @@ public class FullAutonomyExample
                 MarklinControlStation model = init(); 
                 
                 // Or, initialize with a predetermined IP
-                // MarklinControlStation model = init("192.168.1.10", false, false, false, true); 
+                // MarklinControlStation model = init("192.168.1.10", false, false, true); 
                 
                 // Run custom code
                 execCode(model);

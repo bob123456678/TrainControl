@@ -183,4 +183,4 @@ This functionality is essential when your layout includes crossings, since these
 
 # Advanced layouts
 
-This graph model can be used to automate layouts with complex designs and tons of switches.  More advanced examples are coming soon!
+This graph model can be used to automate layouts with complex designs and tons of switches.  More advanced examples are coming soon!  Planned features also include ways to visualize the graph and determine/prioritize automation logic.
