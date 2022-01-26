@@ -25,7 +25,7 @@ downloaded from the CS2/CS3.
 * Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
-* Progammatic layout control via Java API (uses CAN protocol)
+* Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * Graph model for dynamic layout modeling and fully autonomous train operation
 
 **Requirements:**
