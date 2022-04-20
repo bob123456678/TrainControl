@@ -30,6 +30,7 @@ public interface ViewListener
     public boolean getAccessoryState(int address);
     public boolean getPowerState();
     public void allFunctionsOff();
+    public void locFunctionsOff(MarklinLocomotive l);
     public void lightsOn(List<String> locomotives);
     public void log(String s);
     public void stopAllLocs();

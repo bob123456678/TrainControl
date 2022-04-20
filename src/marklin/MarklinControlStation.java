@@ -35,7 +35,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.7";
+    public static final String VERSION = "1.5.8";
     
     //// Settings
     
@@ -828,18 +828,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         for (MarklinLocomotive l : this.locDB.getItems())
         {
-            for (int i = 0; i < l.getNumF(); i++)
+            locFunctionsOff(l);
+        }
+    }
+    
+    @Override
+    public void locFunctionsOff(MarklinLocomotive l)
+    {
+        for (int i = 0; i < l.getNumF(); i++)
+        {
+            if (l.getF(i))
             {
-                if (l.getF(i))
-                {
-                    l.setF(i, false);
-                }
+                l.setF(i, false);
             }
         }
     }
     
     /**
-     * Disables all active functions
+     * Turns on all locomotives' lights
      * @param locomotives
      */
     @Override

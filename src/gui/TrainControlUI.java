@@ -91,6 +91,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Preferences
     private final Preferences prefs;
+    
+    // Locomotive clipboard 
+    private Locomotive copyTarget = null;
         
     /**
      * Creates new form MarklinUI
@@ -210,6 +213,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         for (Integer keyCode : this.buttonMapping.keySet())
         {
             this.rButtonMapping.put(this.buttonMapping.get(keyCode), keyCode);
+            
+            // Add right click events
+            this.buttonMapping.get(keyCode).addMouseListener(new RightClickMenuListener(this, this.buttonMapping.get(keyCode)));
         }
         
         // Map buttons to labels
@@ -636,6 +642,71 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             //repaintLoc();
+        }
+    }
+    
+    /**
+     * Clipboard copy
+     * @param button 
+     */
+    public void setCopyTarget(JButton button)
+    {
+        copyTarget = this.currentLocMapping().get(button);
+    }
+    
+    /**
+     * Has the copy target been set?
+     * @return 
+     */
+    public boolean hasCopyTarget()
+    {
+        return copyTarget != null;
+    }
+    
+    public void clearCopyTarget()
+    {
+        copyTarget = null;
+    }
+    
+    public boolean buttonHasLocomotive(JButton b)
+    {
+        return this.currentLocMapping().get(b) != null;
+    }
+    
+    public Locomotive getButtonLocomotive(JButton b)
+    {
+        return this.currentLocMapping().get(b);
+    }
+    
+    public Locomotive getCopyTarget()
+    {
+        return copyTarget;
+    }
+    
+    public void locFunctionsOff(Locomotive l)
+    {
+        this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
+    }
+    
+    /**
+     * Pastes to copied locomotive to a given UI button
+     * @param b 
+     */
+    public void doPaste(JButton b)
+    {
+        if (b != null)
+        {
+            this.currentLocMapping().put(b, copyTarget);
+
+            if (b.equals(this.currentButton))
+            {
+                displayCurrentButtonLoc(this.currentButton);
+            }
+
+            repaintMappings();  
+            this.lastLocMappingPainted = this.locMappingNumber;
+            
+            copyTarget = null;
         }
     }
     
@@ -5030,6 +5101,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 this.model.renameLoc(l.getName(), newName);
 
+                clearCopyTarget();
                 refreshLocList();
                 repaintLoc();
                 repaintMappings();
@@ -5068,6 +5140,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
 
                 this.model.deleteLoc(value.toString());
+                clearCopyTarget();
                 refreshLocList();
                 repaintLoc();
                 repaintMappings();

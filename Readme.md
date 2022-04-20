@@ -51,6 +51,10 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.8 [04/20/22]
+    - Added right-click menu to all locomotive buttons
+    - Locomotives can now be copy-and-pasted between buttons
+
 * v1.5.7 [01/24/22]
     - Added self-contained initialization function
     - Cleaned up examples and documentation
