@@ -52,7 +52,7 @@ public class RightClickMenuListener extends MouseAdapter {
         {       
             // Option to copy
             if (ui.buttonHasLocomotive(source))
-            {
+            {                
                 menuItem = new JMenuItem("Copy " + ui.getButtonLocomotive(source).getName());
                 menuItem.addActionListener(event -> ui.setCopyTarget(source) );    
             }
@@ -63,7 +63,7 @@ public class RightClickMenuListener extends MouseAdapter {
             }
      
             add(menuItem);
-
+            
             // Option to paste
             if (ui.hasCopyTarget())
             {
@@ -78,10 +78,19 @@ public class RightClickMenuListener extends MouseAdapter {
             }
 
             add(menuItem);
+            
+            if (ui.buttonHasLocomotive(source))
+            {  
+                addSeparator();
+    
+                menuItem = new JMenuItem("Copy to next page");
+                menuItem.addActionListener(event -> ui.copyToNextPage(source) );
+                add(menuItem);
+            }
 
             if (ui.buttonHasLocomotive(source))
             {
-                // Option to turn off functions
+                // Option to turn off functions and sync with station
                 addSeparator();
                 
                 menuItem = new JMenuItem("Turn Off Functions");
@@ -90,6 +99,12 @@ public class RightClickMenuListener extends MouseAdapter {
                 
                 add(menuItem);
 
+                menuItem = new JMenuItem("Sync w/ Central Station");
+
+                menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)) );
+                
+                add(menuItem);
+                 
                 // Option to clear the mapping
                 addSeparator();
 

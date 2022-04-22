@@ -655,6 +655,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Copies a locomotive mapping to the next page
+     * @param button 
+     */
+    public void copyToNextPage(JButton button)
+    {        
+        this.nextLocMapping().put(button, this.currentLocMapping().get(button));
+        
+        if (button.equals(this.currentButton))
+        {
+            displayCurrentButtonLoc(this.currentButton);
+        }
+    }
+    
+    /**
      * Has the copy target been set?
      * @return 
      */
@@ -685,9 +699,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void locFunctionsOff(Locomotive l)
     {
-        this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
+        new Thread(() -> {
+            this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
+        }).start();
     }
     
+    /**
+     * Synchronizes the state of a locomotive w/ the Central Station
+     * @param l 
+     */
+    public void syncLocomotive(Locomotive l)
+    {
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.syncLocomotive(l.getName());
+                repaintLoc();
+            }).start();
+        }   
+    }
+        
     /**
      * Pastes to copied locomotive to a given UI button
      * @param b 
@@ -1057,6 +1088,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
+    private Map<JButton, Locomotive> nextLocMapping()
+    {
+        return this.locMapping.get(this.locMappingNumber % TrainControlUI.NUM_LOC_MAPPINGS);
+    }
+    
     private Map<JButton, Locomotive> currentLocMapping()
     {
         return this.locMapping.get(this.locMappingNumber - 1);
@@ -1400,7 +1436,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel5 = new javax.swing.JPanel();
         DeleteLocButton = new javax.swing.JButton();
         RenameLocButton = new javax.swing.JButton();
-        SyncLocomotive = new javax.swing.JButton();
         EditExistingLocLabel = new javax.swing.JLabel();
         EditExistingLocLabel1 = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
@@ -3555,7 +3590,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel5.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
         DeleteLocButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        DeleteLocButton.setText("Delete Selected Loc");
+        DeleteLocButton.setText("Delete");
         DeleteLocButton.setFocusable(false);
         DeleteLocButton.setInheritsPopupMenu(true);
         DeleteLocButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3574,27 +3609,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SyncLocomotive.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SyncLocomotive.setText("Sync");
-        SyncLocomotive.setFocusable(false);
-        SyncLocomotive.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SyncLocomotiveActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(DeleteLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel5Layout.createSequentialGroup()
-                        .addComponent(RenameLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SyncLocomotive, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addComponent(RenameLocButton, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(DeleteLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel5Layout.setVerticalGroup(
@@ -3603,9 +3626,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(RenameLocButton)
-                    .addComponent(SyncLocomotive))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(DeleteLocButton)
+                    .addComponent(DeleteLocButton))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -3646,7 +3667,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         TurnOnLightsButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        TurnOnLightsButton.setText("Turn On Lights");
+        TurnOnLightsButton.setText("Turn On All Lights");
         TurnOnLightsButton.setFocusable(false);
         TurnOnLightsButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3741,7 +3762,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(jPanel5, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(jPanel11, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                        .addGap(393, 491, Short.MAX_VALUE))
+                        .addGap(393, 418, Short.MAX_VALUE))
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(AddNewLocLabel)
@@ -3767,7 +3788,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(16, 16, 16))
+                .addGap(48, 48, 48))
         );
 
         KeyboardTab.addTab("Manage Locomotives", ManageLocPanel);
@@ -5030,7 +5051,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void TurnOffFnButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_TurnOffFnButtonActionPerformed
     {//GEN-HEADEREND:event_TurnOffFnButtonActionPerformed
-        this.model.allFunctionsOff();
+        new Thread(() ->
+        {
+            this.model.allFunctionsOff();
+        }).start();
     }//GEN-LAST:event_TurnOffFnButtonActionPerformed
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SyncButtonActionPerformed
@@ -5044,7 +5068,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_clearButtonActionPerformed
     {//GEN-HEADEREND:event_clearButtonActionPerformed
-        int dialogResult = JOptionPane.showConfirmDialog(LocControlPanel, "Are you sure you want to clear all mappings?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
+        int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all mappings?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
         if(dialogResult == JOptionPane.YES_OPTION)
         {
             this.activeLoc = null;
@@ -5421,17 +5445,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void TurnOnLightsButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_TurnOnLightsButtonActionPerformed
     {//GEN-HEADEREND:event_TurnOnLightsButtonActionPerformed
-        List<String> locs = new ArrayList<>();
         
-        for (Map<JButton, Locomotive> m : this.locMapping)
+        new Thread(() ->
         {
-            for (Locomotive l : m.values())
+            List<String> locs = new ArrayList<>();
+
+            for (Map<JButton, Locomotive> m : this.locMapping)
             {
-                locs.add(l.getName());
+                for (Locomotive l : m.values())
+                {
+                    locs.add(l.getName());
+                }
             }
-        }
-                
-        this.model.lightsOn(locs);
+
+            this.model.lightsOn(locs);
+        }).start();
     }//GEN-LAST:event_TurnOnLightsButtonActionPerformed
 
     private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
@@ -5458,30 +5486,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void ManageLocPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ManageLocPanelMouseClicked
         //this.LocFunctionsPanel.requestFocus();
     }//GEN-LAST:event_ManageLocPanelMouseClicked
-
-    private void SyncLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncLocomotiveActionPerformed
-        
-        Object value = this.LocomotiveList.getSelectedValue();
-
-        if (value == null)
-        {
-            if (this.activeLoc != null)
-            {
-                this.model.syncLocomotive(this.activeLoc.getName());
-            }
-            else
-            {
-                JOptionPane.showMessageDialog(this,
-                    "Error: no locomotive selected");
-            }
-        }
-        else
-        {
-            this.model.syncLocomotive(value.toString());    
-        }
-        
-        repaintLoc();
-    }//GEN-LAST:event_SyncLocomotiveActionPerformed
 
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
@@ -5773,7 +5777,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton SwitchButton8;
     private javax.swing.JToggleButton SwitchButton9;
     private javax.swing.JButton SyncButton;
-    private javax.swing.JButton SyncLocomotive;
     private javax.swing.JButton TButton;
     private javax.swing.JLabel TLabel;
     private javax.swing.JButton ThreeButton;

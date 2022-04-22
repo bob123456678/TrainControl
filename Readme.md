@@ -51,6 +51,11 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.9 [04/21/22]
+    - Moved locomotive sync option to right-click menu
+    - Bulk operations no longer lock up the UI
+    - Added one click option to copy locomotive to next page
+
 * v1.5.8 [04/20/22]
     - Added right-click menu to all locomotive buttons
     - Locomotives can now be copy-and-pasted between buttons
