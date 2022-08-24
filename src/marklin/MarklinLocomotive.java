@@ -179,12 +179,21 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Gets the locomotives UID
+     * Gets the locomotives UID as defined in the CS2
      * @return 
      */
-    public int getUID()
+    public int getIntUID()
     {
         return UID;
+    }
+    
+    /**
+     * Gets the locomotives UID - we add the name b/c same mm2 address can be re-used
+     * @return 
+     */
+    public String getUID()
+    {
+        return this.getName() + '_' + Integer.toString(UID);        
     }
     
     /**

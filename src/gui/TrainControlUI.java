@@ -18,6 +18,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -1346,6 +1348,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         sizeLabel = new javax.swing.JLabel();
         SizeList = new javax.swing.JComboBox();
         layoutNewWindow = new javax.swing.JButton();
+        smallButton = new javax.swing.JButton();
+        jLabel19 = new javax.swing.JLabel();
+        allButton = new javax.swing.JButton();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         DeleteRouteButton = new javax.swing.JButton();
@@ -2469,7 +2474,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
         InnerLayoutPanelLayout.setVerticalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 453, Short.MAX_VALUE)
+            .addGap(0, 454, Short.MAX_VALUE)
         );
 
         LayoutArea.setViewportView(InnerLayoutPanel);
@@ -2477,7 +2482,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         sizeLabel.setForeground(new java.awt.Color(0, 0, 115));
         sizeLabel.setText("Size");
 
-        SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "30", "60" }));
+        SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Small", "Large" }));
         SizeList.setFocusable(false);
         SizeList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -2490,11 +2495,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        layoutNewWindow.setText("Show in new window");
+        layoutNewWindow.setText("Large");
         layoutNewWindow.setFocusable(false);
         layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 layoutNewWindowActionPerformed(evt);
+            }
+        });
+
+        smallButton.setText("Small");
+        smallButton.setFocusable(false);
+        smallButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                smallButtonActionPerformed(evt);
+            }
+        });
+
+        jLabel19.setText("Show in pop-up:");
+
+        allButton.setText("All");
+        allButton.setFocusable(false);
+        allButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                allButtonActionPerformed(evt);
             }
         });
 
@@ -2515,6 +2538,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel19)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(allButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(smallButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(layoutNewWindow)))
                 .addContainerGap())
         );
@@ -2529,7 +2558,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(layoutListLabel)
                     .addComponent(sizeLabel)
                     .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(layoutNewWindow))
+                    .addComponent(layoutNewWindow)
+                    .addComponent(smallButton)
+                    .addComponent(jLabel19)
+                    .addComponent(allButton))
                 .addContainerGap())
         );
 
@@ -5495,8 +5527,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
         LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
-                Integer.parseInt(this.SizeList.getSelectedItem().toString()), 
+                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                this.layoutSizes.get("Large"),
                 this
         );
         
@@ -5542,6 +5574,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void OnButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OnButtonActionPerformed
         go();
     }//GEN-LAST:event_OnButtonActionPerformed
+
+    private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
+        LayoutPopupUI popup = new LayoutPopupUI(
+                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                this.layoutSizes.get("Small"),
+                this
+        );
+        
+        popup.render();
+    }//GEN-LAST:event_smallButtonActionPerformed
+
+    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
+        
+        int size = this.LayoutList.getItemCount();
+        for (int i = 0; i < size; i++)
+        {
+            String layoutName = LayoutList.getItemAt(i).toString();
+            LayoutPopupUI popup = new LayoutPopupUI(
+                this.model.getLayout(layoutName),
+                this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                this
+            );
+          
+            popup.render();
+        } 
+    }//GEN-LAST:event_allButtonActionPerformed
 
     private void refreshRouteList()
     {
@@ -5798,6 +5856,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel ZLabel;
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
+    private javax.swing.JButton allButton;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JLabel changeLocomotiveLabel;
     private javax.swing.JButton clearButton;
@@ -5812,6 +5871,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
@@ -5865,14 +5925,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel locIcon;
     private javax.swing.JPanel logPanel;
     private javax.swing.JLabel sizeLabel;
+    private javax.swing.JButton smallButton;
     // End of variables declaration//GEN-END:variables
 
+    // Lap strings in the size dropdown to icon sizes
+    Map<String, Integer> layoutSizes = Stream.of(new String[][] {
+        { "Small", "30" }, 
+        { "Large", "60" }, 
+      }).collect(Collectors.toMap(data -> data[0], data -> Integer.parseInt(data[1])));
+    
     @Override
     public synchronized void repaintLayout()
     {      
         new Thread(() -> {
             InnerLayoutPanel.setVisible(false);
-            this.trainGrid = new LayoutGrid(this.model.getLayout(this.LayoutList.getSelectedItem().toString()), Integer.parseInt(this.SizeList.getSelectedItem().toString()), InnerLayoutPanel, KeyboardTab, false);
+            this.trainGrid = new LayoutGrid(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
+                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
+                    InnerLayoutPanel, 
+                    KeyboardTab, 
+                    false
+            );
             InnerLayoutPanel.setVisible(true);
 
             // Important!
