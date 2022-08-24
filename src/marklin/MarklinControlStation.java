@@ -12,6 +12,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.9";
+    public static final String VERSION = "1.5.10";
     
     //// Settings
     
@@ -51,7 +52,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     //// State
     
     // Locomotive database
-    private final RemoteDeviceCollection<MarklinLocomotive, Integer> locDB;
+    private final RemoteDeviceCollection<MarklinLocomotive, String> locDB;
 
     // Switch/signal database
     private final RemoteDeviceCollection<MarklinAccessory, Integer> accDB;
@@ -64,6 +65,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Layouts
     private final RemoteDeviceCollection<MarklinLayout, String> layoutDB;
+    
+    // Mapping for int UID -> string UID
+    private HashMap<Integer, List<String>> locIdCache;
 
     // Network proxy reference
     private final NetworkProxy NetworkInterface;
@@ -83,7 +87,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Last message output
     private String lastMessage;
-        
+            
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn)
     {        
         // Initialize maps
@@ -363,6 +367,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
              return -1;
         }
         
+        this.rebuildLocIdCache();
+        
         this.log("Sync complete.");
         
         return num;
@@ -607,6 +613,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Rebuilds our mapping between locomotive names and CS2 UIDs (needed due to the potential for duplicate MM2 addresses)
+     */
+    synchronized private void rebuildLocIdCache()
+    {
+        this.locIdCache = new HashMap<>();
+        
+        for (MarklinLocomotive l : this.locDB.getItems())
+        {
+            int id = l.getIntUID();
+            if (!this.locIdCache.containsKey(id))
+            {
+                this.locIdCache.put(id, new LinkedList<>());
+            }
+            
+            this.locIdCache.get(id).add(l.getUID());
+        }
+    }
+        
+    /**
      * Receives a network messages from the CS2 for interpretation
      * @param message
      */
@@ -621,25 +646,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         // Send the message to the appropriate listener
         if(message.isLocCommand())
-        {   
-            int id = message.extractUID();
+        {               
+            Integer id = message.extractUID();
+            
+            List<String> locs = this.locIdCache.get(id);
 
             // Only worry about the message if it's a response
             // This prevents the gui from being updated when not connected
             // to the network, however, so remove this check when offline
-            if (this.locDB.hasId(id) && message.getResponse())
+            if (locs != null)
             {
-                this.locDB.getById(id).parseMessage(message);
-                
-                if (message.getResponse())
+                if (locs.size() > 0 && message.getResponse())
                 {
-                    if (this.view != null) this.view.repaintLoc();
+                    for (String l : locs)
+                    {
+                        this.locDB.getById(l).parseMessage(message);
+                    }
+
+                    if (message.getResponse())
+                    {
+                        if (this.view != null) this.view.repaintLoc();
+                    }
                 }
-            }
-            else if (!this.locDB.hasId(id))
-            {
-                this.log("Unknown locomotive received command: " 
-                    + MarklinLocomotive.addressFromUID(id));
+                else if (locs.isEmpty())
+                {
+                    this.log("Unknown locomotive received command: " 
+                        + MarklinLocomotive.addressFromUID(id));
+                }
             }
         }
         else if (message.isAccessoryCommand())
@@ -912,6 +945,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         
+        this.rebuildLocIdCache();
+        
         return newLoc; 
     }
     
@@ -990,7 +1025,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public boolean deleteLoc(String name)
     {
-        return this.locDB.delete(name);
+        boolean res = this.locDB.delete(name);
+        
+        if (res) this.rebuildLocIdCache();
+        
+        return res;
     }
     
     /**
@@ -1036,6 +1075,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             l.rename(newName);
             
             this.locDB.add(l, newName, l.getUID());
+            
+            this.rebuildLocIdCache();
             
             return true;
         }
