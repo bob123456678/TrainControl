@@ -51,6 +51,11 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.10 [08/24/22]
+    - Added support for multiple locomotives with the same address (CS2 UID + Name now uniquely identifies a locomotive)
+    - Improved layout UI: buttons for small and large layout pop-up
+    - Improved layout UI: button for opening all layout pop-ups at once
+
 * v1.5.9 [04/21/22]
     - Moved locomotive sync option to right-click menu
     - Bulk operations no longer lock up the UI
