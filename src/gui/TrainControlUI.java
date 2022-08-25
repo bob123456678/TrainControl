@@ -1351,6 +1351,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         smallButton = new javax.swing.JButton();
         jLabel19 = new javax.swing.JLabel();
         allButton = new javax.swing.JButton();
+        jSeparator1 = new javax.swing.JSeparator();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         DeleteRouteButton = new javax.swing.JButton();
@@ -2470,7 +2471,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         InnerLayoutPanel.setLayout(InnerLayoutPanelLayout);
         InnerLayoutPanelLayout.setHorizontalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 731, Short.MAX_VALUE)
+            .addGap(0, 743, Short.MAX_VALUE)
         );
         InnerLayoutPanelLayout.setVerticalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -2521,6 +2522,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
         javax.swing.GroupLayout layoutPanelLayout = new javax.swing.GroupLayout(layoutPanel);
         layoutPanel.setLayout(layoutPanelLayout);
         layoutPanelLayout.setHorizontalGroup(
@@ -2540,28 +2543,33 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(allButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(smallButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(layoutNewWindow)))
+                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(allButton)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.PREFERRED_SIZE, 456, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(layoutListLabel)
-                    .addComponent(sizeLabel)
-                    .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(layoutNewWindow)
-                    .addComponent(smallButton)
-                    .addComponent(jLabel19)
-                    .addComponent(allButton))
+                .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(layoutListLabel)
+                            .addComponent(sizeLabel)
+                            .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(layoutNewWindow)
+                            .addComponent(smallButton)
+                            .addComponent(jLabel19))
+                        .addComponent(allButton))
+                    .addComponent(jSeparator1))
                 .addContainerGap())
         );
 
@@ -5526,13 +5534,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
-        LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                this.layoutSizes.get("Large"),
-                this
-        );
-        
-        popup.render();
+        new Thread(() -> {
+            LayoutPopupUI popup = new LayoutPopupUI(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get("Large"),
+                    this
+            );
+
+            popup.render();
+        }).start();
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
@@ -5576,13 +5586,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_OnButtonActionPerformed
 
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
-        LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                this.layoutSizes.get("Small"),
-                this
-        );
         
-        popup.render();
+        new Thread(() -> {
+            LayoutPopupUI popup = new LayoutPopupUI(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get("Small"),
+                    this
+            );
+
+            popup.render();
+        }).start();
     }//GEN-LAST:event_smallButtonActionPerformed
 
     private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
@@ -5591,13 +5604,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         for (int i = 0; i < size; i++)
         {
             String layoutName = LayoutList.getItemAt(i).toString();
-            LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(layoutName),
-                this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                this
-            );
-          
-            popup.render();
+
+            new Thread(() -> {
+  
+                LayoutPopupUI popup = new LayoutPopupUI(
+                    this.model.getLayout(layoutName),
+                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                    this
+                );
+
+                popup.render();
+            }).start();
         } 
     }//GEN-LAST:event_allButtonActionPerformed
 
@@ -5919,6 +5936,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;

@@ -1394,11 +1394,13 @@
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="jLabel19" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="allButton" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
                               <Component id="smallButton" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="layoutNewWindow" min="-2" max="-2" attributes="0"/>
+                              <Component id="layoutNewWindow" min="-2" pref="71" max="-2" attributes="0"/>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Component id="jSeparator1" min="-2" pref="10" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="allButton" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
@@ -1409,17 +1411,22 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="LayoutArea" max="32767" attributes="0"/>
+                      <Component id="LayoutArea" min="-2" pref="456" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="LayoutList" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="layoutListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="sizeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="SizeList" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="layoutNewWindow" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="smallButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="allButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="103" groupAlignment="1" attributes="0">
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="LayoutList" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="layoutListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="sizeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="SizeList" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="layoutNewWindow" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="smallButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <Component id="allButton" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Component id="jSeparator1" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -1471,7 +1478,7 @@
                   <Layout>
                     <DimensionLayout dim="0">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <EmptySpace min="0" pref="731" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="743" max="32767" attributes="0"/>
                       </Group>
                     </DimensionLayout>
                     <DimensionLayout dim="1">
@@ -1537,6 +1544,11 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="allButtonActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JSeparator" name="jSeparator1">
+              <Properties>
+                <Property name="orientation" type="int" value="1"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>
