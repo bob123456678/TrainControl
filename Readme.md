@@ -51,6 +51,9 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.5.11 [9/17/22]
+    - Added address info tooltips to the layout UI
+
 * v1.5.10 [08/24/22]
     - Added support for multiple locomotives with the same address (CS2 UID + Name now uniquely identifies a locomotive)
     - Improved layout UI: buttons for small and large layout pop-up

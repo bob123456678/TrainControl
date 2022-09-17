@@ -108,6 +108,12 @@ public final class LayoutLabel extends JLabel
                         this.setIcon(new javax.swing.ImageIcon(
                             img     
                         )); 
+                        
+                        // Show a tooltip in the UI
+                        if (!"".equals(this.component.toSimpleString()))
+                        {
+                            this.setToolTipText(this.component.toSimpleString());
+                        }
                     }
                     catch (IOException ex)
                     {

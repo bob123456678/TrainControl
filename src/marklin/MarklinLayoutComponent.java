@@ -184,6 +184,11 @@ public class MarklinLayoutComponent
         return this.type == componentType.SIGNAL ||
                 this.type == componentType.LAMP;
     }
+    
+    public boolean isLamp()
+    {
+        return this.type == componentType.LAMP;
+    }
 
     public boolean isFeedback()
     {
@@ -467,6 +472,38 @@ public class MarklinLayoutComponent
                 Integer.toString(this.orientation * 90) + " deg " +
                 "#" + Integer.toString(this.address)
             ;
+        }
+    }
+    
+    /**
+     * Basic description for the UI
+     * @return 
+     */
+    public String toSimpleString()
+    {        
+        if (this.isThreeWay())
+        {
+            return "Switch " + this.accessory.getAddress() + "-" + this.accessory2.getAddress();
+        }
+        else if (this.isSwitch())
+        {
+            return "Switch " + this.getAddress();
+        }
+        else if (this.isUncoupler())
+        {
+            return "Uncoupler " + this.getRawAddress();
+        }
+        else if (this.isFeedback())
+        {
+            return "Feedback " + this.getFeedback().getUID();
+        }
+        else if (this.isSignal())
+        {
+            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress();
+        }
+        else
+        {
+            return "";
         }
     }
     
