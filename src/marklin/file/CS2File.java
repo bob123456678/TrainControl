@@ -24,6 +24,10 @@ public class CS2File
     
     // Control station
     MarklinControlStation control;
+    
+    // Store the URL to the CS2 layout config by default
+    // Can be overriden by files on the local filesystem (if using a CS3, etc)
+    private String layoutDataLoc;
         
     /**
      * Constructor
@@ -34,6 +38,25 @@ public class CS2File
     {
         this.IP = IP;
         this.control = control;
+        this.setDefaultLayoutDataLoc();
+        
+    }
+    
+    /**
+     * Sets the layout data location to the CS2 IP
+     */
+    public void setDefaultLayoutDataLoc()
+    {
+        this.layoutDataLoc = "http://" + this.IP;
+    }
+    
+    /**
+     * Sets the layout data location to a custom local path)
+     * @param path 
+     */
+    public void setLayoutDataLoc(String path)
+    {
+        this.layoutDataLoc = path;
     }
     
     /**
@@ -91,7 +114,17 @@ public class CS2File
      */
     public String getLayoutMasterURL()
     {
-        return "http://" + this.IP + "/config/gleisbild.cs2";
+        return getLayoutMasterURL(this.layoutDataLoc);
+    }
+    
+    /**
+     * Layout index file
+     * @param dataPath
+     * @return 
+     */
+    public String getLayoutMasterURL(String dataPath)
+    {
+        return dataPath + "/config/gleisbild.cs2";
     }
     
     /**
@@ -101,8 +134,88 @@ public class CS2File
      */
     public String getLayoutURL(String layoutName)
     {
-        return "http://" + this.IP + "/config/gleisbilder/" 
+        return getLayoutURL(this.layoutDataLoc, layoutName);
+    }
+    
+    /**
+     * Layout file
+     * @param dataPath
+     * @param layoutName
+     * @return 
+     */
+    public String getLayoutURL(String dataPath, String layoutName)
+    {
+        return dataPath + "/config/gleisbilder/" 
                 + sanitizeURL(layoutName) + ".cs2";
+    }
+    
+    /**
+     * CS3 Web App URL
+     * @return 
+     */
+    public String getCS3AppUrl()
+    {
+        return "http://" + this.IP + "/app";
+    }
+    
+    /**
+     * CS3 Layout Data URL
+     * Parsing this is not currently supported - 
+     * with a CS3 we can display offline CS2 layout files instead
+     * @return 
+     */
+    public String getCS3LayoutUrl()
+    {
+        return "http://" + this.IP + "/app/api/gbs";
+    }
+    
+    /**
+     * Device info file for the CS3
+     * @return 
+     */
+    public String getDeviceInfoURL()
+    {
+        return getDeviceInfoURL(this.IP);
+    }
+    
+    /**
+     * Device info file for the CS3
+     * @param ipAddress
+     * @return 
+     */
+    public static String getDeviceInfoURL(String ipAddress)
+    {
+        return "http://" + ipAddress + "/config/geraet.vrs";
+    }
+    
+    /**
+     * Check if this is a CS3 by looking at the info file
+     * @param deviceInfoUrl device info URL obtained by calling getDeviceInfoURL
+     * @return
+     * @throws Exception 
+     */
+    public static boolean isCS3(String deviceInfoUrl) throws Exception
+    {
+        BufferedReader content = fetchURL(deviceInfoUrl);
+
+        while (true)
+        {
+            String line = content.readLine();
+         
+            if (line == null)
+            {
+                break;
+            }
+            else
+            {
+                if (line.contains("Central Station 3"))
+                {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -111,7 +224,7 @@ public class CS2File
      * @return
      * @throws Exception 
      */
-    public static BufferedReader fetchURL(String url) throws Exception 
+    private static BufferedReader fetchURL(String url) throws Exception 
     {
         URL website = new URL(url);
         URLConnection connection = website.openConnection();

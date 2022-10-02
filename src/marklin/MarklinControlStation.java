@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
 import marklin.file.CS2File;
 import marklin.udp.CS2Message;
@@ -36,7 +37,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.5.11";
+    public static final String VERSION = "1.6.0";
     
     //// Settings
     
@@ -72,6 +73,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Network proxy reference
     private final NetworkProxy NetworkInterface;
     
+    // File parser class
+    private CS2File fileParser;
+    
     // GUI reference
     private final View view;
     
@@ -87,6 +91,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Last message output
     private String lastMessage;
+    
+    // Is this a CS3?
+    private boolean isCS3 = false;
             
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn)
     {        
@@ -173,21 +180,189 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Returns the URL to the CS3 web app
+     * @return
+     */
+    @Override
+    public String getCS3AppUrl()
+    {
+        return this.fileParser.getCS3AppUrl();
+    }
+       
+    /**
+     * Parses layout files from the CS2 or local filesystem
+     * @throws Exception 
+     */
+    private void syncLayouts() throws Exception
+    {
+        for (MarklinLayout l : fileParser.parseLayout())
+        {
+            this.layoutDB.add(l, l.getName(), l.getName());
+
+            this.log("Imported layout " + l.getName());
+
+            for (MarklinLayoutComponent c : l.getAll())
+            {
+                if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+                {                            
+                    int newAddress = c.getAddress() - 1;                    
+                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
+
+                    // Make sure all components are added
+                    if (!this.accDB.hasId(targetAddress) ||
+                       // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
+                       (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal())
+                    )
+                    {
+                        // Skip components without a digital address
+                        if (c.getAddress() == 0) continue;
+
+                        if (c.isSwitch() || c.isUncoupler())
+                        {
+                            newSwitch(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
+
+                            if (c.isThreeWay())
+                            {
+                                if (!this.accDB.hasId(c.getAddress() + 1))
+                                {
+                                    newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
+                                }
+                            }
+                        }
+                        else if (c.isSignal())
+                        {
+                            newSignal(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
+                        }
+
+                        this.log("Adding " + this.accDB.getById(targetAddress));
+                    }
+                    else
+                    {            
+                        // Actually not needed, since the station
+                        // only updates its file on boot...
+                        /*int cState = c.getState();
+                        boolean state = this.accDB.getById(targetAddress).isSwitched();
+
+                        // Ensure our state is synchronized
+                        if (c.isThreeWay())
+                        {
+                            boolean state2 = this.accDB.getById(targetAddress + 1).isSwitched();
+
+                            if (cState == 1 && state == true)
+                            {
+                                this.accDB.getById(targetAddress).setSwitched(false);
+                                this.accDB.getById(targetAddress + 1).setSwitched(false);
+                            }
+
+                            if (cState == 2 && state2 != true)
+                            {
+                                this.accDB.getById(targetAddress).setSwitched(false);
+                                this.accDB.getById(targetAddress + 1).setSwitched(true);
+                            }
+
+                            if (cState == 0 && state == false)
+                            {
+                                this.accDB.getById(targetAddress).setSwitched(true);
+                            }
+
+                            if (cState == 0 && state2 == true)
+                            {
+                                this.accDB.getById(targetAddress + 1).setSwitched(false);
+                            }
+                        }
+                        else if (c.isSwitch() || c.isSignal())
+                        {
+                            if (cState == 1)
+                            {
+                                this.accDB.getById(targetAddress).setSwitched(false);
+                            }
+
+                            if (cState == 0)
+                            {
+                                this.accDB.getById(targetAddress).setSwitched(true);
+                            }   
+                        }*/
+                    }  
+
+                    c.setAccessory(this.accDB.getById(targetAddress));
+
+                    if (c.isThreeWay())
+                    {
+                        c.setAccessory2(this.accDB.getById(targetAddress + 1));
+                    }
+                }
+                else if (c.isFeedback())
+                {                            
+                    if (!this.feedbackDB.hasId(c.getRawAddress()))
+                    {
+                        newFeedback(c.getRawAddress(), null);   
+                    }
+
+                    // CS2 gives us no state info :(
+                    c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
+                }   
+                else if (c.isRoute())
+                {
+                    c.setRoute(this.routeDB.getById(c.getAddress()));
+                }
+            }
+        }   
+        
+        // Code for basic address status
+        /*Collections.sort(addresses);
+
+        if (addresses.size() >= 1)
+        {
+            Integer min = addresses.get(0);
+            Integer max = addresses.get(addresses.size() - 1);
+            
+            System.out.println("Minimum address:" + min);
+            System.out.println("Maximum address:" + max);
+            
+            for (int i = 1; i < max; i++)
+            {
+                if (!addresses.contains(i))
+                {
+                    System.out.println("Free address: " + i);
+                }
+            }
+        }*/
+    }
+    
+    private Preferences getPrefs()
+    {
+        return Preferences.userNodeForPackage(TrainControlUI.class);
+    }
+    
+    /**
      * Synchronizes CS2 state
+     * @return 
      */
     @Override
     public final int syncWithCS2()
     {
         // Read remote config files
-        CS2File fileParser = new CS2File(NetworkInterface.getIP(), this);
-     
+        this.fileParser = new CS2File(NetworkInterface.getIP(), this);
+             
         this.log("Starting CS2 database sync...");
 
         int num = 0;
                 
-        // Fetch CS2's databases
+        // Fetch Central Station databases
         try
-        {
+        {            
+            // Is this a CS2 or CS3?
+            try
+            {
+                this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(NetworkInterface.getIP()));
+            }
+            catch (Exception e)
+            {
+                this.log(e.toString());
+            }
+            
+            this.log("Station detection result: " + (this.isCS3 ? "CS3" : "CS2"));
+               
             for (MarklinRoute r : fileParser.parseRoutes())
             {
                 if (!this.routeDB.hasId(r.getId()))
@@ -197,123 +372,43 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     num++;
                 }
             }
-                        
-            if (this.layoutDB.getItemNames().isEmpty())
+            
+            Preferences prefs = this.getPrefs();
+            String overrideLayoutPath = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            
+            if (!"".equals(overrideLayoutPath))
             {
-                for (MarklinLayout l : fileParser.parseLayout())
+                fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
+                
+                this.log("Layout override setting enabled.  Will attempt to load static CS2 layout from: " + overrideLayoutPath);
+                this.log("This path should contain the same 'gleisbild' file structure as the CS2 config folder.");
+                
+                try
                 {
-                    this.layoutDB.add(l, l.getName(), l.getName());
-                    
-                    this.log("Imported layout " + l.getName());
-                    
-                    for (MarklinLayoutComponent c : l.getAll())
+                    for (String name : this.layoutDB.getItemNames())
                     {
-                        if (c.isSwitch() || c.isSignal() || c.isUncoupler())
-                        {                            
-                            int newAddress = c.getAddress() - 1;
-                            int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
-                            
-                            // Make sure all components are added
-                            if (!this.accDB.hasId(targetAddress) ||
-                               // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                               (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal())
-                            )
-                            {
-                                // Skip components without a digital address
-                                if (c.getAddress() == 0) continue;
-                                
-                                if (c.isSwitch() || c.isUncoupler())
-                                {
-                                    newSwitch(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
-                                    
-                                    if (c.isThreeWay())
-                                    {
-                                        if (!this.accDB.hasId(c.getAddress() + 1))
-                                        {
-                                            newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
-                                        }
-                                    }
-                                }
-                                else if (c.isSignal())
-                                {
-                                    newSignal(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
-                                }
-                                
-                                this.log("Adding " + this.accDB.getById(targetAddress));
-                            }
-                            else
-                            {            
-                                // Actually not needed, since the station
-                                // only updates its file on boot...
-                                /*int cState = c.getState();
-                                boolean state = this.accDB.getById(targetAddress).isSwitched();
-                                     
-                                // Ensure our state is synchronized
-                                if (c.isThreeWay())
-                                {
-                                    boolean state2 = this.accDB.getById(targetAddress + 1).isSwitched();
-
-                                    if (cState == 1 && state == true)
-                                    {
-                                        this.accDB.getById(targetAddress).setSwitched(false);
-                                        this.accDB.getById(targetAddress + 1).setSwitched(false);
-                                    }
-                                    
-                                    if (cState == 2 && state2 != true)
-                                    {
-                                        this.accDB.getById(targetAddress).setSwitched(false);
-                                        this.accDB.getById(targetAddress + 1).setSwitched(true);
-                                    }
-                                    
-                                    if (cState == 0 && state == false)
-                                    {
-                                        this.accDB.getById(targetAddress).setSwitched(true);
-                                    }
-                                    
-                                    if (cState == 0 && state2 == true)
-                                    {
-                                        this.accDB.getById(targetAddress + 1).setSwitched(false);
-                                    }
-                                }
-                                else if (c.isSwitch() || c.isSignal())
-                                {
-                                    if (cState == 1)
-                                    {
-                                        this.accDB.getById(targetAddress).setSwitched(false);
-                                    }
-                                    
-                                    if (cState == 0)
-                                    {
-                                        this.accDB.getById(targetAddress).setSwitched(true);
-                                    }   
-                                }*/
-                            }  
-                            
-                            c.setAccessory(this.accDB.getById(targetAddress));
-                            
-                            if (c.isThreeWay())
-                            {
-                                c.setAccessory2(this.accDB.getById(targetAddress + 1));
-                            }
-                        }
-                        else if (c.isFeedback())
-                        {                            
-                            if (!this.feedbackDB.hasId(c.getRawAddress()))
-                            {
-                                newFeedback(c.getRawAddress(), null);   
-                            }
-                            
-                            // CS2 gives us no state info :(
-                            c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
-                        }   
-                        else if (c.isRoute())
-                        {
-                            c.setRoute(this.routeDB.getById(c.getAddress()));
-                        }
+                        this.layoutDB.delete(name);
                     }
+                    
+                    syncLayouts();
+                }
+                catch (Exception e)
+                {
+                    this.log("Error: " + e.toString());
+                    this.log("Reverting to default layout load");
+                    prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                    fileParser.setDefaultLayoutDataLoc();
+                    syncLayouts();
                 }
             }
-            
+            else
+            {      
+                if (this.layoutDB.getItemNames().isEmpty())
+                {
+                    syncLayouts();
+                }  
+            }
+                         
             for (MarklinLocomotive l : fileParser.parseLocomotives())
             {
                 // Add new locomotives
@@ -391,6 +486,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public void debug(boolean state)
     {
         debug = state;
+    }
+    
+    /**
+     * Is the station a CS3?
+     * @return 
+     */
+    public boolean isCS3()
+    {
+        return this.isCS3;
     }
     
     /**

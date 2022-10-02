@@ -491,7 +491,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isUncoupler())
         {
-            return "Uncoupler " + this.getRawAddress();
+            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green");
         }
         else if (this.isFeedback())
         {

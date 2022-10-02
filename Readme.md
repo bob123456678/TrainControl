@@ -1,14 +1,14 @@
-# Marklin Train Control
+# Marklin Central Station 2/3 Train Control
 
 This program allows you to use your computer to easily control your entire Marklin layout.
-It connects to a Central Station 2/3 over the network.
+It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout / many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
 overly tedious.
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to fully automate a layout.  Layout and locomotive information is automatically
-downloaded from the CS2/CS3.
+downloaded from the CS2/CS3, with some layout limitations on the CS3 (see below).
 
 ![UI screenshot: locomotive control](assets/interface3.png?raw=true)
 
@@ -26,18 +26,33 @@ downloaded from the CS2/CS3.
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
-* Graph model for dynamic layout modeling and fully autonomous train operation
+* (Beta) Graph model for dynamic layout modeling and fully autonomous train operation
 
 **Requirements:**
 
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
-* CS2/CS3 CAN bus and broadcasting must be enabled in the settings
+* CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings
 
 **Limitations:**
 
-* The current version has only been tested with the CS2
-* CS2 IP address must be manually entered (recommend configurating a static IP in your router)
+* Automatic layout download only works with CS2, not CS3 (static layout files can be loaded if desired)
+* Central Station IP address must be manually entered (recommend configurating a static IP in your router)
+
+** Layouts with the CS3 **
+
+This program was originally written to import and display layouts created/configured from within the CS2.
+Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.  Also, the CS3 has its own web-based UI which can also be used as an alternative.
+
+However, even when using a CS3, you can view CS2 layouts in this program as follows:
+- Create an empty folder on your PC
+- Export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to this folder, maintaining the same folder structure
+- Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
+- The static local layout will now be shown in the Layout tab
+
+If you change the local files, clicking on "Sync with CS2" will update the layouts.  This effectively lets you customize the layouts, even without a CS2.
+
+Some sample files are included in the `cs2_sample_layout` folder.
 
 **Building the project from source:**
 
@@ -51,7 +66,10 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.5.11 [9/17/22]
+* v1.6.0 [10/2/22]
+    - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
+
+* v1.5.11 [09/17/22]
     - Added address info tooltips to the layout UI
 
 * v1.5.10 [08/24/22]
