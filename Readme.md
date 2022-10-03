@@ -4,7 +4,8 @@ This program allows you to use your computer to easily control your entire Markl
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout / many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
-overly tedious.
+overly tedious.  Convenience keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
+enabling functions, emergency stop, etc.
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to fully automate a layout.  Layout and locomotive information is automatically
