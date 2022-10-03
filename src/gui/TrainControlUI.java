@@ -3814,6 +3814,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         OverrideCS2DataPath.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         OverrideCS2DataPath.setText("Choose Local Data Folder");
+        OverrideCS2DataPath.setFocusable(false);
         OverrideCS2DataPath.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OverrideCS2DataPathActionPerformed(evt);
@@ -3822,6 +3823,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         CS3OpenBrowser.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         CS3OpenBrowser.setText("Open CS3 Web App");
+        CS3OpenBrowser.setFocusable(false);
         CS3OpenBrowser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CS3OpenBrowserActionPerformed(evt);
