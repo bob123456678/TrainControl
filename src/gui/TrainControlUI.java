@@ -5599,21 +5599,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_RenameLocButtonActionPerformed
 
-    private void DeleteLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteLocButtonActionPerformed
-        Object value = this.LocomotiveList.getSelectedValue();
-
-        if (value == null)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Error: no locomotive selected");
-        }
-        else
-        {
-            Locomotive l = this.model.getLocByName(value.toString());
+    public void deleteLoc(String value)
+    {
+        Locomotive l = this.model.getLocByName(value);
 
             if (l != null)
             {
-                // Also d elete locomotive from active loc list
+                // Also delete locomotive from active loc list
                 if (l.equals(this.activeLoc))
                 {
                     this.activeLoc = null;
@@ -5628,12 +5620,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                 }
 
-                this.model.deleteLoc(value.toString());
+                this.model.deleteLoc(value);
                 clearCopyTarget();
                 refreshLocList();
                 repaintLoc();
                 repaintMappings();
             }
+    }
+    
+    private void DeleteLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteLocButtonActionPerformed
+        Object value = this.LocomotiveList.getSelectedValue();
+
+        if (value == null)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Error: no locomotive selected");
+        }
+        else
+        {
+            this.deleteLoc(value.toString());
         }
     }//GEN-LAST:event_DeleteLocButtonActionPerformed
 

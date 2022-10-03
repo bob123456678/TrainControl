@@ -9,6 +9,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
 /**
@@ -111,6 +112,19 @@ public class RightClickMenuListener extends MouseAdapter {
                 menuItem = new JMenuItem("Clear Button");
 
                 menuItem.addActionListener(event -> {ui.setCopyTarget(null);ui.doPaste(source);} );
+                
+                add(menuItem);
+                
+                
+                addSeparator();
+                
+                menuItem = new JMenuItem("Delete from Database");
+
+                menuItem.addActionListener(event -> { 
+                    if (0 == JOptionPane.showConfirmDialog(ui, "Are you sure you want to delete " + ui.getButtonLocomotive(source).getName() + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
+                   { ui.deleteLoc(ui.getButtonLocomotive(source).getName());} 
+                
+                });
                 
                 add(menuItem);
             }

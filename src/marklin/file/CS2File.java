@@ -76,7 +76,7 @@ public class CS2File
      */
     public String sanitizeURL(String URL)
     {
-        return URL.replace(" ", "%20");
+        return URLEncoder.encode(URL.replace(" ", "%20"));
     }
     
     /**
@@ -86,8 +86,8 @@ public class CS2File
      */
     public String getImageURL(String image)
     {
-        return this.sanitizeURL("http://" + this.IP + "/icons/" + 
-                image + ".png");
+        return "http://" + this.IP + "/icons/" + 
+                this.sanitizeURL(image) + ".png";
     }
     
     /**
@@ -146,7 +146,7 @@ public class CS2File
     public String getLayoutURL(String dataPath, String layoutName)
     {
         return dataPath + "/config/gleisbilder/" 
-                + sanitizeURL(layoutName) + ".cs2";
+                + (dataPath.contains("http://") ? sanitizeURL(layoutName) : layoutName) + ".cs2";
     }
     
     /**
