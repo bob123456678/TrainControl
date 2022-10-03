@@ -605,6 +605,11 @@ element
  .artikel=15
  .deviceId=0xc
 element
+ .id=0x613
+ .typ=lampe
+ .drehung=0
+ .artikel=186
+element
  .id=0x614
  .typ=gerade
  .drehung=1
