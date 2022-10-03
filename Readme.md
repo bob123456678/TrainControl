@@ -46,11 +46,11 @@ Because the CS3 uses a different layout file format than the CS2, this program d
 
 However, even when using a CS3, you can view CS2 layouts in this program as follows:
 - Create an empty folder on your PC
-- Export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to this folder, maintaining the same folder structure
+- From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
 - Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
 - The static local layout will now be shown in the Layout tab
 
-If you change the local files, clicking on "Sync with CS2" will update the layouts.  This effectively lets you customize the layouts, even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
+If you change the local files, clicking on "Sync with CS2" will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
