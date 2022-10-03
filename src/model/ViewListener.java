@@ -40,4 +40,6 @@ public interface ViewListener
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);
     public boolean getFeedbackState(String name);
+    public boolean isCS3();
+    public String getCS3AppUrl();
 }
