@@ -67,6 +67,9 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.6.1 [10/7/22]
+    - Added button to query function status from Central Station
+
 * v1.6.0 [10/2/22]
     - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
     - Fixed loading of locomotive icons with special characters
