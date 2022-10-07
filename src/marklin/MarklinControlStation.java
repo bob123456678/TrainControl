@@ -344,7 +344,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Read remote config files
         this.fileParser = new CS2File(NetworkInterface.getIP(), this);
              
-        this.log("Starting CS2 database sync...");
+        this.log("Starting Central Station database sync...");
 
         int num = 0;
                 

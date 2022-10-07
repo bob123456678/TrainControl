@@ -17,10 +17,10 @@ import marklin.MarklinRoute;
  * Marklin CS config file parsing class
  * @author Adam
  */
-public class CS2File
+public final class CS2File
 {
     // IP address for our HTTP requests
-    private String IP;
+    private final String IP;
     
     // Control station
     MarklinControlStation control;

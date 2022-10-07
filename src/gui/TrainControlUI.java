@@ -1462,6 +1462,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SyncButton = new javax.swing.JButton();
         TurnOffFnButton = new javax.swing.JButton();
         TurnOnLightsButton = new javax.swing.JButton();
+        syncLocStateButton = new javax.swing.JButton();
         EditExistingLocLabel2 = new javax.swing.JLabel();
         jPanel11 = new javax.swing.JPanel();
         FilterLocomotive = new javax.swing.JTextField();
@@ -3708,7 +3709,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SyncButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SyncButton.setText("Sync With CS2");
+        SyncButton.setText("Sync with Central Station DB");
         SyncButton.setFocusable(false);
         SyncButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -3734,6 +3735,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        syncLocStateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        syncLocStateButton.setText("Sync Loc State");
+        syncLocStateButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                syncLocStateButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
@@ -3743,8 +3752,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(clearButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(jPanel8Layout.createSequentialGroup()
+                        .addComponent(TurnOffFnButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
@@ -3757,7 +3769,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(TurnOnLightsButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(TurnOffFnButton)
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(TurnOffFnButton)
+                    .addComponent(syncLocStateButton))
                 .addContainerGap(25, Short.MAX_VALUE))
         );
 
@@ -5746,6 +5760,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.LocNameInput.setText("");
     }//GEN-LAST:event_AddLocButtonActionPerformed
 
+    private void syncLocStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncLocStateButtonActionPerformed
+        
+        int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
+        if(dialogResult == JOptionPane.YES_OPTION)
+        {
+            new Thread(() -> {
+                for (String s : this.model.getLocList())
+                {
+                    this.model.syncLocomotive(s);
+                }
+            }).start();
+        }
+    }//GEN-LAST:event_syncLocStateButtonActionPerformed
+
     private void refreshRouteList()
     {
         DefaultTableModel tableModel = new DefaultTableModel() {
@@ -6078,6 +6106,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel logPanel;
     private javax.swing.JLabel sizeLabel;
     private javax.swing.JButton smallButton;
+    private javax.swing.JButton syncLocStateButton;
     // End of variables declaration//GEN-END:variables
 
     // Lap strings in the size dropdown to icon sizes
