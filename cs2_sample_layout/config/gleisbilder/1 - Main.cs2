@@ -843,7 +843,7 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x909
+ .id=0x908
  .typ=bahnschranke
  .artikel=170
  .zustand=1
@@ -924,13 +924,30 @@ element
  .artikel=1007
  .deviceId=0xc
 element
- .id=0xa09
- .typ=gerade
- .artikel=-1
-element
  .id=0xa0a
  .typ=gerade
  .artikel=-1
+element
+ .id=0x709
+ .typ=prellbock
+ .artikel=-1
+ .drehung=2
+element
+ .id=0x809
+ .typ=signal_sh01
+ .artikel=162
+ .zustand=1
+ .drehung=3
+element
+ .id=0x909
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0xa09
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=138
 element
  .id=0xa0b
  .typ=gerade
