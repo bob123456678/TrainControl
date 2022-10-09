@@ -51,6 +51,14 @@ public class RightClickMenuListener extends MouseAdapter {
 
         public RightClickMenu(TrainControlUI ui)
         {       
+            // Select the active locomotive
+            menuItem = new JMenuItem("Select Locomotive");
+            menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source) );    
+            
+            add(menuItem);
+            
+            addSeparator();
+            
             // Option to copy
             if (ui.buttonHasLocomotive(source))
             {                

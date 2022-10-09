@@ -50,7 +50,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath";
     
     // Load images
-    private static final boolean LOAD_IMAGES = true;
+    public static final boolean LOAD_IMAGES = true;
     
     // View listener (model) reference
     private ViewListener model;
@@ -102,6 +102,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Locomotive clipboard 
     private Locomotive copyTarget = null;
+    
+    // Locomotive selector
+    private LocomotiveSelector selector;
         
     /**
      * Creates new form MarklinUI
@@ -629,6 +632,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 
         // Show window
         this.setVisible(true);
+        
+        selector = new LocomotiveSelector(this.model, this);
+        selector.setVisible(true);
     }
     
     private void switchF(int fn)
@@ -658,6 +664,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             //repaintLoc();
         }
+    }
+    
+    public void selectLocomotiveActivated(JButton button)
+    {
+        //this.selector.setTarget(button);
+        this.selector.setVisible(true);
     }
     
     /**
@@ -756,7 +768,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    private void mapLocToCurrentButton(String s)
+    public void mapLocToCurrentButton(String s)
     {
         Locomotive l = this.model.getLocByName(s);
          
@@ -874,7 +886,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @return
      * @throws IOException 
      */
-    synchronized private Image getLocImage(String url, int size) throws IOException
+    synchronized public Image getLocImage(String url, int size) throws IOException
     {
         String key = url + Integer.toString(size);
         
