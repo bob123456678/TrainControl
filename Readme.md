@@ -13,8 +13,6 @@ downloaded from the CS2/CS3, with some layout limitations on the CS3 (see below)
 
 ![UI screenshot: locomotive control](assets/interface7.png?raw=true)
 
-![UI screenshot: locomotive control](assets/interface3.png?raw=true)
-
 ![UI screenshot: layout](assets/interface4.png?raw=true)
 
 ![UI screenshot: keyboard](assets/interface5.png?raw=true)
