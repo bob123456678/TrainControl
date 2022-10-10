@@ -67,8 +67,9 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.6.1 [10/7/22]
+* v1.6.1 [10/9/22]
     - Added button to query function status from Central Station
+    - Fixed lag when switching between locomotive pages
 
 * v1.6.0 [10/2/22]
     - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)

@@ -7,13 +7,9 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Toolkit;
-import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import model.ViewListener;
 
@@ -25,7 +21,12 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
     private final ViewListener model;
     private final TrainControlUI parent;
-    private static final int PADDING = 2;
+    
+    // The padding beween locomotive buttons
+    private static final int PADDING = 6;
+    
+    // How quickly we scroll through the window
+    private static final int SCROLL_SPEED = 25;
         
     /**
      * Creates new form LocomotiveSelector
@@ -42,7 +43,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     
     public void init()
     {
-        
+        // For some reason, the color set in the form gets ignored
         getContentPane().setBackground(new Color(238,238,238));
         
         this.setAlwaysOnTop(true);
@@ -116,8 +117,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         setForeground(new java.awt.Color(238, 238, 238));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(2000, 4000));
-        setMinimumSize(new java.awt.Dimension(770, 670));
-        setPreferredSize(new java.awt.Dimension(770, 670));
+        setMinimumSize(new java.awt.Dimension(800, 670));
+        setPreferredSize(new java.awt.Dimension(800, 670));
+        addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                formFocusGained(evt);
+            }
+        });
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
@@ -157,13 +163,12 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         renameLabel.setForeground(new java.awt.Color(0, 0, 155));
         renameLabel.setText("Filter List:");
 
-        LocScroller.setFocusable(false);
         LocScroller.setHorizontalScrollBar(null);
         LocScroller.setMaximumSize(null);
         LocScroller.setMinimumSize(new java.awt.Dimension(670, 500));
         LocScroller.setPreferredSize(new java.awt.Dimension(670, 1000));
 
-        MainLocList.setBackground(new java.awt.Color(255, 255, 255));
+        MainLocList.setBackground(new java.awt.Color(238, 238, 238));
         MainLocList.setMaximumSize(null);
         MainLocList.setMinimumSize(new java.awt.Dimension(670, 600));
         MainLocList.setPreferredSize(new java.awt.Dimension(670, 600));
@@ -182,7 +187,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         MainLocList.setLayout(MainLocListLayout);
         MainLocListLayout.setHorizontalGroup(
             MainLocListLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 682, Short.MAX_VALUE)
+            .addGap(0, 742, Short.MAX_VALUE)
         );
         MainLocListLayout.setVerticalGroup(
             MainLocListLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -193,6 +198,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
         SyncWithCS.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         SyncWithCS.setText("Sync with Central Station DB");
+        SyncWithCS.setFocusable(false);
         SyncWithCS.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SyncWithCSActionPerformed(evt);
@@ -215,7 +221,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 710, Short.MAX_VALUE)
+                    .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 770, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(locListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -300,6 +306,10 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         updateScrollArea();
     }//GEN-LAST:event_formWindowStateChanged
 
+    private void formFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_formFocusGained
+        updateScrollArea();
+    }//GEN-LAST:event_formFocusGained
+
     public boolean doCloseWindow()
     {
         return this.closeOnLocSel.isSelected();
@@ -309,9 +319,9 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     {
         try
         {
-            if (this.MainLocList.getComponentCount() > 0)
+            if (this.MainLocList.getComponentCount() > 0 && this.MainLocList.getComponent(0).getWidth() > 0)
             {            
-                Integer cols = this.LocScroller.getWidth() / this.MainLocList.getComponent(0).getWidth();
+                Integer cols = (this.LocScroller.getWidth() + PADDING) / this.MainLocList.getComponent(0).getWidth();
                 
                 Integer itemH = this.MainLocList.getComponent(0).getHeight();
                 Integer totalItems = 0;
@@ -324,15 +334,21 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                     }
                 }
                 
-
                 Integer rows = (int) Math.ceil((double) totalItems / (double) cols) ;
 
-                this.MainLocList.setPreferredSize(new Dimension(this.getWidth(), ( rows * ( itemH + PADDING) ) + itemH * 1));
+                this.MainLocList.setPreferredSize(new Dimension(this.getWidth(), ( rows * ( itemH + PADDING) ) + (int) (itemH * 1.5) ));
+                     
+                // This determines the scolling speed
+                if (this.LocScroller.getVerticalScrollBar() != null)
+                {
+                    this.LocScroller.getVerticalScrollBar().setUnitIncrement(SCROLL_SPEED);
+                    this.LocScroller.repaint();
+                }
             }  
         }
         catch (Exception e)
         {
-            System.out.println(e.toString());
+            // System.out.println(e.toString());
         }
     }
 

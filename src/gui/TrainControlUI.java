@@ -918,37 +918,40 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private void repaintIcon(JButton b, Locomotive l)
     {
-        if (b != null)
+        new Thread(() -> 
         {
-            if (l == null)
+            if (b != null)
             {
-                noImageButton(b);
-            }
-            else if (LOAD_IMAGES && l.getImageURL() != null)
-            {
-                try 
-                {
-                    b.setIcon(new javax.swing.ImageIcon(
-                        getLocImage(l.getImageURL(), 65)
-                    ));  
-                    
-                    b.setHorizontalTextPosition(SwingConstants.CENTER);
-                    
-                    b.setForeground(new java.awt.Color(255, 255, 255));
-                    b.setContentAreaFilled(false);
-                } 
-                catch (IOException | NullPointerException e)
+                if (l == null)
                 {
                     noImageButton(b);
+                }
+                else if (LOAD_IMAGES && l.getImageURL() != null)
+                {
+                    try 
+                    {
+                        b.setIcon(new javax.swing.ImageIcon(
+                            getLocImage(l.getImageURL(), 65)
+                        ));  
 
-                    this.log("Failed to load image " + l.getImageURL());
+                        b.setHorizontalTextPosition(SwingConstants.CENTER);
+
+                        b.setForeground(new java.awt.Color(255, 255, 255));
+                        b.setContentAreaFilled(false);
+                    } 
+                    catch (IOException | NullPointerException e)
+                    {
+                        noImageButton(b);
+
+                        this.log("Failed to load image " + l.getImageURL());
+                    }
+                }
+                else
+                {
+                    noImageButton(b);
                 }
             }
-            else
-            {
-                noImageButton(b);
-            }
-        }
+        }).start();
     }
     
     @Override
