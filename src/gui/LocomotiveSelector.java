@@ -5,23 +5,26 @@
  */
 package gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import model.ViewListener;
 
 /**
  *
  * @author Adam
  */
-public class LocomotiveSelector extends javax.swing.JFrame {
+public final class LocomotiveSelector extends javax.swing.JFrame {
 
-    private ViewListener model;
-    private TrainControlUI parent;
+    private final ViewListener model;
+    private final TrainControlUI parent;
     private static final int PADDING = 2;
         
     /**
@@ -35,40 +38,39 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         this.parent = ui;
 
         initComponents();
+    }
+    
+    public void init()
+    {
+        
+        getContentPane().setBackground(new Color(238,238,238));
         
         this.setAlwaysOnTop(true);
+        pack();
         
         refreshLocSelectorList();
-        
-        pack();
-     
-        setVisible(true);
     }
 
-    public void refreshLocSelectorList()
+    public synchronized void refreshLocSelectorList()
     {
-        this.MainLocList.removeAll();
-        
-        this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING) {
-            /*public Dimension preferredLayoutSize(Container target) {
-                Dimension sd=super.preferredLayoutSize(target);
+        new Thread(() -> {
 
-                sd.width=Math.min(200, sd.width);
+            this.MainLocList.removeAll();
 
-                return sd;
-            }*/
-        });
-                
-        for (String s : model.getLocList())
-        {
-            LocomotiveSelectorItem loc = new LocomotiveSelectorItem(model.getLocByName(s), parent);
-         
-            this.MainLocList.add(loc);
-            loc.setVisible(true);
-        }
-        
-        this.LocFilterBox.setText("");
-        filterLocList();
+            this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING));
+
+            for (String s : model.getLocList())
+            {
+                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(model.getLocByName(s), parent);
+
+                this.MainLocList.add(loc);
+                loc.setVisible(true);
+            }
+
+            this.LocFilterBox.setText("");
+            filterLocList();
+            
+        }).start();
     }
     
     private void filterLocList()
@@ -105,15 +107,28 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         renameLabel = new javax.swing.JLabel();
         LocScroller = new javax.swing.JScrollPane();
         MainLocList = new javax.swing.JPanel();
+        SyncWithCS = new javax.swing.JButton();
+        closeOnLocSel = new javax.swing.JCheckBox();
 
         setTitle("Locomotive Selector");
         setAutoRequestFocus(false);
-        setMaximumSize(new java.awt.Dimension(800, 4000));
-        setMinimumSize(new java.awt.Dimension(400, 550));
-        setPreferredSize(new java.awt.Dimension(700, 650));
+        setBackground(new java.awt.Color(238, 238, 238));
+        setForeground(new java.awt.Color(238, 238, 238));
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
+        setMaximumSize(new java.awt.Dimension(2000, 4000));
+        setMinimumSize(new java.awt.Dimension(770, 670));
+        setPreferredSize(new java.awt.Dimension(770, 670));
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
+            }
+            public void componentShown(java.awt.event.ComponentEvent evt) {
+                formComponentShown(evt);
+            }
+        });
+        addWindowStateListener(new java.awt.event.WindowStateListener() {
+            public void windowStateChanged(java.awt.event.WindowEvent evt) {
+                formWindowStateChanged(evt);
             }
         });
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -123,7 +138,7 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         });
 
         locListLabel.setForeground(new java.awt.Color(0, 0, 155));
-        locListLabel.setText("Assign Locomotive to Selected Button:");
+        locListLabel.setText("Assign Locomotive to Active Button:");
 
         LocFilterBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -142,6 +157,7 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         renameLabel.setForeground(new java.awt.Color(0, 0, 155));
         renameLabel.setText("Filter List:");
 
+        LocScroller.setFocusable(false);
         LocScroller.setHorizontalScrollBar(null);
         LocScroller.setMaximumSize(null);
         LocScroller.setMinimumSize(new java.awt.Dimension(670, 500));
@@ -166,7 +182,7 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         MainLocList.setLayout(MainLocListLayout);
         MainLocListLayout.setHorizontalGroup(
             MainLocListLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 670, Short.MAX_VALUE)
+            .addGap(0, 682, Short.MAX_VALUE)
         );
         MainLocListLayout.setVerticalGroup(
             MainLocListLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -175,6 +191,23 @@ public class LocomotiveSelector extends javax.swing.JFrame {
 
         LocScroller.setViewportView(MainLocList);
 
+        SyncWithCS.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SyncWithCS.setText("Sync with Central Station DB");
+        SyncWithCS.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SyncWithCSActionPerformed(evt);
+            }
+        });
+
+        closeOnLocSel.setSelected(true);
+        closeOnLocSel.setText("Close Window on Assignment");
+        closeOnLocSel.setFocusPainted(false);
+        closeOnLocSel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                closeOnLocSelActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -182,28 +215,33 @@ public class LocomotiveSelector extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 710, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(locListLabel)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(renameLabel)
-                                .addGap(15, 15, 15)
-                                .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addComponent(locListLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(closeOnLocSel))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(renameLabel)
+                        .addGap(15, 15, 15)
+                        .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(SyncWithCS)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(locListLabel)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(locListLabel)
+                    .addComponent(closeOnLocSel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 554, Short.MAX_VALUE)
+                .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(renameLabel))
+                    .addComponent(renameLabel)
+                    .addComponent(SyncWithCS))
                 .addContainerGap())
         );
 
@@ -239,30 +277,71 @@ public class LocomotiveSelector extends javax.swing.JFrame {
         updateScrollArea();
     }//GEN-LAST:event_formComponentResized
 
-    private void updateScrollArea()
+    private void SyncWithCSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncWithCSActionPerformed
+
+        new Thread(() -> {
+            Integer r = this.model.syncWithCS2();
+            this.refreshLocSelectorList();
+
+            JOptionPane.showMessageDialog(this, "Sync complete.  Items added: " + r.toString());
+        }).start();
+
+    }//GEN-LAST:event_SyncWithCSActionPerformed
+
+    private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
+        updateScrollArea();
+    }//GEN-LAST:event_formComponentShown
+
+    private void closeOnLocSelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeOnLocSelActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_closeOnLocSelActionPerformed
+
+    private void formWindowStateChanged(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowStateChanged
+        updateScrollArea();
+    }//GEN-LAST:event_formWindowStateChanged
+
+    public boolean doCloseWindow()
     {
-        if (this.MainLocList.getComponentCount() > 0)
-        {            
-            Integer cols = this.LocScroller.getWidth() / this.MainLocList.getComponent(0).getWidth();
-            
-            System.out.println(cols);
-            
-            Integer itemH = this.MainLocList.getComponent(0).getHeight();
-            Integer totalItems = this.MainLocList.getComponentCount();
-            
-            
-            Integer rows = (int) Math.ceil((double) totalItems / (double) cols) ;
-            
-            System.out.println(rows);
-            
-            this.MainLocList.setPreferredSize(new Dimension(this.getWidth(), ( rows * ( itemH + PADDING) ) + itemH * 2));
-        }   
+        return this.closeOnLocSel.isSelected();
+    }
+    
+    public synchronized void updateScrollArea()
+    {
+        try
+        {
+            if (this.MainLocList.getComponentCount() > 0)
+            {            
+                Integer cols = this.LocScroller.getWidth() / this.MainLocList.getComponent(0).getWidth();
+                
+                Integer itemH = this.MainLocList.getComponent(0).getHeight();
+                Integer totalItems = 0;
+                
+                for (Component c: this.MainLocList.getComponents())
+                {
+                    if (c.isVisible())
+                    {
+                        totalItems += 1;
+                    }
+                }
+                
+
+                Integer rows = (int) Math.ceil((double) totalItems / (double) cols) ;
+
+                this.MainLocList.setPreferredSize(new Dimension(this.getWidth(), ( rows * ( itemH + PADDING) ) + itemH * 1));
+            }  
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.toString());
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField LocFilterBox;
     private javax.swing.JScrollPane LocScroller;
     private javax.swing.JPanel MainLocList;
+    private javax.swing.JButton SyncWithCS;
+    private javax.swing.JCheckBox closeOnLocSel;
     private javax.swing.JLabel locListLabel;
     private javax.swing.JLabel renameLabel;
     // End of variables declaration//GEN-END:variables

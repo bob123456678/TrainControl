@@ -34,7 +34,7 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
             try 
             {
                 locIcon.setIcon(new javax.swing.ImageIcon(
-                    ui.getLocImage(loc.getImageURL(), 85)
+                    ui.getLocImage(loc.getImageURL(), 135)
                 ));      
                 locIcon.setText("");
             }
@@ -79,6 +79,7 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
             }
         });
 
+        locIcon.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         locIcon.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 locIconMouseReleased(evt);
@@ -97,21 +98,16 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(LocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(60, 60, 60))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())))
+                .addComponent(LocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 108, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(LocLabel)
                 .addContainerGap())
@@ -120,6 +116,12 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
 
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
         ui.mapLocToCurrentButton(loc.getName());
+        
+        if (ui.getLocSelector().doCloseWindow())
+        {
+            ui.getLocSelector().setVisible(false);
+        }
+        
     }//GEN-LAST:event_formMouseReleased
 
     private void LocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocLabelMouseReleased

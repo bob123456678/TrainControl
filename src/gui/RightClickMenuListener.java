@@ -126,6 +126,12 @@ public class RightClickMenuListener extends MouseAdapter {
                 
                 addSeparator();
                 
+                menuItem = new JMenuItem("Rename Locomotive");
+
+                menuItem.addActionListener(event -> {ui.renameLocomotive(ui.getButtonLocomotive(source).getName());} );
+                
+                add(menuItem);
+                
                 menuItem = new JMenuItem("Delete from Database");
 
                 menuItem.addActionListener(event -> { 

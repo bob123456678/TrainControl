@@ -631,10 +631,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         displayTimer.start();*/
                 
         // Show window
-        this.setVisible(true);
         
         selector = new LocomotiveSelector(this.model, this);
-        selector.setVisible(true);
+        selector.init();
+        
+        this.setVisible(true);
+    }
+    
+    public LocomotiveSelector getLocSelector()
+    {
+        return this.selector;
     }
     
     private void switchF(int fn)
@@ -670,6 +676,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         //this.selector.setTarget(button);
         this.selector.setVisible(true);
+        this.selector.updateScrollArea();
     }
     
     /**
@@ -5558,6 +5565,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         Integer r = this.model.syncWithCS2();
         refreshLocList();
         refreshRouteList();
+        this.selector.refreshLocSelectorList();
 
         JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
     }//GEN-LAST:event_SyncButtonActionPerformed
@@ -5577,22 +5585,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_clearButtonActionPerformed
 
-    private void RenameLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RenameLocButtonActionPerformed
-        Object value = this.LocomotiveList.getSelectedValue();
-
-        if (value == null)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Error: no locomotive selected");
-
-            return;
-        }
-
-        Locomotive l = this.model.getLocByName(value.toString());
+    public void renameLocomotive (String s)
+    {
+        Locomotive l = this.model.getLocByName(s);
 
         if (l != null)
         {
-            String newName = JOptionPane.showInputDialog(this, "Enter new name:");
+            String newName = JOptionPane.showInputDialog(this, "Enter new name:", s);
 
             if (newName != null)
             {
@@ -5623,8 +5622,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 refreshLocList();
                 repaintLoc();
                 repaintMappings();
+                selector.refreshLocSelectorList();
             }
         }
+    }
+    
+    private void RenameLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RenameLocButtonActionPerformed
+        Object value = this.LocomotiveList.getSelectedValue();
+
+        if (value == null)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Error: no locomotive selected");
+
+            return;
+        }
+
+        renameLocomotive(value.toString());
     }//GEN-LAST:event_RenameLocButtonActionPerformed
 
     public void deleteLoc(String value)
@@ -5653,6 +5667,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 refreshLocList();
                 repaintLoc();
                 repaintMappings();
+                selector.refreshLocSelectorList();
             }
     }
     
@@ -5763,6 +5778,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         // Add list of locomotives to dropdown
         refreshLocList();
+        this.selector.refreshLocSelectorList();
 
         // Rest form
         JOptionPane.showMessageDialog(this,
