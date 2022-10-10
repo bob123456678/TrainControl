@@ -1,7 +1,6 @@
 package marklin;
 
 import base.Accessory;
-import base.Feedback;
 import base.RemoteDeviceCollection;
 import gui.TrainControlUI;
 import java.io.FileInputStream;
@@ -24,7 +23,6 @@ import marklin.udp.NetworkProxy;
 import model.ModelListener;
 import model.View;
 import model.ViewListener;
-import util.Conversion;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.

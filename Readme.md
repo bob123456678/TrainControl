@@ -11,11 +11,17 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, with some layout limitations on the CS3 (see below).
 
+![UI screenshot: locomotive control](assets/interface7.png?raw=true)
+
 ![UI screenshot: locomotive control](assets/interface3.png?raw=true)
 
 ![UI screenshot: layout](assets/interface4.png?raw=true)
 
 ![UI screenshot: keyboard](assets/interface5.png?raw=true)
+
+![UI screenshot: locomotive control](assets/interface8.png?raw=true)
+
+![UI screenshot: locomotive control](assets/interface6.png?raw=true)
 
 **Features:**
 
@@ -37,7 +43,7 @@ downloaded from the CS2/CS3, with some layout limitations on the CS3 (see below)
 
 **Limitations:**
 
-* Automatic layout download only works with CS2, not CS3 (static layout files can be loaded if desired)
+* Automatic layout download only works with CS2, not CS3 (static layout files can be used with CS3 if desired)
 * Central Station IP address must be manually entered (recommend configurating a static IP in your router)
 
 **Layouts and the CS3**
@@ -67,11 +73,14 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.6.1 [10/9/22]
-    - Added button to query function status from Central Station
+* v1.6.1 [10/9/22] (Beta)
+    - Redesigned locomotive selection UI and moved all editing options to right-click menu
+    - Larger locomotive icons and more functions visible at once
+    - Added button to query every loc's function status from the Central Station
     - Fixed lag when switching between locomotive pages
 
-* v1.6.0 [10/2/22]
+* v1.6.0 [10/2/22] (Beta)
+    - Tested with CS3, some backwards-compatibility issues with CS2
     - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
     - Fixed loading of locomotive icons with special characters
     - Added option to delete locomotives from the loc control UI
