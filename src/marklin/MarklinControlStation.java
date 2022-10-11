@@ -371,10 +371,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
             
-            Preferences prefs = this.getPrefs();
-            String overrideLayoutPath = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            String overrideLayoutPath = "";
+            Preferences prefs = null;
             
-            if (!"".equals(overrideLayoutPath))
+            try
+            {
+                prefs = this.getPrefs();
+                overrideLayoutPath = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            }
+            catch (Exception e)
+            {
+                this.log("Error loading user preferences; try re-running as admin.");
+                
+                if (debug)
+                {
+                    this.log(e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+                
+            if (!"".equals(overrideLayoutPath) && prefs != null)
             {
                 fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
                 
@@ -392,8 +408,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (Exception e)
                 {
-                    this.log("Error: " + e.toString());
-                    this.log("Reverting to default layout load");
+                    if (debug)
+                    {
+                       this.log(e.getMessage());
+                       e.printStackTrace();
+                    }
+                           
+                    this.log("Error, reverting to default layout load.");
                     prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
