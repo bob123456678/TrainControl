@@ -84,11 +84,11 @@ public class MarklinLayoutComponent
      */
     public void execSwitching()
     {        
-        if (this.isSignal())
+        if (this.isSignal() && this.accessory != null)
         {
             this.accessory.doSwitch();
         }
-        else if (this.isUncoupler())
+        else if (this.isUncoupler() && this.accessory != null)
         {
             if (this.getRawAddress() % 2 == 0)
             {
@@ -99,11 +99,11 @@ public class MarklinLayoutComponent
                 this.accessory.setSwitched(false);
             }
         }
-        else if (this.isSwitch() && ! this.isThreeWay())
+        else if (this.isSwitch() && ! this.isThreeWay() && this.accessory != null)
         {
             this.accessory.doSwitch();
         }
-        else if (this.isThreeWay())
+        else if (this.isThreeWay() && this.accessory != null && this.accessory2 != null)
         {
             if (this.accessory.isStraight() && this.accessory2.isStraight())
             {
@@ -124,7 +124,7 @@ public class MarklinLayoutComponent
                 }                      
             }  
         }
-        else if (this.isFeedback())
+        else if (this.isFeedback() && this.feedback != null)
         {
             if (this.feedback.isSet())
             {
@@ -142,6 +142,8 @@ public class MarklinLayoutComponent
                 this.route.execRoute();
             }
         }
+        
+        // This should never be reached
     }
     
     public void setLabel(String label)
