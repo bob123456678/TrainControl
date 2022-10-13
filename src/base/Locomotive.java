@@ -34,6 +34,9 @@ public abstract class Locomotive
     // State of functions
     private final boolean[] functionState;
     
+    // A preset of preferred function state
+    private boolean[] preferredFunctions;
+
     // Name of this locomotive
     private String name;
     
@@ -61,6 +64,39 @@ public abstract class Locomotive
         this.functionTypes = new int[numFunctions];
         
         this.callbacks = new HashMap<>();
+        
+        this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
+    }
+    
+    /**
+     * Saves current function state as the new preferred function preset
+     */
+    public void savePrefferedFunctions()
+    {
+        this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
+    }
+    
+    /**
+     * Retrieves the preferred function preset
+     * @return 
+     */
+    public boolean[] getPreferredFunctions()
+    {
+        return this.preferredFunctions;
+    }
+    
+    /**
+     * Applies the saved function preset
+     */
+    public void applyPreferredFunctions()
+    {
+        if (this.preferredFunctions != null)
+        {
+            for (int i = 0; i < preferredFunctions.length && i < this.functionTypes.length; i++)
+            { 
+                this.setF(i, this.preferredFunctions[i]);
+            }
+        }
     }
     
     /**
@@ -85,6 +121,8 @@ public abstract class Locomotive
         }
   
         this.callbacks = new HashMap<>();
+        
+        this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
     }
     
     /**
@@ -118,9 +156,10 @@ public abstract class Locomotive
      * @param direction
      * @param functionState 
      * @param functionTypes 
+     * @param preferredFunctions 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState, int[] functionTypes)
+        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions)
     {
         this.name = name;
         this.direction = direction;
@@ -136,6 +175,8 @@ public abstract class Locomotive
         }
         
         this.callbacks = new HashMap<>();
+        
+        this.preferredFunctions = preferredFunctions;
     }
 
     /* Internal functionality */

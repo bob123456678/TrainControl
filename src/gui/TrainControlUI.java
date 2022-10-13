@@ -677,7 +677,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void selectLocomotiveActivated(JButton button)
     {
-        //this.selector.setTarget(button);
+        // Make sure this button is selected
+        button.doClick();
         this.selector.setVisible(true);
         this.selector.updateScrollArea();
     }
@@ -733,6 +734,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         return copyTarget;
     }
+    
+    /**
+     * Apply function presets
+     * @param l 
+     */
+    public void applyPreferredFunctions(Locomotive l)
+    {
+        new Thread(() -> {
+            this.model.getLocByName(l.getName()).applyPreferredFunctions();
+        }).start();
+    }
+    
+    /**
+     * Save function presets
+     * @param l 
+     */
+    public void savePreferredFunctions(Locomotive l)
+    {
+        new Thread(() -> {
+            this.model.getLocByName(l.getName()).savePrefferedFunctions();
+        }).start();
+    }
+    
     
     public void locFunctionsOff(Locomotive l)
     {

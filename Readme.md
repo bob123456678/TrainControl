@@ -71,16 +71,17 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.6.1 [10/11/22]
+* v1.6.1 [10/13/22]
     - Redesigned locomotive selection UI and moved all editing options to right-click menu
     - Larger locomotive icons and more functions visible at once
+    - Added option to save/restore a function state preset for each locomotive
     - Added button to query every loc's function status from the Central Station
     - Fixed lag when switching between locomotive pages
-
-* v1.6.0 [10/2/22]
-    - Tested with CS3, may need to be run as admin when started for the first time
-    - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
     - Fixed loading of locomotive icons with special characters
+
+* v1.6.0 [10/2/22] (Beta)
+    - Tested basic functionality with CS3
+    - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
     - Added option to delete locomotives from the loc control UI
 
 * v1.5.11 [09/17/22]

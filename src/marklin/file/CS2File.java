@@ -3,7 +3,6 @@ package marklin.file;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 
 /**
- * Marklin CS config file parsing class
+ * Marklin Central Station 2/3 config file parser
  * @author Adam
  */
 public final class CS2File
@@ -39,7 +38,6 @@ public final class CS2File
         this.IP = IP;
         this.control = control;
         this.setDefaultLayoutDataLoc();
-        
     }
     
     /**
@@ -76,7 +74,7 @@ public final class CS2File
      */
     public String sanitizeURL(String URL)
     {
-        return URLEncoder.encode(URL.replace(" ", "%20"));
+        return URLEncoder.encode(URL).replace("+", "%20");
     }
     
     /**

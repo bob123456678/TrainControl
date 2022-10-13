@@ -19,6 +19,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     // Locomotive function state and types
     private boolean[] functions;
+    private boolean[] preferredFunctions;
     private int[] functionTypes;
     
     // Route state
@@ -78,6 +79,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.state = l.goingForward();
         this.functions = l.getFunctionState();
         this.functionTypes = l.getFunctionTypes();
+        this.preferredFunctions = l.getPreferredFunctions();
     }
     
     public Map<Integer, Boolean> getRoute()
@@ -114,4 +116,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
     {
         return type;
     }
+    
+    public boolean[] getPreferredFunctions()
+    {
+        return preferredFunctions;
+    }    
 }

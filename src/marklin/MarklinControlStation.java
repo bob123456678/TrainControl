@@ -122,21 +122,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MFX, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.LOC_MM2)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MM2, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.LOC_MULTI_UNIT)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MULTI_UNIT, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -439,7 +439,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.log("Added locomotive " + l.getName() 
                             + " with address " 
                             + util.Conversion.intToHex(l.getAddress()) 
-                            + " from CS2"
+                            + " from Central Station"
                     );
 
                     newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());
@@ -1105,9 +1105,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
-        boolean[] functions, int[] functionTypes)
+        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         
