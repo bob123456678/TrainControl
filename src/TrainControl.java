@@ -23,12 +23,7 @@ public class TrainControl {
             boolean debug = (args.length >= 2);
             String initIP = args.length >= 1 ? args[0] : null;
 
-            MarklinControlStation model = init(initIP, simulate, true, true);
-            
-            if (debug)
-            {
-                model.debug(true);
-            }
+            MarklinControlStation model = init(initIP, simulate, true, true, debug);
         } 
         catch (Exception e)
         {

@@ -193,13 +193,13 @@ public class ProgrammaticControlExample
             try
             {
                 // Initialize with no UI
-                MarklinControlStation model = init(null, false, false, true); 
+                MarklinControlStation model = init(null, false, false, true, false); 
                 
                 // Or, initialize with a predetermined IP
-                // MarklinControlStation model = init("192.168.1.10", false, false, true); 
+                // MarklinControlStation model = init("192.168.1.10", false, false, true, false); 
                 
                 // Or, initialize with the UI
-                // MarklinControlStation model = init(null, false, true, true); 
+                // MarklinControlStation model = init(null, false, true, true, false); 
            
                 execCode(model);
 	    } 

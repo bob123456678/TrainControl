@@ -93,7 +93,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Is this a CS3?
     private boolean isCS3 = false;
             
-    public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn)
+    public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
@@ -106,6 +106,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.on = false;
         this.NetworkInterface = network;
         this.view = view;
+        
+        // Set debug mode
+        this.debug(debug);
         
         this.log("Marklin Control v" + VERSION);
         
@@ -338,7 +341,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     @Override
     public final int syncWithCS2()
-    {
+    {        
         // Read remote config files
         this.fileParser = new CS2File(NetworkInterface.getIP(), this);
              
@@ -1313,7 +1316,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init() throws UnknownHostException, IOException
     {
-        return init(null, false, true, true);
+        return init(null, false, true, true, false);
     }
     
     /**
@@ -1326,7 +1329,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @throws UnknownHostException
      * @throws IOException 
      */
-    public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn) throws UnknownHostException, IOException
+    public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException
     {
         // User interface
         TrainControlUI ui = new TrainControlUI();
@@ -1381,7 +1384,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Initialize the central station
         MarklinControlStation model = 
-          new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn);
+          new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
 
         // Set model
         if (showUI)
