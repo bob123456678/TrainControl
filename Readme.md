@@ -42,7 +42,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 **Limitations:**
 
 * Automatic layout download only works with CS2, not CS3 (static layout files can be used with CS3 if desired)
-* Central Station IP address must be manually entered (recommend configurating a static IP in your router)
+* Central Station IP address must be manually entered (recommend configuring a static IP in your router)
 
 **Layouts and the CS3**
 
@@ -58,6 +58,8 @@ However, even when using a CS3, you can view CS2 layouts in this program as foll
 If you change the local files, clicking on "Sync with CS2" will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
+
+Expanded support for CS3 layouts (and the CS3 locomotive database) is planned for the future.
 
 **Building the project from source:**
 
