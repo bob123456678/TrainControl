@@ -741,9 +741,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void applyPreferredFunctions(Locomotive l)
     {
-        new Thread(() -> {
-            this.model.getLocByName(l.getName()).applyPreferredFunctions();
-        }).start();
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.getLocByName(l.getName()).applyPreferredFunctions();
+            }).start();
+        }
     }
     
     /**
@@ -752,17 +755,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void savePreferredFunctions(Locomotive l)
     {
-        new Thread(() -> {
-            this.model.getLocByName(l.getName()).savePrefferedFunctions();
-        }).start();
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.getLocByName(l.getName()).savePrefferedFunctions();
+            }).start();
+        }
     }
     
     
     public void locFunctionsOff(Locomotive l)
     {
-        new Thread(() -> {
-            this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
-        }).start();
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
+            }).start();
+        }
     }
     
     /**
@@ -4827,6 +4836,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             go();
         }
+        else if (altPressed && keyCode == KeyEvent.VK_P)
+        {
+            this.applyPreferredFunctions(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_O)
+        {
+            this.locFunctionsOff(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_S)
+        {
+            this.savePreferredFunctions(this.activeLoc);
+        }
         else if (this.buttonMapping.containsKey(keyCode))
         {
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
@@ -4900,7 +4921,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (currentIndex > 0)
                 {
                      this.LayoutList.setSelectedIndex(currentIndex - 1);
-                     this.repaintLayout();
+                     //this.repaintLayout();
                 }
             }
             else
@@ -4917,7 +4938,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (currentIndex < this.LayoutList.getItemCount() - 1)
                 {
                      this.LayoutList.setSelectedIndex(currentIndex + 1);
-                     this.repaintLayout();
+                     //this.repaintLayout();
                 }
             }
             else
@@ -5948,7 +5969,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public synchronized void repaintLayout()
     {    
         repaintPathLabel();
-          
+                  
         new Thread(() -> {
             InnerLayoutPanel.setVisible(false);
             this.trainGrid = new LayoutGrid(

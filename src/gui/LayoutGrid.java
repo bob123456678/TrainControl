@@ -82,17 +82,17 @@ public class LayoutGrid
                 if (c != null)
                 {
                     // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
-                    if (c.isSwitch() || c.isSignal())
+                    if ((c.isSwitch() || c.isSignal()) && c.getAccessory() != null)
                     {
                         c.getAccessory().addTile(grid[x][y]);
                     }
                     
-                    if (c.isFeedback())
+                    if (c.isFeedback() && c.getFeedback() != null)
                     {
                         c.getFeedback().addTile(grid[x][y]);
                     }
                     
-                    if (c.isThreeWay())
+                    if (c.isThreeWay() && c.getAccessory2() != null)
                     {
                         c.getAccessory2().addTile(grid[x][y]); 
                     }                    

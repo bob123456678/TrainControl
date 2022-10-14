@@ -69,7 +69,33 @@ Requires JDK 1.8+.
 
 ```java -jar TrainControl.jar [CS2 IP address]```
 
+## Keyboard Commands / Key Mappings
+
+* Letter keys (select a locomotive)
+* Up/down arrow (speed up/slow down)
+* Left/right arrow (change direction)
+* Escape (power off/emergency stop)
+* Alt+G (power on)
+* 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
+* Numpad 0/backquote/Alt+0 (toggle lights/F0)
+* F1-F16 (toggle functions F1-F16)
+* Numpad 1-9 (toggle functions F1-F9)
+* Shift (slow stop)
+* Spacebar (instant stop)
+* Enter (stop all locs)
+* Comma/period (cycle to previous/next loc page)
+* Backspace (cycle through tabs)
+* Plus/minus (cycle through keyboards)
+* Alt+P (apply saved function preset for current loc)
+* Alt+O (turn off all functions for current loc)
+* Alt+S (save current functions as a preset for current loc)
+
 ## Changelog
+
+* v1.6.2 (Beta)
+    - Added hotkeys for saving and applying function presets (Alt+P, Alt+S)
+    - Added hotkey for turning off current loc's functions (Alt+O)
+    - Minor UI bug fixes
 
 * v1.6.1 [10/13/22]
     - Redesigned locomotive selection UI and moved all editing options to right-click menu

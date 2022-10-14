@@ -234,12 +234,12 @@ public class MarklinLayoutComponent
      * @return 
      */
     public String getImageName(int size)
-    {
+    {        
         String stateString = "";
                         
         if (this.isSwitch() || this.isSignal())
         {
-            if (this.isThreeWay())
+            if (this.isThreeWay() && this.getAccessory() != null && this.getAccessory2() != null)
             {
                 if (this.getAccessory().isSwitched())
                 {
@@ -250,7 +250,7 @@ public class MarklinLayoutComponent
                     stateString = "_active2";
                 }
             }
-            else
+            else if (this.getAccessory() != null)
             {      
                 if (this.getAccessory().isSwitched())
                 {
