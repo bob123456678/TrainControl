@@ -5606,7 +5606,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void syncLocStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncLocStateButtonActionPerformed
         
-        int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
+        int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
         if(dialogResult == JOptionPane.YES_OPTION)
         {
             new Thread(() -> {
