@@ -105,11 +105,19 @@ public class RightClickMenuListener extends MouseAdapter {
                 menuItem = new JMenuItem("Apply Saved Function Preset");
                 menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)) );
                 add(menuItem);
+                
+                menuItem = new JMenuItem("Apply Saved Speed Preset (" + Integer.toString(ui.getButtonLocomotive(source).getPreferredSpeed()) + ")" ) ;
+                menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)) );
+                add(menuItem);
 
                 addSeparator();
                 
                 menuItem = new JMenuItem("Save Current Functions as Preset");
                 menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)) );
+                add(menuItem);
+                
+                menuItem = new JMenuItem("Save Current Speed as Preset");
+                menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)) );
                 add(menuItem);
                 
                 // Option to turn off functions and sync with station

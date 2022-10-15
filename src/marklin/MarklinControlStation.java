@@ -122,21 +122,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MFX, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.LOC_MM2)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MM2, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.LOC_MULTI_UNIT)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MULTI_UNIT, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -1105,9 +1105,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
-        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions)
+        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions, preferredSpeed);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         

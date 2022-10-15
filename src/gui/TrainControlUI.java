@@ -749,6 +749,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
+    public void applyPreferredSpeed(Locomotive l)
+    {
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.getLocByName(l.getName()).applyPreferredSpeed();
+            }).start();
+        }
+    }
+    
     /**
      * Save function presets
      * @param l 
@@ -758,7 +768,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (l != null)
         {
             new Thread(() -> {
-                this.model.getLocByName(l.getName()).savePrefferedFunctions();
+                this.model.getLocByName(l.getName()).savePreferredFunctions();
+            }).start();
+        }
+    }
+    
+    public void savePreferredSpeed(Locomotive l)
+    {
+        if (l != null)
+        {
+            new Thread(() -> {
+                this.model.getLocByName(l.getName()).savePreferredSpeed();
             }).start();
         }
     }
@@ -1139,7 +1159,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
             }
 
-            this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
+            this.SpeedSlider.setValue(this.activeLoc.getSpeed());            
         }
         else
         {
@@ -4840,6 +4860,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.applyPreferredFunctions(this.activeLoc);
         }
+        else if (altPressed && keyCode == KeyEvent.VK_V)
+        {
+            this.applyPreferredSpeed(this.activeLoc);
+        }
         else if (altPressed && keyCode == KeyEvent.VK_O)
         {
             this.locFunctionsOff(this.activeLoc);
@@ -4847,6 +4871,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (altPressed && keyCode == KeyEvent.VK_S)
         {
             this.savePreferredFunctions(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_U)
+        {
+            this.savePreferredSpeed(this.activeLoc);
         }
         else if (this.buttonMapping.containsKey(keyCode))
         {

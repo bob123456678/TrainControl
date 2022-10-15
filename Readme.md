@@ -91,12 +91,16 @@ Requires JDK 1.8+.
 * Alt+P (apply saved function preset for current loc)
 * Alt+O (turn off all functions for current loc)
 * Alt+S (save current functions as a preset for current loc)
+* Alt+U (save current speed as a preset for current loc)
+* Alt+V (apply saved speed preset for current loc)
+
 
 ## Changelog
 
 * v1.6.2 (Beta)
     - Added hotkeys for saving and applying function presets (Alt+P, Alt+S)
     - Added hotkey for turning off current loc's functions (Alt+O)
+    - Added option to save/apply a preferred speed for each locomotive (Alt+U, Alt+V)
     - Minor UI bug fixes
 
 * v1.6.1 [10/13/22]

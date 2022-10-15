@@ -88,11 +88,12 @@ public class MarklinLocomotive extends Locomotive
      * @param name
      * @param functions
      * @param functionTypes
+     * @param preferredFunctions
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
-        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions)
+        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
     {
-        super(name, 0, dir, functions, functionTypes, preferredFunctions);
+        super(name, 0, dir, functions, functionTypes, preferredFunctions, preferredSpeed);
 
         this.network = network;
         this.type = type;

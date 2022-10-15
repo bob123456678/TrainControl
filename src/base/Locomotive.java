@@ -36,6 +36,7 @@ public abstract class Locomotive
     
     // A preset of preferred function state
     private boolean[] preferredFunctions;
+    private int preferredSpeed;
 
     // Name of this locomotive
     private String name;
@@ -66,12 +67,13 @@ public abstract class Locomotive
         this.callbacks = new HashMap<>();
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
+        this.preferredSpeed = 0;
     }
     
     /**
      * Saves current function state as the new preferred function preset
      */
-    public void savePrefferedFunctions()
+    public void savePreferredFunctions()
     {
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
     }
@@ -83,6 +85,31 @@ public abstract class Locomotive
     public boolean[] getPreferredFunctions()
     {
         return this.preferredFunctions;
+    }
+    
+     /**
+     * Saves current speed as the new preferred speed preset
+     */
+    public void savePreferredSpeed()
+    {
+        this.preferredSpeed = this.speed;
+    }
+    
+    /**
+     * Retrieves the preferred speed preset
+     * @return 
+     */
+    public int getPreferredSpeed()
+    {
+        return this.preferredSpeed;
+    }
+    
+    /**
+     * Applies the saved function preset
+     */
+    public void applyPreferredSpeed()
+    {
+        this.setSpeed(this.preferredSpeed);
     }
     
     /**
@@ -123,6 +150,7 @@ public abstract class Locomotive
         this.callbacks = new HashMap<>();
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
+        this.preferredSpeed = 0;
     }
     
     /**
@@ -157,9 +185,10 @@ public abstract class Locomotive
      * @param functionState 
      * @param functionTypes 
      * @param preferredFunctions 
+     * @param preferredSpeed 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions)
+        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
     {
         this.name = name;
         this.direction = direction;
@@ -177,6 +206,7 @@ public abstract class Locomotive
         this.callbacks = new HashMap<>();
         
         this.preferredFunctions = preferredFunctions;
+        this.preferredSpeed = preferredSpeed;
     }
 
     /* Internal functionality */

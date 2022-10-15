@@ -22,6 +22,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean[] preferredFunctions;
     private int[] functionTypes;
     
+    private int preferredSpeed;
+    
     // Route state
     private Map<Integer, Boolean> route;
     
@@ -80,6 +82,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.functions = l.getFunctionState();
         this.functionTypes = l.getFunctionTypes();
         this.preferredFunctions = l.getPreferredFunctions();
+        this.preferredSpeed = l.getPreferredSpeed();
     }
     
     public Map<Integer, Boolean> getRoute()
@@ -120,5 +123,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public boolean[] getPreferredFunctions()
     {
         return preferredFunctions;
+    }    
+    
+    public int getPreferredSpeed()
+    {
+        return preferredSpeed;
     }    
 }
