@@ -97,7 +97,11 @@ Requires JDK 1.8+.
 
 ## Changelog
 
-* v1.6.2 (Beta)
+* v1.6.3 [10/16/22]
+    - Locomotive selector now automatically opens when an unassigned button is selected
+    - Better CS3 compatibility: locomotive DB is now read from CS3 API instead of `/config/lokomotive.cs2`.  Locomotive function icons and function types will be correct.
+
+* v1.6.2 [10/15/22]
     - Added hotkeys for saving and applying function presets (Alt+P, Alt+S)
     - Added hotkey for turning off current loc's functions (Alt+O)
     - Added option to save/apply a preferred speed for each locomotive (Alt+U, Alt+V)

@@ -11,6 +11,8 @@ import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Marklin Central Station 2/3 config file parser
@@ -156,6 +158,15 @@ public final class CS2File
         return "http://" + this.IP + "/app";
     }
     
+    /**
+     * CS3 Locomotive DB URL
+     * @return 
+     */
+    public String getCS3LocDBUrl()
+    {
+        return "http://" + this.IP + "/app/api/loks";
+    }
+        
     /**
      * CS3 Layout Data URL
      * Parsing this is not currently supported - 
@@ -335,6 +346,11 @@ public final class CS2File
         return parseLocomotives(parseFile(fetchURL(getLocURL())));
     }
     
+    public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
+    {
+        return parseLocomotivesCS3(parseJSON(fetchURL(this.getCS3LocDBUrl())));
+    }
+    
     /**
      * Reads a route database
      * @param l parsed data
@@ -443,9 +459,109 @@ public final class CS2File
         
         return output;
     }
+    
+    /**
+     * Parses locomotives from the CS3 API
+     * @param locomotiveList
+     * @return 
+     */
+    public List<MarklinLocomotive> parseLocomotivesCS3(JSONArray locomotiveList)
+    {
+        List<MarklinLocomotive> out = new ArrayList<>();
+        
+        for (int i = 0 ; i < locomotiveList.length(); i++)
+        {
+            try
+            {
+                JSONObject loc = locomotiveList.getJSONObject(i);
+
+                Integer uid = Integer.decode(loc.getString("uid"));
+
+                String name = loc.getString("name");
+                String icon = loc.getString("icon");
+                
+                if (icon != null)
+                {
+                    String[] pieces = icon.split("/");
+                    icon = pieces[pieces.length - 1];
+                }
+
+                String type = loc.getString("dectyp");
+                MarklinLocomotive.decoderType decoderType;
+
+
+                // Multi-units
+                if (loc.has("traktion"))
+                {
+                    decoderType = MarklinLocomotive.decoderType.MULTI_UNIT;
+
+                    if (this.control != null)
+                    {
+                        this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + uid);
+                    }
+                }
+                // Others
+                else
+                {
+                    if (type.contains("mfx"))
+                    {
+                        decoderType = MarklinLocomotive.decoderType.MFX;
+                        uid = uid - 0x4000;
+                    }
+                    else
+                    {
+                        decoderType = MarklinLocomotive.decoderType.MM2;
+                    }
+                }
+
+                // Parse functions
+                List<Integer> functionTypes = new ArrayList<>();
+
+                for (Object readArr : loc.getJSONArray("funktionen"))
+                {                
+                    JSONObject fInfo = (JSONObject) readArr;
+
+                    Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));
+                    Boolean isMoment = fInfo.getBoolean("isMoment");
+
+                    functionTypes.add(fType + (isMoment ? 128 : 0));                    
+                }
+                
+                MarklinLocomotive newLoc = new MarklinLocomotive(
+                    control, 
+                    uid, 
+                    decoderType,
+                    name,
+                    functionTypes.stream().mapToInt(k -> k).toArray()
+                );
+                
+                if (icon != null)
+                {
+                    newLoc.setImageURL(this.getImageURL(icon));
+                }
+
+                out.add(newLoc);
+            }
+            catch (Exception e)
+            {
+                if (this.control != null)
+                {
+                    this.control.log("Failed to add locomotive at index " + i + " due to parsing error.");
+                    this.control.log(e.toString());
+                }
+                else
+                {
+                    System.out.println("Failed to add locomotive at index " + i + " due to parsing error.");
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return out;
+    }
         
     /**
-     * Reads a locomotive database
+     * Parses locomotives from the CS2 database / legacy file in CS3
      * @param l data from parseFile
      * @return
      * @throws Exception 
@@ -548,6 +664,24 @@ public final class CS2File
         }        
         
         return out;
+    }
+    
+    /**
+     * Converts input file to JSON
+     * @param in
+     * @return
+     * @throws IOException 
+     */
+    private JSONArray parseJSON (BufferedReader in) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = in.readLine()) != null)
+        {
+            sb.append(line);
+        }
+                
+        return new JSONArray(sb.toString());
     }
     
     /**
@@ -792,14 +926,4 @@ public final class CS2File
 
        return true;
     }
-            
-    /*public static void main(String[] args) throws Exception
-    {
-        CS2File f = new CS2File("192.168.1.25", null);
-        //System.out.println(f.parseLayout());
-        //f.parseRoutes();
-        
-        //System.out.println (f.parseFile(f.fetchURL(f.getRouteURL())));
-        //System.out.println (f.parseLocomotives());
-    }*/
 }

@@ -679,8 +679,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         // Make sure this button is selected
         button.doClick();
+        showLocSelector();
+    }
+    
+    public void showLocSelector()
+    {
         this.selector.setVisible(true);
-        this.selector.updateScrollArea();
+        this.selector.updateScrollArea();    
     }
     
     /**
@@ -1208,7 +1213,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             this.currentButton.setEnabled(false);
 
-            Locomotive current = this.currentLocMapping().get(this.currentButton) ;
+            Locomotive current = this.currentLocMapping().get(this.currentButton);
             
             if (current != null)
             {
@@ -5231,6 +5236,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void LetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LetterButtonPressed
     {//GEN-HEADEREND:event_LetterButtonPressed
         this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
+        
+        // Show selector if no locomotive is assigned
+        if (this.activeLoc == null)
+        {
+            showLocSelector();
+        }
     }//GEN-LAST:event_LetterButtonPressed
 
     private void LayoutListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_LayoutListMouseClicked
