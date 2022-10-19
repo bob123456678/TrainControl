@@ -59,7 +59,7 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-Expanded support for CS3 layouts (and the CS3 locomotive database) is planned for the future.
+Expanded support for CS3 layouts is planned for the future.
 
 **Building the project from source:**
 
@@ -100,6 +100,7 @@ Requires JDK 1.8+.
 * v1.6.3 [10/16/22]
     - Locomotive selector now automatically opens when an unassigned button is selected
     - Better CS3 compatibility: locomotive DB is now read from CS3 API instead of `/config/lokomotive.cs2`.  Locomotive function icons and function types will be correct.
+    - Hotkey tooltips in right-click menus
 
 * v1.6.2 [10/15/22]
     - Added hotkeys for saving and applying function presets (Alt+P, Alt+S)

@@ -1098,7 +1098,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                     );
 
                                     bt.setText("");                                    
-                                    //bt.setMargin(new Insets(0,0,0,0));
+                                }
+                                else
+                                {
+                                    //bt.setText("F" + Integer.toString(fNo));
                                 }
                             }
                             else
@@ -1111,6 +1114,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         catch (IOException e)
                         {
                             this.log("Icon not found: " + targetURL);
+                            //bt.setText("F" + Integer.toString(fNo));
                         } 
                     }).start();
                     
@@ -3987,7 +3991,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel1.setPreferredSize(new java.awt.Dimension(313, 123));
 
         F8.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F8.setText("F8");
         F8.setFocusable(false);
         F8.setMaximumSize(new java.awt.Dimension(75, 35));
         F8.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -3999,7 +4002,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F9.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F9.setText("F9");
         F9.setFocusable(false);
         F9.setMaximumSize(new java.awt.Dimension(75, 35));
         F9.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4011,7 +4013,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F7.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F7.setText("F7");
         F7.setFocusable(false);
         F7.setMaximumSize(new java.awt.Dimension(75, 35));
         F7.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4023,7 +4024,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F10.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F10.setText("F10");
+        F10.setSelected(true);
         F10.setFocusable(false);
         F10.setMaximumSize(new java.awt.Dimension(75, 35));
         F10.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4035,7 +4036,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F11.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F11.setText("F11");
         F11.setFocusable(false);
         F11.setMaximumSize(new java.awt.Dimension(75, 35));
         F11.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4047,7 +4047,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F0.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F0.setText("F0");
+        F0.setToolTipText("Alt-0 / ~");
         F0.setFocusable(false);
         F0.setMaximumSize(new java.awt.Dimension(75, 35));
         F0.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4059,7 +4059,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F3.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F3.setText("F3");
         F3.setFocusable(false);
         F3.setMaximumSize(new java.awt.Dimension(75, 35));
         F3.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4071,7 +4070,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F1.setText("F1");
         F1.setFocusable(false);
         F1.setMaximumSize(new java.awt.Dimension(75, 35));
         F1.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4083,7 +4081,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F2.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F2.setText("F2");
         F2.setFocusable(false);
         F2.setMaximumSize(new java.awt.Dimension(75, 35));
         F2.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4095,7 +4092,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F4.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F4.setText("F4");
         F4.setFocusable(false);
         F4.setMaximumSize(new java.awt.Dimension(75, 35));
         F4.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4107,7 +4103,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F5.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F5.setText("F5");
         F5.setFocusable(false);
         F5.setMaximumSize(new java.awt.Dimension(75, 35));
         F5.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4119,7 +4114,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F6.setText("F6");
         F6.setFocusable(false);
         F6.setMaximumSize(new java.awt.Dimension(75, 35));
         F6.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4183,7 +4177,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel11.setText("F12");
 
         F12.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F12.setText("F12");
         F12.setFocusable(false);
         F12.setMaximumSize(new java.awt.Dimension(75, 35));
         F12.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4199,7 +4192,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel28.setText("F13");
 
         F13.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F13.setText("F13");
         F13.setFocusable(false);
         F13.setMaximumSize(new java.awt.Dimension(75, 35));
         F13.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4215,7 +4207,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel27.setText("F14");
 
         F14.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F14.setText("F14");
         F14.setFocusable(false);
         F14.setMaximumSize(new java.awt.Dimension(75, 35));
         F14.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4231,7 +4222,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel29.setText("F15");
 
         F15.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F15.setText("F15");
         F15.setFocusable(false);
         F15.setMaximumSize(new java.awt.Dimension(75, 35));
         F15.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4243,7 +4233,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F16.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F16.setText("F16");
         F16.setFocusable(false);
         F16.setMaximumSize(new java.awt.Dimension(75, 35));
         F16.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4255,7 +4244,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F17.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F17.setText("F17");
         F17.setFocusable(false);
         F17.setMaximumSize(new java.awt.Dimension(75, 35));
         F17.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4267,7 +4255,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F18.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F18.setText("F18");
         F18.setFocusable(false);
         F18.setMaximumSize(new java.awt.Dimension(75, 35));
         F18.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4291,7 +4278,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel31.setText("F18");
 
         F19.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F19.setText("F19");
         F19.setFocusable(false);
         F19.setMaximumSize(new java.awt.Dimension(75, 35));
         F19.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4475,7 +4461,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel26.setText("F20");
 
         F22.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F22.setText("F22");
         F22.setFocusable(false);
         F22.setMaximumSize(new java.awt.Dimension(75, 35));
         F22.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4487,7 +4472,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F23.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F23.setText("F23");
         F23.setFocusable(false);
         F23.setMaximumSize(new java.awt.Dimension(75, 35));
         F23.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4507,7 +4491,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel34.setText("F21");
 
         F20.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F20.setText("F20");
         F20.setFocusable(false);
         F20.setMaximumSize(new java.awt.Dimension(75, 35));
         F20.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4519,7 +4502,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F21.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F21.setText("F21");
         F21.setFocusable(false);
         F21.setMaximumSize(new java.awt.Dimension(75, 35));
         F21.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4539,7 +4521,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel35.setText("F29");
 
         F24.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F24.setText("F24");
         F24.setFocusable(false);
         F24.setMaximumSize(new java.awt.Dimension(75, 35));
         F24.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4555,7 +4536,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel44.setText("F30");
 
         F27.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F27.setText("F27");
         F27.setFocusable(false);
         F27.setMaximumSize(new java.awt.Dimension(75, 35));
         F27.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4575,7 +4555,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel12.setText("F24");
 
         F25.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F25.setText("F25");
         F25.setFocusable(false);
         F25.setMaximumSize(new java.awt.Dimension(75, 35));
         F25.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4587,7 +4566,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F26.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F26.setText("F26");
         F26.setFocusable(false);
         F26.setMaximumSize(new java.awt.Dimension(75, 35));
         F26.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4599,7 +4577,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F28.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F28.setText("F28");
         F28.setFocusable(false);
         F28.setMaximumSize(new java.awt.Dimension(75, 35));
         F28.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4615,7 +4592,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel36.setText("F28");
 
         F29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F29.setText("F29");
         F29.setFocusable(false);
         F29.setMaximumSize(new java.awt.Dimension(75, 35));
         F29.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4631,7 +4607,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel37.setText("F32");
 
         F32.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F32.setText("F32");
         F32.setFocusable(false);
         F32.setMaximumSize(new java.awt.Dimension(75, 35));
         F32.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4647,7 +4622,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel38.setText("F26");
 
         F30.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F30.setText("F30");
         F30.setFocusable(false);
         F30.setMaximumSize(new java.awt.Dimension(75, 35));
         F30.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -4663,7 +4637,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel39.setText("F25");
 
         F31.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F31.setText("F31");
         F31.setFocusable(false);
         F31.setMaximumSize(new java.awt.Dimension(75, 35));
         F31.setMinimumSize(new java.awt.Dimension(75, 35));

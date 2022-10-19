@@ -53,7 +53,7 @@ public class RightClickMenuListener extends MouseAdapter {
         {       
             // Select the active locomotive
             menuItem = new JMenuItem("Assign Locomotive");
-            menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source) );    
+            menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));    
             
             add(menuItem);
             
@@ -63,7 +63,7 @@ public class RightClickMenuListener extends MouseAdapter {
             if (ui.buttonHasLocomotive(source))
             {                
                 menuItem = new JMenuItem("Copy " + ui.getButtonLocomotive(source).getName());
-                menuItem.addActionListener(event -> ui.setCopyTarget(source) );    
+                menuItem.addActionListener(event -> ui.setCopyTarget(source));    
             }
             else
             {
@@ -77,8 +77,7 @@ public class RightClickMenuListener extends MouseAdapter {
             if (ui.hasCopyTarget())
             {
                 menuItem = new JMenuItem("Paste " + ui.getCopyTarget().getName());
-
-                menuItem.addActionListener(event -> ui.doPaste(source) );
+                menuItem.addActionListener(event -> ui.doPaste(source));
             }
             else
             {
@@ -93,7 +92,7 @@ public class RightClickMenuListener extends MouseAdapter {
                 addSeparator();
     
                 menuItem = new JMenuItem("Copy to next page");
-                menuItem.addActionListener(event -> ui.copyToNextPage(source) );
+                menuItem.addActionListener(event -> ui.copyToNextPage(source));
                 add(menuItem);
             }
 
@@ -103,34 +102,40 @@ public class RightClickMenuListener extends MouseAdapter {
                 
                 
                 menuItem = new JMenuItem("Apply Saved Function Preset");
-                menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)));
+                menuItem.setToolTipText("Alt-P");
                 add(menuItem);
                 
                 menuItem = new JMenuItem("Apply Saved Speed Preset (" + Integer.toString(ui.getButtonLocomotive(source).getPreferredSpeed()) + ")" ) ;
-                menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)));
+                menuItem.setToolTipText("Alt-V");
                 add(menuItem);
 
                 addSeparator();
                 
                 menuItem = new JMenuItem("Save Current Functions as Preset");
-                menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)));
+                menuItem.setToolTipText("Alt-S");
                 add(menuItem);
                 
                 menuItem = new JMenuItem("Save Current Speed as Preset");
-                menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)));
+                menuItem.setToolTipText("Alt-U");
+
                 add(menuItem);
                 
                 // Option to turn off functions and sync with station
                 
                 menuItem = new JMenuItem("Turn Off Functions");
 
-                menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)));
+                menuItem.setToolTipText("Alt-O");
                 
                 add(menuItem);
 
                 menuItem = new JMenuItem("Sync w/ Central Station");
 
-                menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)) );
+                menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
                 
                 add(menuItem);
                  
@@ -139,7 +144,7 @@ public class RightClickMenuListener extends MouseAdapter {
 
                 menuItem = new JMenuItem("Clear Button");
 
-                menuItem.addActionListener(event -> {ui.setCopyTarget(null);ui.doPaste(source);} );
+                menuItem.addActionListener(event -> {ui.setCopyTarget(null);ui.doPaste(source);});
                 
                 add(menuItem);
                 
@@ -148,7 +153,7 @@ public class RightClickMenuListener extends MouseAdapter {
                 
                 menuItem = new JMenuItem("Rename Locomotive");
 
-                menuItem.addActionListener(event -> {ui.renameLocomotive(ui.getButtonLocomotive(source).getName());} );
+                menuItem.addActionListener(event -> {ui.renameLocomotive(ui.getButtonLocomotive(source).getName());});
                 
                 add(menuItem);
                 
@@ -156,8 +161,9 @@ public class RightClickMenuListener extends MouseAdapter {
 
                 menuItem.addActionListener(event -> { 
                     if (0 == JOptionPane.showConfirmDialog(ui, "Are you sure you want to delete " + ui.getButtonLocomotive(source).getName() + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
-                   { ui.deleteLoc(ui.getButtonLocomotive(source).getName());} 
-                
+                    {
+                        ui.deleteLoc(ui.getButtonLocomotive(source).getName());
+                    } 
                 });
                 
                 add(menuItem);
