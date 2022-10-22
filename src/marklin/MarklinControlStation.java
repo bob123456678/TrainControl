@@ -172,7 +172,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.sendPing();
             
-            //if (autoPowerOn) this.go();            
+            if (autoPowerOn) this.go();            
         }
         else
         {
