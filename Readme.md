@@ -11,7 +11,7 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
-![UI screenshot: locomotive control](assets/interface7.png?raw=true)
+![UI screenshot: locomotive control](assets/ui164.png?raw=true)
 
 ![UI screenshot: layout](assets/interface4.png?raw=true)
 
@@ -99,7 +99,7 @@ Requires JDK 1.8+.
 
 * v1.6.4 [10/21/22]
     - Added speed sliders below each keyboard mapping button for quick control
-    - Double right click slider to change direction
+    - Double right-click slider to change direction
 
 * v1.6.3 [10/16/22]
     - Locomotive selector now automatically opens when an unassigned button is selected
