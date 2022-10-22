@@ -63,7 +63,9 @@ Expanded support for CS3 layouts is planned for the future.
 
 **Building the project from source:**
 
-Requires JDK 1.8+.
+Requires JDK 1.8+ and the following libraries:
+
+* org.json
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
