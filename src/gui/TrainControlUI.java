@@ -1383,6 +1383,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PrevLocMapping = new javax.swing.JButton();
         NextLocMapping = new javax.swing.JButton();
         LocMappingNumberLabel = new javax.swing.JLabel();
+        QSlider = new javax.swing.JSlider();
+        WSlider = new javax.swing.JSlider();
+        ESlider = new javax.swing.JSlider();
+        RSlider = new javax.swing.JSlider();
+        TSlider = new javax.swing.JSlider();
+        YSlider = new javax.swing.JSlider();
+        USlider = new javax.swing.JSlider();
+        OSlider = new javax.swing.JSlider();
+        PSlider = new javax.swing.JSlider();
+        ISlider = new javax.swing.JSlider();
+        ASlider = new javax.swing.JSlider();
+        SSlider = new javax.swing.JSlider();
+        DSlider = new javax.swing.JSlider();
+        FSlider = new javax.swing.JSlider();
+        GSlider = new javax.swing.JSlider();
+        HSlider = new javax.swing.JSlider();
+        JSlider = new javax.swing.JSlider();
+        KSlider = new javax.swing.JSlider();
+        LSlider = new javax.swing.JSlider();
+        MSlider = new javax.swing.JSlider();
+        NSlider = new javax.swing.JSlider();
+        BSlider = new javax.swing.JSlider();
+        VSlider = new javax.swing.JSlider();
+        CSlider = new javax.swing.JSlider();
+        XSlider = new javax.swing.JSlider();
+        ZSlider = new javax.swing.JSlider();
         jPanel6 = new javax.swing.JPanel();
         UpArrow = new javax.swing.JButton();
         DownArrow = new javax.swing.JButton();
@@ -1394,12 +1420,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ShiftButton = new javax.swing.JButton();
         DirectionLabel = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
-        OtherDirectionLabel = new javax.swing.JLabel();
         AltEmergencyStop = new javax.swing.JButton();
         jLabel8 = new javax.swing.JLabel();
-        PrimaryControls = new javax.swing.JLabel();
-        jPanel7 = new javax.swing.JPanel();
         ZeroButton = new javax.swing.JButton();
+        FullSpeedLabel = new javax.swing.JLabel();
         EightButton = new javax.swing.JButton();
         NineButton = new javax.swing.JButton();
         SevenButton = new javax.swing.JButton();
@@ -1410,8 +1434,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SixButton = new javax.swing.JButton();
         FiveButton = new javax.swing.JButton();
         ZeroPercentSpeedLabel = new javax.swing.JLabel();
-        FullSpeedLabel = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
+        PrimaryControls = new javax.swing.JLabel();
         layoutPanel = new javax.swing.JPanel();
         LayoutList = new javax.swing.JComboBox();
         layoutListLabel = new javax.swing.JLabel();
@@ -1962,6 +1985,136 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
+        QSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        QSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        QSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        QSlider.setRequestFocusEnabled(false);
+
+        WSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        WSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        WSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        WSlider.setRequestFocusEnabled(false);
+
+        ESlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        ESlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        ESlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        ESlider.setRequestFocusEnabled(false);
+
+        RSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        RSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        RSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        RSlider.setRequestFocusEnabled(false);
+
+        TSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        TSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        TSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        TSlider.setRequestFocusEnabled(false);
+
+        YSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        YSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        YSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        YSlider.setRequestFocusEnabled(false);
+
+        USlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        USlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        USlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        USlider.setRequestFocusEnabled(false);
+
+        OSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        OSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        OSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        OSlider.setRequestFocusEnabled(false);
+
+        PSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        PSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        PSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        PSlider.setRequestFocusEnabled(false);
+
+        ISlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        ISlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        ISlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        ISlider.setRequestFocusEnabled(false);
+
+        ASlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        ASlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        ASlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        ASlider.setRequestFocusEnabled(false);
+
+        SSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        SSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        SSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        SSlider.setRequestFocusEnabled(false);
+
+        DSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        DSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        DSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        DSlider.setRequestFocusEnabled(false);
+
+        FSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        FSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        FSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        FSlider.setRequestFocusEnabled(false);
+
+        GSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        GSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        GSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        GSlider.setRequestFocusEnabled(false);
+
+        HSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        HSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        HSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        HSlider.setRequestFocusEnabled(false);
+
+        JSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        JSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        JSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        JSlider.setRequestFocusEnabled(false);
+
+        KSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        KSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        KSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        KSlider.setRequestFocusEnabled(false);
+
+        LSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        LSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        LSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        LSlider.setRequestFocusEnabled(false);
+
+        MSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        MSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        MSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        MSlider.setRequestFocusEnabled(false);
+
+        NSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        NSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        NSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        NSlider.setRequestFocusEnabled(false);
+
+        BSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        BSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        BSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        BSlider.setRequestFocusEnabled(false);
+
+        VSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        VSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        VSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        VSlider.setRequestFocusEnabled(false);
+
+        CSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        CSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        CSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        CSlider.setRequestFocusEnabled(false);
+
+        XSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        XSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        XSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        XSlider.setRequestFocusEnabled(false);
+
+        ZSlider.setMaximumSize(new java.awt.Dimension(60, 26));
+        ZSlider.setMinimumSize(new java.awt.Dimension(60, 26));
+        ZSlider.setPreferredSize(new java.awt.Dimension(60, 26));
+        ZSlider.setRequestFocusEnabled(false);
+
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
         LocContainerLayout.setHorizontalGroup(
@@ -1970,118 +2123,145 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ZButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ZLabel))
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(QLabel, javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(QSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(WLabel)
+                            .addComponent(WButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(ELabel)
+                            .addComponent(EButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(RSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(RLabel)
+                            .addComponent(RButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(TSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(TLabel)
+                            .addComponent(TButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(YSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(YLabel)
+                            .addComponent(YButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(USlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(ULabel)
+                            .addComponent(UButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(XLabel)
-                            .addComponent(XButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ILabel)
+                            .addComponent(ISlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(CLabel)
-                            .addComponent(CButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(OSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(OLabel)
+                            .addComponent(OButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(VLabel)
-                            .addComponent(VButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(BLabel)
-                            .addComponent(BButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(NLabel)
-                            .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(MLabel)
-                            .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(PLabel)
+                            .addComponent(PButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)))
+                    .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(LocContainerLayout.createSequentialGroup()
-                                .addGap(75, 75, 75)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(ASlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(AButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(ALabel, javax.swing.GroupLayout.Alignment.LEADING))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(SSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(SLabel)
+                                    .addComponent(SButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(DLabel)
+                                    .addComponent(DButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(FSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(FLabel)
+                                    .addComponent(FButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(GSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(GLabel)
+                                    .addComponent(GButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(HSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(HLabel)
+                                    .addComponent(HButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(JSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(JLabel)
+                                    .addComponent(JButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(KSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(KLabel)
+                                    .addComponent(KButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addGroup(LocContainerLayout.createSequentialGroup()
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(ZSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(ZButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(ZLabel, javax.swing.GroupLayout.Alignment.LEADING))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(XSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(XLabel)
+                                    .addComponent(XButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(CSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(CLabel)
+                                    .addComponent(CButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(VSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(VLabel)
+                                    .addComponent(VButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(BSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(BLabel)
+                                    .addComponent(BButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(NSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(NLabel)
+                                    .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(MLabel)
+                                    .addComponent(MButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createSequentialGroup()
                                 .addComponent(PrevLocMapping)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(NextLocMapping))
                             .addGroup(LocContainerLayout.createSequentialGroup()
-                                .addGap(78, 78, 78)
-                                .addComponent(LocMappingNumberLabel))))
-                    .addGroup(LocContainerLayout.createSequentialGroup()
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(AButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ALabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(SLabel)
-                            .addComponent(SButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(DLabel)
-                            .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(FLabel)
-                            .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(GLabel)
-                            .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(HLabel)
-                            .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(JLabel)
-                            .addComponent(JButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(KLabel)
-                            .addComponent(KButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(LLabel)
-                            .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(LocContainerLayout.createSequentialGroup()
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(QButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(QLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(WLabel)
-                            .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ELabel)
-                            .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(RLabel)
-                            .addComponent(RButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(TLabel)
-                            .addComponent(TButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(YLabel)
-                            .addComponent(YButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ULabel)
-                            .addComponent(UButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ILabel)
-                            .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(OLabel)
-                            .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(PLabel)
-                            .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addGap(3, 3, 3)
+                                .addComponent(LocMappingNumberLabel))
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(LLabel)
+                                .addComponent(LButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocContainerLayout.setVerticalGroup(
@@ -2100,6 +2280,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addComponent(QSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(WSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(ESlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(RSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(YSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(OSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(PSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(ISlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(TSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(USlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(QLabel)
                     .addComponent(WLabel)
@@ -2111,7 +2304,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(ILabel)
                     .addComponent(OLabel)
                     .addComponent(PLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2123,6 +2316,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(ASlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(DSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(FSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(HSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(GSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(JSlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(KSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(LSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(12, 12, 12)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(ALabel)
                     .addComponent(SLabel)
@@ -2133,9 +2339,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(JLabel)
                     .addComponent(KLabel)
                     .addComponent(LLabel))
-                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE, false)
                             .addComponent(ZButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(XButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2145,6 +2351,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addComponent(ZSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(XSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(CSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(VSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(NSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(BSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(MSlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(ZLabel)
                             .addComponent(XLabel)
@@ -2152,22 +2368,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(VLabel)
                             .addComponent(BLabel)
                             .addComponent(NLabel)
-                            .addComponent(MLabel))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocContainerLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(MLabel)))
+                    .addGroup(LocContainerLayout.createSequentialGroup()
                         .addComponent(LocMappingNumberLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(PrevLocMapping)
-                            .addComponent(NextLocMapping))
-                        .addGap(22, 22, 22))))
+                            .addComponent(NextLocMapping))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jPanel6.setBackground(new java.awt.Color(245, 245, 245));
         jPanel6.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
-        UpArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        UpArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         UpArrow.setText("↑");
         UpArrow.setToolTipText("Increase Speed");
         UpArrow.setFocusable(false);
@@ -2177,7 +2391,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        DownArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        DownArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         DownArrow.setText("↓");
         DownArrow.setToolTipText("Decrease Speed");
         DownArrow.setFocusable(false);
@@ -2187,7 +2401,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        RightArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        RightArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         RightArrow.setText("→");
         RightArrow.setToolTipText("Switch Direction");
         RightArrow.setFocusable(false);
@@ -2197,7 +2411,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LeftArrow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        LeftArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         LeftArrow.setText("←");
         LeftArrow.setFocusable(false);
         LeftArrow.addActionListener(new java.awt.event.ActionListener() {
@@ -2232,9 +2446,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         DirectionLabel.setText("Direction");
 
-        jLabel7.setText("Speed");
-
-        OtherDirectionLabel.setText("Direction");
+        jLabel7.setText("Increment Speed");
 
         AltEmergencyStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         AltEmergencyStop.setText("Enter");
@@ -2248,75 +2460,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jLabel8.setText("Instant Stop");
 
-        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
-        jPanel6.setLayout(jPanel6Layout);
-        jPanel6Layout.setHorizontalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(EStopLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(AltEmergencyStop, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel8)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(SpacebarButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(ShiftButton, javax.swing.GroupLayout.PREFERRED_SIZE, 153, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SlowStopLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LeftArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(DirectionLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel7)
-                    .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(DownArrow, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(UpArrow, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(7, 7, 7)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(OtherDirectionLabel)
-                    .addComponent(RightArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
-        );
-        jPanel6Layout.setVerticalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(ShiftButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(RightArrow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(UpArrow)
-                        .addGap(1, 1, 1)
-                        .addComponent(DownArrow))
-                    .addComponent(LeftArrow, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(AltEmergencyStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(SpacebarButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(EStopLabel)
-                        .addComponent(jLabel8))
-                    .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(SlowStopLabel)
-                        .addComponent(DirectionLabel)
-                        .addComponent(jLabel7)
-                        .addComponent(OtherDirectionLabel)))
-                .addContainerGap())
-        );
-
-        PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
-        PrimaryControls.setText("Primary Controls");
-
-        jPanel7.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel7.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-
         ZeroButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         ZeroButton.setText("0");
         ZeroButton.setFocusable(false);
@@ -2325,6 +2468,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 ZeroButtonActionPerformed(evt);
             }
         });
+
+        FullSpeedLabel.setText("100% Speed");
 
         EightButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         EightButton.setText("8");
@@ -2407,71 +2552,120 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ZeroPercentSpeedLabel.setText("0%");
+        ZeroPercentSpeedLabel.setText("0% Speed");
 
-        FullSpeedLabel.setText("100%");
-
-        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
-        jPanel7.setLayout(jPanel7Layout);
-        jPanel7Layout.setHorizontalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addComponent(OneButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(TwoButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(ThreeButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(FourButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(FiveButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SixButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SevenButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(EightButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(NineButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(ZeroButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel7Layout.createSequentialGroup()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
                         .addComponent(ZeroPercentSpeedLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(FullSpeedLabel)))
-                .addContainerGap())
-        );
-
-        jPanel7Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {EightButton, FiveButton, FourButton, NineButton, OneButton, SevenButton, SixButton, ThreeButton, TwoButton, ZeroButton});
-
-        jPanel7Layout.setVerticalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(SevenButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(FourButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(ThreeButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(TwoButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(OneButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SixButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(FiveButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(EightButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(NineButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(ZeroButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(ZeroPercentSpeedLabel)
-                    .addComponent(FullSpeedLabel))
+                        .addComponent(FullSpeedLabel))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(jPanel6Layout.createSequentialGroup()
+                                    .addComponent(OneButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(TwoButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(ShiftButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(SlowStopLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(jPanel6Layout.createSequentialGroup()
+                                    .addComponent(ThreeButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(FourButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(SpacebarButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jLabel8))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(jPanel6Layout.createSequentialGroup()
+                                    .addComponent(FiveButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(SixButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                                .addComponent(AltEmergencyStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(EStopLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel6Layout.createSequentialGroup()
+                                .addComponent(DirectionLabel)
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addGroup(jPanel6Layout.createSequentialGroup()
+                                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                                        .addComponent(SevenButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(0, 0, Short.MAX_VALUE))
+                                    .addComponent(LeftArrow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                                        .addComponent(EightButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(NineButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(ZeroButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                                        .addComponent(RightArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addGroup(jPanel6Layout.createSequentialGroup()
+                                                .addComponent(UpArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(DownArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                            .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabel6.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel6.setText("Locomotive Speed");
+        jPanel6Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {EightButton, FiveButton, FourButton, NineButton, OneButton, SevenButton, SixButton, ThreeButton, TwoButton, ZeroButton});
+
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(NineButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(ZeroButton))
+                    .addComponent(EightButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(SevenButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(SixButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(FiveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(FourButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(ThreeButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(TwoButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(OneButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ZeroPercentSpeedLabel)
+                    .addComponent(FullSpeedLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(SpacebarButton)
+                    .addComponent(ShiftButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(AltEmergencyStop)
+                    .addComponent(LeftArrow)
+                    .addComponent(RightArrow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(UpArrow)
+                    .addComponent(DownArrow))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel8)
+                    .addComponent(EStopLabel)
+                    .addComponent(DirectionLabel)
+                    .addComponent(jLabel7)
+                    .addComponent(SlowStopLabel))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
+        PrimaryControls.setText("Primary Keyboard Controls");
 
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
@@ -2479,30 +2673,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel5)
-                            .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(LocContainer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(PrimaryControls)))
-                    .addComponent(jLabel6))
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel5)
+                    .addComponent(PrimaryControls)
+                    .addComponent(LocContainer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel6)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(PrimaryControls)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5115,108 +5300,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_UpdateSwitchState
 
-    private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_FiveButtonActionPerformed
-    {//GEN-HEADEREND:event_FiveButtonActionPerformed
-        setLocSpeed(44);
-    }//GEN-LAST:event_FiveButtonActionPerformed
-
-    private void SixButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SixButtonActionPerformed
-    {//GEN-HEADEREND:event_SixButtonActionPerformed
-        setLocSpeed(55);
-    }//GEN-LAST:event_SixButtonActionPerformed
-
-    private void OneButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_OneButtonActionPerformed
-    {//GEN-HEADEREND:event_OneButtonActionPerformed
-        setLocSpeed(0);
-    }//GEN-LAST:event_OneButtonActionPerformed
-
-    private void TwoButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_TwoButtonActionPerformed
-    {//GEN-HEADEREND:event_TwoButtonActionPerformed
-        setLocSpeed(11);
-    }//GEN-LAST:event_TwoButtonActionPerformed
-
-    private void ThreeButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_ThreeButtonActionPerformed
-    {//GEN-HEADEREND:event_ThreeButtonActionPerformed
-        setLocSpeed(22);
-    }//GEN-LAST:event_ThreeButtonActionPerformed
-
-    private void FourButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_FourButtonActionPerformed
-    {//GEN-HEADEREND:event_FourButtonActionPerformed
-        setLocSpeed(33);
-    }//GEN-LAST:event_FourButtonActionPerformed
-
-    private void SevenButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SevenButtonActionPerformed
-    {//GEN-HEADEREND:event_SevenButtonActionPerformed
-        setLocSpeed(66);
-    }//GEN-LAST:event_SevenButtonActionPerformed
-
-    private void NineButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_NineButtonActionPerformed
-    {//GEN-HEADEREND:event_NineButtonActionPerformed
-        setLocSpeed(88);
-    }//GEN-LAST:event_NineButtonActionPerformed
-
-    private void EightButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_EightButtonActionPerformed
-    {//GEN-HEADEREND:event_EightButtonActionPerformed
-        setLocSpeed(77);
-    }//GEN-LAST:event_EightButtonActionPerformed
-
-    private void ZeroButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_ZeroButtonActionPerformed
-    {//GEN-HEADEREND:event_ZeroButtonActionPerformed
-        setLocSpeed(100);
-    }//GEN-LAST:event_ZeroButtonActionPerformed
-
-    private void AltEmergencyStopActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_AltEmergencyStopActionPerformed
-    {//GEN-HEADEREND:event_AltEmergencyStopActionPerformed
-        this.model.stopAllLocs();
-    }//GEN-LAST:event_AltEmergencyStopActionPerformed
-
-    private void ShiftButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_ShiftButtonActionPerformed
-    {//GEN-HEADEREND:event_ShiftButtonActionPerformed
-        setLocSpeed(0);
-    }//GEN-LAST:event_ShiftButtonActionPerformed
-
-    private void SpacebarButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SpacebarButtonActionPerformed
-    {//GEN-HEADEREND:event_SpacebarButtonActionPerformed
-        stopLoc();
-    }//GEN-LAST:event_SpacebarButtonActionPerformed
-
-    private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LeftArrowLetterButtonPressed
-    {//GEN-HEADEREND:event_LeftArrowLetterButtonPressed
-        switchDirection();
-    }//GEN-LAST:event_LeftArrowLetterButtonPressed
-
-    private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_RightArrowLetterButtonPressed
-    {//GEN-HEADEREND:event_RightArrowLetterButtonPressed
-        switchDirection();
-    }//GEN-LAST:event_RightArrowLetterButtonPressed
-
-    private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_DownArrowLetterButtonPressed
-    {//GEN-HEADEREND:event_DownArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.max(this.activeLoc.getSpeed() - 5,0));
-        }
-    }//GEN-LAST:event_DownArrowLetterButtonPressed
-
-    private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_UpArrowLetterButtonPressed
-    {//GEN-HEADEREND:event_UpArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.min(this.activeLoc.getSpeed() + 5,100));
-        }
-    }//GEN-LAST:event_UpArrowLetterButtonPressed
-
-    private void LetterButtonPressed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LetterButtonPressed
-    {//GEN-HEADEREND:event_LetterButtonPressed
-        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
-        
-        // Show selector if no locomotive is assigned
-        if (this.activeLoc == null)
-        {
-            showLocSelector();
-        }
-    }//GEN-LAST:event_LetterButtonPressed
-
     private void LayoutListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_LayoutListMouseClicked
     {//GEN-HEADEREND:event_LayoutListMouseClicked
         
@@ -5253,14 +5336,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }   
     }//GEN-LAST:event_RouteListMouseClicked
-
-    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber - 1);
-    }//GEN-LAST:event_PrevLocMappingActionPerformed
-
-    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber + 1);
-    }//GEN-LAST:event_NextLocMappingActionPerformed
 
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
@@ -5635,6 +5710,98 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.selector.updateScrollArea();
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
 
+    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber + 1);
+    }//GEN-LAST:event_NextLocMappingActionPerformed
+
+    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber - 1);
+    }//GEN-LAST:event_PrevLocMappingActionPerformed
+
+    private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
+        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
+
+        // Show selector if no locomotive is assigned
+        if (this.activeLoc == null)
+        {
+            showLocSelector();
+        }
+    }//GEN-LAST:event_LetterButtonPressed
+
+    private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
+        setLocSpeed(44);
+    }//GEN-LAST:event_FiveButtonActionPerformed
+
+    private void SixButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SixButtonActionPerformed
+        setLocSpeed(55);
+    }//GEN-LAST:event_SixButtonActionPerformed
+
+    private void OneButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneButtonActionPerformed
+        setLocSpeed(0);
+    }//GEN-LAST:event_OneButtonActionPerformed
+
+    private void TwoButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoButtonActionPerformed
+        setLocSpeed(11);
+    }//GEN-LAST:event_TwoButtonActionPerformed
+
+    private void ThreeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeButtonActionPerformed
+        setLocSpeed(22);
+    }//GEN-LAST:event_ThreeButtonActionPerformed
+
+    private void FourButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FourButtonActionPerformed
+        setLocSpeed(33);
+    }//GEN-LAST:event_FourButtonActionPerformed
+
+    private void SevenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SevenButtonActionPerformed
+        setLocSpeed(66);
+    }//GEN-LAST:event_SevenButtonActionPerformed
+
+    private void NineButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NineButtonActionPerformed
+        setLocSpeed(88);
+    }//GEN-LAST:event_NineButtonActionPerformed
+
+    private void EightButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EightButtonActionPerformed
+        setLocSpeed(77);
+    }//GEN-LAST:event_EightButtonActionPerformed
+
+    private void ZeroButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ZeroButtonActionPerformed
+        setLocSpeed(100);
+    }//GEN-LAST:event_ZeroButtonActionPerformed
+
+    private void AltEmergencyStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AltEmergencyStopActionPerformed
+        this.model.stopAllLocs();
+    }//GEN-LAST:event_AltEmergencyStopActionPerformed
+
+    private void ShiftButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShiftButtonActionPerformed
+        setLocSpeed(0);
+    }//GEN-LAST:event_ShiftButtonActionPerformed
+
+    private void SpacebarButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SpacebarButtonActionPerformed
+        stopLoc();
+    }//GEN-LAST:event_SpacebarButtonActionPerformed
+
+    private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LeftArrowLetterButtonPressed
+        switchDirection();
+    }//GEN-LAST:event_LeftArrowLetterButtonPressed
+
+    private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RightArrowLetterButtonPressed
+        switchDirection();
+    }//GEN-LAST:event_RightArrowLetterButtonPressed
+
+    private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.max(this.activeLoc.getSpeed() - 5,0));
+        }
+    }//GEN-LAST:event_DownArrowLetterButtonPressed
+
+    private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.min(this.activeLoc.getSpeed() + 5,100));
+        }
+    }//GEN-LAST:event_UpArrowLetterButtonPressed
+
     private void refreshRouteList()
     {
         DefaultTableModel tableModel = new DefaultTableModel() {
@@ -5673,24 +5840,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AButton;
     private javax.swing.JLabel ALabel;
+    private javax.swing.JSlider ASlider;
     private javax.swing.JLabel ActiveLocLabel;
     private javax.swing.JButton AddLocButton;
     private javax.swing.JLabel AddNewLocLabel;
     private javax.swing.JButton AltEmergencyStop;
     private javax.swing.JButton BButton;
     private javax.swing.JLabel BLabel;
+    private javax.swing.JSlider BSlider;
     private javax.swing.JToggleButton Backward;
     private javax.swing.JButton CButton;
     private javax.swing.JLabel CLabel;
     private javax.swing.JButton CS3OpenBrowser;
+    private javax.swing.JSlider CSlider;
     private javax.swing.JLabel CurrentKeyLabel;
     private javax.swing.JButton DButton;
     private javax.swing.JLabel DLabel;
+    private javax.swing.JSlider DSlider;
     private javax.swing.JButton DeleteRouteButton;
     private javax.swing.JLabel DirectionLabel;
     private javax.swing.JButton DownArrow;
     private javax.swing.JButton EButton;
     private javax.swing.JLabel ELabel;
+    private javax.swing.JSlider ESlider;
     private javax.swing.JLabel EStopLabel;
     private javax.swing.JLabel EditExistingLocLabel1;
     private javax.swing.JLabel EditExistingLocLabel3;
@@ -5731,6 +5903,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton F9;
     private javax.swing.JButton FButton;
     private javax.swing.JLabel FLabel;
+    private javax.swing.JSlider FSlider;
     private javax.swing.JButton FiveButton;
     private javax.swing.JToggleButton Forward;
     private javax.swing.JButton FourButton;
@@ -5738,15 +5911,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTabbedPane FunctionTabs;
     private javax.swing.JButton GButton;
     private javax.swing.JLabel GLabel;
+    private javax.swing.JSlider GSlider;
     private javax.swing.JButton HButton;
     private javax.swing.JLabel HLabel;
+    private javax.swing.JSlider HSlider;
     private javax.swing.JButton IButton;
     private javax.swing.JLabel ILabel;
+    private javax.swing.JSlider ISlider;
     private javax.swing.JPanel InnerLayoutPanel;
     private javax.swing.JButton JButton;
     private javax.swing.JLabel JLabel;
+    private javax.swing.JSlider JSlider;
     private javax.swing.JButton KButton;
     private javax.swing.JLabel KLabel;
+    private javax.swing.JSlider KSlider;
     private javax.swing.JLabel KeyboardLabel;
     private javax.swing.JLabel KeyboardLabel1;
     private javax.swing.JLabel KeyboardNumberLabel;
@@ -5754,6 +5932,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTabbedPane KeyboardTab;
     private javax.swing.JButton LButton;
     private javax.swing.JLabel LLabel;
+    private javax.swing.JSlider LSlider;
     private javax.swing.JScrollPane LayoutArea;
     private javax.swing.JComboBox LayoutList;
     private javax.swing.JLabel LayoutPathLabel;
@@ -5768,33 +5947,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButton LocTypeMM2;
     private javax.swing.JButton MButton;
     private javax.swing.JLabel MLabel;
+    private javax.swing.JSlider MSlider;
     private javax.swing.JPanel ManageLocPanel;
     private javax.swing.JButton NButton;
     private javax.swing.JLabel NLabel;
+    private javax.swing.JSlider NSlider;
     private javax.swing.JButton NextKeyboard;
     private javax.swing.JButton NextLocMapping;
     private javax.swing.JButton NineButton;
     private javax.swing.JButton OButton;
     private javax.swing.JLabel OLabel;
+    private javax.swing.JSlider OSlider;
     private javax.swing.JButton OnButton;
     private javax.swing.JButton OneButton;
-    private javax.swing.JLabel OtherDirectionLabel;
     private javax.swing.JButton OverrideCS2DataPath;
     private javax.swing.JButton PButton;
     private javax.swing.JLabel PLabel;
+    private javax.swing.JSlider PSlider;
     private javax.swing.JButton PowerOff;
     private javax.swing.JButton PrevKeyboard;
     private javax.swing.JButton PrevLocMapping;
     private javax.swing.JLabel PrimaryControls;
     private javax.swing.JButton QButton;
     private javax.swing.JLabel QLabel;
+    private javax.swing.JSlider QSlider;
     private javax.swing.JButton RButton;
     private javax.swing.JLabel RLabel;
+    private javax.swing.JSlider RSlider;
     private javax.swing.JButton RightArrow;
     private javax.swing.JTable RouteList;
     private javax.swing.JPanel RoutePanel;
     private javax.swing.JButton SButton;
     private javax.swing.JLabel SLabel;
+    private javax.swing.JSlider SSlider;
     private javax.swing.JButton SevenButton;
     private javax.swing.JButton ShiftButton;
     private javax.swing.JButton SixButton;
@@ -5868,23 +6053,30 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton SyncButton;
     private javax.swing.JButton TButton;
     private javax.swing.JLabel TLabel;
+    private javax.swing.JSlider TSlider;
     private javax.swing.JButton ThreeButton;
     private javax.swing.JButton TurnOffFnButton;
     private javax.swing.JButton TurnOnLightsButton;
     private javax.swing.JButton TwoButton;
     private javax.swing.JButton UButton;
     private javax.swing.JLabel ULabel;
+    private javax.swing.JSlider USlider;
     private javax.swing.JButton UpArrow;
     private javax.swing.JButton VButton;
     private javax.swing.JLabel VLabel;
+    private javax.swing.JSlider VSlider;
     private javax.swing.JButton WButton;
     private javax.swing.JLabel WLabel;
+    private javax.swing.JSlider WSlider;
     private javax.swing.JButton XButton;
     private javax.swing.JLabel XLabel;
+    private javax.swing.JSlider XSlider;
     private javax.swing.JButton YButton;
     private javax.swing.JLabel YLabel;
+    private javax.swing.JSlider YSlider;
     private javax.swing.JButton ZButton;
     private javax.swing.JLabel ZLabel;
+    private javax.swing.JSlider ZSlider;
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
     private javax.swing.JButton allButton;
@@ -5931,7 +6123,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel44;
     private javax.swing.JLabel jLabel45;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
@@ -5940,7 +6131,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
     private javax.swing.JPopupMenu jPopupMenu1;
