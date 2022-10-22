@@ -961,7 +961,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.sliderMapping.get(b).setEnabled(true);
-                this.sliderMapping.get(b).setValue(l.getSpeed());
+                this.sliderMapping.get(b).setValue(l.getSpeed());      
             }
             else
             {
@@ -972,7 +972,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.sliderMapping.get(b).setValue(0);
-                this.sliderMapping.get(b).setEnabled(false);
+                this.sliderMapping.get(b).setEnabled(false);   
             }
         }        
     }
@@ -2063,19 +2063,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
+        QSlider.setMajorTickSpacing(10);
+        QSlider.setMinorTickSpacing(5);
         QSlider.setFocusable(false);
         QSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         QSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         QSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         QSlider.setRequestFocusEnabled(false);
-        QSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         QSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2084,14 +2084,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         WSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         WSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         WSlider.setRequestFocusEnabled(false);
-        WSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         WSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2100,14 +2098,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ESlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ESlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ESlider.setRequestFocusEnabled(false);
-        ESlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         ESlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2116,14 +2112,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         RSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         RSlider.setRequestFocusEnabled(false);
-        RSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         RSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2132,14 +2126,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         TSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         TSlider.setRequestFocusEnabled(false);
-        TSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         TSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2148,14 +2140,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         YSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         YSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         YSlider.setRequestFocusEnabled(false);
-        YSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         YSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2164,14 +2154,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         USlider.setMinimumSize(new java.awt.Dimension(60, 26));
         USlider.setPreferredSize(new java.awt.Dimension(60, 26));
         USlider.setRequestFocusEnabled(false);
-        USlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         USlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2180,14 +2168,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         OSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         OSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         OSlider.setRequestFocusEnabled(false);
-        OSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         OSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2196,14 +2182,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         PSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         PSlider.setRequestFocusEnabled(false);
-        PSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         PSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2212,14 +2196,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ISlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ISlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ISlider.setRequestFocusEnabled(false);
-        ISlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         ISlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2228,14 +2210,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ASlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ASlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ASlider.setRequestFocusEnabled(false);
-        ASlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         ASlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2244,14 +2224,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         SSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         SSlider.setRequestFocusEnabled(false);
-        SSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         SSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2260,14 +2238,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         DSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         DSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         DSlider.setRequestFocusEnabled(false);
-        DSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         DSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2276,14 +2252,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         FSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         FSlider.setRequestFocusEnabled(false);
-        FSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         FSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2292,14 +2266,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         GSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         GSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         GSlider.setRequestFocusEnabled(false);
-        GSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         GSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2308,14 +2280,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         HSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         HSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         HSlider.setRequestFocusEnabled(false);
-        HSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         HSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2324,14 +2294,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         JSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         JSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         JSlider.setRequestFocusEnabled(false);
-        JSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         JSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2340,14 +2308,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         KSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         KSlider.setRequestFocusEnabled(false);
-        KSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         KSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2356,14 +2322,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         LSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         LSlider.setRequestFocusEnabled(false);
-        LSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         LSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2372,14 +2336,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         MSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         MSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         MSlider.setRequestFocusEnabled(false);
-        MSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         MSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2388,14 +2350,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         NSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         NSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         NSlider.setRequestFocusEnabled(false);
-        NSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         NSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2404,14 +2364,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         BSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         BSlider.setRequestFocusEnabled(false);
-        BSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         BSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2420,14 +2378,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         VSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         VSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         VSlider.setRequestFocusEnabled(false);
-        VSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         VSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2436,14 +2392,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         CSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         CSlider.setRequestFocusEnabled(false);
-        CSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         CSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2452,14 +2406,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         XSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         XSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         XSlider.setRequestFocusEnabled(false);
-        XSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         XSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -2468,14 +2420,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ZSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ZSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ZSlider.setRequestFocusEnabled(false);
-        ZSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                updateSliderSpeed(evt);
-            }
-        });
         ZSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
             }
         });
 
@@ -4493,15 +4443,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SpeedSlider.setToolTipText(null);
         SpeedSlider.setValue(0);
         SpeedSlider.setFocusable(false);
-        SpeedSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                MainSpeedSliderClicked(evt);
-                SpeedSliderDragged(evt);
-            }
-        });
         SpeedSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 MainSpeedSliderClicked(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                SpeedSliderDragged(evt);
             }
         });
 
@@ -6157,10 +6104,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_UpArrowLetterButtonPressed
 
-    private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
-        setLocSpeed(SpeedSlider.getValue());
-    }//GEN-LAST:event_SpeedSliderDragged
-
     private void sliderClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sliderClicked
 
         sliderClickedSynced(evt);
@@ -6192,11 +6135,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             updateSliderSpeed(evt);
         }
     }
-    
-    private synchronized void updateSliderSpeedSynced(java.awt.event.MouseEvent evt)
-    {
-        JSlider slider = (JSlider) evt.getSource();
-
+        
+    private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
+         JSlider slider = (JSlider) evt.getSource();
+        
         new Thread(() ->
         {
             JButton b = this.rSliderMapping.get(slider);
@@ -6212,11 +6154,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     l.setSpeed(slider.getValue());
                 }
             }
-        }).start();
-    }
-    
-    private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
-        updateSliderSpeedSynced(evt);   
+        }).start();  
     }//GEN-LAST:event_updateSliderSpeed
 
     private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
@@ -6236,6 +6174,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             showLocSelector();
         }
     }//GEN-LAST:event_LetterButtonPressed
+
+    private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
+       setLocSpeed(SpeedSlider.getValue());
+    }//GEN-LAST:event_SpeedSliderDragged
      
     private void refreshRouteList()
     {
