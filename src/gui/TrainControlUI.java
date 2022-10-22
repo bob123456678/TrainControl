@@ -7,6 +7,7 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -31,9 +32,11 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
@@ -58,6 +61,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Load images
     public static final boolean LOAD_IMAGES = true;
     
+    // How much to increment speed when the arrow keys are pressed
+    public static final int SPEED_STEP = 4;
+    
     // View listener (model) reference
     private ViewListener model;
     
@@ -70,11 +76,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
     private final HashMap<javax.swing.JButton, Integer> rButtonMapping;
     private final HashMap<javax.swing.JButton, JLabel> labelMapping;
+    private final HashMap<javax.swing.JButton, javax.swing.JSlider> sliderMapping;
+    private final HashMap<javax.swing.JSlider, javax.swing.JButton> rSliderMapping;
     private final List<HashMap<javax.swing.JButton, Locomotive>> locMapping;
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
     private LayoutGrid trainGrid;
+    
+    
     
     // The keyboard being displayed
     private int keyboardNumber = 1;
@@ -149,6 +159,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.switchMapping = new HashMap<>();
         this.functionMapping = new HashMap<>();
         this.rFunctionMapping = new HashMap<>();
+        this.sliderMapping = new HashMap<>();
+        this.rSliderMapping = new HashMap<>();
         
         this.locMapping = new ArrayList<>();
     
@@ -225,6 +237,61 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.buttonMapping.put(KeyEvent.VK_X, XButton);
         this.buttonMapping.put(KeyEvent.VK_Y, YButton);
         this.buttonMapping.put(KeyEvent.VK_Z, ZButton);
+        
+        // Speed slider mappings
+        this.sliderMapping.put(AButton, ASlider);
+        this.sliderMapping.put(BButton, BSlider);
+        this.sliderMapping.put(CButton, CSlider);
+        this.sliderMapping.put(DButton, DSlider);
+        this.sliderMapping.put(EButton, ESlider);
+        this.sliderMapping.put(FButton, FSlider);
+        this.sliderMapping.put(GButton, GSlider);
+        this.sliderMapping.put(HButton, HSlider);
+        this.sliderMapping.put(IButton, ISlider);
+        this.sliderMapping.put(JButton, JSlider);
+        this.sliderMapping.put(KButton, KSlider);
+        this.sliderMapping.put(LButton, LSlider);
+        this.sliderMapping.put(MButton, MSlider);
+        this.sliderMapping.put(NButton, NSlider);
+        this.sliderMapping.put(OButton, OSlider);
+        this.sliderMapping.put(PButton, PSlider);
+        this.sliderMapping.put(QButton, QSlider);
+        this.sliderMapping.put(RButton, RSlider);
+        this.sliderMapping.put(SButton, SSlider);
+        this.sliderMapping.put(TButton, TSlider);
+        this.sliderMapping.put(UButton, USlider);
+        this.sliderMapping.put(VButton, VSlider);
+        this.sliderMapping.put(WButton, WSlider);
+        this.sliderMapping.put(XButton, XSlider);
+        this.sliderMapping.put(YButton, YSlider);
+        this.sliderMapping.put(ZButton, ZSlider);
+
+        this.rSliderMapping.put(ASlider, AButton);
+        this.rSliderMapping.put(BSlider, BButton);
+        this.rSliderMapping.put(CSlider, CButton);
+        this.rSliderMapping.put(DSlider, DButton);
+        this.rSliderMapping.put(ESlider, EButton);
+        this.rSliderMapping.put(FSlider, FButton);
+        this.rSliderMapping.put(GSlider, GButton);
+        this.rSliderMapping.put(HSlider, HButton);
+        this.rSliderMapping.put(ISlider, IButton);
+        this.rSliderMapping.put(JSlider, JButton);
+        this.rSliderMapping.put(KSlider, KButton);
+        this.rSliderMapping.put(LSlider, LButton);
+        this.rSliderMapping.put(MSlider, MButton);
+        this.rSliderMapping.put(NSlider, NButton);
+        this.rSliderMapping.put(OSlider, OButton);
+        this.rSliderMapping.put(PSlider, PButton);
+        this.rSliderMapping.put(QSlider, QButton);
+        this.rSliderMapping.put(RSlider, RButton);
+        this.rSliderMapping.put(SSlider, SButton);
+        this.rSliderMapping.put(TSlider, TButton);
+        this.rSliderMapping.put(USlider, UButton);
+        this.rSliderMapping.put(VSlider, VButton);
+        this.rSliderMapping.put(WSlider, WButton);
+        this.rSliderMapping.put(XSlider, XButton);
+        this.rSliderMapping.put(YSlider, YButton);
+        this.rSliderMapping.put(ZSlider, ZButton);
         
         // Map numbers back to the corresponding buttons
         for (Integer keyCode : this.buttonMapping.keySet())
@@ -859,7 +926,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     private synchronized void repaintMappings()
-    {               
+    {                 
         // Only repaint a button if the locomotive has changed
         for(JButton b : this.labelMapping.keySet())
         {
@@ -892,6 +959,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.labelMapping.get(b).setText(name);   
                     repaintIcon(b, l);
                 }
+                
+                this.sliderMapping.get(b).setEnabled(true);
+                this.sliderMapping.get(b).setValue(l.getSpeed());
             }
             else
             {
@@ -900,6 +970,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.labelMapping.get(b).setText("---");
                     repaintIcon(b, l);
                 }
+                
+                this.sliderMapping.get(b).setValue(0);
+                this.sliderMapping.get(b).setEnabled(false);
             }
         }        
     }
@@ -1057,7 +1130,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setVisible(false);
                     }
-
+                    
                 }).start();
 
                 this.ActiveLocLabel.setText(name);
@@ -1168,7 +1241,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
             }
 
-            this.SpeedSlider.setValue(this.activeLoc.getSpeed());            
+            this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
+            this.repaintMappings();
         }
         else
         {
@@ -1663,6 +1737,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         LocControlPanel.setBackground(new java.awt.Color(238, 238, 238));
         LocControlPanel.setToolTipText(null);
+        LocControlPanel.setMaximumSize(new java.awt.Dimension(803, 585));
+        LocControlPanel.setMinimumSize(new java.awt.Dimension(803, 585));
         LocControlPanel.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 LocControlPanelKeyPressed(evt);
@@ -1674,6 +1750,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
+        LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
         CButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         CButton.setText("C");
@@ -1985,135 +2063,421 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
+        QSlider.setFocusable(false);
         QSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         QSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         QSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         QSlider.setRequestFocusEnabled(false);
+        QSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        QSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        WSlider.setFocusable(false);
         WSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         WSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         WSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         WSlider.setRequestFocusEnabled(false);
+        WSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        WSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        ESlider.setFocusable(false);
         ESlider.setMaximumSize(new java.awt.Dimension(60, 26));
         ESlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ESlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ESlider.setRequestFocusEnabled(false);
+        ESlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        ESlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        RSlider.setFocusable(false);
         RSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         RSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         RSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         RSlider.setRequestFocusEnabled(false);
+        RSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        RSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        TSlider.setFocusable(false);
         TSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         TSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         TSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         TSlider.setRequestFocusEnabled(false);
+        TSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        TSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        YSlider.setFocusable(false);
         YSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         YSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         YSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         YSlider.setRequestFocusEnabled(false);
+        YSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        YSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        USlider.setFocusable(false);
         USlider.setMaximumSize(new java.awt.Dimension(60, 26));
         USlider.setMinimumSize(new java.awt.Dimension(60, 26));
         USlider.setPreferredSize(new java.awt.Dimension(60, 26));
         USlider.setRequestFocusEnabled(false);
+        USlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        USlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        OSlider.setFocusable(false);
         OSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         OSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         OSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         OSlider.setRequestFocusEnabled(false);
+        OSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        OSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        PSlider.setFocusable(false);
         PSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         PSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         PSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         PSlider.setRequestFocusEnabled(false);
+        PSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        PSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        ISlider.setFocusable(false);
         ISlider.setMaximumSize(new java.awt.Dimension(60, 26));
         ISlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ISlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ISlider.setRequestFocusEnabled(false);
+        ISlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        ISlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        ASlider.setFocusable(false);
         ASlider.setMaximumSize(new java.awt.Dimension(60, 26));
         ASlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ASlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ASlider.setRequestFocusEnabled(false);
+        ASlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        ASlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        SSlider.setFocusable(false);
         SSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         SSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         SSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         SSlider.setRequestFocusEnabled(false);
+        SSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        SSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        DSlider.setFocusable(false);
         DSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         DSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         DSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         DSlider.setRequestFocusEnabled(false);
+        DSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        DSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        FSlider.setFocusable(false);
         FSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         FSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         FSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         FSlider.setRequestFocusEnabled(false);
+        FSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        FSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        GSlider.setFocusable(false);
         GSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         GSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         GSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         GSlider.setRequestFocusEnabled(false);
+        GSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        GSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        HSlider.setFocusable(false);
         HSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         HSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         HSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         HSlider.setRequestFocusEnabled(false);
+        HSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        HSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        JSlider.setFocusable(false);
         JSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         JSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         JSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         JSlider.setRequestFocusEnabled(false);
+        JSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        JSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        KSlider.setFocusable(false);
         KSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         KSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         KSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         KSlider.setRequestFocusEnabled(false);
+        KSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        KSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        LSlider.setFocusable(false);
         LSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         LSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         LSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         LSlider.setRequestFocusEnabled(false);
+        LSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        LSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        MSlider.setFocusable(false);
         MSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         MSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         MSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         MSlider.setRequestFocusEnabled(false);
+        MSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        MSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        NSlider.setFocusable(false);
         NSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         NSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         NSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         NSlider.setRequestFocusEnabled(false);
+        NSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        NSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        BSlider.setFocusable(false);
         BSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         BSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         BSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         BSlider.setRequestFocusEnabled(false);
+        BSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        BSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        VSlider.setFocusable(false);
         VSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         VSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         VSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         VSlider.setRequestFocusEnabled(false);
+        VSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        VSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        CSlider.setFocusable(false);
         CSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         CSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         CSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         CSlider.setRequestFocusEnabled(false);
+        CSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        CSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        XSlider.setFocusable(false);
         XSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         XSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         XSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         XSlider.setRequestFocusEnabled(false);
+        XSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        XSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
+        ZSlider.setFocusable(false);
         ZSlider.setMaximumSize(new java.awt.Dimension(60, 26));
         ZSlider.setMinimumSize(new java.awt.Dimension(60, 26));
         ZSlider.setPreferredSize(new java.awt.Dimension(60, 26));
         ZSlider.setRequestFocusEnabled(false);
+        ZSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                updateSliderSpeed(evt);
+            }
+        });
+        ZSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sliderClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
@@ -2124,39 +2488,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(QLabel, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(QSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                            .addComponent(QSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(WLabel)
-                            .addComponent(WButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                            .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(ELabel)
-                            .addComponent(EButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                            .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(RSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(RSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(RLabel)
-                            .addComponent(RButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(RButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(TSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(TSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(TLabel)
-                            .addComponent(TButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(TButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(YSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(YSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(YLabel)
-                            .addComponent(YButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(YButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(USlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(USlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(ULabel)
-                            .addComponent(UButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(UButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2164,56 +2528,56 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(ISlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(OSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                            .addComponent(OSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(OLabel)
-                            .addComponent(OButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(PLabel)
-                            .addComponent(PButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)))
+                            .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(LocContainerLayout.createSequentialGroup()
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(ASlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
-                                    .addComponent(AButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(ASlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(AButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(ALabel, javax.swing.GroupLayout.Alignment.LEADING))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(SSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(SSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(SLabel)
-                                    .addComponent(SButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(SButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(DLabel)
-                                    .addComponent(DButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
+                                    .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(FSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(FSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(FLabel)
-                                    .addComponent(FButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(GSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(GSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(GLabel)
-                                    .addComponent(GButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(HSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(HSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(HLabel)
-                                    .addComponent(HButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(JSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(JSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(JLabel)
-                                    .addComponent(JButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(JButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(KSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
+                                    .addComponent(KSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(KLabel)
-                                    .addComponent(KButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(KButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(LocContainerLayout.createSequentialGroup()
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                                     .addComponent(ZSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -2247,7 +2611,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(MLabel)
-                                    .addComponent(MButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -2260,8 +2624,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(LocMappingNumberLabel))
                             .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                 .addComponent(LLabel)
-                                .addComponent(LButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)))))
+                                .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocContainerLayout.setVerticalGroup(
@@ -2279,7 +2643,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(0, 0, 0)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                         .addComponent(QSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2292,7 +2656,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(ISlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(TSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(USlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(1, 1, 1)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(QLabel)
                     .addComponent(WLabel)
@@ -2304,7 +2668,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(ILabel)
                     .addComponent(OLabel)
                     .addComponent(PLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(24, 24, 24)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2315,7 +2679,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(SButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(0, 0, 0)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -2328,7 +2692,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(JSlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(KSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(LSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(12, 12, 12)
+                .addGap(0, 0, 0)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(ALabel)
                     .addComponent(SLabel)
@@ -2339,7 +2703,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(JLabel)
                     .addComponent(KLabel)
                     .addComponent(LLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(24, 24, 24)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE, false)
@@ -2350,7 +2714,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(BButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(0, 0, 0)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                                 .addComponent(ZSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2676,9 +3040,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jLabel5)
                     .addComponent(PrimaryControls)
-                    .addComponent(LocContainer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addContainerGap(57, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4131,12 +4495,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SpeedSlider.setFocusable(false);
         SpeedSlider.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
+                MainSpeedSliderClicked(evt);
                 SpeedSliderDragged(evt);
             }
         });
         SpeedSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                SpeedSliderDragged(evt);
+                MainSpeedSliderClicked(evt);
             }
         });
 
@@ -5373,9 +5738,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         backwardLoc();
     }//GEN-LAST:event_BackwardActionPerformed
 
-    private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
-        setLocSpeed(SpeedSlider.getValue());
-    }//GEN-LAST:event_SpeedSliderDragged
+    private void MainSpeedSliderClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_MainSpeedSliderClicked
+        
+        if (evt.getClickCount() == 2 && SwingUtilities.isRightMouseButton(evt))
+        {
+            this.switchDirection();
+        }
+        else
+        {
+            setLocSpeed(SpeedSlider.getValue());
+        }
+    }//GEN-LAST:event_MainSpeedSliderClicked
 
     private void PowerOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PowerOffActionPerformed
         stop();
@@ -5710,24 +6083,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.selector.updateScrollArea();
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
 
-    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber + 1);
-    }//GEN-LAST:event_NextLocMappingActionPerformed
-
-    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber - 1);
-    }//GEN-LAST:event_PrevLocMappingActionPerformed
-
-    private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
-        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
-
-        // Show selector if no locomotive is assigned
-        if (this.activeLoc == null)
-        {
-            showLocSelector();
-        }
-    }//GEN-LAST:event_LetterButtonPressed
-
     private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
         setLocSpeed(44);
     }//GEN-LAST:event_FiveButtonActionPerformed
@@ -5791,17 +6146,97 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
         if (this.activeLoc != null)
         {
-            setLocSpeed(Math.max(this.activeLoc.getSpeed() - 5,0));
+            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP, 0));
         }
     }//GEN-LAST:event_DownArrowLetterButtonPressed
 
     private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
         if (this.activeLoc != null)
         {
-            setLocSpeed(Math.min(this.activeLoc.getSpeed() + 5,100));
+            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP, 100));
         }
     }//GEN-LAST:event_UpArrowLetterButtonPressed
 
+    private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
+        setLocSpeed(SpeedSlider.getValue());
+    }//GEN-LAST:event_SpeedSliderDragged
+
+    private void sliderClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sliderClicked
+
+        sliderClickedSynced(evt);
+    }//GEN-LAST:event_sliderClicked
+
+    private synchronized void sliderClickedSynced(java.awt.event.MouseEvent evt)
+    {
+        if (evt.getClickCount() == 2 && SwingUtilities.isRightMouseButton(evt))
+        {
+            JSlider slider = (JSlider) evt.getSource();
+
+            new Thread(() ->
+            {
+                JButton b = this.rSliderMapping.get(slider);
+
+                Locomotive l = this.currentLocMapping().get(b);
+
+                if (l != null)
+                {
+                    // System.out.println(l.getName() + " switch dir");
+                    l.setSpeed(0);
+                    l.switchDirection();
+                }
+
+            }).start();
+        }
+        else
+        {
+            updateSliderSpeed(evt);
+        }
+    }
+    
+    private synchronized void updateSliderSpeedSynced(java.awt.event.MouseEvent evt)
+    {
+        JSlider slider = (JSlider) evt.getSource();
+
+        new Thread(() ->
+        {
+            JButton b = this.rSliderMapping.get(slider);
+
+            Locomotive l = this.currentLocMapping().get(b);
+
+            if (l != null)
+            {
+                // System.out.println(l.getName() + " setting speed " + slider.getValue());
+
+                if (l.getSpeed() != slider.getValue())
+                {
+                    l.setSpeed(slider.getValue());
+                }
+            }
+        }).start();
+    }
+    
+    private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
+        updateSliderSpeedSynced(evt);   
+    }//GEN-LAST:event_updateSliderSpeed
+
+    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber + 1);
+    }//GEN-LAST:event_NextLocMappingActionPerformed
+
+    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber - 1);
+    }//GEN-LAST:event_PrevLocMappingActionPerformed
+
+    private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
+        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
+
+        // Show selector if no locomotive is assigned
+        if (this.activeLoc == null)
+        {
+            showLocSelector();
+        }
+    }//GEN-LAST:event_LetterButtonPressed
+     
     private void refreshRouteList()
     {
         DefaultTableModel tableModel = new DefaultTableModel() {

@@ -111,6 +111,12 @@
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
               <Connection code="null" type="code"/>
             </Property>
+            <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+              <Dimension value="[803, 585]"/>
+            </Property>
+            <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+              <Dimension value="[803, 585]"/>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="LocControlPanelKeyPressed"/>
@@ -131,10 +137,10 @@
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="PrimaryControls" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="LocContainer" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jPanel6" alignment="0" max="32767" attributes="0"/>
+                          <Component id="LocContainer" alignment="0" min="-2" pref="731" max="-2" attributes="0"/>
+                          <Component id="jPanel6" alignment="0" pref="0" max="32767" attributes="0"/>
                       </Group>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace pref="57" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -173,6 +179,12 @@
                     <LineBorder roundedCorners="true"/>
                   </Border>
                 </Property>
+                <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                  <Dimension value="[773, 366]"/>
+                </Property>
+                <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                  <Dimension value="[773, 366]"/>
+                </Property>
               </Properties>
 
               <Layout>
@@ -183,45 +195,45 @@
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                      <Component id="QButton" alignment="0" max="32767" attributes="0"/>
+                                      <Component id="QButton" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="QLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="QSlider" alignment="0" pref="66" max="32767" attributes="0"/>
+                                      <Component id="QSlider" alignment="0" max="32767" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="WLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="WButton" max="32767" attributes="0"/>
-                                      <Component id="WSlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="WSlider" max="32767" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="ELabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="EButton" max="32767" attributes="0"/>
-                                      <Component id="ESlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="ESlider" max="32767" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="RSlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="RSlider" max="32767" attributes="0"/>
                                       <Component id="RLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="RButton" max="32767" attributes="0"/>
+                                      <Component id="RButton" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="TSlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="TSlider" max="32767" attributes="0"/>
                                       <Component id="TLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="TButton" max="32767" attributes="0"/>
+                                      <Component id="TButton" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="YSlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="YSlider" max="32767" attributes="0"/>
                                       <Component id="YLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="YButton" max="32767" attributes="0"/>
+                                      <Component id="YButton" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="USlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="USlider" max="32767" attributes="0"/>
                                       <Component id="ULabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="UButton" max="32767" attributes="0"/>
+                                      <Component id="UButton" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -231,66 +243,66 @@
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="OSlider" pref="66" max="32767" attributes="0"/>
+                                      <Component id="OSlider" max="32767" attributes="0"/>
                                       <Component id="OLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="OButton" max="32767" attributes="0"/>
+                                      <Component id="OButton" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="PLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="PButton" max="32767" attributes="0"/>
-                                      <Component id="PSlider" alignment="0" pref="66" max="32767" attributes="0"/>
+                                      <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="PSlider" alignment="0" max="32767" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                              <Component id="ASlider" pref="66" max="32767" attributes="0"/>
-                                              <Component id="AButton" alignment="1" max="32767" attributes="0"/>
+                                              <Component id="ASlider" max="32767" attributes="0"/>
+                                              <Component id="AButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                               <Component id="ALabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="SSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="SSlider" max="32767" attributes="0"/>
                                               <Component id="SLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="SButton" max="32767" attributes="0"/>
+                                              <Component id="SButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                               <Component id="DLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="DButton" max="32767" attributes="0"/>
-                                              <Component id="DSlider" alignment="0" pref="66" max="32767" attributes="0"/>
+                                              <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                              <Component id="DSlider" alignment="0" max="32767" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="FSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="FSlider" max="32767" attributes="0"/>
                                               <Component id="FLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="FButton" max="32767" attributes="0"/>
+                                              <Component id="FButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="GSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="GSlider" max="32767" attributes="0"/>
                                               <Component id="GLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="GButton" max="32767" attributes="0"/>
+                                              <Component id="GButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="HSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="HSlider" max="32767" attributes="0"/>
                                               <Component id="HLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="HButton" max="32767" attributes="0"/>
+                                              <Component id="HButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="JSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="JSlider" max="32767" attributes="0"/>
                                               <Component id="JLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="JButton" max="32767" attributes="0"/>
+                                              <Component id="JButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="KSlider" pref="66" max="32767" attributes="0"/>
+                                              <Component id="KSlider" max="32767" attributes="0"/>
                                               <Component id="KLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="KButton" max="32767" attributes="0"/>
+                                              <Component id="KButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
@@ -332,7 +344,7 @@
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                               <Component id="MLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="MButton" max="32767" attributes="0"/>
+                                              <Component id="MButton" min="-2" pref="66" max="-2" attributes="0"/>
                                               <Component id="MSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                           </Group>
                                       </Group>
@@ -350,8 +362,8 @@
                                       </Group>
                                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="LLabel" min="-2" max="-2" attributes="0"/>
-                                          <Component id="LButton" max="32767" attributes="0"/>
-                                          <Component id="LSlider" alignment="0" pref="66" max="32767" attributes="0"/>
+                                          <Component id="LButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="LSlider" alignment="0" max="32767" attributes="0"/>
                                       </Group>
                                   </Group>
                               </Group>
@@ -376,7 +388,7 @@
                               <Component id="OButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                               <Component id="PButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Group type="103" alignment="0" groupAlignment="1" attributes="0">
                                   <Component id="QSlider" min="-2" max="-2" attributes="0"/>
@@ -391,7 +403,7 @@
                               </Group>
                               <Component id="USlider" alignment="1" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="QLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="WLabel" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -404,7 +416,7 @@
                               <Component id="OLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="PLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="GButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                               <Component id="HButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
@@ -416,7 +428,7 @@
                               <Component id="DButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                               <Component id="FButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="1" attributes="0">
                               <Group type="103" alignment="1" groupAlignment="0" attributes="0">
                                   <Group type="103" alignment="0" groupAlignment="1" attributes="0">
@@ -432,7 +444,7 @@
                               <Component id="KSlider" min="-2" max="-2" attributes="0"/>
                               <Component id="LSlider" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="ALabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="SLabel" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -444,7 +456,7 @@
                               <Component id="KLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="LLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="1" attributes="0">
                               <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="3" max="-2" attributes="0">
@@ -456,7 +468,7 @@
                                       <Component id="MButton" alignment="3" min="-2" pref="41" max="-2" attributes="0"/>
                                       <Component id="NButton" min="-2" pref="41" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Group type="103" alignment="0" groupAlignment="1" attributes="0">
                                           <Component id="ZSlider" alignment="1" min="-2" max="-2" attributes="0"/>
@@ -977,6 +989,7 @@
                 </Component>
                 <Component class="javax.swing.JSlider" name="QSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -988,9 +1001,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="WSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1002,9 +1020,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="ESlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1016,9 +1039,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="RSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1030,9 +1058,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="TSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1044,9 +1077,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="YSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1058,9 +1096,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="USlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1072,9 +1115,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="OSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1086,9 +1134,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="PSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1100,9 +1153,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="ISlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1114,9 +1172,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="ASlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1128,9 +1191,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="SSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1142,9 +1210,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="DSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1156,9 +1229,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="FSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1170,9 +1248,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="GSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1184,9 +1267,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="HSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1198,9 +1286,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="JSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1212,9 +1305,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="KSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1226,9 +1324,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="LSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1240,9 +1343,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="MSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1254,9 +1362,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="NSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1268,9 +1381,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="BSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1282,9 +1400,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="VSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1296,9 +1419,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="CSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1310,9 +1438,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="XSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1324,9 +1457,14 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JSlider" name="ZSlider">
                   <Properties>
+                    <Property name="focusable" type="boolean" value="false"/>
                     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[60, 26]"/>
                     </Property>
@@ -1338,6 +1476,10 @@
                     </Property>
                     <Property name="requestFocusEnabled" type="boolean" value="false"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
+                  </Events>
                 </Component>
               </SubComponents>
             </Container>
@@ -3850,8 +3992,8 @@
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
-            <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="SpeedSliderDragged"/>
-            <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="SpeedSliderDragged"/>
+            <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="MainSpeedSliderClicked,SpeedSliderDragged"/>
+            <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="MainSpeedSliderClicked"/>
           </Events>
         </Component>
         <Component class="javax.swing.JToggleButton" name="Backward">

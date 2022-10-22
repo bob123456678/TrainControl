@@ -97,6 +97,10 @@ Requires JDK 1.8+.
 
 ## Changelog
 
+* v1.6.4 [10/21/22]
+    - Added speed sliders below each keyboard mapping button for quick control
+    - Double right click slider to change direction
+
 * v1.6.3 [10/16/22]
     - Locomotive selector now automatically opens when an unassigned button is selected
     - Better CS3 compatibility: locomotive DB is now read from CS3 API instead of `/config/lokomotive.cs2`.  Locomotive function icons and function types will be correct.
