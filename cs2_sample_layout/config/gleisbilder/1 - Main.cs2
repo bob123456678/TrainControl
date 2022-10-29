@@ -672,23 +672,11 @@ element
  .artikel=1011
  .deviceId=0xc
 element
- .id=0x70e
- .typ=bogen
- .artikel=-1
-element
- .id=0x70f
- .typ=gerade
- .artikel=-1
-element
- .id=0x710
- .typ=prellbock
- .drehung=1
- .artikel=-1
-element
  .id=0x711
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .drehung=0
+ .artikel=180
+ .zustand=0
 element
  .id=0x712
  .typ=gerade
@@ -774,10 +762,7 @@ element
  .artikel=-1
 element
  .id=0x80e
- .typ=linksweiche
- .drehung=3
- .artikel=114
- .zustand=1
+ .typ=gerade
 element
  .id=0x80f
  .typ=entkuppler

@@ -99,6 +99,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.5 [10/28/22]
+    - Added option for sliders to also change the active locomotive
+
 * v1.6.4 [10/21/22]
     - Added speed sliders below each keyboard mapping button for quick control
     - Double right-click slider to change direction

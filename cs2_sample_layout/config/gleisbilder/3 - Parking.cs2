@@ -742,7 +742,7 @@ element
  .id=0x30c07
  .typ=rechtsweiche
  .drehung=1
- .artikel=180
+ .artikel=114
  .zustand=1
 element
  .id=0x30c08

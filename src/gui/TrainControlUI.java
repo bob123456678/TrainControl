@@ -51,6 +51,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Preferences fields
     public static String IP_PREF = "initIP";
     public static String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath";
+    public static String SLIDER_SETTING_PREF = "SliderSetting";
 
     // Constants
     // Width of locomotive images
@@ -83,8 +84,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
     private LayoutGrid trainGrid;
-    
-    
     
     // The keyboard being displayed
     private int keyboardNumber = 1;
@@ -403,6 +402,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
            
         // Changing tabs
         //setupTabTraversalKeys(this.KeyboardTab);
+        
+        this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
     }
     
     /*private static void setupTabTraversalKeys(JTabbedPane tabbedPane)
@@ -1509,6 +1510,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FiveButton = new javax.swing.JButton();
         ZeroPercentSpeedLabel = new javax.swing.JLabel();
         PrimaryControls = new javax.swing.JLabel();
+        sliderSetting = new javax.swing.JCheckBox();
         layoutPanel = new javax.swing.JPanel();
         LayoutList = new javax.swing.JComboBox();
         layoutListLabel = new javax.swing.JLabel();
@@ -1745,7 +1747,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel5.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel5.setForeground(new java.awt.Color(0, 0, 155));
         jLabel5.setText("Locomotive Mapping");
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
@@ -2981,6 +2983,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
         PrimaryControls.setText("Primary Keyboard Controls");
 
+        sliderSetting.setText("Sliders change active loc");
+        sliderSetting.setFocusable(false);
+        sliderSetting.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sliderSettingActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
         LocControlPanelLayout.setHorizontalGroup(
@@ -2988,7 +2998,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel5)
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(sliderSetting))
                     .addComponent(PrimaryControls)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
@@ -2998,7 +3011,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel5)
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(sliderSetting))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -6118,11 +6133,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             new Thread(() ->
             {
                 JButton b = this.rSliderMapping.get(slider);
-
+                
                 Locomotive l = this.currentLocMapping().get(b);
 
                 if (l != null)
                 {
+                    // Change active loc if setting selected
+                    if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
+                    {
+                        this.displayCurrentButtonLoc(b);
+                    }
+                    
                     // System.out.println(l.getName() + " switch dir");
                     l.setSpeed(0);
                     l.switchDirection();
@@ -6137,18 +6158,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
         
     private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
-         JSlider slider = (JSlider) evt.getSource();
+        JSlider slider = (JSlider) evt.getSource();
         
         new Thread(() ->
         {
             JButton b = this.rSliderMapping.get(slider);
-
+            
             Locomotive l = this.currentLocMapping().get(b);
 
             if (l != null)
             {
                 // System.out.println(l.getName() + " setting speed " + slider.getValue());
 
+                // Change active loc if setting selected
+                if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
+                {
+                    this.displayCurrentButtonLoc(b);
+                }
+                
                 if (l.getSpeed() != slider.getValue())
                 {
                     l.setSpeed(slider.getValue());
@@ -6178,6 +6205,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
        setLocSpeed(SpeedSlider.getValue());
     }//GEN-LAST:event_SpeedSliderDragged
+
+    private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
+        this.prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
+    }//GEN-LAST:event_sliderSettingActionPerformed
      
     private void refreshRouteList()
     {
@@ -6521,6 +6552,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel locIcon;
     private javax.swing.JPanel logPanel;
     private javax.swing.JLabel sizeLabel;
+    private javax.swing.JCheckBox sliderSetting;
     private javax.swing.JButton smallButton;
     private javax.swing.JButton syncLocStateButton;
     // End of variables declaration//GEN-END:variables
