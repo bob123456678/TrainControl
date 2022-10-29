@@ -6137,16 +6137,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 Locomotive l = this.currentLocMapping().get(b);
 
                 if (l != null)
-                {
+                {                    
+                    // System.out.println(l.getName() + " switch dir");
+                    l.setSpeed(0);
+                    l.switchDirection();
+                    
                     // Change active loc if setting selected
                     if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
                     {
                         this.displayCurrentButtonLoc(b);
                     }
-                    
-                    // System.out.println(l.getName() + " switch dir");
-                    l.setSpeed(0);
-                    l.switchDirection();
                 }
 
             }).start();
@@ -6169,16 +6169,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (l != null)
             {
                 // System.out.println(l.getName() + " setting speed " + slider.getValue());
-
+               
+                if (l.getSpeed() != slider.getValue())
+                {
+                    l.setSpeed(slider.getValue());
+                }
+                
                 // Change active loc if setting selected
                 if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
                 {
                     this.displayCurrentButtonLoc(b);
-                }
-                
-                if (l.getSpeed() != slider.getValue())
-                {
-                    l.setSpeed(slider.getValue());
                 }
             }
         }).start();  
