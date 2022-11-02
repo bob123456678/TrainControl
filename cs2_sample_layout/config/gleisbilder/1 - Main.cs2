@@ -244,8 +244,10 @@ element
  .artikel=-1
 element
  .id=0x20b
- .typ=bogen
- .artikel=-1
+ .typ=linksweiche
+ .drehung=1
+ .artikel=180
+ .zustand=0
 element
  .id=0x20c
  .typ=gerade
@@ -673,10 +675,9 @@ element
  .deviceId=0xc
 element
  .id=0x711
- .typ=rechtsweiche
- .drehung=0
- .artikel=180
- .zustand=0
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x712
  .typ=gerade
@@ -763,6 +764,7 @@ element
 element
  .id=0x80e
  .typ=gerade
+ .artikel=-1
 element
  .id=0x80f
  .typ=entkuppler
