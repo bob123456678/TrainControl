@@ -363,17 +363,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             
             this.log("Station detection result: " + (this.isCS3 ? "CS3" : "CS2"));
-               
-            for (MarklinRoute r : fileParser.parseRoutes())
-            {
-                if (!this.routeDB.hasId(r.getId()))
-                {
-                    this.log("Added route " + r.getName());
-                    newRoute(r);
-                    num++;
-                }
-            }
-            
+                           
+            // Import layout
             String overrideLayoutPath = "";
             Preferences prefs = null;
             
@@ -431,6 +422,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }  
             }
             
+            // Import routes
+            for (MarklinRoute r : fileParser.parseRoutes())
+            {
+                if (!this.routeDB.hasId(r.getId()))
+                {
+                    this.log("Added route " + r.getName());
+                    newRoute(r);
+                    num++;
+                }
+            }
+            
+            // Import locomotives
             List<MarklinLocomotive> parsedLocs;
             
             if (this.isCS3)

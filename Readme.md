@@ -76,7 +76,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Keyboard Commands / Key Mappings
 
 * Letter keys (select a locomotive)
-* Up/down arrow (speed up/slow down)
+* Up/down arrow (speed up/slow down) (hold Alt to double the increment)
 * Left/right arrow (change direction)
 * Escape (power off/emergency stop)
 * Alt+G (power on)
@@ -99,8 +99,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.6.5 [10/28/22]
+* v1.6.5 [11/5/22]
     - Added option for sliders to also change the active locomotive
+    - Alt+Up/Down now doubles the size of the speed increment
+    - Added code example for feedback driven switch/signal events
 
 * v1.6.4 [10/21/22]
     - Added speed sliders below each keyboard mapping button for quick control

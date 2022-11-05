@@ -5371,12 +5371,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
         }
         else if (keyCode == KeyEvent.VK_UP)
-        {
-            this.UpArrowLetterButtonPressed(null);
+        {            
+            if (altPressed)
+            {
+                this.UpArrowLetterButtonPressedAlt(null);
+            }
+            else
+            {
+                this.UpArrowLetterButtonPressed(null);
+            }
         }
         else if (keyCode == KeyEvent.VK_DOWN)
-        {
-            this.DownArrowLetterButtonPressed(null);
+        {            
+            if (altPressed)
+            {
+                this.DownArrowLetterButtonPressedAlt(null);          
+            }
+            else
+            {
+               this.DownArrowLetterButtonPressed(null);
+            }
         }
         else if (keyCode == KeyEvent.VK_RIGHT)
         {
@@ -6105,6 +6119,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         switchDirection();
     }//GEN-LAST:event_RightArrowLetterButtonPressed
 
+    private void DownArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt) {                                              
+        
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP * 2, 0));
+        }
+    } 
+    
+    private void UpArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt) {                                            
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP * 2, 100));
+        }
+    }
+    
     private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
         if (this.activeLoc != null)
         {

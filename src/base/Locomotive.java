@@ -417,7 +417,7 @@ public abstract class Locomotive
      * @param name
      * @return 
      */
-    public Locomotive waitForClearThenOccuplied(String name)
+    public Locomotive waitForClearThenOccupied(String name)
     {
         return this.waitForClearFeedback(name).waitForOccupiedFeedback(name);
     }
