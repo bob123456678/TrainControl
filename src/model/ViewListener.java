@@ -21,6 +21,7 @@ public interface ViewListener
     public void saveState();
     public MarklinLocomotive newMM2Locomotive(String name, int address);
     public MarklinLocomotive newMFXLocomotive(String name, int address);
+    public MarklinLocomotive newDCCLocomotive(String name, int address);
     public boolean deleteLoc(String name);
     public String getLocAddress(String name);
     public boolean renameLoc(String oldName, String newName);

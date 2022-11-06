@@ -99,6 +99,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.6 [11/6/22]
+    - Added support for DCC locomotives
+
 * v1.6.5 [11/5/22]
     - Added option for sliders to also change the active locomotive
     - Alt+Up/Down now doubles the size of the speed increment

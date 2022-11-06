@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.6.5";
+    public static final String VERSION = "1.6.6";
     
     //// Settings
     
@@ -121,6 +121,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 newLocomotive(c.getName(), c.getAddress(), 
                     MarklinLocomotive.decoderType.MFX, 
+                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
+            }
+            else if (c.getType() == MarklinSimpleComponent.Type.LOC_DCC)
+            {
+                newLocomotive(c.getName(), c.getAddress(), 
+                    MarklinLocomotive.decoderType.DCC, 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
                     c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
             }
@@ -438,7 +445,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             if (this.isCS3)
             {
-                parsedLocs = fileParser.parseLocomotivesCS3();   
+                parsedLocs = fileParser.parseLocomotivesCS3();
             }
             else
             {
@@ -452,7 +459,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     this.log("Added locomotive " + l.getName() 
                             + " with address " 
-                            + util.Conversion.intToHex(l.getAddress()) 
+                            + l.getAddress() + " ("
+                            + util.Conversion.intToHex(l.getIntUID()) + ")"
                             + " from Central Station"
                     );
 
@@ -638,7 +646,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.routeDB.add(new MarklinRoute(this, name, id, route), name, id);        
     }
     
-     /**
+    /**
      * Adds an MFX locomotive to the system
      * @param name
      * @param address
@@ -648,6 +656,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final MarklinLocomotive newMFXLocomotive(String name, int address)
     {
         return newLocomotive(name, address, MarklinLocomotive.decoderType.MFX);
+    }
+    
+    /**
+     * Adds a DCC locomotive to the system
+     * @param name
+     * @param address
+     * @return 
+     */
+    @Override
+    public final MarklinLocomotive newDCCLocomotive(String name, int address)
+    {
+        return newLocomotive(name, address, MarklinLocomotive.decoderType.DCC);
     }
     
     /**

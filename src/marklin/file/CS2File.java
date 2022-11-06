@@ -506,7 +506,12 @@ public final class CS2File
                     if (type.contains("mfx"))
                     {
                         decoderType = MarklinLocomotive.decoderType.MFX;
-                        uid = uid - 0x4000;
+                        uid = uid - MarklinLocomotive.MFX_BASE;
+                    }
+                    else if (type.contains("dcc"))
+                    {
+                        decoderType = MarklinLocomotive.decoderType.DCC;
+                        uid = uid - MarklinLocomotive.DCC_BASE;
                     }
                     else
                     {
@@ -615,6 +620,17 @@ public final class CS2File
                     if (m.get("typ").equals("mfx"))
                     {
                         type = MarklinLocomotive.decoderType.MFX;
+                    }
+                    else if (m.get("typ").equals("dcc"))
+                    {
+                        type = MarklinLocomotive.decoderType.DCC;
+                        
+                        // The loc with address 1 will have an empty address entry in the file, but others won't
+                        // So, simply subtract the DCC base from the UID if we had to use the UID instead of the address above
+                        if (address > MarklinLocomotive.DCC_MAX_ADDR)
+                        {
+                            address -= MarklinLocomotive.DCC_BASE;
+                        }
                     }
                     else
                     {

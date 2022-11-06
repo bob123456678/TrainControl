@@ -13,14 +13,17 @@ import util.Conversion;
 public class MarklinLocomotive extends Locomotive
     implements java.io.Serializable, RemoteDevice<Locomotive, CS2Message>
 {        
-    public static enum decoderType {MFX, MM2, MULTI_UNIT};
+    public static enum decoderType {MFX, MM2, DCC, MULTI_UNIT};
     
     /* Constants */
     
-    public static int MFX_NUM_FN = 33;
-    public static int MM2_NUM_FN = 5;
-    public static int MM2_MAX_ADDR = 80;
-    public static int MFX_MAX_ADDR = 0x3FFF;
+    public static final int MFX_NUM_FN = 33;
+    public static final int MM2_NUM_FN = 5;
+    public static final int MM2_MAX_ADDR = 80;
+    public static final int MFX_MAX_ADDR = 0x3FFF;
+    public static final int DCC_MAX_ADDR = 2048;
+    public static final int MFX_BASE = 0x4000;
+    public static final int DCC_BASE = 0xc000;
     
     public static int PULSE_FUNCTION_DURATION = 300;
     
@@ -112,20 +115,26 @@ public class MarklinLocomotive extends Locomotive
         // Verify MM2 address range
         if (this.type == decoderType.MM2)
         {
-            assert this.address <= 80;
+            assert this.address <= MM2_MAX_ADDR;
             
             return this.address;
         } 
         // Verify MFX address range
         else if (this.type == decoderType.MFX)
         {
-            assert this.address <= 0x3FFF;
+            assert this.address <= MFX_MAX_ADDR;
 
-            return this.address + 0x4000;            
+            return this.address + MFX_BASE;            
         }  
+        else if (this.type == decoderType.DCC)
+        {
+            assert this.address <= DCC_MAX_ADDR;
+
+            return this.address + DCC_BASE;            
+        }
         else if (this.type == decoderType.MULTI_UNIT)
         {
-            assert this.address <= 0x4000 && this.address > 80;
+            assert this.address <= MFX_BASE && this.address > MM2_MAX_ADDR;
 
             return this.address;
         }    
@@ -504,12 +513,18 @@ public class MarklinLocomotive extends Locomotive
      */
     public static String addressFromUID(int UID)
     {
-        if (UID > 0x4000)
+        if (UID > MFX_BASE)
         {
-            return Conversion.intToHex(UID - 0x4000);
+            return Conversion.intToHex(UID - MFX_BASE);
         }
-        
-        return Integer.toString(UID);
+        else if (UID > DCC_BASE)
+        {
+            return Conversion.intToHex(UID - DCC_BASE);
+        }
+        else
+        {
+            return Integer.toString(UID);
+        }
     }
     
     @Override
@@ -518,6 +533,6 @@ public class MarklinLocomotive extends Locomotive
         return super.toString() + "\n" +
             "UID: " + Conversion.intToHex(this.UID) + "\n" +
             "Address: " + Conversion.intToHex(this.address) + "\n" +
-            "Type: " + (this.type == decoderType.MFX ? "MFX" : "MM2");                
+            "Type: " + (this.type == decoderType.MFX ? "MFX" : (this.type == decoderType.DCC ? "DCC" : "MM2"));                
     }
 }

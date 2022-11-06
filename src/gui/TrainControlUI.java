@@ -1609,6 +1609,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel1 = new javax.swing.JLabel();
         LocNameInput = new javax.swing.JTextField();
         LocTypeMFX = new javax.swing.JRadioButton();
+        LocTypeDCC = new javax.swing.JRadioButton();
         AddNewLocLabel = new javax.swing.JLabel();
         EditExistingLocLabel1 = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
@@ -4158,15 +4159,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocTypeMFX.setFocusable(false);
         LocTypeMFX.setInheritsPopupMenu(true);
 
+        buttonGroup1.add(LocTypeDCC);
+        LocTypeDCC.setText("DCC");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(AddLocButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel3)
                             .addComponent(jLabel4)
@@ -4179,8 +4182,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(LocTypeMM2)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeMFX)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(LocTypeMFX)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(LocTypeDCC)))
+                        .addGap(0, 0, 0))
+                    .addComponent(AddLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4197,7 +4204,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(LocTypeMM2)
-                    .addComponent(LocTypeMFX))
+                    .addComponent(LocTypeMFX)
+                    .addComponent(LocTypeDCC))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(AddLocButton)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -4264,7 +4272,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(clearButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, 288, Short.MAX_VALUE)
+                    .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -4349,17 +4357,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(EditExistingLocLabel3))
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addComponent(EditExistingLocLabel3)
+                        .addGap(0, 570, Short.MAX_VALUE))
                     .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(AddNewLocLabel)
-                            .addComponent(EditExistingLocLabel1))
-                        .addGap(112, 418, Short.MAX_VALUE))))
+                        .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(ManageLocPanelLayout.createSequentialGroup()
+                                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(AddNewLocLabel)
+                                    .addComponent(EditExistingLocLabel1))
+                                .addGap(221, 221, 221))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(354, 354, Short.MAX_VALUE))))
         );
         ManageLocPanelLayout.setVerticalGroup(
             ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -5938,108 +5948,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
     }
     
-    private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
-        // TODO - make this generic
-
-        String locName = this.LocNameInput.getText();
-
-        if (locName == null)
-        {
-            return;
-        }
-
-        if (locName.trim().length() == 0)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a locomotive name");
-            return;
-        }
-
-        if (locName.length() >= 30)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a locomotive name under 30 characters");
-            return;
-        }
-
-        if (this.model.getLocByName(locName) != null)
-        {
-            JOptionPane.showMessageDialog(this,
-                "A locomotive by this name already exists.");
-            return;
-        }
-
-        marklin.MarklinLocomotive.decoderType type;
-
-        if (this.LocTypeMFX.isSelected())
-        {
-            type = marklin.MarklinLocomotive.decoderType.MFX;
-        }
-        else
-        {
-            type = marklin.MarklinLocomotive.decoderType.MM2;
-        }
-
-        int locAddress;
-
-        try
-        {
-            if (this.LocTypeMFX.isSelected())
-            {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-            }
-            else
-            {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText());
-            }
-        }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a numerical address");
-            return;
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MM2)
-        {
-            if (locAddress > marklin.MarklinLocomotive.MM2_MAX_ADDR)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "MM2 address out of range");
-                return;
-            }
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MFX)
-        {
-            if (locAddress > marklin.MarklinLocomotive.MFX_MAX_ADDR)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "MFX address out of range");
-                return;
-            }
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MFX)
-        {
-            this.model.newMFXLocomotive(locName, locAddress);
-        }
-        else
-        {
-            this.model.newMM2Locomotive(locName, locAddress);
-        }
-
-        // Add list of locomotives to dropdown
-        this.selector.refreshLocSelectorList();
-
-        // Rest form
-        JOptionPane.showMessageDialog(this,
-            "Locomotive added successfully");
-
-        this.LocAddressInput.setText("");
-        this.LocNameInput.setText("");
-    }//GEN-LAST:event_AddLocButtonActionPerformed
-
     private void syncLocStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncLocStateButtonActionPerformed
         
         int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
@@ -6238,6 +6146,126 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
         this.prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
     }//GEN-LAST:event_sliderSettingActionPerformed
+
+    private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
+        // TODO - make this generic
+
+        String locName = this.LocNameInput.getText();
+
+        if (locName == null)
+        {
+            return;
+        }
+
+        if (locName.trim().length() == 0)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a locomotive name");
+            return;
+        }
+
+        if (locName.length() >= 30)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a locomotive name under 30 characters");
+            return;
+        }
+
+        if (this.model.getLocByName(locName) != null)
+        {
+            JOptionPane.showMessageDialog(this,
+                "A locomotive by this name already exists.");
+            return;
+        }
+
+        marklin.MarklinLocomotive.decoderType type;
+
+        if (this.LocTypeMFX.isSelected())
+        {
+            type = marklin.MarklinLocomotive.decoderType.MFX;
+        }
+        else if (this.LocTypeDCC.isSelected())
+        {
+            type = marklin.MarklinLocomotive.decoderType.DCC;
+        }
+        else
+        {
+            type = marklin.MarklinLocomotive.decoderType.MM2;
+        }
+
+        int locAddress;
+
+        try
+        {
+            if (this.LocTypeMFX.isSelected())
+            {
+                locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+            }
+            else
+            {
+                locAddress = Integer.parseInt(this.LocAddressInput.getText());
+            }
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a numerical address");
+            return;
+        }
+
+        if (type == marklin.MarklinLocomotive.decoderType.MM2)
+        {
+            if (locAddress > marklin.MarklinLocomotive.MM2_MAX_ADDR)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "MM2 address out of range");
+                return;
+            }
+        }
+
+        if (type == marklin.MarklinLocomotive.decoderType.MM2)
+        {
+            if (locAddress > marklin.MarklinLocomotive.DCC_MAX_ADDR)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "DCC address out of range");
+                return;
+            }
+        }
+
+        if (type == marklin.MarklinLocomotive.decoderType.MFX)
+        {
+            if (locAddress > marklin.MarklinLocomotive.MFX_MAX_ADDR)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "MFX address out of range");
+                return;
+            }
+        }
+
+        if (type == marklin.MarklinLocomotive.decoderType.MFX)
+        {
+            this.model.newMFXLocomotive(locName, locAddress);
+        }
+        else if (type == marklin.MarklinLocomotive.decoderType.DCC)
+        {
+            this.model.newDCCLocomotive(locName, locAddress);
+        }
+        else
+        {
+            this.model.newMM2Locomotive(locName, locAddress);
+        }
+
+        // Add list of locomotives to dropdown
+        this.selector.refreshLocSelectorList();
+
+        // Rest form
+        JOptionPane.showMessageDialog(this,
+            "Locomotive added successfully");
+
+        this.LocAddressInput.setText("");
+        this.LocNameInput.setText("");
+    }//GEN-LAST:event_AddLocButtonActionPerformed
      
     private void refreshRouteList()
     {
@@ -6380,6 +6408,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel LocFunctionsPanel;
     private javax.swing.JLabel LocMappingNumberLabel;
     private javax.swing.JTextField LocNameInput;
+    private javax.swing.JRadioButton LocTypeDCC;
     private javax.swing.JRadioButton LocTypeMFX;
     private javax.swing.JRadioButton LocTypeMM2;
     private javax.swing.JButton MButton;

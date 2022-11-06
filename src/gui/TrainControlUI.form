@@ -3414,20 +3414,23 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jPanel8" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="EditExistingLocLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                              <Component id="EditExistingLocLabel3" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace min="0" pref="570" max="32767" attributes="0"/>
                           </Group>
                           <Component id="jPanel12" alignment="0" max="32767" attributes="0"/>
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                  <Component id="jPanel8" max="32767" attributes="0"/>
+                                  <Group type="102" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="AddNewLocLabel" min="-2" max="-2" attributes="0"/>
+                                          <Component id="EditExistingLocLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace min="-2" pref="221" max="-2" attributes="0"/>
+                                  </Group>
                                   <Component id="jPanel2" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="AddNewLocLabel" min="-2" max="-2" attributes="0"/>
-                                  <Component id="EditExistingLocLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace min="112" pref="418" max="32767" attributes="0"/>
+                              <EmptySpace min="483" pref="354" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                   </Group>
@@ -3472,9 +3475,8 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                              <Component id="AddLocButton" alignment="0" max="32767" attributes="0"/>
-                              <Group type="102" alignment="0" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
@@ -3490,11 +3492,15 @@
                                           <Component id="LocTypeMM2" min="-2" max="-2" attributes="0"/>
                                           <EmptySpace max="-2" attributes="0"/>
                                           <Component id="LocTypeMFX" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="LocTypeDCC" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
+                                  <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
                               </Group>
+                              <Component id="AddLocButton" max="32767" attributes="0"/>
                           </Group>
-                          <EmptySpace max="32767" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -3516,6 +3522,7 @@
                               <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="LocTypeMM2" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="LocTypeMFX" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="LocTypeDCC" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace type="unrelated" max="-2" attributes="0"/>
                           <Component id="AddLocButton" min="-2" max="-2" attributes="0"/>
@@ -3586,6 +3593,14 @@
                     <Property name="inheritsPopupMenu" type="boolean" value="true"/>
                   </Properties>
                 </Component>
+                <Component class="javax.swing.JRadioButton" name="LocTypeDCC">
+                  <Properties>
+                    <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                      <ComponentRef name="buttonGroup1"/>
+                    </Property>
+                    <Property name="text" type="java.lang.String" value="DCC"/>
+                  </Properties>
+                </Component>
               </SubComponents>
             </Container>
             <Component class="javax.swing.JLabel" name="AddNewLocLabel">
@@ -3623,7 +3638,7 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="clearButton" max="32767" attributes="0"/>
-                              <Component id="SyncButton" alignment="0" pref="288" max="32767" attributes="0"/>
+                              <Component id="SyncButton" alignment="0" max="32767" attributes="0"/>
                               <Component id="syncLocStateButton" alignment="0" max="32767" attributes="0"/>
                               <Component id="TurnOnLightsButton" alignment="0" max="32767" attributes="0"/>
                               <Component id="TurnOffFnButton" alignment="0" max="32767" attributes="0"/>
