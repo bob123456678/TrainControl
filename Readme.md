@@ -23,7 +23,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 **Features:**
 
-* Easily control locomotives, signals, switches, and routes
+* Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
 * View and interact with layout diagrams, with support for multiple windows
 * Configure key mappings for up to 104 locomotives
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
