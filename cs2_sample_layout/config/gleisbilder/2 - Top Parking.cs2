@@ -72,6 +72,11 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x20208
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
+element
  .id=0x2020d
  .typ=bogen
  .artikel=-1
@@ -109,6 +114,11 @@ element
  .drehung=1
  .artikel=1026
  .deviceId=0xc
+element
+ .id=0x20308
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x2030a
  .typ=prellbock
@@ -166,8 +176,13 @@ element
  .artikel=-1
 element
  .id=0x20407
- .typ=gerade
- .drehung=1
+ .typ=rechtsweiche
+ .artikel=136
+ .zustand=1
+element
+ .id=0x20408
+ .typ=bogen
+ .drehung=2
  .artikel=-1
 element
  .id=0x2040a
@@ -294,7 +309,7 @@ element
 element
  .id=0x20607
  .typ=rechtsweiche
- .artikel=136
+ .artikel=194
  .zustand=1
 element
  .id=0x20608

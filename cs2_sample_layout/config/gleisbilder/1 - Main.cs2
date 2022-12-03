@@ -297,9 +297,9 @@ element
  .artikel=-1
 element
  .id=0x301
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=136
+ .zustand=1
 element
  .id=0x303
  .typ=gerade
@@ -370,7 +370,7 @@ element
 element
  .id=0x401
  .typ=rechtsweiche
- .artikel=136
+ .artikel=194
  .zustand=1
 element
  .id=0x403
