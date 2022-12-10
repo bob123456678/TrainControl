@@ -181,9 +181,13 @@ element
  .zustand=1
 element
  .id=0x20408
- .typ=bogen
- .drehung=2
- .artikel=-1
+ .typ=linksweiche
+ .drehung=3
+ .artikel=196
+element
+ .id=0x20409
+ .typ=prellbock
+ .drehung=1
 element
  .id=0x2040a
  .typ=s88kontakt

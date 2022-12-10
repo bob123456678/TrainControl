@@ -301,6 +301,12 @@ element
  .artikel=136
  .zustand=1
 element
+ .id=0x302
+ .typ=linksweiche
+ .artikel=196
+ .zustand=1
+ .drehung=3
+element
  .id=0x303
  .typ=gerade
  .drehung=1
