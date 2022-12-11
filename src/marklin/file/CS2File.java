@@ -899,6 +899,12 @@ public final class CS2File
                         state = Integer.parseInt(m.get("zustand"));
                     }
                     
+                    // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
+                    if (type.contains("_f_"))
+                    {
+                        orient = Math.floorMod(orient - 1, 4);
+                    }
+                    
                     // This will fail for unknown components.  Catch errors?
                     if (getComponentType(type) != null)
                     {

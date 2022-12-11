@@ -99,6 +99,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.7 [12/8/22]
+    - Fixed orientation of semaphore signals in CS2 layout files
+    - Corrected minor bug in parsing CS2 layout files: element order no longer matters
+
 * v1.6.6 [11/6/22]
     - Added support for DCC locomotives
 

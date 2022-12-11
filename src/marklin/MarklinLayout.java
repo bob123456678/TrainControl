@@ -95,7 +95,7 @@ public class MarklinLayout
         assert x < sx;
         assert y < sy;
                 
-        grid.get(x).add(y, new MarklinLayoutComponent(t, x, y, orient, state, address, rawAddresss));
+        grid.get(x).set(y, new MarklinLayoutComponent(t, x, y, orient, state, address, rawAddresss));
     }
     
     public void addComponent(MarklinLayoutComponent l, int x, int y) throws IOException
@@ -103,7 +103,7 @@ public class MarklinLayout
         assert x < sx;
         assert y < sy;
                 
-        grid.get(x).add(y, l);
+        grid.get(x).set(y, l);
     }
     
     public String getName()
