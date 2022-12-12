@@ -1378,12 +1378,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
       
     private void go()
     {
-        this.model.go();
+        new Thread(() ->
+        {
+            this.model.go();
+        }).start();
     }
     
     private void stop()
     {
-        this.model.stop();
+        new Thread(() ->
+        {
+            this.model.stop();
+        }).start();
     }
         
     /**
@@ -6008,7 +6014,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_ZeroButtonActionPerformed
 
     private void AltEmergencyStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AltEmergencyStopActionPerformed
-        this.model.stopAllLocs();
+        new Thread(() ->
+        {
+            this.model.stopAllLocs();
+        }).start();
     }//GEN-LAST:event_AltEmergencyStopActionPerformed
 
     private void ShiftButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShiftButtonActionPerformed
