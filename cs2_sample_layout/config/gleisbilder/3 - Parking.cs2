@@ -90,7 +90,7 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30109
+ .id=0x30209
  .typ=prellbock
  .drehung=2
  .artikel=-1
@@ -143,7 +143,7 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30209
+ .id=0x30309
  .typ=s88kontakt
  .drehung=1
  .artikel=2016
@@ -162,19 +162,11 @@ element
  .deviceId=0xc
 element
  .id=0x3020c
- .typ=bogen
- .artikel=-1
-element
- .id=0x3020d
- .typ=gerade
- .artikel=-1
-element
- .id=0x3020e
- .typ=s88kontakt
+ .typ=s88bogen
  .artikel=2006
  .deviceId=0xc
 element
- .id=0x3020f
+ .id=0x3020d
  .typ=prellbock
  .drehung=1
  .artikel=-1
@@ -204,11 +196,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30309
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
  .id=0x3030a
  .typ=gerade
  .drehung=1
@@ -224,15 +211,11 @@ element
  .artikel=-1
 element
  .id=0x3030d
- .typ=gerade
- .artikel=-1
-element
- .id=0x3030e
  .typ=s88kontakt
  .artikel=2008
  .deviceId=0xc
 element
- .id=0x3030f
+ .id=0x3030e
  .typ=prellbock
  .drehung=1
  .artikel=-1
@@ -392,11 +375,16 @@ element
  .artikel=14
 element
  .id=0x3060d
+ .typ=gerade
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x3060e
  .typ=s88kontakt
  .artikel=2003
  .deviceId=0xc
 element
- .id=0x3060e
+ .id=0x3060f
  .typ=prellbock
  .drehung=1
  .artikel=-1
