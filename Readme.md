@@ -82,14 +82,15 @@ Requires JDK 1.8+ and the following libraries:
 * Alt+G (power on)
 * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
 * Numpad 0/backquote/Alt+0 (toggle lights/F0)
-* F1-F16 (toggle functions F1-F16)
-* Numpad 1-9 (toggle functions F1-F9)
+* F1-F24 (toggle functions F1-F24)
+* Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
+* Shift+1-9 (toggle functions F11-F19)
 * Shift (slow stop)
 * Spacebar (instant stop)
 * Enter (stop all locs)
-* Comma/period (cycle to previous/next loc page)
-* Backspace (cycle through tabs)
-* Plus/minus (cycle through keyboards)
+* Comma/period, Alt+Left/right arrow (cycle to previous/next loc page)
+* Backspace/control (cycle through tabs)
+* Plus/minus (cycle through keyboards and layout pages)
 * Alt+P (apply saved function preset for current loc)
 * Alt+O (turn off all functions for current loc)
 * Alt+S (save current functions as a preset for current loc)
@@ -98,6 +99,10 @@ Requires JDK 1.8+ and the following libraries:
 
 
 ## Changelog
+
+* v1.6.8 [1/1/23]
+    - New hotkeys: Shift+1-9 to control F11 to F19
+    - New hotkeys: Alt+left/right arrow to cycle through locomotive mappings (same as comma/period)
 
 * v1.6.7 [12/8/22]
     - Fixed orientation of semaphore signals in CS2 layout files

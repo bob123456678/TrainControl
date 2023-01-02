@@ -5357,6 +5357,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
+        boolean shiftPressed = (evt.getModifiers() & KeyEvent.SHIFT_DOWN_MASK) != 0 || (evt.getModifiers() & KeyEvent.SHIFT_MASK) != 0;
         
         if (altPressed && keyCode == KeyEvent.VK_G)
         {
@@ -5408,11 +5409,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                this.DownArrowLetterButtonPressed(null);
             }
         }
-        else if (keyCode == KeyEvent.VK_RIGHT)
+        else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
         {
             this.RightArrowLetterButtonPressed(null);
         }
-        else if (keyCode == KeyEvent.VK_LEFT)
+        else if (keyCode == KeyEvent.VK_LEFT && !altPressed)
         {
             this.LeftArrowLetterButtonPressed(null);
         }
@@ -5420,43 +5421,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.SpacebarButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_0 && !altPressed)
+        else if (keyCode == KeyEvent.VK_0 && !altPressed && !shiftPressed)
         {
             this.ZeroButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_1 && !altPressed)
+        else if (keyCode == KeyEvent.VK_1 && !altPressed && !shiftPressed)
         {
             this.OneButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_2 && !altPressed)
+        else if (keyCode == KeyEvent.VK_2 && !altPressed && !shiftPressed)
         {
             this.TwoButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_3 && !altPressed)
+        else if (keyCode == KeyEvent.VK_3 && !altPressed && !shiftPressed)
         {
             this.ThreeButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_4 && !altPressed)
+        else if (keyCode == KeyEvent.VK_4 && !altPressed && !shiftPressed)
         {
             this.FourButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_5 && !altPressed)
+        else if (keyCode == KeyEvent.VK_5 && !altPressed && !shiftPressed)
         {
             this.FiveButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_6 && !altPressed)
+        else if (keyCode == KeyEvent.VK_6 && !altPressed && !shiftPressed)
         {
             this.SixButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_7 && !altPressed)
+        else if (keyCode == KeyEvent.VK_7 && !altPressed && !shiftPressed)
         {
             this.SevenButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_8 && !altPressed)
+        else if (keyCode == KeyEvent.VK_8 && !altPressed && !shiftPressed)
         {
             this.EightButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_9 && !altPressed)
+        else if (keyCode == KeyEvent.VK_9 && !altPressed && !shiftPressed)
         {
             this.NineButtonActionPerformed(null);
         }
@@ -5494,14 +5495,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.NextKeyboardActionPerformed(null);
             } 
         }
-        else if (keyCode == KeyEvent.VK_COMMA)
+        else if (keyCode == KeyEvent.VK_COMMA || (keyCode == KeyEvent.VK_LEFT && altPressed))
         {
             //if (this.KeyboardTab.getSelectedIndex() == 0)
             //{
             this.PrevLocMappingActionPerformed(null);
             //}    
         }
-        else if (keyCode == KeyEvent.VK_PERIOD)
+        else if (keyCode == KeyEvent.VK_PERIOD || (keyCode == KeyEvent.VK_RIGHT && altPressed))
         {
             //if (this.KeyboardTab.getSelectedIndex() == 0)
             // {
@@ -5552,29 +5553,61 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.switchF(10);
         }
-        else if (keyCode == KeyEvent.VK_F11)
+        else if (keyCode == KeyEvent.VK_F11 || (keyCode == KeyEvent.VK_1 && !altPressed && shiftPressed))
         {
             this.switchF(11);
         }
-        else if (keyCode == KeyEvent.VK_F12)
+        else if (keyCode == KeyEvent.VK_F12 || (keyCode == KeyEvent.VK_2 && !altPressed && shiftPressed))
         {
             this.switchF(12);
         }
-        else if (keyCode == KeyEvent.VK_F13)
+        else if (keyCode == KeyEvent.VK_F13 || (keyCode == KeyEvent.VK_3 && !altPressed && shiftPressed))
         {
             this.switchF(13);
         }
-        else if (keyCode == KeyEvent.VK_F14)
+        else if (keyCode == KeyEvent.VK_F14 || (keyCode == KeyEvent.VK_4 && !altPressed && shiftPressed))
         {
             this.switchF(14);
         }
-        else if (keyCode == KeyEvent.VK_F15)
+        else if (keyCode == KeyEvent.VK_F15 || (keyCode == KeyEvent.VK_5 && !altPressed && shiftPressed))
         {
             this.switchF(15);
         }
-        else if (keyCode == KeyEvent.VK_F16)
+        else if (keyCode == KeyEvent.VK_F16 || (keyCode == KeyEvent.VK_6 && !altPressed && shiftPressed))
         {
             this.switchF(16);
+        }
+        else if (keyCode == KeyEvent.VK_F17 || (keyCode == KeyEvent.VK_7 && !altPressed && shiftPressed))
+        {
+            this.switchF(17);
+        }
+        else if (keyCode == KeyEvent.VK_F18 || (keyCode == KeyEvent.VK_8 && !altPressed && shiftPressed))
+        {
+            this.switchF(18);
+        }
+        else if (keyCode == KeyEvent.VK_F19 || (keyCode == KeyEvent.VK_9 && !altPressed && shiftPressed))
+        {
+            this.switchF(19);
+        }
+        else if (keyCode == KeyEvent.VK_F20)
+        {
+            this.switchF(20);
+        }
+        else if (keyCode == KeyEvent.VK_F21)
+        {
+            this.switchF(21);
+        }
+        else if (keyCode == KeyEvent.VK_F22)
+        {
+            this.switchF(22);
+        }
+        else if (keyCode == KeyEvent.VK_F23)
+        {
+            this.switchF(23);
+        }
+        else if (keyCode == KeyEvent.VK_F24)
+        {
+            this.switchF(24);
         }
         else if (keyCode == KeyEvent.VK_ESCAPE)
         {
