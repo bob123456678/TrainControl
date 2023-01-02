@@ -5357,7 +5357,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
-        boolean shiftPressed = (evt.getModifiers() & KeyEvent.SHIFT_DOWN_MASK) != 0 || (evt.getModifiers() & KeyEvent.SHIFT_MASK) != 0;
+        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
         
         if (altPressed && keyCode == KeyEvent.VK_G)
         {
@@ -5421,43 +5421,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.SpacebarButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_0 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_0 && !altPressed && !controlPressed)
         {
             this.ZeroButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_1 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_1 && !altPressed && !controlPressed)
         {
             this.OneButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_2 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_2 && !altPressed && !controlPressed)
         {
             this.TwoButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_3 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_3 && !altPressed && !controlPressed)
         {
             this.ThreeButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_4 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_4 && !altPressed && !controlPressed)
         {
             this.FourButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_5 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_5 && !altPressed && !controlPressed)
         {
             this.FiveButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_6 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_6 && !altPressed && !controlPressed)
         {
             this.SixButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_7 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_7 && !altPressed && !controlPressed)
         {
             this.SevenButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_8 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_8 && !altPressed && !controlPressed)
         {
             this.EightButtonActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_9 && !altPressed && !shiftPressed)
+        else if (keyCode == KeyEvent.VK_9 && !altPressed && !controlPressed)
         {
             this.NineButtonActionPerformed(null);
         }
@@ -5553,39 +5553,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.switchF(10);
         }
-        else if (keyCode == KeyEvent.VK_F11 || (keyCode == KeyEvent.VK_1 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F11 || (keyCode == KeyEvent.VK_1 && !altPressed && controlPressed))
         {
             this.switchF(11);
         }
-        else if (keyCode == KeyEvent.VK_F12 || (keyCode == KeyEvent.VK_2 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F12 || (keyCode == KeyEvent.VK_2 && !altPressed && controlPressed))
         {
             this.switchF(12);
         }
-        else if (keyCode == KeyEvent.VK_F13 || (keyCode == KeyEvent.VK_3 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F13 || (keyCode == KeyEvent.VK_3 && !altPressed && controlPressed))
         {
             this.switchF(13);
         }
-        else if (keyCode == KeyEvent.VK_F14 || (keyCode == KeyEvent.VK_4 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F14 || (keyCode == KeyEvent.VK_4 && !altPressed && controlPressed))
         {
             this.switchF(14);
         }
-        else if (keyCode == KeyEvent.VK_F15 || (keyCode == KeyEvent.VK_5 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F15 || (keyCode == KeyEvent.VK_5 && !altPressed && controlPressed))
         {
             this.switchF(15);
         }
-        else if (keyCode == KeyEvent.VK_F16 || (keyCode == KeyEvent.VK_6 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F16 || (keyCode == KeyEvent.VK_6 && !altPressed && controlPressed))
         {
             this.switchF(16);
         }
-        else if (keyCode == KeyEvent.VK_F17 || (keyCode == KeyEvent.VK_7 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F17 || (keyCode == KeyEvent.VK_7 && !altPressed && controlPressed))
         {
             this.switchF(17);
         }
-        else if (keyCode == KeyEvent.VK_F18 || (keyCode == KeyEvent.VK_8 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F18 || (keyCode == KeyEvent.VK_8 && !altPressed && controlPressed))
         {
             this.switchF(18);
         }
-        else if (keyCode == KeyEvent.VK_F19 || (keyCode == KeyEvent.VK_9 && !altPressed && shiftPressed))
+        else if (keyCode == KeyEvent.VK_F19 || (keyCode == KeyEvent.VK_9 && !altPressed && controlPressed))
         {
             this.switchF(19);
         }
@@ -5621,7 +5621,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             AltEmergencyStopActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_BACK_SPACE)
+        else if (keyCode == KeyEvent.VK_BACK_SPACE && !altPressed)
         {
             // Easy tab cycling
             this.KeyboardTab.setSelectedIndex(
@@ -5629,7 +5629,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     % this.KeyboardTab.getComponentCount()
             );
         } 
-        else if (keyCode == KeyEvent.VK_CONTROL)
+        else if (keyCode == KeyEvent.VK_BACK_SPACE && altPressed)
         {
             if (this.KeyboardTab.getSelectedIndex() == 0)
             {
