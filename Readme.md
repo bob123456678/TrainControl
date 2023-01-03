@@ -100,9 +100,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.6.8 [1/1/23]
+* v1.6.8 [1/2/23]
     - New hotkeys: Control+1-9 to control F11 to F19
     - New hotkeys: Alt+left/right arrow to cycle through locomotive mappings (same as comma/period)
+    - Improved UI performance on slower systems
 
 * v1.6.7 [12/8/22]
     - Fixed orientation of semaphore signals in CS2 layout files

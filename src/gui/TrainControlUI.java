@@ -4,10 +4,8 @@ import base.Locomotive;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Image;
-import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -517,7 +515,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * Returns a reference to the image cache, initializing it if needed
      * @return 
      */
-    public static Map<String,Image> getImageCache()
+    synchronized public static Map<String,Image> getImageCache()
     {
         if (imageCache == null)
         {
@@ -996,19 +994,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     @Override
     public void repaintSwitches()
     {
-        int offset = this.getKeyboardOffset();
-        
-        for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
+        new Thread(() -> 
         {
-            if (this.model.getAccessoryState(i + offset))
+            int offset = this.getKeyboardOffset();
+
+            for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
-                this.switchMapping.get(i).setSelected(true);
+                if (this.model.getAccessoryState(i + offset))
+                {
+                    this.switchMapping.get(i).setSelected(true);
+                }
+                else
+                {
+                    this.switchMapping.get(i).setSelected(false);
+                }
             }
-            else
-            {
-                this.switchMapping.get(i).setSelected(false);
-            }
-        }
+        }).start();
     }
     
     /**
@@ -1030,22 +1031,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @return
      * @throws IOException 
      */
-    synchronized public Image getLocImage(String url, int size) throws IOException
+    public Image getLocImage(String url, int size) throws IOException
     {
         String key = url + Integer.toString(size);
         
-        if (!this.getImageCache().containsKey(key))
+        if (!TrainControlUI.getImageCache().containsKey(key))
         {
             Image img = ImageIO.read(new URL(url));
             
             if (img != null)
             {
                 float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-                this.getImageCache().put(key, img.getScaledInstance(size, (int) (size * aspect), 1));
+                TrainControlUI.getImageCache().put(key, img.getScaledInstance(size, (int) (size * aspect), 1));
             }
         }
 
-        return this.getImageCache().get(key);        
+        return TrainControlUI.getImageCache().get(key);        
     }
     
     /**
@@ -1146,7 +1147,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     final JToggleButton bt = this.rFunctionMapping.get(i);
                     final int functionType = this.activeLoc.getFunctionType(i);
-                    final int fNo = i;
 
                     bt.setVisible(true);
                     bt.setEnabled(true);
