@@ -864,7 +864,7 @@ element
  .id=0x90e
  .typ=linksweiche
  .drehung=1
- .artikel=72
+ .artikel=198
  .zustand=1
 element
  .id=0x90f
@@ -957,7 +957,7 @@ element
  .id=0xa0e
  .typ=linksweiche
  .drehung=3
- .artikel=68
+ .artikel=200
  .zustand=1
 element
  .id=0xa0f
