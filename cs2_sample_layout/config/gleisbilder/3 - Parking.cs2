@@ -749,7 +749,7 @@ element
  .id=0x30c0b
  .typ=rechtsweiche
  .drehung=1
- .artikel=20
+ .artikel=72
  .zustand=1
 element
  .id=0x30c0c

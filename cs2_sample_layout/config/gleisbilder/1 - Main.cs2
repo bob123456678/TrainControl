@@ -239,9 +239,9 @@ element
  .artikel=-1
 element
  .id=0x20a
- .typ=bogen
+ .typ=rechtsweiche
  .drehung=3
- .artikel=-1
+ .artikel=20
 element
  .id=0x20b
  .typ=linksweiche
