@@ -23,11 +23,11 @@ element
  .typ=gerade
  .artikel=-1
 element
- .id=0x30007
+ .id=0x3000c
  .typ=gerade
  .artikel=-1
 element
- .id=0x30008
+ .id=0x30007
  .typ=gerade
  .artikel=-1
 element
@@ -43,7 +43,7 @@ element
  .typ=gerade
  .artikel=-1
 element
- .id=0x3000c
+ .id=0x30008
  .typ=rechtsweiche
  .drehung=3
  .artikel=166
@@ -91,11 +91,16 @@ element
  .artikel=-1
 element
  .id=0x30209
- .typ=prellbock
- .drehung=2
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
- .id=0x3010a
+ .id=0x30409
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x3020a
  .typ=prellbock
  .drehung=2
  .artikel=-1
@@ -106,22 +111,54 @@ element
  .artikel=-1
 element
  .id=0x3010c
- .typ=bogen
+ .typ=gerade
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x30108
+ .typ=s88kontakt
  .drehung=1
+ .artikel=2004
+ .deviceId=0xc
+element
+ .id=0x30208
+ .typ=prellbock
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x30110
+ .typ=linksweiche
+ .artikel=204
+ .drehung=0
+element
+ .id=0x3010f
+ .typ=gerade
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x3010e
+ .typ=gerade
+ .drehung=0
  .artikel=-1
 element
  .id=0x3010d
  .typ=gerade
+ .drehung=0
  .artikel=-1
 element
- .id=0x3010e
- .typ=prellbock
- .drehung=1
- .artikel=-1
-element
- .id=0x30110
+ .id=0x3010b
  .typ=gerade
- .drehung=1
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x3010a
+ .typ=gerade
+ .drehung=0
+ .artikel=-1
+element
+ .id=0x30109
+ .typ=bogen
+ .drehung=0
  .artikel=-1
 element
  .id=0x30202
@@ -144,21 +181,20 @@ element
  .artikel=-1
 element
  .id=0x30309
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x3030a
  .typ=s88kontakt
  .drehung=1
  .artikel=2016
  .deviceId=0xc
 element
- .id=0x3020a
- .typ=s88kontakt
- .drehung=1
- .artikel=2007
- .deviceId=0xc
-element
  .id=0x3020b
  .typ=s88kontakt
  .drehung=1
- .artikel=2004
+ .artikel=2007
  .deviceId=0xc
 element
  .id=0x3020c
@@ -196,7 +232,7 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x3030a
+ .id=0x3040a
  .typ=gerade
  .drehung=1
  .artikel=-1
@@ -251,15 +287,10 @@ element
  .drehung=2
  .artikel=-1
 element
- .id=0x30409
+ .id=0x30509
  .typ=bogen
  .drehung=1
  .artikel=-1
-element
- .id=0x3040a
- .typ=linksweiche
- .artikel=142
- .zustand=1
 element
  .id=0x3040b
  .typ=rechtsweiche
@@ -314,10 +345,11 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x3050a
- .typ=bogen
+ .id=0x50a
+ .typ=rechtsweiche
+ .artikel=142
  .drehung=1
- .artikel=-1
+ .zustand=1
 element
  .id=0x3050b
  .typ=dreiwegweiche
