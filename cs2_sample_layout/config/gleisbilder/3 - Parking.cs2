@@ -8,8 +8,10 @@ element
  .artikel=-1
 element
  .id=0x30003
- .typ=gerade
- .artikel=-1
+ .typ=linksweiche
+ .drehung=1
+ .artikel=60
+ .zustand=1
 element
  .id=0x30004
  .typ=gerade
@@ -217,9 +219,19 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x30103
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x30203
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
  .id=0x30303
- .typ=prellbock
- .drehung=2
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
  .id=0x30304
@@ -371,9 +383,18 @@ element
  .zustand=1
 element
  .id=0x30603
- .typ=linksweiche
- .drehung=3
- .artikel=60
+ .typ=kreuzung
+ .drehung=1
+ .zustand=1
+element
+ .id=0x30703
+ .typ=gerade
+ .drehung=1
+ .zustand=1
+element
+ .id=0x30803
+ .typ=gerade
+ .drehung=1
  .zustand=1
 element
  .id=0x30604
@@ -548,8 +569,8 @@ element
  .artikel=-1
 element
  .id=0x30903
- .typ=prellbock
- .drehung=2
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
  .id=0x30904
