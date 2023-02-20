@@ -3210,6 +3210,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         AddRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         AddRouteButton.setText("Add New Route");
+        AddRouteButton.setFocusable(false);
         AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AddRouteButtonActionPerformed(evt);
