@@ -64,7 +64,7 @@ public class MarklinRoute extends Route
      */
     public void execRoute()
     {
-        this.network.log("Executing route " + this.getName());
+        //this.network.log("Executing route " + this.getName());
         
         for (Integer id : this.route.keySet())
         {

@@ -5,7 +5,12 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,7 +35,9 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
@@ -683,7 +690,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Hide routes if no routes
         if (this.model.getRouteList().isEmpty())
         {
-            this.KeyboardTab.remove(this.RoutePanel);
+            //this.KeyboardTab.remove(this.RoutePanel);
         }
         
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
@@ -1534,6 +1541,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         DeleteRouteButton = new javax.swing.JButton();
         jScrollPane5 = new javax.swing.JScrollPane();
         RouteList = new javax.swing.JTable();
+        AddRouteButton = new javax.swing.JButton();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
@@ -3166,7 +3174,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RoutePanel.setFocusable(false);
 
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Routes");
+        jLabel2.setText("Routes (Click to Execute)");
 
         DeleteRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         DeleteRouteButton.setText("Delete Route");
@@ -3200,6 +3208,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
         jScrollPane5.setViewportView(RouteList);
 
+        AddRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        AddRouteButton.setText("Add New Route");
+        AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddRouteButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
         RoutePanelLayout.setHorizontalGroup(
@@ -3209,10 +3225,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
                     .addGroup(RoutePanelLayout.createSequentialGroup()
-                        .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2)
-                            .addComponent(DeleteRouteButton))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addComponent(jLabel2)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(RoutePanelLayout.createSequentialGroup()
+                        .addComponent(DeleteRouteButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(AddRouteButton)))
                 .addContainerGap())
         );
         RoutePanelLayout.setVerticalGroup(
@@ -3223,7 +3241,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(DeleteRouteButton)
+                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(DeleteRouteButton)
+                    .addComponent(AddRouteButton))
                 .addContainerGap())
         );
 
@@ -4190,8 +4210,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(LocTypeMFX)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeDCC)))
-                        .addGap(0, 0, 0))
+                                .addComponent(LocTypeDCC))))
                     .addComponent(AddLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -5657,14 +5676,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void DeleteRouteButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_DeleteRouteButtonActionPerformed
     {//GEN-HEADEREND:event_DeleteRouteButtonActionPerformed
-        String route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn()).toString();
+        Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
         
         if (route != null)
-        {
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Delete route " + route + "?", "Route Deletion", JOptionPane.YES_NO_OPTION);
+        {            
+            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Delete route " + route.toString() + "?", "Route Deletion", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
-                this.model.deleteRoute(route);
+                this.model.deleteRoute(route.toString());
                 refreshRouteList();
             }
         }
@@ -5712,15 +5731,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_RouteListMouseClicked
     {//GEN-HEADEREND:event_RouteListMouseClicked
-                String route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn()).toString();
+        Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
         
         if (route != null)
         {
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route + "?", "Route Execution", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "?", "Route Execution", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
                 new Thread(() -> {
-                    this.model.execRoute(route);
+                    this.model.execRoute(route.toString());
                     refreshRouteList();
                 }).start();
             }
@@ -6308,6 +6327,85 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.LocAddressInput.setText("");
         this.LocNameInput.setText("");
     }//GEN-LAST:event_AddLocButtonActionPerformed
+
+    private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
+        
+        String newName = JOptionPane.showInputDialog(this, "Enter name for your route:");
+        
+        if (this.model.getRouteList().contains(newName))
+        {
+            JOptionPane.showMessageDialog(this, "A route called " + newName + " already exists.  Please pick a different name.");
+            return;
+        }
+        
+        String message = "One per line, enter the accessory address (integer) and state (0 or 1), separated by a comma.\nFor example, 20,1 would set switch 20 to turnout.";
+        
+        JTextArea jta = new JTextArea(25, 32);
+        jta.setLineWrap(true);
+        jta.setText(message);
+        
+        jta.addMouseListener(new MouseListener() {
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (jta.getText().contains(message))
+                {
+                    jta.setText("");
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+            }
+        });
+
+                
+        switch (JOptionPane.showConfirmDialog(this, new JScrollPane(jta), "Enter your route", JOptionPane.OK_CANCEL_OPTION))
+        {
+            case JOptionPane.OK_OPTION:
+                
+                try
+                {
+                    Map<Integer, Boolean> newRoute = new HashMap<>();
+                    
+                    for (String line : jta.getText().split("\n"))
+                    {
+                        if (line.trim().length() > 0)
+                        {
+                            int address = Integer.parseInt(line.split(",")[0].trim());
+                            boolean state = line.split(",")[1].trim().equals("1");
+
+                            newRoute.put(address, state);
+                        }
+                    }
+                    
+                    if (newRoute.size() > 0)
+                    {                    
+                        this.model.newRoute(newName, newRoute);
+
+                        refreshRouteList();
+                    }
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
+                }
+                
+                break;
+        }
+    }//GEN-LAST:event_AddRouteButtonActionPerformed
      
     private void refreshRouteList()
     {
@@ -6351,6 +6449,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel ActiveLocLabel;
     private javax.swing.JButton AddLocButton;
     private javax.swing.JLabel AddNewLocLabel;
+    private javax.swing.JButton AddRouteButton;
     private javax.swing.JButton AltEmergencyStop;
     private javax.swing.JButton BButton;
     private javax.swing.JLabel BLabel;

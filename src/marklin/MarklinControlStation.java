@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.6.8";
+    public static final String VERSION = "1.6.9";
     
     //// Settings
     
@@ -432,6 +432,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Import routes
             for (MarklinRoute r : fileParser.parseRoutes())
             {
+                // Delete route if it has changed
+                if (this.routeDB.hasId(r.getId()) && !r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()))
+                {
+                    this.deleteRoute(this.routeDB.getById(r.getId()).getName());
+                    this.log("Deleted old route " + r.getName());
+                }
+                
                 if (!this.routeDB.hasId(r.getId()))
                 {
                     this.log("Added route " + r.getName());
@@ -644,6 +651,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void newRoute(String name, int id, Map<Integer, Boolean> route)
     {
         this.routeDB.add(new MarklinRoute(this, name, id, route), name, id);        
+    }
+    
+    /**
+     * Adds a new route from user input
+     * @param name
+     * @param route 
+     * @return creation status
+     */
+    @Override
+    public final boolean newRoute(String name, Map<Integer, Boolean> route)
+    {
+        int newId = 1;
+        if (this.routeDB.getItemIds().size() > 0)
+        {
+            newId = Collections.max(this.routeDB.getItemIds()) + 1;
+        }
+        
+        if (!this.routeDB.hasName(name))
+        {
+            this.routeDB.add(new MarklinRoute(this, name, newId, route), name, newId);  
+                        
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
     
     /**
@@ -1280,7 +1314,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void execRoute(String name)
     {
-        this.log("Executing route " + name);
+        this.log("Executing " + this.routeDB.getByName(name).toString());
         
         this.routeDB.getByName(name).execRoute();
     }

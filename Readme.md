@@ -100,6 +100,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.9 [2/19/23]
+    - Routes can now be added manually via the Route tab.
+    - Routes updated on the CS2 will now automatically be updated in the UI after synchronization.
+
 * v1.6.8 [1/2/23]
     - New hotkeys: Control+1-9 to control F11 to F19
     - New hotkeys: Alt+left/right arrow to cycle through locomotive mappings (same as comma/period)

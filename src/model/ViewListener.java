@@ -2,6 +2,7 @@ package model;
 
 import base.Feedback;
 import java.util.List;
+import java.util.Map;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
@@ -43,4 +44,5 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean isCS3();
     public String getCS3AppUrl();
+    public boolean newRoute(String name, Map<Integer, Boolean> route);
 }
