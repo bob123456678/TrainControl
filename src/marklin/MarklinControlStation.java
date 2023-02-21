@@ -1325,6 +1325,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.routeDB.delete(name);
     }
     
+    /**
+     * Returns a route ID, or 0 if not found
+     * @param name
+     * @return 
+     */
+    @Override
+    public int getRouteId(String name)
+    {
+        if (this.routeDB.hasName(name))
+        {
+            return this.routeDB.getByName(name).getId();
+        }
+        
+        return 0;
+    }
+    
     @Override
     public List<String> getRouteList()
     {

@@ -45,4 +45,5 @@ public interface ViewListener
     public boolean isCS3();
     public String getCS3AppUrl();
     public boolean newRoute(String name, Map<Integer, Boolean> route);
+    public int getRouteId(String name);
 }

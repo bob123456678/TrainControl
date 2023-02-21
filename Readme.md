@@ -101,8 +101,9 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.6.9 [2/19/23]
-    - Routes can now be added manually via the Route tab.
-    - Routes updated on the CS2 will now automatically be updated in the UI after synchronization.
+    - Routes can now be added manually via the Route tab
+    - Routes updated on the CS2 will now automatically be updated in the UI after synchronization
+    - Added borders between route labels
 
 * v1.6.8 [1/2/23]
     - New hotkeys: Control+1-9 to control F11 to F19

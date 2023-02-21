@@ -3195,7 +3195,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         ));
         RouteList.setFocusable(false);
-        RouteList.setGridColor(new java.awt.Color(238, 238, 238));
+        RouteList.setGridColor(new java.awt.Color(0, 0, 0));
         RouteList.setIntercellSpacing(new java.awt.Dimension(0, 0));
         RouteList.setRowHeight(30);
         RouteList.setRowSelectionAllowed(false);
@@ -5736,7 +5736,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (route != null)
         {
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "?", "Route Execution", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + this.model.getRouteId(route.toString()) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
                 new Thread(() -> {
@@ -6409,7 +6409,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_AddRouteButtonActionPerformed
      
     private void refreshRouteList()
-    {
+    {        
         DefaultTableModel tableModel = new DefaultTableModel() {
 
             @Override
@@ -6441,6 +6441,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         this.RouteList.setModel(tableModel);
+        this.RouteList.setShowGrid(true);
     }
         
     // Variables declaration - do not modify//GEN-BEGIN:variables
