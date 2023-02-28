@@ -45,6 +45,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
+import marklin.MarklinRoute;
 import model.View;
 import model.ViewListener;
 
@@ -1542,6 +1543,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane5 = new javax.swing.JScrollPane();
         RouteList = new javax.swing.JTable();
         AddRouteButton = new javax.swing.JButton();
+        editRouteButton = new javax.swing.JButton();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
@@ -3217,6 +3219,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        editRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        editRouteButton.setText("Edit Route");
+        editRouteButton.setFocusable(false);
+        editRouteButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editRouteButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
         RoutePanelLayout.setHorizontalGroup(
@@ -3230,6 +3241,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addComponent(DeleteRouteButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(editRouteButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(AddRouteButton)))
                 .addContainerGap())
@@ -3242,9 +3255,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(DeleteRouteButton)
-                    .addComponent(AddRouteButton))
+                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(DeleteRouteButton)
+                        .addComponent(AddRouteButton))
+                    .addComponent(editRouteButton))
                 .addContainerGap())
         );
 
@@ -5686,6 +5701,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 this.model.deleteRoute(route.toString());
                 refreshRouteList();
+                
+                // Ensure route changes are synced
+                this.model.syncWithCS2();
+                this.repaintLayout();
             }
         }
     }//GEN-LAST:event_DeleteRouteButtonActionPerformed
@@ -6397,6 +6416,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         this.model.newRoute(newName, newRoute);
 
                         refreshRouteList();
+                        
+                        // Ensure route changes are synced
+                        this.model.syncWithCS2();
+                        this.repaintLayout();
                     }
                 }
                 catch (Exception e)
@@ -6407,6 +6430,65 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 break;
         }
     }//GEN-LAST:event_AddRouteButtonActionPerformed
+
+    private void editRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editRouteButtonActionPerformed
+        
+        Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
+        
+        if (route != null)
+        {          
+            String newName = JOptionPane.showInputDialog(this, "Enter name for your route:", route.toString());
+        
+            if (this.model.getRouteList().contains(newName) && !route.toString().equals(newName))
+            {
+                JOptionPane.showMessageDialog(this, "A route called " + newName + " already exists.  Please pick a different name.");
+                return;
+            }
+            
+            JTextArea jta = new JTextArea(25, 32);
+            jta.setLineWrap(true);
+            MarklinRoute currentRoute = this.model.getRoute(route.toString());
+            jta.setText(currentRoute.toCSV());
+            
+            switch (JOptionPane.showConfirmDialog(this, new JScrollPane(jta), "Enter new route for route " + route.toString() + " (ID: " + currentRoute.getId() + ")", JOptionPane.OK_CANCEL_OPTION))
+            {
+                case JOptionPane.OK_OPTION:
+
+                    try
+                    {
+                        Map<Integer, Boolean> newRoute = new HashMap<>();
+
+                        for (String line : jta.getText().split("\n"))
+                        {
+                            if (line.trim().length() > 0)
+                            {
+                                int address = Integer.parseInt(line.split(",")[0].trim());
+                                boolean state = line.split(",")[1].trim().equals("1");
+
+                                newRoute.put(address, state);
+                            }
+                        }
+
+                        if (newRoute.size() > 0)
+                        {                    
+                            this.model.editRoute(route.toString(), newName, newRoute);
+
+                            refreshRouteList();
+                            
+                            // Ensure route changes are synced
+                            this.model.syncWithCS2();
+                            this.repaintLayout();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
+                    }
+
+                    break;
+            }
+        }
+    }//GEN-LAST:event_editRouteButtonActionPerformed
      
     private void refreshRouteList()
     {        
@@ -6692,6 +6774,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JButton clearButton;
     private javax.swing.JTextArea debugArea;
+    private javax.swing.JButton editRouteButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;

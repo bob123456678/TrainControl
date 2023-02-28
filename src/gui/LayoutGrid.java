@@ -5,9 +5,12 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 
@@ -59,7 +62,8 @@ public class LayoutGrid
         }
 
         // Generate grid
-        container.setLayout(new GridLayout(height, width, 0, 0));
+        container.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints(); 
         container.setSize(width * size, height * size);
         container.setMaximumSize(new Dimension(width * size, height * size));
         
@@ -76,7 +80,21 @@ public class LayoutGrid
                 
                 grid[x][y] = new LayoutLabel(c, master, size);
                 
-                container.add(grid[x][y]);     
+                if (c != null && c.isText())
+                {
+                    // Text labels can overflow.  This ensures that they don't widen other cells.
+                    gbc.gridwidth = 0;
+                    gbc.anchor = GridBagConstraints.BASELINE_LEADING;
+                }
+                else
+                {
+                    gbc.gridwidth = 1;
+                }
+                
+                gbc.gridx = x;
+                gbc.gridy = y;
+                
+                container.add(grid[x][y], gbc);     
                 
                 // Set references for each tile accessory
                 if (c != null)

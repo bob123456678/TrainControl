@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.6.9";
+    public static final String VERSION = "1.6.10";
     
     //// Settings
     
@@ -640,6 +640,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void newRoute(MarklinRoute r)
     {
         this.routeDB.add(r, r.getName(), r.getId());
+    }
+    
+    /**
+     * Updates a route
+     * @param name
+     * @param newName
+     * @param route 
+     */
+    @Override
+    public final void editRoute(String name, String newName, Map<Integer, Boolean> route)
+    {
+        Integer id = this.routeDB.getByName(name).getId();
+        this.deleteRoute(name);
+        
+        this.newRoute(newName, id, route);
+    }
+    
+    /**
+     * Returns a route
+     * @param name
+     * @return 
+     */
+    @Override
+    public MarklinRoute getRoute(String name)
+    {
+        return this.routeDB.getByName(name);
     }
     
     /**
@@ -1341,11 +1367,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return 0;
     }
     
+    /**
+     * Gets route list, sorted by ID
+     * @return 
+     */
     @Override
     public List<String> getRouteList()
     {
-        List<String> l = this.routeDB.getItemNames();
-        Collections.sort(l);
+        List<String> l = new LinkedList<>();
+        List<Integer> ids = this.routeDB.getItemIds();
+        Collections.sort(ids);
+        
+        for (int i : ids)
+        {
+            l.add(this.routeDB.getById(i).getName());
+        }
                 
         return l;
     }

@@ -1123,4 +1123,36 @@ element
 element
  .id=0x703
  .typ=fahrstrasse
- .artikel=1
+ .artikel=2
+element
+ .id=0x70d
+ .typ=fahrstrasse
+ .artikel=14
+element
+ .id=0x70e
+ .artikel=-1
+ .text=Cross over
+element
+ .id=0x30c
+ .typ=fahrstrasse
+ .artikel=12
+element
+ .id=0x30d
+ .artikel=-1
+ .text=Inner backwards
+element
+ .id=0x50c
+ .typ=fahrstrasse
+ .artikel=16
+element
+ .id=0x50d
+ .artikel=-1
+ .text=Loopback
+element
+ .id=0x60c
+ .typ=fahrstrasse
+ .artikel=18
+element
+ .id=0x60d
+ .artikel=-1
+ .text=Lower circuit

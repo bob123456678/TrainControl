@@ -503,6 +503,10 @@ public class MarklinLayoutComponent
         {
             return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress();
         }
+        else if (this.isRoute() && this.getRoute() != null)
+        {
+            return "Route " + this.getRoute().getId();
+        }
         else
         {
             return "";

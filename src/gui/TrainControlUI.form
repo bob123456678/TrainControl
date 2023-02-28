@@ -2125,6 +2125,8 @@
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <Component id="DeleteRouteButton" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="editRouteButton" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="AddRouteButton" min="-2" max="-2" attributes="0"/>
                           </Group>
@@ -2141,9 +2143,12 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jScrollPane5" pref="445" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="DeleteRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="AddRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="DeleteRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="AddRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Component id="editRouteButton" alignment="0" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -2218,6 +2223,18 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AddRouteButtonActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JButton" name="editRouteButton">
+              <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Tahoma" size="11" style="1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Edit Route"/>
+                <Property name="focusable" type="boolean" value="false"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="editRouteButtonActionPerformed"/>
               </Events>
             </Component>
           </SubComponents>

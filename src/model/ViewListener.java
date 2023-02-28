@@ -6,6 +6,7 @@ import java.util.Map;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
+import marklin.MarklinRoute;
 
 /**
  * Model functionality in the eyes of the GUI
@@ -45,5 +46,7 @@ public interface ViewListener
     public boolean isCS3();
     public String getCS3AppUrl();
     public boolean newRoute(String name, Map<Integer, Boolean> route);
+    public void editRoute(String name, String newName, Map<Integer, Boolean> route);
+    public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
 }

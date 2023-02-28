@@ -100,6 +100,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.10 [2/27/23]
+    - Fixed layout rendering issue for long text labels (those exceeding ~3 letters)
+    - Added option to edit routes
+    - Added tooltips for clickable routes
+
 * v1.6.9 [2/19/23]
     - Routes can now be added manually via the Route tab
     - Routes updated on the CS2 will now automatically be updated in the UI after synchronization

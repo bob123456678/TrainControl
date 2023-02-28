@@ -87,4 +87,20 @@ abstract public class Route
     {
         return this.name;
     }
+    
+    /**
+     * Returns a CSV representation of the route
+     * @return 
+     */
+    public String toCSV()
+    {
+        String out = "";
+        
+        for (int idx : this.route.keySet())
+        {
+            out += Integer.toString(idx) + "," + (this.route.get(idx) ? "1" : "0") + "\n";
+        }
+        
+        return out.trim();
+    }
 }

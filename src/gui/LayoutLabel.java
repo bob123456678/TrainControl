@@ -6,6 +6,7 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
@@ -36,6 +37,10 @@ public final class LayoutLabel extends JLabel
         this.parent = parent;
         
         this.setSize(size, size);
+        // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
+        /*this.setMinimumSize(new Dimension(size, size));
+        this.setPreferredSize(new Dimension(size, size));
+        this.setMaximumSize(new Dimension(size, size));*/
         this.setForeground(Color.white);
         
         this.setImage(false);
