@@ -1139,7 +1139,7 @@ element
 element
  .id=0x30d
  .artikel=-1
- .text=Inner backwards
+ .text=Inner Loop
 element
  .id=0x50c
  .typ=fahrstrasse
@@ -1156,3 +1156,11 @@ element
  .id=0x60d
  .artikel=-1
  .text=Lower circuit
+element
+ .id=0xb01
+ .typ=fahrstrasse
+ .artikel=40
+element
+ .id=0xb02
+ .artikel=-1
+ .text=Reset

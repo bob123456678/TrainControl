@@ -1,6 +1,9 @@
 package base;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -96,7 +99,10 @@ abstract public class Route
     {
         String out = "";
         
-        for (int idx : this.route.keySet())
+        List<Integer> keys = new ArrayList(this.route.keySet());
+        Collections.sort(keys);
+        
+        for (int idx : keys)
         {
             out += Integer.toString(idx) + "," + (this.route.get(idx) ? "1" : "0") + "\n";
         }
