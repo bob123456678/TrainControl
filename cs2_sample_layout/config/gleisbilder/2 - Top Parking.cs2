@@ -356,11 +356,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x20612
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
  .id=0x20613
  .typ=gerade
  .drehung=1
@@ -386,26 +381,6 @@ element
  .drehung=2
  .artikel=-1
 element
- .id=0x2070d
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x2070e
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x2070f
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x20710
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
  .id=0x20713
  .typ=gerade
  .drehung=1
@@ -424,22 +399,6 @@ element
  .id=0x20807
  .typ=gerade
  .drehung=1
- .artikel=-1
-element
- .id=0x2080d
- .typ=prellbock
- .artikel=-1
-element
- .id=0x2080e
- .typ=prellbock
- .artikel=-1
-element
- .id=0x2080f
- .typ=prellbock
- .artikel=-1
-element
- .id=0x20810
- .typ=prellbock
  .artikel=-1
 element
  .id=0x20813
@@ -591,32 +550,68 @@ element
  .drehung=2
  .artikel=-1
 element
- .id=0x20712
+ .id=0x20612
  .typ=s88kontakt
  .drehung=1
  .artikel=1010
  .deviceId=0xc
 element
- .id=0x20812
+ .id=0x20712
  .typ=prellbock
  .artikel=-1
 element
- .id=0x20912
+ .id=0x20710
+ .typ=prellbock
+ .artikel=-1
+element
+ .id=0x2070f
+ .typ=prellbock
+ .artikel=-1
+element
+ .id=0x2070e
+ .typ=prellbock
+ .artikel=-1
+element
+ .id=0x2070d
+ .typ=prellbock
+ .artikel=-1
+element
+ .id=0x20812
  .typ=fahrstrasse
  .artikel=2
 element
- .id=0x20910
+ .id=0x20810
  .typ=fahrstrasse
  .artikel=4
 element
- .id=0x2090f
+ .id=0x2080f
  .typ=fahrstrasse
  .artikel=6
 element
- .id=0x2090e
+ .id=0x2080e
  .typ=fahrstrasse
  .artikel=8
 element
- .id=0x2090d
+ .id=0x2080d
  .typ=fahrstrasse
  .artikel=10
+element
+ .id=0x20912
+ .artikel=-1
+ .text=1
+element
+ .id=0x20910
+ .artikel=-1
+ .text=2
+element
+ .id=0x2090f
+ .artikel=-1
+ .text=3
+element
+ .id=0x2090e
+ .artikel=-1
+ .text=4
+element
+ .id=0x2090d
+ .artikel=-1
+ .text=5
