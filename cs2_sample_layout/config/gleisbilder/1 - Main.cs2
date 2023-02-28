@@ -303,9 +303,9 @@ element
 element
  .id=0x302
  .typ=linksweiche
+ .drehung=3
  .artikel=196
  .zustand=1
- .drehung=3
 element
  .id=0x303
  .typ=gerade
@@ -471,11 +471,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x503
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
  .id=0x504
  .typ=gerade
  .drehung=1
@@ -553,12 +548,6 @@ element
  .artikel=146
  .zustand=1
 element
- .id=0x603
- .typ=s88kontakt
- .drehung=1
- .artikel=1010
- .deviceId=0xc
-element
  .id=0x604
  .typ=gerade
  .drehung=1
@@ -615,7 +604,6 @@ element
 element
  .id=0x613
  .typ=lampe
- .drehung=0
  .artikel=186
 element
  .id=0x614
@@ -636,10 +624,6 @@ element
  .id=0x701
  .typ=gerade
  .drehung=1
- .artikel=-1
-element
- .id=0x703
- .typ=prellbock
  .artikel=-1
 element
  .id=0x704
@@ -923,14 +907,14 @@ element
 element
  .id=0x709
  .typ=prellbock
- .artikel=-1
  .drehung=2
+ .artikel=-1
 element
  .id=0x809
  .typ=signal_sh01
+ .drehung=3
  .artikel=162
  .zustand=1
- .drehung=3
 element
  .id=0x909
  .typ=gerade
@@ -1114,6 +1098,7 @@ element
 element
  .id=0xc14
  .typ=entkuppler
+ .artikel=-1
 element
  .id=0xc15
  .typ=linksweiche
@@ -1125,3 +1110,17 @@ element
  .typ=prellbock
  .drehung=1
  .artikel=-1
+element
+ .id=0x503
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1010
+ .deviceId=0xc
+element
+ .id=0x603
+ .typ=prellbock
+ .artikel=-1
+element
+ .id=0x703
+ .typ=fahrstrasse
+ .artikel=1
