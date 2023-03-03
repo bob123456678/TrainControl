@@ -880,15 +880,18 @@ public final class CS2File
                     
                     Integer address = rawAddress;
                     
-                    if (address % 2 == 0)
+                    if (!"fahrstrasse".equals(type))
                     {
-                        address = (address / 2);
+                        if (address % 2 == 0)
+                        {
+                            address = (address / 2);
+                        }
+                        else
+                        {
+                            address = (address - 1) / 2;
+                        }
                     }
-                    else
-                    {
-                        address = (address - 1) / 2;
-                    }
-                    
+                                        
                     if (m.get("drehung") != null)
                     {
                         orient = Integer.parseInt(m.get("drehung")); 

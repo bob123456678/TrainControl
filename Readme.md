@@ -102,6 +102,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.6.11 [3/2/23]
     - Added option to sort routes by name
+    - Fixed bug preventing the use of route buttons for odd route IDs
 
 * v1.6.10 [2/27/23]
     - Fixed layout rendering issue for long text labels (those exceeding ~3 letters)

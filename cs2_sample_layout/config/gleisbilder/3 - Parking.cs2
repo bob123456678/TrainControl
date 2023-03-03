@@ -819,7 +819,7 @@ element
 element
  .id=0x30e0f
  .typ=fahrstrasse
- .artikel=20
+ .artikel=10
 element
  .id=0x30e10
  .artikel=-1
@@ -840,7 +840,7 @@ element
 element
  .id=0x30d11
  .typ=fahrstrasse
- .artikel=22
+ .artikel=11
 element
  .id=0x30d12
  .artikel=-1
@@ -848,7 +848,7 @@ element
 element
  .id=0x30c11
  .typ=fahrstrasse
- .artikel=24
+ .artikel=12
 element
  .id=0x30c12
  .artikel=-1
@@ -873,7 +873,7 @@ element
 element
  .id=0x30a0f
  .typ=fahrstrasse
- .artikel=26
+ .artikel=13
 element
  .id=0x30a10
  .artikel=-1
@@ -929,27 +929,27 @@ element
 element
  .id=0x30911
  .typ=fahrstrasse
- .artikel=28
+ .artikel=14
 element
  .id=0x30711
  .typ=fahrstrasse
- .artikel=30
+ .artikel=15
 element
  .id=0x3060f
  .typ=fahrstrasse
- .artikel=32
+ .artikel=16
 element
  .id=0x3050e
  .typ=fahrstrasse
- .artikel=34
+ .artikel=17
 element
  .id=0x3030b
  .typ=fahrstrasse
- .artikel=36
+ .artikel=18
 element
  .id=0x3040a
  .typ=fahrstrasse
- .artikel=38
+ .artikel=19
 element
  .id=0x30113
  .typ=gerade
@@ -1012,11 +1012,11 @@ element
 element
  .id=0x3010f
  .typ=fahrstrasse
- .artikel=18
+ .artikel=9
 element
  .id=0x30210
  .typ=fahrstrasse
- .artikel=16
+ .artikel=8
 element
  .id=0x30211
  .artikel=-1
