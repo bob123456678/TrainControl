@@ -6409,6 +6409,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         String newName = JOptionPane.showInputDialog(this, "Enter name for your route:");
         
+        if (newName == null || "".equals(newName))
+        {
+            return;
+        }
+        
         if (this.model.getRouteList().contains(newName))
         {
             JOptionPane.showMessageDialog(this, "A route called " + newName + " already exists.  Please pick a different name.");
