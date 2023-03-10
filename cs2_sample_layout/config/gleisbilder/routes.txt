@@ -5,7 +5,6 @@ Route 1 (top track 1)
 75,0
 3,0
 18,1
-19,0
 81,1
 
 Route 2 (top track 2)

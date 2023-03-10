@@ -100,6 +100,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.12 [3/10/23]
+    - Fixed tooltips for 3-way switches (addresses were off by 1)
+
 * v1.6.11 [3/2/23]
     - Added option to sort routes by name
     - Fixed bug preventing the use of route buttons for odd route IDs

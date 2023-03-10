@@ -485,7 +485,7 @@ public class MarklinLayoutComponent
     {        
         if (this.isThreeWay())
         {
-            return "Switch " + this.accessory.getAddress() + "-" + this.accessory2.getAddress();
+            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1);
         }
         else if (this.isSwitch())
         {
