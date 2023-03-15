@@ -102,6 +102,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.6.12 [3/10/23]
     - Fixed tooltips for 3-way switches (addresses were off by 1)
+    - Fixed parsing of routes that include 3-way signals (e.g., signal_f_hp012)
 
 * v1.6.11 [3/2/23]
     - Added option to sort routes by name
