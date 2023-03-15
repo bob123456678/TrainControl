@@ -45,7 +45,7 @@ public class RightClickMenuListener extends MouseAdapter {
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
-    class RightClickMenu extends JPopupMenu
+    final class RightClickMenu extends JPopupMenu
     {
         JMenuItem menuItem;
 
