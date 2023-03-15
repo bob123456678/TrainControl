@@ -3189,7 +3189,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
         jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
 
-        RouteList.setBackground(new java.awt.Color(238, 238, 238));
         RouteList.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         RouteList.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
