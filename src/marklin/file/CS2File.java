@@ -395,15 +395,26 @@ public final class CS2File
                         }
                     }
                     
-                    // Handle 3-way switches
+                    // Handle 3-way switches and signals
                     if (id > 0)
                     {
-                        if (setting == 2)
+                        if (setting >= 2)
                         {
-                            r.addItem(id + 1, true);
+                            r.addItem(id + 1, setting == 2);
                         }
                         
-                        r.addItem(id, setting != 1);
+                        r.addItem(id, setting != 1 && setting != 3);
+                        
+                        // stellung 0
+                        // id -> true (red)
+                        // stellung 1
+                        // id -> false (green)
+                        // stellung 2
+                        // id -> true (red)
+                        // id + 1 -> true (red)
+                        // stellung 3
+                        // id -> false (green)
+                        // id + 1 -> false (green)
                     }
                 }
                                 
