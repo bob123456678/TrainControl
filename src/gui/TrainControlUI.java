@@ -3274,10 +3274,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(AddRouteButton)
+                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(AddRouteButton)
+                        .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
             .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(RoutePanelLayout.createSequentialGroup()
@@ -6484,6 +6485,36 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return null;
         }
         
+    }
+    
+    public void duplicateRoute(MouseEvent evt)
+    {
+        Object route = getRouteAtCursor(evt);
+
+        if (route != null)
+        {
+            MarklinRoute currentRoute = this.model.getRoute(route.toString());
+            
+            if (currentRoute != null)
+            {
+                String proposedName = currentRoute.getName() + " (Copy %s)";
+                
+                int i = 1;
+                
+                while (this.model.getRoute(String.format(proposedName, i)) != null)
+                {
+                    i++;
+                }
+                
+                this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute());
+
+                refreshRouteList();
+
+                // Ensure route changes are synced
+                this.model.syncWithCS2();
+                this.repaintLayout();
+            }
+        }  
     }
     
     public void editRoute(MouseEvent evt)

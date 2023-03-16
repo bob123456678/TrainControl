@@ -2152,10 +2152,12 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jScrollPane5" pref="445" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="AddRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="sortByID" alignment="0" min="-2" pref="23" max="-2" attributes="0"/>
-                          <Component id="sortByName" alignment="3" min="-2" pref="23" max="-2" attributes="0"/>
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="AddRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="sortByName" alignment="3" min="-2" pref="23" max="-2" attributes="0"/>
+                          </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>

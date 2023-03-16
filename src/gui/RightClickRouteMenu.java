@@ -57,19 +57,20 @@ public class RightClickRouteMenu extends MouseAdapter {
             menuItem = new JMenuItem("Execute " + routeName + " (ID: " + ui.getRouteId(routeName) + ")");
             menuItem.addActionListener(event -> ui.executeRoute(routeName));    
             add(menuItem);
-
             addSeparator();
             
-            // Select the active locomotive
             menuItem = new JMenuItem("Edit Route");
             menuItem.addActionListener(event -> ui.editRoute(e));    
-            
             add(menuItem);
             
-            // Select the active locomotive
+            menuItem = new JMenuItem("Duplicate Route");
+            menuItem.addActionListener(event -> ui.duplicateRoute(e));    
+            add(menuItem);
+            
+            addSeparator();
+            
             menuItem = new JMenuItem("Delete Route");
             menuItem.addActionListener(event -> ui.deleteRoute(e));    
-            
             add(menuItem);
         }
     }

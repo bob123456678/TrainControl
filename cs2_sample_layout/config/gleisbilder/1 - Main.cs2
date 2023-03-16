@@ -329,15 +329,17 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x307
+ .typ=fahrstrasse
+ .artikel=21
+element
  .id=0x308
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=22
 element
  .id=0x309
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=23
 element
  .id=0x30a
  .typ=gerade
@@ -348,6 +350,14 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x30c
+ .typ=fahrstrasse
+ .artikel=6
+element
+ .id=0x30d
+ .artikel=-1
+ .text=Inner Loop
 element
  .id=0x311
  .typ=gerade
@@ -405,16 +415,14 @@ element
  .artikel=-1
 element
  .id=0x408
- .typ=s88kontakt
- .drehung=1
- .artikel=1031
- .deviceId=0xc
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
 element
  .id=0x409
- .typ=s88kontakt
- .drehung=1
- .artikel=1029
- .deviceId=0xc
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
 element
  .id=0x40a
  .typ=gerade
@@ -471,6 +479,12 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x503
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1010
+ .deviceId=0xc
+element
  .id=0x504
  .typ=gerade
  .drehung=1
@@ -497,10 +511,22 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x508
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1031
+ .deviceId=0xc
+element
  .id=0x509
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x509
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1029
+ .deviceId=0xc
 element
  .id=0x50a
  .typ=gerade
@@ -511,6 +537,14 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x50c
+ .typ=fahrstrasse
+ .artikel=8
+element
+ .id=0x50d
+ .artikel=-1
+ .text=Loopback
 element
  .id=0x510
  .typ=bogen
@@ -547,6 +581,10 @@ element
  .typ=rechtsweiche
  .artikel=146
  .zustand=1
+element
+ .id=0x603
+ .typ=prellbock
+ .artikel=-1
 element
  .id=0x604
  .typ=gerade
@@ -590,6 +628,14 @@ element
  .artikel=1008
  .deviceId=0xc
 element
+ .id=0x60c
+ .typ=fahrstrasse
+ .artikel=9
+element
+ .id=0x60d
+ .artikel=-1
+ .text=Lower circuit
+element
  .id=0x611
  .typ=s88kontakt
  .drehung=1
@@ -626,6 +672,10 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x703
+ .typ=fahrstrasse
+ .artikel=1
+element
  .id=0x704
  .typ=s88kontakt
  .drehung=1
@@ -648,6 +698,15 @@ element
  .drehung=1
  .artikel=-1
 element
+ .id=0x709
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x709
+ .typ=fahrstrasse
+ .artikel=24
+element
  .id=0x70a
  .typ=gerade
  .drehung=1
@@ -663,6 +722,14 @@ element
  .drehung=3
  .artikel=1011
  .deviceId=0xc
+element
+ .id=0x70d
+ .typ=fahrstrasse
+ .artikel=7
+element
+ .id=0x70e
+ .artikel=-1
+ .text=Cross over
 element
  .id=0x711
  .typ=gerade
@@ -729,6 +796,17 @@ element
 element
  .id=0x808
  .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x809
+ .typ=signal_sh01
+ .drehung=3
+ .artikel=162
+ .zustand=1
+element
+ .id=0x809
+ .typ=prellbock
  .drehung=2
  .artikel=-1
 element
@@ -823,6 +901,16 @@ element
  .id=0x908
  .typ=bahnschranke
  .artikel=170
+element
+ .id=0x909
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x909
+ .typ=signal_sh01
+ .drehung=3
+ .artikel=162
  .zustand=1
 element
  .id=0x90a
@@ -901,30 +989,14 @@ element
  .artikel=1007
  .deviceId=0xc
 element
- .id=0xa0a
- .typ=gerade
- .artikel=-1
-element
- .id=0x709
- .typ=prellbock
- .drehung=2
- .artikel=-1
-element
- .id=0x809
- .typ=signal_sh01
- .drehung=3
- .artikel=162
- .zustand=1
-element
- .id=0x909
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
  .id=0xa09
  .typ=rechtsweiche
  .drehung=1
  .artikel=138
+element
+ .id=0xa0a
+ .typ=gerade
+ .artikel=-1
 element
  .id=0xa0b
  .typ=gerade
@@ -975,6 +1047,14 @@ element
  .drehung=2
  .artikel=144
  .zustand=1
+element
+ .id=0xb01
+ .typ=fahrstrasse
+ .artikel=20
+element
+ .id=0xb02
+ .artikel=-1
+ .text=Reset
 element
  .id=0xb06
  .typ=bogen
@@ -1110,57 +1190,3 @@ element
  .typ=prellbock
  .drehung=1
  .artikel=-1
-element
- .id=0x503
- .typ=s88kontakt
- .drehung=1
- .artikel=1010
- .deviceId=0xc
-element
- .id=0x603
- .typ=prellbock
- .artikel=-1
-element
- .id=0x703
- .typ=fahrstrasse
- .artikel=1
-element
- .id=0x70d
- .typ=fahrstrasse
- .artikel=7
-element
- .id=0x70e
- .artikel=-1
- .text=Cross over
-element
- .id=0x30c
- .typ=fahrstrasse
- .artikel=6
-element
- .id=0x30d
- .artikel=-1
- .text=Inner Loop
-element
- .id=0x50c
- .typ=fahrstrasse
- .artikel=8
-element
- .id=0x50d
- .artikel=-1
- .text=Loopback
-element
- .id=0x60c
- .typ=fahrstrasse
- .artikel=9
-element
- .id=0x60d
- .artikel=-1
- .text=Lower circuit
-element
- .id=0xb01
- .typ=fahrstrasse
- .artikel=20
-element
- .id=0xb02
- .artikel=-1
- .text=Reset
