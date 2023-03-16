@@ -235,7 +235,6 @@ Route 23 (mid parking 3)
 
 88,0
 49,1
-79,0
 80,1
 
 Route 24 (mid parking 4)
