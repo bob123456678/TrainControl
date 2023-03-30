@@ -241,3 +241,10 @@ Route 24 (mid parking 4)
 
 81,0
 69,1
+98,1
+
+Route 25 (mid parking 5)
+
+81,0
+69,1
+98,0
