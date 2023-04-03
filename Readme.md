@@ -84,13 +84,15 @@ Requires JDK 1.8+ and the following libraries:
 * Numpad 0/backquote/Alt+0 (toggle lights/F0)
 * F1-F24 (toggle functions F1-F24)
 * Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
-* Control+1-9 (toggle functions F11-F19)
+* Control+0-9 (toggle functions F10-F19)
+* Control+Alt+0-9 (toggle functions F20-F19)
 * Shift (slow stop)
 * Spacebar (instant stop)
 * Enter (stop all locs)
 * Comma/period, Alt+Left/right arrow (cycle to previous/next loc page)
 * Backspace/Alt+backspace (cycle through tabs)
 * Plus/minus (cycle through keyboards and layout pages)
+* Slash/question mark (cycle through function tabs on the loc panel)
 * Alt+P (apply saved function preset for current loc)
 * Alt+O (turn off all functions for current loc)
 * Alt+S (save current functions as a preset for current loc)
@@ -99,6 +101,12 @@ Requires JDK 1.8+ and the following libraries:
 
 
 ## Changelog
+
+* v1.6.13 [4/2/23]
+    - Added hotkey ("/" / "?") for cycling through function tabs
+    - Added hotkey (Control+0) for F10
+    - Added hotkeys (Control+Alt+0-9) for F20-29
+    - Fixed race condition / icon rendering when switching between locomotive mapping pages
 
 * v1.6.12 [3/15/23]
     - Fixed tooltips for 3-way switches (addresses were off by 1)

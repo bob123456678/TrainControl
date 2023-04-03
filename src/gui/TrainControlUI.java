@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -973,7 +974,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!this.labelMapping.get(b).getText().equals(name))
                 {
                     this.labelMapping.get(b).setText(name);   
-                    repaintIcon(b, l);
+                    repaintIcon(b, l, this.locMappingNumber);
                 }
                 
                 this.sliderMapping.get(b).setEnabled(true);
@@ -984,7 +985,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!this.labelMapping.get(b).getText().equals("---"))
                 {
                     this.labelMapping.get(b).setText("---");
-                    repaintIcon(b, l);
+                    repaintIcon(b, l, this.locMappingNumber);
                 }
                 
                 this.sliderMapping.get(b).setValue(0);
@@ -1070,8 +1071,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * Repaints a locomotive button
      * @param b
      * @param l 
+     * @param correspondingLocMappingNumber
      */
-    private void repaintIcon(JButton b, Locomotive l)
+    private void repaintIcon(JButton b, Locomotive l, Integer correspondingLocMappingNumber)
     {
         new Thread(() -> 
         {
@@ -1085,9 +1087,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     try 
                     {
-                        b.setIcon(new javax.swing.ImageIcon(
+                        ImageIcon ic = new javax.swing.ImageIcon(
                             getLocImage(l.getImageURL(), 65)
-                        ));  
+                        );
+                        
+                        // The active page has changed since this thread was called.  No need to update the UI.
+                        if (this.locMappingNumber != correspondingLocMappingNumber)
+                        {
+                            return;
+                        }
+                        
+                        b.setIcon(ic);  
 
                         b.setHorizontalTextPosition(SwingConstants.CENTER);
 
@@ -1126,7 +1136,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (!this.ActiveLocLabel.getText().equals(name))
             {
                 new Thread(() -> {
-                    repaintIcon(this.currentButton, this.activeLoc);
+                    repaintIcon(this.currentButton, this.activeLoc, this.locMappingNumber);
                     
                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                     {
@@ -5571,47 +5581,47 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.NextLocMappingActionPerformed(null);
             // }
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD0 || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD0 || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed && !controlPressed))
         {
             this.switchF(0);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD1 || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD1 || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed && !controlPressed))
         {
             this.switchF(1);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD2 || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD2 || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed && !controlPressed))
         {
             this.switchF(2);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD3 || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD3 || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed && !controlPressed))
         {
             this.switchF(3);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD4 || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD4 || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed && !controlPressed))
         {
             this.switchF(4);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD5 || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD5 || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed && !controlPressed))
         {
             this.switchF(5);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD6 || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD6 || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed && !controlPressed))
         {
             this.switchF(6);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD7 || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD7 || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed && !controlPressed))
         {
             this.switchF(7);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD8 || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD8 || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed && !controlPressed))
         {
             this.switchF(8);
         }
-        else if (keyCode == KeyEvent.VK_NUMPAD9 || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed))
+        else if (keyCode == KeyEvent.VK_NUMPAD9 || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed && !controlPressed))
         {
             this.switchF(9);
         }
-        else if (keyCode == KeyEvent.VK_F10)
+        else if (keyCode == KeyEvent.VK_F10 || (keyCode == KeyEvent.VK_0 && !altPressed && controlPressed))
         {
             this.switchF(10);
         }
@@ -5651,25 +5661,45 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.switchF(19);
         }
-        else if (keyCode == KeyEvent.VK_F20)
+        else if (keyCode == KeyEvent.VK_F20 || (keyCode == KeyEvent.VK_0 && altPressed && controlPressed))
         {
             this.switchF(20);
         }
-        else if (keyCode == KeyEvent.VK_F21)
+        else if (keyCode == KeyEvent.VK_F21 || (keyCode == KeyEvent.VK_1 && altPressed && controlPressed))
         {
             this.switchF(21);
         }
-        else if (keyCode == KeyEvent.VK_F22)
+        else if (keyCode == KeyEvent.VK_F22 || (keyCode == KeyEvent.VK_2 && altPressed && controlPressed))
         {
             this.switchF(22);
         }
-        else if (keyCode == KeyEvent.VK_F23)
+        else if (keyCode == KeyEvent.VK_F23 || (keyCode == KeyEvent.VK_3 && altPressed && controlPressed))
         {
             this.switchF(23);
         }
-        else if (keyCode == KeyEvent.VK_F24)
+        else if (keyCode == KeyEvent.VK_F24 || (keyCode == KeyEvent.VK_4 && altPressed && controlPressed))
         {
             this.switchF(24);
+        }
+        else if (keyCode == KeyEvent.VK_5 && altPressed && controlPressed)
+        {
+            this.switchF(25);
+        }
+        else if (keyCode == KeyEvent.VK_6 && altPressed && controlPressed)
+        {
+            this.switchF(26);
+        }
+        else if (keyCode == KeyEvent.VK_7 && altPressed && controlPressed)
+        {
+            this.switchF(27);
+        }
+        else if (keyCode == KeyEvent.VK_8 && altPressed && controlPressed)
+        {
+            this.switchF(28);
+        }
+        else if (keyCode == KeyEvent.VK_9 && altPressed && controlPressed)
+        {
+            this.switchF(29);
         }
         else if (keyCode == KeyEvent.VK_ESCAPE)
         {
@@ -5706,6 +5736,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 );
             }
         } 
+        else if (keyCode == KeyEvent.VK_SLASH)
+        {
+            // Cycle function tabs
+            this.FunctionTabs.setSelectedIndex(
+                (this.FunctionTabs.getSelectedIndex() + 1) 
+                    % this.FunctionTabs.getComponentCount()
+            );
+        }
     }//GEN-LAST:event_LocControlPanelKeyPressed
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
