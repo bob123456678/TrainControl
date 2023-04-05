@@ -6,7 +6,6 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
@@ -81,7 +80,7 @@ public final class LayoutLabel extends JLabel
     {
         new Thread(() -> {
             if (this.component != null)
-            {       
+            {            
                 // Special handling for text labels
                 if (this.component.isText())
                 {
@@ -118,6 +117,9 @@ public final class LayoutLabel extends JLabel
                         if (!"".equals(this.component.toSimpleString()))
                         {
                             this.setToolTipText(this.component.toSimpleString());
+                            
+                            // Change the cursor to indicate the component is clickable
+                            this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
                         }
                     }
                     catch (IOException ex)
@@ -125,7 +127,7 @@ public final class LayoutLabel extends JLabel
                         Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
                     }
 
-                    this.imageName = component.getImageName(size);  
+                    this.imageName = component.getImageName(size);
                 }
                 
                 if (update)

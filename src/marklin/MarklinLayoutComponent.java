@@ -1,6 +1,5 @@
 package marklin;
 
-import base.Accessory;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.geom.AffineTransform;
@@ -262,6 +261,14 @@ public class MarklinLayoutComponent
         if (this.isFeedback())
         {
             if (this.getFeedback().isSet())
+            {
+                stateString = "_active";
+            }
+        }
+        
+        if (this.isRoute())
+        {
+            if (this.getRoute() != null && this.getRoute().isExecuting())
             {
                 stateString = "_active";
             }

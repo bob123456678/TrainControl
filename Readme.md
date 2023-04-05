@@ -102,6 +102,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.6.14 [4/4/23]
+    - Route icons in the layout remain highlighted until the route finished executing
+    - Added pointer icon for clickable layout components
+
 * v1.6.13 [4/2/23]
     - Added hotkey ("/" / "?") for cycling through function tabs
     - Added hotkey (Control+0) for F10

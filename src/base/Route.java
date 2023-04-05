@@ -19,6 +19,9 @@ abstract public class Route
     // Route map
     protected Map<Integer, Boolean> route;
     
+    // Execution state
+    private boolean isExecuting = false;
+    
     /**
      * Simple constructor
      * @param name 
@@ -89,6 +92,47 @@ abstract public class Route
     public String getName()
     {
         return this.name;
+    }
+    
+    /**
+     * Marks this route as actively executing
+     * @return 
+     */
+    synchronized public boolean setExecuting()
+    {
+        if (this.isExecuting)
+        {
+            return false;
+        }
+        
+        this.isExecuting = true;
+        
+        return true;
+    }
+    
+    /**
+     * Marks this route as no longer executing
+     * @return 
+     */
+    synchronized public boolean stopExecuting()
+    {
+        if (!this.isExecuting)
+        {
+            return false;
+        }
+        
+        this.isExecuting = false;
+        
+        return true;
+    }
+    
+    /**
+     * Returns executing state
+     * @return 
+     */
+    synchronized public boolean isExecuting()
+    {
+        return this.isExecuting;
     }
     
     /**

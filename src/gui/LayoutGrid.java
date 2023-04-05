@@ -113,7 +113,12 @@ public class LayoutGrid
                     if (c.isThreeWay() && c.getAccessory2() != null)
                     {
                         c.getAccessory2().addTile(grid[x][y]); 
-                    }                    
+                    }          
+                    
+                    if (c.isRoute() && c.getRoute() != null)
+                    {
+                        c.getRoute().addTile(grid[x][y]);
+                    }
                 }
             }
         }     
