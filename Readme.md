@@ -25,8 +25,9 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 * Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
 * View and interact with layout diagrams, with support for multiple windows
-* Configure key mappings for up to 104 locomotives
+* Configure up to 8 different key mappings for up to 208 locomotives
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
+* Set up conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
@@ -109,7 +110,7 @@ Requires JDK 1.8+ and the following libraries:
     - Added bulk enable/disable option for automatic routes
     - Automatic routes are now highlighted
     - Consolidated route editing in a single window
-    (The UI state and locomotive database will be reset when upgrading to this version)
+    - Increased number of locomotive pages to 8
 
 * v1.6.14 [4/4/23]
     - Route icons in the layout remain highlighted until the route finished executing

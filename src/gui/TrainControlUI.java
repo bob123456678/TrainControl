@@ -115,7 +115,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private static final int NUM_KEYBOARDS = 4;
     
     // Total number of locomotive mappings >= 1
-    private static final int NUM_LOC_MAPPINGS = 4;
+    private static final int NUM_LOC_MAPPINGS = 8;
         
     // Maximum number of functions
     private static final int NUM_FN = 33;
@@ -6570,7 +6570,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
                 currentRoute.getConditionS88String(), currentRoute.getConditionState());
-            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route " + route.toString(),  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if(dialogResult == JOptionPane.OK_OPTION)
             {
                 RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),

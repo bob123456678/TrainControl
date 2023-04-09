@@ -1,5 +1,6 @@
 package marklin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
         
     // Route state
     private Map<Integer, Boolean> route;
+
+    // Track class version to avoid resetting state every time
+    private static final long serialVersionUID = -9111893030704758839L;
     
     public MarklinSimpleComponent(MarklinAccessory a)
     {
@@ -127,12 +131,18 @@ public class MarklinSimpleComponent implements java.io.Serializable
     }
 
     public int getS88()
-    {
+    {        
         return s88;
     }
     
     public List<Integer> getConditionS88s()
     {
+        // Handle old serialized versions
+        if (conditionS88s == null)
+        {
+            conditionS88s = new ArrayList<>();
+        }
+        
         return conditionS88s;
     }
     

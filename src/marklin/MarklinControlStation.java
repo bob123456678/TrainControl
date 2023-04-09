@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.0 Beta";
+    public static final String VERSION = "1.7.0 Beta 2";
     
     //// Settings
     
@@ -626,6 +626,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         } 
         catch (IOException iOException)
         {
+            if (debug)
+            {
+                this.log(iOException.toString());
+            }
+            
             this.log("No compatible data file found, "
                     + "DB initializing with default data");
         } 
@@ -654,7 +659,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88 
      * @param s88Trigger 
      * @param routeEnabled 
-     * @param conditionS88 
+     * @param conditionS88s 
      * @param conditionState 
      */
     @Override
