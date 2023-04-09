@@ -1,5 +1,6 @@
 package marklin;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,7 +28,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
-    private int conditionS88;
+    private List<Integer> conditionS88s;
     private boolean conditionState;
         
     // Route state
@@ -68,7 +69,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88 = r.getS88();
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
-        this.conditionS88 = r.getConditionS88();
+        this.conditionS88s = r.getConditionS88s();
         this.conditionState = r.getConditionState();
     }
     
@@ -130,9 +131,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return s88;
     }
     
-    public int getConditionS88()
+    public List<Integer> getConditionS88s()
     {
-        return conditionS88;
+        return conditionS88s;
     }
     
     public boolean getConditionState()

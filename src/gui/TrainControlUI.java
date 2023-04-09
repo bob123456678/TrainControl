@@ -2,7 +2,9 @@ package gui;
 
 import base.Locomotive;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -36,6 +38,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
@@ -45,6 +48,7 @@ import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
@@ -6460,10 +6464,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param s88
      * @param isEnabled
      * @param triggerType
+     * @param conditionS88
+     * @param conditionState
      * @return 
      */
     public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
-            String conditionS88, boolean conditionState)
+            String conditionS88s, boolean conditionState)
     {
         if (routeName == null || "".equals(routeName)  || "".equals(routeContent))
         {
@@ -6485,6 +6491,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     newRoute.put(address, state);
                 }
             }
+            
+            List<Integer> conditions = new ArrayList<>();
+            
+            for (String line : conditionS88s.split(","))
+            {
+                if (line.trim().length() > 0)
+                {
+                    conditions.add(Integer.parseInt(line.trim()));
+                }
+            }
 
             if (newRoute.size() > 0)
             {    
@@ -6492,7 +6508,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!"".equals(origName))
                 {                    
                     this.model.editRoute(origName, routeName, newRoute,
-                                 Integer.parseInt(s88), triggerType, isEnabled, Integer.parseInt(conditionS88), conditionState);
+                                 Integer.parseInt(s88), triggerType, isEnabled, conditions, conditionState);
                 }
                 // New route
                 else
@@ -6504,7 +6520,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                                         
                     this.model.newRoute(routeName, newRoute,
-                             Integer.parseInt(s88), triggerType, isEnabled, Integer.parseInt(conditionS88), conditionState);
+                             Integer.parseInt(s88), triggerType, isEnabled, conditions, conditionState);
                 }
                 
                 refreshRouteList();
@@ -6516,7 +6532,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.  S88 must be integers.");
+            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
         }
         
         return true;
@@ -6524,7 +6540,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
         
-        RouteEditor edit = new RouteEditor("", "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, 0, true);
+        String proposedName = "Route %s";
+        int i = 1;
+                
+        while (this.model.getRoute(String.format(proposedName, i)) != null)
+        {
+            i++;
+        }
+                
+        RouteEditor edit = new RouteEditor(String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", true);
 
         int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if(dialogResult == JOptionPane.OK_OPTION)
@@ -6532,7 +6556,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
                   edit.getExecutionAuto().isSelected(),
             edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-            edit.getConditionS88().getText(), edit.getConditionOccupied().isSelected());
+            edit.getConditionS88s().getText(), edit.getConditionOccupied().isSelected());
         }
     }//GEN-LAST:event_AddRouteButtonActionPerformed
  
@@ -6545,14 +6569,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             MarklinRoute currentRoute = this.model.getRoute(route.toString());
             
             RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                currentRoute.getConditionS88(), currentRoute.getConditionState());
+                currentRoute.getConditionS88String(), currentRoute.getConditionState());
             int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route " + route.toString(),  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if(dialogResult == JOptionPane.OK_OPTION)
             {
                 RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
                     edit.getExecutionAuto().isSelected(),
                     edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                    edit.getConditionS88().getText(), edit.getConditionOccupied().isSelected()
+                    edit.getConditionS88s().getText(), edit.getConditionOccupied().isSelected()
                 );
             }
         }
@@ -6591,7 +6615,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88(), currentRoute.getConditionState()); 
+                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s(), currentRoute.getConditionState()); 
 
                 refreshRouteList();
 
@@ -6601,7 +6625,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }  
     }
-    
+        
     private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
         this.prefs.putBoolean(ROUTE_SORT_PREF, true);
         this.refreshRouteList();
@@ -6627,7 +6651,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (r.getName().contains(searchString) || "*".equals(searchString))
                     {
                          this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88(), r.getConditionState());
+                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getConditionState());
                     }
                 }
             }
@@ -6640,6 +6664,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
+    public void enableOrDisableRoute(String routeName, boolean enable)
+    {  
+        MarklinRoute r = this.model.getRoute(routeName);
+
+        if (r.hasS88())
+        {
+            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getConditionState());
+      
+            refreshRouteList();
+
+            // Ensure route changes are synced
+            this.model.syncWithCS2();
+            this.repaintLayout();
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(this, "Route must have an S88 configured to fire automatically.");
+        }
+    }
+    
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
  
         BulkEnableOrDisable(true);
@@ -6649,6 +6693,38 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BulkEnableOrDisable(false);
     }//GEN-LAST:event_BulkDisableActionPerformed
      
+    public class CustomTableRenderer extends DefaultTableCellRenderer {
+
+        // You should override getTableCellRendererComponent
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+
+            Component c = super.getTableCellRendererComponent(table, value, isSelected,
+                    hasFocus, row, column);
+
+            // Check the column name, if it is "version"
+                // You know version column includes string
+            if (value != null)
+            {
+                String name = (String) value;
+                
+                if (model.getRoute(name).isEnabled() && model.getRoute(name).hasS88())
+                {
+                    //set to red bold font
+                    c.setForeground(Color.RED);
+                    c.setFont(new Font("Dialog", Font.BOLD, 12));
+                } else {
+                    //stay at default
+                    c.setForeground(Color.BLACK);
+                    c.setFont(new Font("Dialog", Font.PLAIN, 12));
+                }
+            }
+  
+            return c;
+        }
+    }
+    
     private void refreshRouteList()
     {        
         DefaultTableModel tableModel = new DefaultTableModel() {
@@ -6687,7 +6763,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         this.RouteList.setModel(tableModel);
-        this.RouteList.setShowGrid(true);
+        this.RouteList.setShowGrid(true);     
+               
+        this.RouteList.getColumnModel().getColumn(0).setCellRenderer(new CustomTableRenderer());
+        this.RouteList.getColumnModel().getColumn(1).setCellRenderer(new CustomTableRenderer());
+        this.RouteList.getColumnModel().getColumn(2).setCellRenderer(new CustomTableRenderer());
+        this.RouteList.getColumnModel().getColumn(3).setCellRenderer(new CustomTableRenderer());
+        
         // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
     }
         

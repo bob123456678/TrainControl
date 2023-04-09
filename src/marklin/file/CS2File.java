@@ -376,6 +376,18 @@ public final class CS2File
                 {
                     r.setS88(Integer.parseInt(m.get("s88")));
                 }
+                
+                if (m.containsKey("s88Ein"))
+                {
+                    r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+                }
+                
+                if (m.containsKey("extern"))
+                {
+                    // This variable indicates that the route will automatically fire
+                    // As this would duplcate functionality with the CS2, we leave it disabled
+                    // r.enable();
+                }
 
                 for (String piece : pieces)
                 {

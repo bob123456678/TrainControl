@@ -7,9 +7,7 @@ package gui;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.JButton;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
 /**
@@ -65,6 +63,16 @@ public class RightClickRouteMenu extends MouseAdapter {
             
             menuItem = new JMenuItem("Duplicate Route");
             menuItem.addActionListener(event -> ui.duplicateRoute(e));    
+            add(menuItem);
+            
+            addSeparator();
+            
+            menuItem = new JMenuItem("Enable Auto Execution");
+            menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
+            add(menuItem);
+            
+            menuItem = new JMenuItem("Disable Auto Execution");
+            menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));    
             add(menuItem);
             
             addSeparator();

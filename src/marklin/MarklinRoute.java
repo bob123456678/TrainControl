@@ -2,8 +2,10 @@ package marklin;
 
 import base.Route;
 import gui.LayoutLabel;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -34,9 +36,9 @@ public class MarklinRoute extends Route
     
     // State for routes with S88 trigger
     private boolean enabled;
-    private final s88Triggers triggerType;
+    private s88Triggers triggerType;
     private int s88;
-    private int conditionS88;
+    private List<Integer> conditionS88s;
     private boolean conditionState;
     
     /**
@@ -56,7 +58,7 @@ public class MarklinRoute extends Route
         
         this.s88 = 0;
         
-        this.conditionS88 = 0;
+        this.conditionS88s = new ArrayList<>();
         this.conditionState = false;
 
         this.enabled = false;
@@ -76,7 +78,7 @@ public class MarklinRoute extends Route
      * @param conditionState 
      */
     public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled,
-            int conditionS88, boolean conditionState)
+            List<Integer> conditionS88s, boolean conditionState)
     { 
         super(name, route);
         
@@ -87,7 +89,7 @@ public class MarklinRoute extends Route
         this.s88 = s88;
         this.triggerType = triggerType;
         this.enabled = enabled;
-        this.conditionS88 = conditionS88;
+        this.conditionS88s = conditionS88s;
         this.conditionState = conditionState;
         
         // Execute the automatic route
@@ -95,13 +97,8 @@ public class MarklinRoute extends Route
         {
             new Thread(() -> 
             {                
-                if (this.network.getLocList().isEmpty())
-                {
-                    this.network.log("Route " + this.getName() + " cannot run because there are no locomotives in the DB.");
-                    return;
-                }
-                
-                MarklinLocomotive loc = this.network.getLocByName(this.network.getLocList().get(0));
+                // The utility functions are defined in Locomotive, so create a dummy locomotive
+                MarklinLocomotive loc = new MarklinLocomotive(this.network, 1, MarklinLocomotive.decoderType.MM2, "Dummy Loc");
 
                 this.network.log("Route " + this.getName() + " is running...");
                 
@@ -120,19 +117,29 @@ public class MarklinRoute extends Route
                     if (!this.enabled) return;
                     
                     // Check the condition
-                    if (this.hasConditionS88() && this.network.getFeedbackState(this.getConditionS88String()) != this.conditionState)
+                    if (this.hasConditionS88())
                     {
-                        continue;
+                        boolean skip = false;
+                        
+                        for (int conditionS88 : this.conditionS88s)
+                        {
+                            if(this.network.getFeedbackState(Integer.toString(conditionS88)) != this.conditionState)
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                        
+                        if (skip)
+                        {                        
+                            this.network.log("Route " + this.getName() + " S88 triggered but condition failed");
+                            continue;
+                        }
                     }
             
-                    this.network.log("Route " + this.getName() + " S88 condition triggered");
+                    this.network.log("Route " + this.getName() + " S88 triggered");
 
                     this.execRoute(); 
-                    
-                    try {
-                        Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + EXTRA_SLEEP_MS);
-                    } catch (InterruptedException ex) {
-                    }
                 }
             }).start();
         }
@@ -245,9 +252,9 @@ public class MarklinRoute extends Route
      * Get the s88 sensor that must be true to execute the route
      * @return 
      */
-    public int getConditionS88()
+    public List<Integer> getConditionS88s()
     {
-        return this.conditionS88;
+        return this.conditionS88s;
     }
     
     /**
@@ -256,7 +263,13 @@ public class MarklinRoute extends Route
      */
     public String getConditionS88String()
     {
-        return Integer.toString(this.conditionS88);
+        List<String> strings = new ArrayList<>();
+        for (int x : this.conditionS88s)
+        {
+            strings.add(Integer.toString(x));
+        }
+        
+        return String.join(",", strings);
     }
     
     /**
@@ -283,7 +296,7 @@ public class MarklinRoute extends Route
      */
     public final boolean hasConditionS88()
     {
-        return this.conditionS88 > 0;
+        return this.conditionS88s.size() > 0;
     }
     
     /**
@@ -318,6 +331,16 @@ public class MarklinRoute extends Route
     public s88Triggers getTriggerType()
     {
         return this.triggerType;
+    }
+    
+    /**
+     * Set the trigger type
+     * @param type
+     * @return 
+     */
+    public void setTriggerType(s88Triggers type)
+    {
+        this.triggerType = type;
     }
     
     @Override

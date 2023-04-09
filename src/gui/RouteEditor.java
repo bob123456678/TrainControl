@@ -25,8 +25,15 @@ public class RouteEditor extends javax.swing.JPanel {
     
     /**
      * Creates new form RouteEditor
+     * @param routeName
+     * @param routeContent
+     * @param isEnabled
+     * @param s88
+     * @param triggerType
+     * @param conditionS88s
+     * @param conditionState
      */
-    public RouteEditor(String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, int conditionS88, boolean conditionState) {
+    public RouteEditor(String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, boolean conditionState) {
         initComponents();
         
         boolean edit = !"".equals(routeName);
@@ -44,7 +51,7 @@ public class RouteEditor extends javax.swing.JPanel {
         }
         
         this.s88.setText(Integer.toString(s88));
-        this.conditionS88.setText(Integer.toString(conditionS88));
+        this.conditionS88.setText(conditionS88s);
 
         if (triggerType == MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED)
         {
@@ -69,7 +76,7 @@ public class RouteEditor extends javax.swing.JPanel {
         {
             String message = "One per line, enter the accessory address (integer) and state (0 or 1), separated by a comma.\nFor example, 20,1 would set switch 20 to turnout."
                     + "\n\nOptionally, the Triggering S88 sensor can automatically trigger this route when Automatic Execution is set to On. "
-                    + "Additionally, the Condition S88 sensor allows you to specify another sensor that must be occupied or clear for the route to automatically fire.  Set to 0 to disable.";
+                    + "Additionally, the Condition S88 sensors allows you to specify one or more sensors (comma separated) that must all be occupied or clear for the route to automatically fire.  Set to blank to disable.";
             
             routeContents.setLineWrap(true);
             routeContents.setText(message);
@@ -123,7 +130,7 @@ public class RouteEditor extends javax.swing.JPanel {
         return s88;
     }
     
-    public JTextField getConditionS88() {
+    public JTextField getConditionS88s() {
         return conditionS88;
     }
     
@@ -208,6 +215,7 @@ public class RouteEditor extends javax.swing.JPanel {
 
         buttonGroup1.add(triggerClearThenOccupied);
         triggerClearThenOccupied.setText("Clear then Occupied");
+        triggerClearThenOccupied.setFocusable(false);
         triggerClearThenOccupied.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 triggerClearThenOccupiedActionPerformed(evt);
@@ -216,12 +224,14 @@ public class RouteEditor extends javax.swing.JPanel {
 
         buttonGroup1.add(triggerOccupiedThenClear);
         triggerOccupiedThenClear.setText("Occupied then Clear");
+        triggerOccupiedThenClear.setFocusable(false);
 
         jLabel5.setForeground(new java.awt.Color(0, 0, 115));
         jLabel5.setText("Automatic Execution");
 
         buttonGroup2.add(executionManual);
         executionManual.setText("Off");
+        executionManual.setFocusable(false);
         executionManual.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 executionManualActionPerformed(evt);
@@ -230,6 +240,7 @@ public class RouteEditor extends javax.swing.JPanel {
 
         buttonGroup2.add(executionAuto);
         executionAuto.setText("On");
+        executionAuto.setFocusable(false);
         executionAuto.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 executionAutoActionPerformed(evt);
@@ -296,7 +307,7 @@ public class RouteEditor extends javax.swing.JPanel {
         jPanel4.setPreferredSize(new java.awt.Dimension(259, 196));
 
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Condition S88");
+        jLabel9.setText("Condition S88s");
 
         conditionS88.setColumns(6);
         conditionS88.setText("jTextField1");
@@ -308,6 +319,7 @@ public class RouteEditor extends javax.swing.JPanel {
 
         buttonGroup3.add(conditionOccupied);
         conditionOccupied.setText("Occupied");
+        conditionOccupied.setFocusable(false);
         conditionOccupied.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 conditionOccupiedActionPerformed(evt);
@@ -316,6 +328,7 @@ public class RouteEditor extends javax.swing.JPanel {
 
         buttonGroup3.add(conditionClear);
         conditionClear.setText("Clear");
+        conditionClear.setFocusable(false);
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -334,7 +347,7 @@ public class RouteEditor extends javax.swing.JPanel {
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel4Layout.createSequentialGroup()
                                 .addComponent(jLabel9)
-                                .addGap(37, 37, 37)
+                                .addGap(30, 30, 30)
                                 .addComponent(conditionS88, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(jLabel10))
                         .addContainerGap())))
@@ -343,10 +356,10 @@ public class RouteEditor extends javax.swing.JPanel {
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel9)
                     .addComponent(conditionS88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(2, 2, 2)
                 .addComponent(jLabel10)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(conditionOccupied)
