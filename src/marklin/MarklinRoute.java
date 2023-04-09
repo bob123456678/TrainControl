@@ -3,6 +3,8 @@ package marklin;
 import base.Route;
 import gui.LayoutLabel;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -38,8 +40,7 @@ public class MarklinRoute extends Route
     private boolean enabled;
     private s88Triggers triggerType;
     private int s88;
-    private List<Integer> conditionS88s;
-    private boolean conditionState;
+    private Map<Integer, Boolean> conditionS88s;
     
     /**
      * Simple constructor
@@ -58,8 +59,7 @@ public class MarklinRoute extends Route
         
         this.s88 = 0;
         
-        this.conditionS88s = new ArrayList<>();
-        this.conditionState = false;
+        this.conditionS88s = new HashMap<>();
 
         this.enabled = false;
         this.triggerType = s88Triggers.CLEAR_THEN_OCCUPIED;
@@ -74,11 +74,10 @@ public class MarklinRoute extends Route
      * @param s88 
      * @param triggerType 
      * @param enabled 
-     * @param conditionS88 
-     * @param conditionState 
+     * @param conditionS88s
      */
     public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled,
-            List<Integer> conditionS88s, boolean conditionState)
+            Map<Integer, Boolean> conditionS88s)
     { 
         super(name, route);
         
@@ -90,7 +89,6 @@ public class MarklinRoute extends Route
         this.triggerType = triggerType;
         this.enabled = enabled;
         this.conditionS88s = conditionS88s;
-        this.conditionState = conditionState;
         
         // Execute the automatic route
         if (this.enabled && this.hasS88())
@@ -121,9 +119,9 @@ public class MarklinRoute extends Route
                     {
                         boolean skip = false;
                         
-                        for (int conditionS88 : this.conditionS88s)
+                        for (int key : this.conditionS88s.keySet())
                         {
-                            if(this.network.getFeedbackState(Integer.toString(conditionS88)) != this.conditionState)
+                            if(this.network.getFeedbackState(Integer.toString(key)) != this.conditionS88s.get(key))
                             {
                                 skip = true;
                                 break;
@@ -240,19 +238,10 @@ public class MarklinRoute extends Route
     }
     
     /**
-     * Required state for the condition S88
+     * Get the s88 sensors and require state to execute the route
      * @return 
      */
-    public boolean getConditionState()
-    {
-        return this.conditionState;
-    }
-    
-    /**
-     * Get the s88 sensor that must be true to execute the route
-     * @return 
-     */
-    public List<Integer> getConditionS88s()
+    public Map<Integer, Boolean> getConditionS88s()
     {
         return this.conditionS88s;
     }
@@ -263,13 +252,17 @@ public class MarklinRoute extends Route
      */
     public String getConditionS88String()
     {
-        List<String> strings = new ArrayList<>();
-        for (int x : this.conditionS88s)
+        String out = "";
+        
+        List<Integer> keys = new ArrayList(this.conditionS88s.keySet());
+        Collections.sort(keys);
+        
+        for (int idx : keys)
         {
-            strings.add(Integer.toString(x));
+            out += Integer.toString(idx) + "," + (this.conditionS88s.get(idx) ? "1" : "0") + "\n";
         }
         
-        return String.join(",", strings);
+        return out.trim();
     }
     
     /**
@@ -336,7 +329,6 @@ public class MarklinRoute extends Route
     /**
      * Set the trigger type
      * @param type
-     * @return 
      */
     public void setTriggerType(s88Triggers type)
     {

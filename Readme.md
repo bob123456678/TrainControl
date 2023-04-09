@@ -11,7 +11,7 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
-![UI screenshot: locomotive control](assets/ui164.png?raw=true)
+![UI screenshot: locomotive control](assets/interface9.png?raw=true)
 
 ![UI screenshot: layout](assets/interface4.png?raw=true)
 
@@ -21,13 +21,17 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 ![UI screenshot: locomotive control](assets/interface6.png?raw=true)
 
+![UI screenshot: keyboard](assets/routes2.png?raw=true)
+
+![UI screenshot: keyboard](assets/routes3.png?raw=true)
+
 **Features:**
 
 * Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
 * View and interact with layout diagrams, with support for multiple windows
 * Configure up to 8 different key mappings for up to 208 locomotives
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
-* Set up conditional routes triggered by S88 feedback modules
+* Set up automatic and conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
@@ -103,9 +107,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.0 [Beta]
+* v1.7.0 [Beta - 4/9/23]
     - Routes can now automatically trigger when a specified S88 sensor sends feedback
-    - Routes can further be configured with a required condition based on one or more other S88 sensors
+    - Routes can further be configured with required conditions based on one or more other S88 sensors
     - Route S88 sensors and trigger types are now read from the CS2
     - Added bulk enable/disable option for automatic routes
     - Automatic routes are now highlighted

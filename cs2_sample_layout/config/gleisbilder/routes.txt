@@ -248,3 +248,86 @@ Route 25 (mid parking 5)
 81,0
 69,1
 98,0
+
+Route 26 (Auto Bottom Main Track 1)
+Occupied then clear
+s88: 1030
+Condition S88: 
+9,0
+
+1,1
+86,0
+87,1
+
+Route 27 (Auto Bottom Main Track 2)
+Occupied then clear
+s88: 1030
+Condition S88: 
+9,1 
+10,0
+
+1,0
+60,0
+86,1
+87,0
+
+Route 28 (Auto Bottom Main Track 3)
+Occupied then clear
+s88: 1030
+Condition S88: 
+9,1
+10,1
+
+1,0
+60,1
+86,1
+87,0
+
+Route 29 (Auto Bottom Sec Track 1)
+Occupied then clear
+s88: 2015
+Condition S88: 
+1009,1
+
+6,0
+12,1
+39,1
+52,1
+
+Route 30 (Auto Bottom Sec Track 2)
+Occupied then clear
+s88: 2015
+Condition S88: 
+1009,0
+
+2,1
+12,0
+39,0
+51,0
+
+Route 31 (Auto Top Track 2)
+Occupied then clear
+s88: 2013
+Condition S88: 
+1012,0
+1022,0
+
+9,1
+
+Route 33 (Auto Top Track 3a)
+Occupied then clear
+s88: 2013
+Condition S88: 
+1012,1
+
+9,0
+
+
+Route 33 (Auto Top Track 3b)
+Occupied then clear
+s88: 2013
+Condition S88: 
+1022,1
+
+9,0
+

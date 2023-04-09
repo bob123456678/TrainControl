@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.0 Beta 2";
+    public static final String VERSION = "1.7.0";
     
     //// Settings
     
@@ -164,7 +164,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
-                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s(), c.getConditionState());
+                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s());
             }
         }
         
@@ -660,11 +660,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
-     * @param conditionState 
      */
     @Override
     public final void editRoute(String name, String newName, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            List<Integer> conditionS88s, boolean conditionState)
+            Map<Integer, Boolean> conditionS88s)
     {
         Integer id = this.routeDB.getByName(name).getId();
         
@@ -673,7 +672,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.deleteRoute(name);
         
-        this.newRoute(newName, id, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionState);
+        this.newRoute(newName, id, route, s88, s88Trigger, routeEnabled, conditionS88s);
     }
     
     /**
@@ -696,12 +695,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
-     * @param conditionState 
      */
     public final void newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            List<Integer> conditionS88s, boolean conditionState)
+            Map<Integer, Boolean> conditionS88s)
     {
-        this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionState), name, id);        
+        this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);        
     }
     
     /**
@@ -712,12 +710,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
-     * @param conditionState 
      * @return creation status
      */
     @Override
     public final boolean newRoute(String name, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-        List<Integer> conditionS88s, boolean conditionState)
+        Map<Integer, Boolean> conditionS88s)
     {
         int newId = 1;
         if (this.routeDB.getItemIds().size() > 0)
@@ -728,7 +725,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (!this.routeDB.hasName(name))
         {
             // TODO - user settings for s88
-            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionState), name, newId);  
+            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s), name, newId);  
                         
             return true;
         }

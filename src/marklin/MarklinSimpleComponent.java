@@ -1,7 +1,6 @@
 package marklin;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -29,8 +28,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
-    private List<Integer> conditionS88s;
-    private boolean conditionState;
+    private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
         
     // Route state
     private Map<Integer, Boolean> route;
@@ -74,7 +72,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
         this.conditionS88s = r.getConditionS88s();
-        this.conditionState = r.getConditionState();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -135,20 +132,20 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return s88;
     }
     
-    public List<Integer> getConditionS88s()
+    public Map<Integer, Boolean> getConditionS88s()
     {
-        // Handle old serialized versions
-        if (conditionS88s == null)
-        {
-            conditionS88s = new ArrayList<>();
-        }
+        Map<Integer, Boolean> conditions = new HashMap<>();
         
-        return conditionS88s;
-    }
-    
-    public boolean getConditionState()
-    {
-        return conditionState;
+        try
+        {
+            conditions = (Map<Integer, Boolean>) this.conditionS88s;
+        }
+        catch (Exception e)
+        {
+            System.out.println("Route " + this.getName() + " conditions have been reset.");
+        }
+
+        return conditions;
     }
     
     public MarklinRoute.s88Triggers getS88TriggerType()
