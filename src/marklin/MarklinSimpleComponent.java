@@ -21,8 +21,12 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean[] functions;
     private boolean[] preferredFunctions;
     private int[] functionTypes;
-    
     private int preferredSpeed;
+    
+    // Route state
+    private int s88;
+    private MarklinRoute.s88Triggers s88TriggerType;
+    private boolean routeEnabled;
     
     // Route state
     private Map<Integer, Boolean> route;
@@ -59,6 +63,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
         
         this.route = r.getRoute();
         this.address = r.getId();
+        this.s88 = r.getS88();
+        this.s88TriggerType = r.getTriggerType();
+        this.routeEnabled = r.isEnabled();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -114,6 +121,21 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return name;
     }
 
+    public int getS88()
+    {
+        return s88;
+    }
+    
+    public MarklinRoute.s88Triggers getS88TriggerType()
+    {
+        return s88TriggerType;
+    }
+    
+    public boolean getRouteEnabled()
+    {
+        return routeEnabled;
+    }
+    
     public int getAddress()
     {
         return address;

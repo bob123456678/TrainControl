@@ -35,6 +35,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
@@ -1563,8 +1564,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RouteList = new javax.swing.JTable();
         AddRouteButton = new javax.swing.JButton();
         sortByName = new javax.swing.JRadioButton();
-        soryByName1 = new javax.swing.JRadioButton();
         sortByID = new javax.swing.JRadioButton();
+        BulkEnable = new javax.swing.JButton();
+        BulkDisable = new javax.swing.JButton();
+        jSeparator2 = new javax.swing.JSeparator();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
@@ -3241,8 +3244,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        soryByName1.setText("Name");
-
         buttonGroup2.add(sortByID);
         sortByID.setText("Sort by ID");
         sortByID.setFocusable(false);
@@ -3251,6 +3252,28 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 sortByIDActionPerformed(evt);
             }
         });
+
+        BulkEnable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BulkEnable.setText("Bulk Enable");
+        BulkEnable.setFocusable(false);
+        BulkEnable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BulkEnableActionPerformed(evt);
+            }
+        });
+
+        BulkDisable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BulkDisable.setText("Bulk Disable");
+        BulkDisable.setFocusable(false);
+        BulkDisable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BulkDisableActionPerformed(evt);
+            }
+        });
+
+        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator2.setMinimumSize(new java.awt.Dimension(10, 10));
+        jSeparator2.setPreferredSize(new java.awt.Dimension(30, 10));
 
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
@@ -3265,16 +3288,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addComponent(AddRouteButton)
+                        .addGap(18, 18, 18)
+                        .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(BulkEnable)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(BulkDisable)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(sortByName)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sortByID)))
                 .addContainerGap())
-            .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(RoutePanelLayout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(soryByName1)
-                    .addGap(0, 0, Short.MAX_VALUE)))
         );
         RoutePanelLayout.setVerticalGroup(
             RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -3282,19 +3306,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(AddRouteButton)
-                        .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(BulkEnable)
+                        .addComponent(BulkDisable))
+                    .addComponent(jSeparator2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
-            .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(RoutePanelLayout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(soryByName1)
-                    .addGap(0, 0, Short.MAX_VALUE)))
         );
 
         KeyboardTab.addTab("Routes", RoutePanel);
@@ -6424,94 +6446,107 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.LocNameInput.setText("");
     }//GEN-LAST:event_AddLocButtonActionPerformed
 
+    /**
+     * Callback to edit or add a route
+     * @param origName
+     * @param routeName
+     * @param routeContent
+     * @param s88
+     * @param isEnabled
+     * @param triggerType
+     * @return 
+     */
+    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType)
+    {
+        if (routeName == null || "".equals(routeName)  || "".equals(routeContent))
+        {
+            return false;
+        }
+                
+        // Add route
+        try
+        {
+            Map<Integer, Boolean> newRoute = new HashMap<>();
+
+            for (String line : routeContent.split("\n"))
+            {
+                if (line.trim().length() > 0)
+                {
+                    int address = Integer.parseInt(line.split(",")[0].trim());
+                    boolean state = line.split(",")[1].trim().equals("1");
+
+                    newRoute.put(address, state);
+                }
+            }
+
+            if (newRoute.size() > 0)
+            {    
+                // Editing a route
+                if (!"".equals(origName))
+                {                    
+                    this.model.editRoute(origName, routeName, newRoute,
+                                 Integer.parseInt(s88), triggerType, isEnabled);
+                }
+                // New route
+                else
+                {
+                    if (this.model.getRouteList().contains(routeName))
+                    {
+                        JOptionPane.showMessageDialog(this, "A route called " + routeName + " already exists.  Please pick a different name.");
+                        return false;
+                    }
+                                        
+                    this.model.newRoute(routeName, newRoute,
+                             Integer.parseInt(s88), triggerType, isEnabled);
+                }
+                
+                refreshRouteList();
+
+                // Ensure route changes are synced
+                this.model.syncWithCS2();
+                this.repaintLayout();
+            }
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
+        }
+        
+        return true;
+    }
+    
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
         
-        String newName = JOptionPane.showInputDialog(this, "Enter name for your route:");
-        
-        if (newName == null || "".equals(newName))
+        RouteEditor edit = new RouteEditor("", "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+
+        int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if(dialogResult == JOptionPane.OK_OPTION)
         {
-            return;
-        }
-        
-        if (this.model.getRouteList().contains(newName))
-        {
-            JOptionPane.showMessageDialog(this, "A route called " + newName + " already exists.  Please pick a different name.");
-            return;
-        }
-        
-        String message = "One per line, enter the accessory address (integer) and state (0 or 1), separated by a comma.\nFor example, 20,1 would set switch 20 to turnout.";
-        
-        JTextArea jta = new JTextArea(25, 32);
-        jta.setLineWrap(true);
-        jta.setText(message);
-        
-        jta.addMouseListener(new MouseListener() {
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (jta.getText().contains(message))
-                {
-                    jta.setText("");
-                }
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-            }
-        });
-
-                
-        switch (JOptionPane.showConfirmDialog(this, new JScrollPane(jta), "Enter your route", JOptionPane.OK_CANCEL_OPTION))
-        {
-            case JOptionPane.OK_OPTION:
-                
-                try
-                {
-                    Map<Integer, Boolean> newRoute = new HashMap<>();
-                    
-                    for (String line : jta.getText().split("\n"))
-                    {
-                        if (line.trim().length() > 0)
-                        {
-                            int address = Integer.parseInt(line.split(",")[0].trim());
-                            boolean state = line.split(",")[1].trim().equals("1");
-
-                            newRoute.put(address, state);
-                        }
-                    }
-                    
-                    if (newRoute.size() > 0)
-                    {                    
-                        this.model.newRoute(newName, newRoute);
-
-                        refreshRouteList();
-                        
-                        // Ensure route changes are synced
-                        this.model.syncWithCS2();
-                        this.repaintLayout();
-                    }
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
-                }
-                
-                break;
+            RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
+                  edit.getExecutionAuto().isSelected(),
+            edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
         }
     }//GEN-LAST:event_AddRouteButtonActionPerformed
+ 
+    public void editRoute(MouseEvent evt)
+    {
+        Object route = getRouteAtCursor(evt);
 
+        if (route != null)
+        {          
+            MarklinRoute currentRoute = this.model.getRoute(route.toString());
+            
+            RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType());
+            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route " + route.toString(),  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if(dialogResult == JOptionPane.OK_OPTION)
+            {
+                RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
+                      edit.getExecutionAuto().isSelected(),
+                    edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+            }
+        }
+    }
+    
     public Object getRouteAtCursor(MouseEvent evt)
     {
         try
@@ -6544,7 +6579,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     i++;
                 }
                 
-                this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute());
+                this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
+                        currentRoute.getS88(), currentRoute.getTriggerType(), false); // TODO - add fields for this
 
                 refreshRouteList();
 
@@ -6553,70 +6589,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.repaintLayout();
             }
         }  
-    }
-    
-    public void editRoute(MouseEvent evt)
-    {
-        Object route = getRouteAtCursor(evt);
-
-        if (route != null)
-        {          
-            String newName = JOptionPane.showInputDialog(this, "Enter name for your route:", route.toString());
-
-            if (newName == null || newName.equals(""))
-            {
-                return;
-            }
-
-            if (this.model.getRouteList().contains(newName) && !route.toString().equals(newName))
-            {
-                JOptionPane.showMessageDialog(this, "A route called " + newName + " already exists.  Please pick a different name.");
-                return;
-            }
-
-            JTextArea jta = new JTextArea(25, 32);
-            jta.setLineWrap(true);
-            MarklinRoute currentRoute = this.model.getRoute(route.toString());
-            jta.setText(currentRoute.toCSV());
-
-            switch (JOptionPane.showConfirmDialog(this, new JScrollPane(jta), "Enter new route for route " + route.toString() + " (ID: " + currentRoute.getId() + ")", JOptionPane.OK_CANCEL_OPTION))
-            {
-                case JOptionPane.OK_OPTION:
-
-                    try
-                    {
-                        Map<Integer, Boolean> newRoute = new HashMap<>();
-
-                        for (String line : jta.getText().split("\n"))
-                        {
-                            if (line.trim().length() > 0)
-                            {
-                                int address = Integer.parseInt(line.split(",")[0].trim());
-                                boolean state = line.split(",")[1].trim().equals("1");
-
-                                newRoute.put(address, state);
-                            }
-                        }
-
-                        if (newRoute.size() > 0)
-                        {                    
-                            this.model.editRoute(route.toString(), newName, newRoute);
-
-                            refreshRouteList();
-
-                            // Ensure route changes are synced
-                            this.model.syncWithCS2();
-                            this.repaintLayout();
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
-                    }
-
-                    break;
-            }
-        }
     }
     
     private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
@@ -6628,6 +6600,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.prefs.putBoolean(ROUTE_SORT_PREF, false);
         this.refreshRouteList();
     }//GEN-LAST:event_sortByIDActionPerformed
+
+    private void BulkEnableOrDisable(boolean enable)
+    {
+        String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.");
+        
+        if (!"".equals(searchString))
+        {
+            for (String routeName : this.model.getRouteList())
+            {
+                MarklinRoute r = this.model.getRoute(routeName);
+                
+                if (r.hasS88())
+                {
+                    if (r.getName().contains(searchString) || "*".equals(searchString))
+                    {
+                         this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
+                                    r.getS88(), r.getTriggerType(), enable);
+                    }
+                }
+            }
+            
+            refreshRouteList();
+
+            // Ensure route changes are synced
+            this.model.syncWithCS2();
+            this.repaintLayout();
+        }
+    }
+    
+    private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
+ 
+        BulkEnableOrDisable(true);
+    }//GEN-LAST:event_BulkEnableActionPerformed
+
+    private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
+        BulkEnableOrDisable(false);
+    }//GEN-LAST:event_BulkDisableActionPerformed
      
     private void refreshRouteList()
     {        
@@ -6684,6 +6693,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel BLabel;
     private javax.swing.JSlider BSlider;
     private javax.swing.JToggleButton Backward;
+    private javax.swing.JButton BulkDisable;
+    private javax.swing.JButton BulkEnable;
     private javax.swing.JButton CButton;
     private javax.swing.JLabel CLabel;
     private javax.swing.JButton CS3OpenBrowser;
@@ -6974,6 +6985,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
@@ -6984,7 +6996,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton smallButton;
     private javax.swing.JRadioButton sortByID;
     private javax.swing.JRadioButton sortByName;
-    private javax.swing.JRadioButton soryByName1;
     private javax.swing.JButton syncLocStateButton;
     // End of variables declaration//GEN-END:variables
 

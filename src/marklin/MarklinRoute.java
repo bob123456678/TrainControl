@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Simple route representation
@@ -15,6 +17,8 @@ import java.util.Set;
 public class MarklinRoute extends Route 
     implements java.io.Serializable
 {
+    public static enum s88Triggers {CLEAR_THEN_OCCUPIED, OCCUPIED_THEN_CLEAR};
+    
     // Control station reference
     private final MarklinControlStation network;
     
@@ -27,6 +31,11 @@ public class MarklinRoute extends Route
     // Extra delay between route commands
     // TODO - make this configurable in the future
     private static final int EXTRA_SLEEP_MS = 150;
+    
+    // State for routes with S88 trigger
+    private boolean enabled;
+    private final s88Triggers triggerType;
+    private int s88;
     
     /**
      * Simple constructor
@@ -42,6 +51,10 @@ public class MarklinRoute extends Route
         this.network = network;  
         
         this.tiles = new HashSet<>();
+        
+        this.s88 = 0;
+        this.enabled = false;
+        this.triggerType = s88Triggers.CLEAR_THEN_OCCUPIED;
     }
     
     /**
@@ -50,8 +63,11 @@ public class MarklinRoute extends Route
      * @param name 
      * @param id 
      * @param route 
+     * @param s88 
+     * @param triggerType 
+     * @param enabled 
      */
-    public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route)
+    public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled)
     { 
         super(name, route);
         
@@ -59,6 +75,50 @@ public class MarklinRoute extends Route
         this.network = network;    
         
         this.tiles = new HashSet<>();
+        this.s88 = s88;
+        this.triggerType = triggerType;
+        this.enabled = enabled;
+        
+        // Execute the automatic route
+        if (this.enabled && this.hasS88())
+        {
+            new Thread(() -> 
+            {                
+                if (this.network.getLocList().isEmpty())
+                {
+                    this.network.log("Route " + this.getName() + " cannot run because there are no locomotives in the DB.");
+                    return;
+                }
+                
+                MarklinLocomotive loc = this.network.getLocByName(this.network.getLocList().get(0));
+
+                this.network.log("Route " + this.getName() + " is running...");
+                
+                while (this.enabled)
+                {
+                    if (this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED)
+                    {
+                        loc.waitForClearThenOccupied(this.getS88String());
+                    }
+                    else
+                    {
+                        loc.waitForOccupiedThenClear(this.getS88String());
+                    }
+
+                    // Exit if the state changed
+                    if (!this.enabled) return;
+                    
+                    this.network.log("Route " + this.getName() + " S88 condition triggered");
+
+                    this.execRoute(); 
+                    
+                    try {
+                        Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + EXTRA_SLEEP_MS);
+                    } catch (InterruptedException ex) {
+                    }
+                }
+            }).start();
+        }
     }
     
     /**
@@ -137,9 +197,88 @@ public class MarklinRoute extends Route
         }).start();
     }
     
+    /**
+     * Sets the corresponding s88 sensor
+     * @param s88 
+     */
+    public void setS88(int s88)
+    {
+        this.s88 = s88;
+    }
+    
+    /**
+     * Gets the s88 sensor
+     * @return 
+     */
+    public int getS88()
+    {
+        return this.s88;
+    }
+    
+    /**
+     * Gets the s88 sensor as a string
+     * @return 
+     */
+    public String getS88String()
+    {
+        return Integer.toString(this.s88);
+    }
+    
+    /**
+     * Returns whether this route has an s88 sensor
+     * @return 
+     */
+    public final boolean hasS88()
+    {
+        return this.s88 > 0;
+    }
+    
+    /**
+     * Enables the route
+     */
+    public void enable()
+    {
+        this.enabled = true;
+    }
+    
+    /**
+     * Disables the route
+     */
+    public void disable()
+    {
+        this.enabled = false;
+    }
+    
+    /**
+     * Returns if the automatic route is enabled
+     * @return 
+     */
+    public boolean isEnabled()
+    {
+        return this.enabled;
+    }
+    
+    /**
+     * Returns the trigger type
+     * @return 
+     */
+    public s88Triggers getTriggerType()
+    {
+        return this.triggerType;
+    }
+    
     @Override
     public String toString()
     {
-        return super.toString() + " (ID: " + this.id + ")";
+        return super.toString() + " (ID: " + this.id + " | Auto: " + (this.enabled ? "Yes": "No") + ")";
+    }
+    
+    public String toVerboseString()
+    {
+        return super.toString() + " (ID: " + this.id + 
+                " | S88: " + this.s88 + 
+                " | Trigger Type: " + (this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED ? "CLEAR_THEN_OCCUPIED" : "OCCUPIED_THEN_CLEAR") +
+                " | Auto: " + (this.enabled ? "Yes": "No") +
+                ")";
     }
 }

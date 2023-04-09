@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.6.14";
+    public static final String VERSION = "1.7.0 Beta";
     
     //// Settings
     
@@ -164,7 +164,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
-                newRoute(c.getName(), c.getAddress(), c.getRoute());
+                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled());
             }
         }
         
@@ -433,7 +433,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             for (MarklinRoute r : fileParser.parseRoutes())
             {
                 // Delete route if it has changed
-                if (this.routeDB.hasId(r.getId()) && !r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()))
+                if (this.routeDB.hasId(r.getId()) 
+                        && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) || r.getS88() != this.routeDB.getById(r.getId()).getS88()) 
+                )
                 {
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
                     this.log("Deleted old route " + r.getName());
@@ -647,14 +649,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @param newName
      * @param route 
+     * @param s88 
+     * @param s88Trigger 
+     * @param routeEnabled 
      */
     @Override
-    public final void editRoute(String name, String newName, Map<Integer, Boolean> route)
+    public final void editRoute(String name, String newName, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled)
     {
         Integer id = this.routeDB.getByName(name).getId();
+        
+        // Disable the route so that the s88 condition stops firing
+        this.routeDB.getByName(name).disable();
+        
         this.deleteRoute(name);
         
-        this.newRoute(newName, id, route);
+        this.newRoute(newName, id, route, s88, s88Trigger, routeEnabled);
     }
     
     /**
@@ -673,20 +682,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @param id
      * @param route 
+     * @param s88 
+     * @param s88Trigger 
+     * @param routeEnabled 
      */
-    public final void newRoute(String name, int id, Map<Integer, Boolean> route)
+    public final void newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled)
     {
-        this.routeDB.add(new MarklinRoute(this, name, id, route), name, id);        
+        this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled), name, id);        
     }
     
     /**
      * Adds a new route from user input
      * @param name
      * @param route 
+     * @param s88 
+     * @param s88Trigger 
+     * @param routeEnabled 
      * @return creation status
      */
     @Override
-    public final boolean newRoute(String name, Map<Integer, Boolean> route)
+    public final boolean newRoute(String name, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled)
     {
         int newId = 1;
         if (this.routeDB.getItemIds().size() > 0)
@@ -696,7 +711,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, newId, route), name, newId);  
+            // TODO - user settings for s88
+            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled), name, newId);  
                         
             return true;
         }
@@ -1340,7 +1356,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void execRoute(String name)
     {
-        this.log("Executing " + this.routeDB.getByName(name).toString());
+        //this.log("Executing " + this.routeDB.getByName(name).toString());
         
         this.routeDB.getByName(name).execRoute();
     }

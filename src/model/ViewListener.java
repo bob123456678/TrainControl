@@ -45,8 +45,8 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean isCS3();
     public String getCS3AppUrl();
-    public boolean newRoute(String name, Map<Integer, Boolean> route);
-    public void editRoute(String name, String newName, Map<Integer, Boolean> route);
+    public boolean newRoute(String name, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled);
+    public void editRoute(String name, String newName, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled);
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
 }
