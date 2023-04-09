@@ -27,6 +27,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
+    private int conditionS88;
+    private boolean conditionState;
     
     // Route state
     private Map<Integer, Boolean> route;
@@ -66,6 +68,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88 = r.getS88();
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
+        this.conditionS88 = r.getConditionS88();
+        this.conditionState = r.getConditionState();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -124,6 +128,16 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public int getS88()
     {
         return s88;
+    }
+    
+    public int getConditionS88()
+    {
+        return conditionS88;
+    }
+    
+    public boolean getConditionState()
+    {
+        return conditionState;
     }
     
     public MarklinRoute.s88Triggers getS88TriggerType()

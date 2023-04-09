@@ -54,7 +54,7 @@ public class RightClickRouteMenu extends MouseAdapter {
         {       
             String routeName = ui.getRouteAtCursor(e).toString();
             
-            menuItem = new JMenuItem("Execute " + routeName + " (ID: " + ui.getRouteId(routeName) + ")");
+            menuItem = new JMenuItem("Execute " + ui.getRouteTooltip(routeName));
             menuItem.addActionListener(event -> ui.executeRoute(routeName));    
             add(menuItem);
             addSeparator();

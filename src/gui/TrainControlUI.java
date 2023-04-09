@@ -5849,6 +5849,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }
     
+    public String getRouteTooltip(String route)
+    {
+        MarklinRoute currentRoute = this.model.getRoute(route);
+        return currentRoute.getName() + " (ID: " + getRouteId(route) + " | " + (currentRoute.isEnabled() ? "Auto" : "Manual") + ")";
+    }
+    
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_RouteListMouseClicked
     {//GEN-HEADEREND:event_RouteListMouseClicked
         //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
@@ -6456,7 +6462,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param triggerType
      * @return 
      */
-    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType)
+    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
+            String conditionS88, boolean conditionState)
     {
         if (routeName == null || "".equals(routeName)  || "".equals(routeContent))
         {
@@ -6485,7 +6492,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!"".equals(origName))
                 {                    
                     this.model.editRoute(origName, routeName, newRoute,
-                                 Integer.parseInt(s88), triggerType, isEnabled);
+                                 Integer.parseInt(s88), triggerType, isEnabled, Integer.parseInt(conditionS88), conditionState);
                 }
                 // New route
                 else
@@ -6497,7 +6504,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                                         
                     this.model.newRoute(routeName, newRoute,
-                             Integer.parseInt(s88), triggerType, isEnabled);
+                             Integer.parseInt(s88), triggerType, isEnabled, Integer.parseInt(conditionS88), conditionState);
                 }
                 
                 refreshRouteList();
@@ -6517,14 +6524,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
         
-        RouteEditor edit = new RouteEditor("", "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+        RouteEditor edit = new RouteEditor("", "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, 0, true);
 
         int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if(dialogResult == JOptionPane.OK_OPTION)
         {
             RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
                   edit.getExecutionAuto().isSelected(),
-            edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+            edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+            edit.getConditionS88().getText(), edit.getConditionOccupied().isSelected());
         }
     }//GEN-LAST:event_AddRouteButtonActionPerformed
  
@@ -6536,13 +6544,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {          
             MarklinRoute currentRoute = this.model.getRoute(route.toString());
             
-            RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType());
+            RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
+                currentRoute.getConditionS88(), currentRoute.getConditionState());
             int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route " + route.toString(),  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if(dialogResult == JOptionPane.OK_OPTION)
             {
                 RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                      edit.getExecutionAuto().isSelected(),
-                    edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+                    edit.getExecutionAuto().isSelected(),
+                    edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+                    edit.getConditionS88().getText(), edit.getConditionOccupied().isSelected()
+                );
             }
         }
     }
@@ -6580,7 +6591,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                        currentRoute.getS88(), currentRoute.getTriggerType(), false); // TODO - add fields for this
+                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88(), currentRoute.getConditionState()); 
 
                 refreshRouteList();
 
@@ -6616,7 +6627,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (r.getName().contains(searchString) || "*".equals(searchString))
                     {
                          this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                    r.getS88(), r.getTriggerType(), enable);
+                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88(), r.getConditionState());
                     }
                 }
             }

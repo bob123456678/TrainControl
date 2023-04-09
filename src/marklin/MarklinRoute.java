@@ -36,6 +36,8 @@ public class MarklinRoute extends Route
     private boolean enabled;
     private final s88Triggers triggerType;
     private int s88;
+    private int conditionS88;
+    private boolean conditionState;
     
     /**
      * Simple constructor
@@ -53,6 +55,10 @@ public class MarklinRoute extends Route
         this.tiles = new HashSet<>();
         
         this.s88 = 0;
+        
+        this.conditionS88 = 0;
+        this.conditionState = false;
+
         this.enabled = false;
         this.triggerType = s88Triggers.CLEAR_THEN_OCCUPIED;
     }
@@ -66,8 +72,11 @@ public class MarklinRoute extends Route
      * @param s88 
      * @param triggerType 
      * @param enabled 
+     * @param conditionS88 
+     * @param conditionState 
      */
-    public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled)
+    public MarklinRoute(MarklinControlStation network, String name, int id, Map<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled,
+            int conditionS88, boolean conditionState)
     { 
         super(name, route);
         
@@ -78,6 +87,8 @@ public class MarklinRoute extends Route
         this.s88 = s88;
         this.triggerType = triggerType;
         this.enabled = enabled;
+        this.conditionS88 = conditionS88;
+        this.conditionState = conditionState;
         
         // Execute the automatic route
         if (this.enabled && this.hasS88())
@@ -104,10 +115,16 @@ public class MarklinRoute extends Route
                     {
                         loc.waitForOccupiedThenClear(this.getS88String());
                     }
-
+                    
                     // Exit if the state changed
                     if (!this.enabled) return;
                     
+                    // Check the condition
+                    if (this.hasConditionS88() && this.network.getFeedbackState(this.getConditionS88String()) != this.conditionState)
+                    {
+                        continue;
+                    }
+            
                     this.network.log("Route " + this.getName() + " S88 condition triggered");
 
                     this.execRoute(); 
@@ -207,12 +224,39 @@ public class MarklinRoute extends Route
     }
     
     /**
-     * Gets the s88 sensor
+     * Gets the s88 sensor to trigger the route
      * @return 
      */
     public int getS88()
     {
         return this.s88;
+    }
+    
+    /**
+     * Required state for the condition S88
+     * @return 
+     */
+    public boolean getConditionState()
+    {
+        return this.conditionState;
+    }
+    
+    /**
+     * Get the s88 sensor that must be true to execute the route
+     * @return 
+     */
+    public int getConditionS88()
+    {
+        return this.conditionS88;
+    }
+    
+    /**
+     * Gets the s88 sensor as a string
+     * @return 
+     */
+    public String getConditionS88String()
+    {
+        return Integer.toString(this.conditionS88);
     }
     
     /**
@@ -231,6 +275,15 @@ public class MarklinRoute extends Route
     public final boolean hasS88()
     {
         return this.s88 > 0;
+    }
+    
+    /**
+     * Returns whether this route has an s88 sensor
+     * @return 
+     */
+    public final boolean hasConditionS88()
+    {
+        return this.conditionS88 > 0;
     }
     
     /**
