@@ -309,7 +309,7 @@ public final class CS2File
 
                     item.put("_type", s);
                 }
-                else if (s.matches("^ \\.[a-z0-9]+=.+$"))
+                else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
                 {
                     String[] parts = s.substring(2).split("=");
                     
