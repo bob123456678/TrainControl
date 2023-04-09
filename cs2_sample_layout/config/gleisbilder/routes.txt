@@ -314,7 +314,7 @@ Condition S88:
 
 9,1
 
-Route 33 (Auto Top Track 3a)
+Route 32 (Auto Top Track 3a)
 Occupied then clear
 s88: 2013
 Condition S88: 
