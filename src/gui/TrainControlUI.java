@@ -6516,7 +6516,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.");
+            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.  S88 must be integers.");
         }
         
         return true;
@@ -6614,7 +6614,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void BulkEnableOrDisable(boolean enable)
     {
-        String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.");
+        String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.", "*");
         
         if (!"".equals(searchString))
         {

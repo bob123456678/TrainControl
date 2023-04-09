@@ -29,7 +29,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean routeEnabled;
     private int conditionS88;
     private boolean conditionState;
-    
+        
     // Route state
     private Map<Integer, Boolean> route;
     

@@ -102,6 +102,14 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.7.0 [Beta]
+    - Routes can now automatically trigger when a specified S88 sensor sends feedback
+    - Routes can further be configured with a required condition based on another S88 sensor
+    - Route S88 sensors are now read from the CS2
+    - Added bulk enable/disable option for automatic routes
+    - Consolidated route editing in a single window
+    (The UI state and locomotive database will be reset when upgrading to this version)
+
 * v1.6.14 [4/4/23]
     - Route icons in the layout remain highlighted until the route finished executing
     - Added pointer icon for clickable layout components

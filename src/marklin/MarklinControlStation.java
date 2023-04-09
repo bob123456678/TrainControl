@@ -624,7 +624,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         } 
         catch (IOException iOException)
         {
-            this.log("No data file found, "
+            this.log("No compatible data file found, "
                     + "DB initializing with default data");
         } 
         catch (ClassNotFoundException classNotFoundException)
