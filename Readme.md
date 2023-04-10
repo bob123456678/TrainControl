@@ -107,7 +107,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.0 [Beta - 4/9/23]
+* v1.7.0 [4/9/23]
     - Routes can now automatically trigger when a specified S88 sensor sends feedback
     - Routes can further be configured with required conditions based on one or more other S88 sensors
     - Route S88 sensors and trigger types are now read from the CS2

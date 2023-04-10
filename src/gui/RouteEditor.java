@@ -65,7 +65,7 @@ public class RouteEditor extends javax.swing.JPanel {
         {
             String message = "One per line, enter the accessory address (integer) and state (0 or 1), separated by a comma.\nFor example, 20,1 would set switch 20 to turnout, or signal 20 to red."
                     + "\n\nOptionally, specify a Triggering S88 sensor to automatically trigger this route when Automatic Execution is set to On. "
-                    + "\n\nAdditionally, the Condition S88 sensors allows you to specify one or more sensors (in the same format, one per line) as occupied (1) or clear (0), all of which must be true for the route to "
+                    + "\n\nAdditionally, the Condition S88 sensors allow you to specify one or more sensors (in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to "
                     + "automatically execute.  Set to blank to disable.";
             
             routeContents.setLineWrap(true);
@@ -287,7 +287,7 @@ public class RouteEditor extends javax.swing.JPanel {
         jPanel4.setPreferredSize(new java.awt.Dimension(259, 196));
 
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Condition S88s");
+        jLabel9.setText("Other Required S88 Conditions");
 
         conditionS88.setColumns(15);
         conditionS88.setRows(5);
@@ -370,20 +370,14 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.JTextArea conditionS88;
     private javax.swing.JRadioButton executionAuto;
-    private javax.swing.JRadioButton executionAuto1;
     private javax.swing.JRadioButton executionManual;
-    private javax.swing.JRadioButton executionManual1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
@@ -391,10 +385,7 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.JTextArea routeContents;
     private javax.swing.JTextField routeName;
     private javax.swing.JTextField s88;
-    private javax.swing.JTextField s89;
     private javax.swing.JRadioButton triggerClearThenOccupied;
-    private javax.swing.JRadioButton triggerClearThenOccupied1;
     private javax.swing.JRadioButton triggerOccupiedThenClear;
-    private javax.swing.JRadioButton triggerOccupiedThenClear1;
     // End of variables declaration//GEN-END:variables
 }
