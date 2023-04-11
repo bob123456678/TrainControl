@@ -6465,17 +6465,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param isEnabled
      * @param triggerType
      * @param conditionS88s
-     * @param conditionState
      * @return 
      */
     public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
             String conditionS88s)
     {
-        if (routeName == null || "".equals(routeName)  || "".equals(routeContent))
+        if (routeName == null)
         {
             return false;
         }
-                
+        
+        // Remove trailing spaces in route names
+        routeName = routeName.trim();
+
+        if ("".equals(routeName)  || "".equals(routeContent))
+        {
+            return false;
+        }
+                      
         // Add route
         try
         {
@@ -6504,7 +6511,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     newConditions.put(address, state);
                 }
             }
-
+            
             if (newRoute.size() > 0)
             {    
                 // Editing a route

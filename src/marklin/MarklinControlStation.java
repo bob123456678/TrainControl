@@ -35,7 +35,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.0";
+    public static final String VERSION = "1.7.1";
     
     //// Settings
     
@@ -432,6 +432,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Import routes
             for (MarklinRoute r : fileParser.parseRoutes())
             {
+                // Other existing route with same name but different ID
+                if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
+                {
+                    this.log("Deleting old route (duplicate name) " + this.routeDB.getByName(r.getName()).toString());
+
+                    this.deleteRoute(r.getName());
+                }
+                
                 // Delete route if it has changed
                 if (this.routeDB.hasId(r.getId()) 
                         && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) || r.getS88() != this.routeDB.getById(r.getId()).getS88()
@@ -439,14 +447,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         ) 
                 )
                 {
+                    this.log("Deleting old route (duplicate ID) " + this.routeDB.getById(r.getId()).toString());
+
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
-                    this.log("Deleted old route " + r.getName());
                 }
                 
                 if (!this.routeDB.hasId(r.getId()))
                 {
-                    this.log("Added route " + r.getName());
                     newRoute(r);
+                    this.log("Added route " + r.getName());
                     num++;
                 }
             }
@@ -648,7 +657,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final void newRoute(MarklinRoute r)
     {
-        this.routeDB.add(r, r.getName(), r.getId());
+        this.routeDB.add(r, r.getName().trim(), r.getId());
     }
     
     /**
@@ -672,7 +681,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.deleteRoute(name);
         
-        this.newRoute(newName, id, route, s88, s88Trigger, routeEnabled, conditionS88s);
+        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s);
     }
     
     /**
@@ -699,7 +708,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
             Map<Integer, Boolean> conditionS88s)
     {
-        this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);        
+        this.routeDB.add(new MarklinRoute(this, name.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);        
     }
     
     /**
@@ -721,6 +730,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             newId = Collections.max(this.routeDB.getItemIds()) + 1;
         }
+        
+        name = name.trim();
         
         if (!this.routeDB.hasName(name))
         {

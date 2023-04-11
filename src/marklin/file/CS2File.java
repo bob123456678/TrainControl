@@ -369,9 +369,7 @@ public final class CS2File
                 
                 String route = m.get("item").replace("{", "").replace("}","");
                 String[] pieces = route.split("\\|");
-                
-                System.out.println(m);
-                
+                                
                 if (m.containsKey("s88"))
                 {
                     r.setS88(Integer.parseInt(m.get("s88")));

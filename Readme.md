@@ -107,6 +107,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.7.1
+    - Corrected potential route name duplication issue when importing routes from CS2
+
 * v1.7.0 [4/9/23]
     - Routes can now automatically trigger when a specified S88 sensor sends feedback
     - Routes can further be configured with required conditions based on one or more other S88 sensors

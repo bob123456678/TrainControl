@@ -14,10 +14,10 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     java.io.Serializable
 {
     // Device database
-    private HashMap<IDENTIFIER, ITEM> db;
+    private final HashMap<IDENTIFIER, ITEM> db;
     
     // Device name map
-    private HashMap<String, IDENTIFIER> names;
+    private final HashMap<String, IDENTIFIER> names;
     
     /**
      * Constructor
