@@ -1960,9 +1960,9 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="LayoutArea" pref="468" max="32767" attributes="0"/>
+                      <Component id="LayoutArea" pref="470" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                      <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="103" alignment="1" groupAlignment="3" attributes="0">
                               <Component id="LayoutList" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="layoutListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -1972,8 +1972,10 @@
                               <Component id="smallButton" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="allButton" alignment="1" max="32767" attributes="0"/>
-                          <Component id="jSeparator1" min="-2" pref="29" max="-2" attributes="0"/>
+                          <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
+                              <Component id="jSeparator1" alignment="1" max="32767" attributes="0"/>
+                              <Component id="allButton" alignment="1" max="32767" attributes="0"/>
+                          </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -2062,6 +2064,9 @@
             </Component>
             <Component class="javax.swing.JButton" name="layoutNewWindow">
               <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Tahoma" size="11" style="1"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Large"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
@@ -2071,6 +2076,9 @@
             </Component>
             <Component class="javax.swing.JButton" name="smallButton">
               <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Tahoma" size="11" style="1"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Small"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
@@ -2085,6 +2093,9 @@
             </Component>
             <Component class="javax.swing.JButton" name="allButton">
               <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Tahoma" size="11" style="1"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="All"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
@@ -2117,17 +2128,17 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
+                  <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jScrollPane5" pref="723" max="32767" attributes="0"/>
-                          <Group type="102" attributes="0">
+                          <Component id="jScrollPane5" max="32767" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
                               <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                              <EmptySpace min="0" pref="407" max="32767" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <Component id="AddRouteButton" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Component id="jSeparator2" min="-2" pref="6" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="BulkEnable" min="-2" max="-2" attributes="0"/>
@@ -2135,7 +2146,7 @@
                               <Component id="BulkDisable" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="sortByName" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Component id="sortByID" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -2149,17 +2160,17 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane5" pref="443" max="32767" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jScrollPane5" min="-2" pref="458" max="-2" attributes="0"/>
+                      <EmptySpace pref="9" max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="sortByID" alignment="0" min="-2" pref="23" max="-2" attributes="0"/>
-                          <Group type="103" alignment="0" groupAlignment="3" attributes="0">
-                              <Component id="AddRouteButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="AddRouteButton" alignment="1" min="-2" max="-2" attributes="0"/>
+                          <Group type="103" alignment="1" groupAlignment="3" attributes="0">
                               <Component id="sortByName" alignment="3" min="-2" pref="23" max="-2" attributes="0"/>
                               <Component id="BulkEnable" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="BulkDisable" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="sortByID" alignment="3" min="-2" pref="23" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="jSeparator2" max="32767" attributes="0"/>
+                          <Component id="jSeparator2" alignment="1" min="-2" pref="23" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
