@@ -107,7 +107,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.1
+* v1.7.1 [4/10/23]
     - Corrected potential route name duplication issue when importing routes from CS2
 
 * v1.7.0 [4/9/23]
