@@ -131,6 +131,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Locomotive clipboard 
     private Locomotive copyTarget = null;
+    private JButton copyTargetButton = null;
+    private int copyTargetPage = 0;
     
     // Locomotive selector
     private LocomotiveSelector selector;
@@ -784,6 +786,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public void setCopyTarget(JButton button)
     {
         copyTarget = this.currentLocMapping().get(button);
+        copyTargetButton = button;
+        copyTargetPage = this.locMappingNumber;
     }
     
     /**
@@ -812,6 +816,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public void clearCopyTarget()
     {
         copyTarget = null;
+        copyTargetButton = null;
+        copyTargetPage = 0;
     }
     
     public boolean buttonHasLocomotive(JButton b)
@@ -824,6 +830,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         return this.currentLocMapping().get(b);
     }
     
+    /**
+     * Gets the locomotive which will be swapped to where the pasted loc came from
+     * @return 
+     */
+    public Locomotive getSwapTarget()
+    {
+        return this.locMapping.get(this.copyTargetPage - 1).get(this.copyTargetButton);
+    }
+    
+    /**
+     * Gets the locomotive to be paster
+     * @return 
+     */
     public Locomotive getCopyTarget()
     {
         return copyTarget;
@@ -906,22 +925,36 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     /**
      * Pastes to copied locomotive to a given UI button
      * @param b 
+     * @param swap 
      */
-    public void doPaste(JButton b)
+    public void doPaste(JButton b, boolean swap)
     {
         if (b != null)
         {
+            // Move the current locomotive to the source of the copy
+            if (swap)
+            {
+                this.locMapping.get(this.copyTargetPage - 1).put(copyTargetButton, this.currentLocMapping().get(b));
+
+                // If we are swapping to the same button that is currently active, activate the paste target so that everything gets repainted correctly
+                if (copyTargetButton.equals(this.currentButton))
+                {
+                    displayCurrentButtonLoc(b);
+                }
+            }
+            
             this.currentLocMapping().put(b, copyTarget);
 
+            // If we are pasting to the same button that is currently active, activate the paste target (on the current page)
             if (b.equals(this.currentButton))
             {
                 displayCurrentButtonLoc(this.currentButton);
             }
-
-            repaintMappings();  
-            this.lastLocMappingPainted = this.locMappingNumber;
             
-            copyTarget = null;
+            repaintMappings();  
+            // this.lastLocMappingPainted = this.locMappingNumber;
+            
+            clearCopyTarget();
         }
     }
     
@@ -1135,10 +1168,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 name = name.substring(0, MAX_LOC_NAME);
             }
+            
+            // Pre-compute this so we can check if it has changed
+            String locLabel = "Page " + this.locMappingNumber + " Button " 
+                + this.currentButton.getText()
+                + "  (" + this.model.getLocAddress(this.activeLoc.getName())
+                + ")";
 
             // Only repaint icon if the locomotive is changed
             // Visual stuff
-            if (!this.ActiveLocLabel.getText().equals(name))
+            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()))
             {
                 new Thread(() -> {
                     repaintIcon(this.currentButton, this.activeLoc, this.locMappingNumber);
@@ -1169,11 +1208,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 this.ActiveLocLabel.setText(name);
 
-                this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
-                        + this.currentButton.getText()
-                        + "  (" + this.model.getLocAddress(this.activeLoc.getName())
-                        + ")"
-                );
+                this.CurrentKeyLabel.setText(locLabel);
                 
                 for (int i = 0; i < this.activeLoc.getNumF(); i++)
                 {

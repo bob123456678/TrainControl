@@ -107,6 +107,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.7.2 [Beta]
+    - Added swap option when copy/pasting locomotives
+
 * v1.7.1 [4/10/23]
     - Corrected potential route name duplication issue when importing routes from CS2
 
@@ -191,7 +194,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.6.0 [10/2/22] (Beta)
     - Tested basic functionality with CS3
-    - Added ability to load layout files from the local filesystem (see further details " Layouts with the CS3" above)
+    - Added ability to load layout files from the local filesystem (see further details under "Layouts with the CS3" above)
     - Added option to delete locomotives from the loc control UI
 
 * v1.5.11 [09/17/22]
