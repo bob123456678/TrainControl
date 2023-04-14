@@ -7,12 +7,8 @@ import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,6 +24,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,13 +35,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
 import javax.swing.JSlider;
-import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
@@ -98,7 +93,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
     private LayoutGrid trainGrid;
-    
+    private ExecutorService LayoutGridRenderer = Executors.newFixedThreadPool(1);
+
     // The keyboard being displayed
     private int keyboardNumber = 1;
     
@@ -7165,8 +7161,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public synchronized void repaintLayout()
     {    
         repaintPathLabel();
-                  
-        new Thread(() -> {
+        
+        this.LayoutGridRenderer.submit(new Thread(() -> {
             InnerLayoutPanel.setVisible(false);
             this.trainGrid = new LayoutGrid(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
@@ -7178,7 +7174,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             InnerLayoutPanel.setVisible(true);
 
             // Important!
-            this.KeyboardTab.repaint();    
-        }).start();
+            this.KeyboardTab.repaint();
+        }));
     }
 }

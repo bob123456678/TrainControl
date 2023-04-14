@@ -109,6 +109,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.7.2 [Beta]
     - Added swap option when copy/pasting locomotives
+    - Fixed race condition when quickly switching between layouts
 
 * v1.7.1 [4/10/23]
     - Corrected potential route name duplication issue when importing routes from CS2
