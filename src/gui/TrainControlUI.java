@@ -7163,7 +7163,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         repaintPathLabel();
         
         this.LayoutGridRenderer.submit(new Thread(() -> {
-            InnerLayoutPanel.setVisible(false);
+            //InnerLayoutPanel.setVisible(false);
             this.trainGrid = new LayoutGrid(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
                     this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 

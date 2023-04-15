@@ -198,7 +198,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
        
     /**
-     * Parses layout files from the CS2 or local filesystem
+     * Parses layout files from the CS2 or local file system
      * @throws Exception 
      */
     private void syncLayouts() throws Exception
@@ -533,6 +533,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /**
+     * Queries the central station for locomotive function state
+     * @param name 
+     */
     @Override
     public void syncLocomotive(String name)
     {
@@ -547,7 +551,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Sets debug state
      * @param state 
      */
-    public void debug(boolean state)
+    public final void debug(boolean state)
     {
         debug = state;
     }
@@ -556,6 +560,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Is the station a CS3?
      * @return 
      */
+    @Override
     public boolean isCS3()
     {
         return this.isCS3;
@@ -650,16 +655,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         return instance;
     }
-    
-    /**
-     * Adds a new route from file
-     * @param r 
-     */
-    public final void newRoute(MarklinRoute r)
-    {
-        this.routeDB.add(r, r.getName().trim(), r.getId());
-    }
-    
+        
     /**
      * Updates a route
      * @param name
@@ -696,7 +692,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Adds a new route from user input
+     * Adds a new route from file
+     * @param r 
+     * @return  
+     */
+    public final boolean newRoute(MarklinRoute r)
+    {
+        if (!this.routeDB.hasId(r.getId()) && !this.routeDB.hasName(r.getName().trim()))
+        {
+            this.routeDB.add(r, r.getName().trim(), r.getId());
+            return true;
+        }
+        else
+        {
+            this.log("Route " + r.getId() + " or " + r.getName().trim() + " was already imported into database - skipping");
+            return false;
+        }
+    }
+    
+    /**
+     * Adds a new route from database
      * @param name
      * @param id
      * @param route 
@@ -704,11 +719,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @return  
      */
-    public final void newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
+    public final boolean newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
             Map<Integer, Boolean> conditionS88s)
     {
-        this.routeDB.add(new MarklinRoute(this, name.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);        
+        name = name.trim();
+        
+        if (!this.routeDB.hasId(id) && !this.routeDB.hasName(name))
+        {
+            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);    
+            return true;
+        }
+        else
+        {
+            this.log("Route " + id + " or " + name + " was already imported into database - skipping");
+            return false;
+        }
     }
     
     /**
@@ -735,7 +762,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasName(name))
         {
-            // TODO - user settings for s88
             this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s), name, newId);  
                         
             return true;
