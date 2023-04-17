@@ -111,7 +111,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.3 [Beta]
+* v1.7.3 [4/16/23]
     - Added wizard to simplify new route creation
     - Improved value sanitization in routes (negative numbers, etc.)
 
