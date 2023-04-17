@@ -6527,7 +6527,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 if (line.trim().length() > 0)
                 {
-                    int address = Integer.parseInt(line.split(",")[0].trim());
+                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
                     boolean state = line.split(",")[1].trim().equals("1");
 
                     newRoute.put(address, state);
@@ -6540,7 +6540,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 if (line.trim().length() > 0)
                 {
-                    int address = Integer.parseInt(line.split(",")[0].trim());
+                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
                     boolean state = line.split(",")[1].trim().equals("1");
 
                     newConditions.put(address, state);
@@ -6553,7 +6553,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!"".equals(origName))
                 {                    
                     this.model.editRoute(origName, routeName, newRoute,
-                                 Integer.parseInt(s88), triggerType, isEnabled, newConditions);
+                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                 }
                 // New route
                 else
@@ -6565,7 +6565,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                                         
                     this.model.newRoute(routeName, newRoute,
-                             Integer.parseInt(s88), triggerType, isEnabled, newConditions);
+                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                 }
                 
                 refreshRouteList();

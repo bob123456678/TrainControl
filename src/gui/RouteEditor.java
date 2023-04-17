@@ -10,7 +10,9 @@ import java.awt.Window;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -23,6 +25,14 @@ import marklin.MarklinRoute;
  */
 public class RouteEditor extends javax.swing.JPanel {
     
+    private final String helpMessage = "In the Route Commands field, one per line, enter the accessory address (integer) and state (0 or 1), separated by a comma."
+                    + "\nFor example, 20,1 would set switch 20 to turnout, or signal 20 to red."
+                    + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
+                    + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
+                    + "\n(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
+                    + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
+                    + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.";
+            
     /**
      * Creates new form RouteEditor
      * @param routeName
@@ -63,13 +73,9 @@ public class RouteEditor extends javax.swing.JPanel {
         
         if (!edit)
         {
-            String message = "One per line, enter the accessory address (integer) and state (0 or 1), separated by a comma.\nFor example, 20,1 would set switch 20 to turnout, or signal 20 to red."
-                    + "\n\nOptionally, specify a Triggering S88 sensor to automatically trigger this route when Automatic Execution is set to On. "
-                    + "\n\nAdditionally, the Condition S88 sensors allow you to specify one or more sensors (in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to "
-                    + "automatically execute.  Set to blank to disable.";
-            
+           
             routeContents.setLineWrap(true);
-            routeContents.setText(message);
+            routeContents.setText("");
 
             routeContents.addMouseListener(new MouseListener() {
 
@@ -83,10 +89,10 @@ public class RouteEditor extends javax.swing.JPanel {
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
-                    if (routeContents.getText().contains(message))
+                    /**if (routeContents.getText().contains(message))
                     {
                         routeContents.setText("");
-                    }
+                    }*/
                 }
 
                 @Override
@@ -98,6 +104,8 @@ public class RouteEditor extends javax.swing.JPanel {
                 }
             });
         }
+        
+        this.updateSettingSelections();
     }
 
     public JRadioButton getExecutionAuto() {
@@ -144,9 +152,8 @@ public class RouteEditor extends javax.swing.JPanel {
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
         buttonGroup3 = new javax.swing.ButtonGroup();
+        buttonGroup4 = new javax.swing.ButtonGroup();
         routeName = new javax.swing.JTextField();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        routeContents = new javax.swing.JTextArea();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
@@ -158,23 +165,35 @@ public class RouteEditor extends javax.swing.JPanel {
         jLabel5 = new javax.swing.JLabel();
         executionManual = new javax.swing.JRadioButton();
         executionAuto = new javax.swing.JRadioButton();
-        jPanel4 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         conditionS88 = new javax.swing.JTextArea();
         jSeparator1 = new javax.swing.JSeparator();
+        jLabel6 = new javax.swing.JLabel();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        routeContents = new javax.swing.JTextArea();
+        jPanel6 = new javax.swing.JPanel();
+        jLabel8 = new javax.swing.JLabel();
+        accAddr = new javax.swing.JTextField();
+        addToRouteButton = new javax.swing.JButton();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel11 = new javax.swing.JLabel();
+        accState = new javax.swing.JComboBox<>();
+        accTypeTurnout = new javax.swing.JRadioButton();
+        accType3Way = new javax.swing.JRadioButton();
+        accTypeSignal = new javax.swing.JRadioButton();
+        jLabel7 = new javax.swing.JLabel();
+        Help = new javax.swing.JButton();
 
         routeName.setText("jTextField1");
-
-        routeContents.setColumns(20);
-        routeContents.setRows(5);
-        jScrollPane1.setViewportView(routeContents);
+        routeName.setMinimumSize(new java.awt.Dimension(159, 26));
 
         jLabel1.setForeground(new java.awt.Color(0, 0, 115));
         jLabel1.setText("Route Name");
 
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Route Commands");
+        jLabel2.setText("Route Editing Wizard");
 
         jPanel2.setBackground(new java.awt.Color(245, 245, 245));
         jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -189,6 +208,11 @@ public class RouteEditor extends javax.swing.JPanel {
         s88.setText("jTextField1");
         s88.setMaximumSize(new java.awt.Dimension(90, 26));
         s88.setMinimumSize(new java.awt.Dimension(90, 26));
+        s88.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                s88KeyReleased(evt);
+            }
+        });
 
         jLabel3.setForeground(new java.awt.Color(0, 0, 115));
         jLabel3.setText("Trigger Condition");
@@ -205,6 +229,11 @@ public class RouteEditor extends javax.swing.JPanel {
         buttonGroup1.add(triggerOccupiedThenClear);
         triggerOccupiedThenClear.setText("Occupied then Clear");
         triggerOccupiedThenClear.setFocusable(false);
+        triggerOccupiedThenClear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                triggerOccupiedThenClearActionPerformed(evt);
+            }
+        });
 
         jLabel5.setForeground(new java.awt.Color(0, 0, 115));
         jLabel5.setText("Automatic Execution");
@@ -227,6 +256,16 @@ public class RouteEditor extends javax.swing.JPanel {
             }
         });
 
+        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel9.setText("Additional S88 Conditions");
+
+        conditionS88.setColumns(13);
+        conditionS88.setRows(5);
+        conditionS88.setWrapStyleWord(true);
+        jScrollPane2.setViewportView(conditionS88);
+
+        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -234,120 +273,272 @@ public class RouteEditor extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addComponent(triggerOccupiedThenClear, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(65, 65, 65))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addComponent(triggerClearThenOccupied, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(67, 67, 67))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(jLabel4)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel3)
+                            .addComponent(jLabel5)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel3)
-                                    .addComponent(jLabel5)
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addComponent(executionManual)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(executionAuto)))
-                                .addGap(0, 0, Short.MAX_VALUE)))
-                        .addContainerGap())))
+                                .addComponent(executionManual)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(executionAuto)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(triggerOccupiedThenClear, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(triggerClearThenOccupied, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(18, 18, 18)))
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 186, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel9))
+                .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(triggerClearThenOccupied)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(triggerOccupiedThenClear)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel5)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(executionManual)
-                    .addComponent(executionAuto))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jSeparator1)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(jLabel4)
+                                .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel9))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(triggerClearThenOccupied)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(triggerOccupiedThenClear)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel5)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(executionManual)
+                                    .addComponent(executionAuto)))
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 187, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap())
+        );
+
+        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel6.setText("Optional Settings");
+
+        jPanel5.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel5.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        jPanel5.setFocusable(false);
+        jPanel5.setMinimumSize(new java.awt.Dimension(259, 196));
+        jPanel5.setName(""); // NOI18N
+
+        routeContents.setColumns(20);
+        routeContents.setRows(5);
+        jScrollPane1.setViewportView(routeContents);
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1)
+                .addContainerGap())
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+
+        jPanel6.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel6.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        jPanel6.setFocusable(false);
+        jPanel6.setMinimumSize(new java.awt.Dimension(259, 196));
+        jPanel6.setName(""); // NOI18N
+
+        jLabel8.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel8.setText("Accessory Address");
+
+        accAddr.setColumns(6);
+        accAddr.setMaximumSize(new java.awt.Dimension(90, 26));
+        accAddr.setMinimumSize(new java.awt.Dimension(90, 26));
+        accAddr.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                accAddrActionPerformed(evt);
+            }
+        });
+        accAddr.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                accAddrKeyReleased(evt);
+            }
+        });
+
+        addToRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addToRouteButton.setText("Add to Route");
+        addToRouteButton.setFocusable(false);
+        addToRouteButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addToRouteButtonActionPerformed(evt);
+            }
+        });
+
+        jLabel10.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel10.setText("Accessory Type");
+
+        jLabel11.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel11.setText("Accessory State");
+
+        accState.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Turnout", "Signal", "3-way Turnout" }));
+        accState.setMaximumSize(new java.awt.Dimension(136, 26));
+        accState.setName(""); // NOI18N
+        accState.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                accStateActionPerformed(evt);
+            }
+        });
+
+        buttonGroup4.add(accTypeTurnout);
+        accTypeTurnout.setSelected(true);
+        accTypeTurnout.setText("Turnout");
+        accTypeTurnout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                accTypeTurnoutActionPerformed(evt);
+            }
+        });
+
+        buttonGroup4.add(accType3Way);
+        accType3Way.setText("3-way Turnout");
+        accType3Way.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                accType3WayActionPerformed(evt);
+            }
+        });
+
+        buttonGroup4.add(accTypeSignal);
+        accTypeSignal.setText("Signal");
+        accTypeSignal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                accTypeSignalActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(accAddr, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel10)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(accTypeTurnout)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(accTypeSignal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(accType3Way)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(addToRouteButton))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(jLabel11)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGap(29, 29, 29)
+                        .addComponent(addToRouteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel8)
+                            .addComponent(jLabel10)
+                            .addComponent(jLabel11))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(accTypeTurnout)
+                            .addComponent(accType3Way)
+                            .addComponent(accTypeSignal)
+                            .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel4.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel4.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-        jPanel4.setFocusable(false);
-        jPanel4.setMinimumSize(new java.awt.Dimension(259, 196));
-        jPanel4.setName(""); // NOI18N
-        jPanel4.setPreferredSize(new java.awt.Dimension(259, 196));
+        jLabel7.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel7.setText("Route Commands");
 
-        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Other Required S88 Conditions");
-
-        conditionS88.setColumns(15);
-        conditionS88.setRows(5);
-        conditionS88.setWrapStyleWord(true);
-        jScrollPane2.setViewportView(conditionS88);
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel9)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(jScrollPane2))
-                .addContainerGap())
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel9)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2)
-                .addContainerGap())
-        );
+        Help.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        Help.setText("Help");
+        Help.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                HelpActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(routeName)
-            .addComponent(jScrollPane1)
-            .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.TRAILING)
-            .addComponent(jLabel1)
-            .addComponent(jLabel2)
+            .addComponent(jPanel6, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(routeName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(Help))
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 249, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel2)
+                    .addComponent(jLabel1))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel7)
+                        .addGap(164, 164, 164)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel6)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(routeName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(routeName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(Help, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 257, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, 208, Short.MAX_VALUE)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(0, 0, 0))
+                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 72, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -363,22 +554,174 @@ public class RouteEditor extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_executionAutoActionPerformed
 
+    private void HelpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HelpActionPerformed
+        JOptionPane.showMessageDialog(this, this.helpMessage);        // TODO add your handling code here:
+    }//GEN-LAST:event_HelpActionPerformed
 
+    private void addToRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButtonActionPerformed
+        
+        String newEntry = "\n";
+        
+        if (!"".equals(this.accAddr.getText()))
+        {            
+            try
+            {
+                int address = Math.abs(Integer.parseInt(this.accAddr.getText()));
+                
+                if (this.accType3Way.isSelected())
+                {
+                    if (this.accState.getSelectedItem().toString().equals("Straight"))
+                    {
+                        newEntry += address + "," + "0" + "\n";
+                        newEntry += (address + 1) + "," + "0";
+
+                    }
+                    else if (this.accState.getSelectedItem().toString().equals("Left"))
+                    {
+                        newEntry += address + "," + "1" + "\n";
+                        newEntry += (address + 1) + "," + "0";                    
+                    }
+                    else if (this.accState.getSelectedItem().toString().equals("Right"))
+                    {
+                        newEntry += address + "," + "0" + "\n";
+                        newEntry += (address + 1) + "," + "1";
+                    }
+                }
+                else if (this.accTypeTurnout.isSelected())
+                {
+                    if (this.accState.getSelectedItem().toString().equals("Turnout"))
+                    {
+                        newEntry += address + "," + "1";
+                    }
+                    else
+                    {
+                        newEntry += address + "," + "0";
+                    }      
+                }
+                else if (this.accTypeSignal.isSelected())
+                {
+                    if (this.accState.getSelectedItem().toString().equals("Red"))
+                    {
+                        newEntry += address + "," + "1";
+                    }
+                    else
+                    {
+                        newEntry += address + "," + "0";
+                    }
+                }
+                
+                this.routeContents.setText((this.routeContents.getText() + newEntry).trim());
+                this.accAddr.setText("");
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, "Invalid address specified - must be an integer");
+                this.accAddr.setText("");
+            }
+        }
+    }//GEN-LAST:event_addToRouteButtonActionPerformed
+
+    private void accTypeTurnoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accTypeTurnoutActionPerformed
+        updateSettingSelections();
+    }//GEN-LAST:event_accTypeTurnoutActionPerformed
+
+    private void accType3WayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accType3WayActionPerformed
+        updateSettingSelections();
+    }//GEN-LAST:event_accType3WayActionPerformed
+
+    private void accTypeSignalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accTypeSignalActionPerformed
+        updateSettingSelections();
+    }//GEN-LAST:event_accTypeSignalActionPerformed
+
+    private void accAddrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accAddrActionPerformed
+ 
+    }//GEN-LAST:event_accAddrActionPerformed
+
+    private void accStateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accStateActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_accStateActionPerformed
+
+    private void triggerOccupiedThenClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_triggerOccupiedThenClearActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_triggerOccupiedThenClearActionPerformed
+
+    private void accAddrKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_accAddrKeyReleased
+        try
+        {
+            int addr = Integer.parseInt(this.accAddr.getText());
+            
+            if (addr < 0)
+            {
+                this.accAddr.setText("");    
+            }
+        }
+        catch (Exception e)
+        {
+            this.accAddr.setText("");
+        }
+    }//GEN-LAST:event_accAddrKeyReleased
+
+    private void s88KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_s88KeyReleased
+        try
+        {
+            int addr = Integer.parseInt(this.s88.getText());
+            
+            if (addr < 0)
+            {
+                this.accAddr.setText("");    
+            }
+        }
+        catch (Exception e)
+        {
+            this.s88.setText("");
+        }
+    }//GEN-LAST:event_s88KeyReleased
+
+    private void updateSettingSelections()
+    {
+        if (this.accType3Way.isSelected())
+        {
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Left", "Straight", "Right"}));
+        }
+        else if (this.accTypeTurnout.isSelected())
+        {
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Straight", "Turnout"}));
+        }
+        else if (this.accTypeSignal.isSelected())
+        {
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Red", "Green"}));
+        }  
+    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Help;
+    private javax.swing.JTextField accAddr;
+    private javax.swing.JComboBox<String> accState;
+    private javax.swing.JRadioButton accType3Way;
+    private javax.swing.JRadioButton accTypeSignal;
+    private javax.swing.JRadioButton accTypeTurnout;
+    private javax.swing.JButton addToRouteButton;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
+    private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.JTextArea conditionS88;
     private javax.swing.JRadioButton executionAuto;
     private javax.swing.JRadioButton executionManual;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSeparator jSeparator1;

@@ -7,6 +7,10 @@ the standard Marklin UI makes many common tasks (such as quickly switching betwe
 overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
 enabling functions, emergency stop, etc.
 
+As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
+operating your layout, with the Central Station serving solely as the track interface
+and locomotive database.
+
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
@@ -33,7 +37,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
 * Set up automatic and conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions
-* Download locomotive, layout, and route information from the CS2/CS3
+* Download locomotive layout, and route information from the CS2/CS3
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * (Beta) Graph model for dynamic layout modeling and fully autonomous train operation
@@ -107,7 +111,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.2 [Beta]
+* v1.7.3 [Beta]
+    - Added wizard to simplify new route creation
+    - Improved value sanitization in routes (negative numbers, etc.)
+
+* v1.7.2 [4/14/23]
     - Added swap option when copy/pasting locomotives
     - Fixed race condition when quickly switching between layouts
 
