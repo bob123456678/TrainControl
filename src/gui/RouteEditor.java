@@ -32,7 +32,15 @@ public class RouteEditor extends javax.swing.JPanel {
                     + "\n(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
                     + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.";
-            
+    
+    public static final String turnout = "Turnout (1)";
+    public static final String straight = "Straight (0)";
+    public static final String red = "Red (1)";
+    public static final String green = "Green (0)";
+    public static final String left = "Left (1,0)";
+    public static final String straight3 = "Straight (0,0)";
+    public static final String right = "Right (0,1)";
+
     /**
      * Creates new form RouteEditor
      * @param routeName
@@ -570,18 +578,18 @@ public class RouteEditor extends javax.swing.JPanel {
                 
                 if (this.accType3Way.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals("Straight"))
+                    if (this.accState.getSelectedItem().toString().equals(straight3))
                     {
                         newEntry += address + "," + "0" + "\n";
                         newEntry += (address + 1) + "," + "0";
 
                     }
-                    else if (this.accState.getSelectedItem().toString().equals("Left"))
+                    else if (this.accState.getSelectedItem().toString().equals(left))
                     {
                         newEntry += address + "," + "1" + "\n";
                         newEntry += (address + 1) + "," + "0";                    
                     }
-                    else if (this.accState.getSelectedItem().toString().equals("Right"))
+                    else if (this.accState.getSelectedItem().toString().equals(right))
                     {
                         newEntry += address + "," + "0" + "\n";
                         newEntry += (address + 1) + "," + "1";
@@ -589,7 +597,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 }
                 else if (this.accTypeTurnout.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals("Turnout"))
+                    if (this.accState.getSelectedItem().toString().equals(turnout))
                     {
                         newEntry += address + "," + "1";
                     }
@@ -600,7 +608,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals("Red"))
+                    if (this.accState.getSelectedItem().toString().equals(red))
                     {
                         newEntry += address + "," + "1";
                     }
@@ -681,15 +689,15 @@ public class RouteEditor extends javax.swing.JPanel {
     {
         if (this.accType3Way.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Left", "Straight", "Right"}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{left, straight3, right}));
         }
         else if (this.accTypeTurnout.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Straight", "Turnout"}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{straight, turnout}));
         }
         else if (this.accTypeSignal.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{"Red", "Green"}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{red, green}));
         }  
     }
     
