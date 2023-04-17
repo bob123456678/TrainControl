@@ -33,13 +33,13 @@ public class RouteEditor extends javax.swing.JPanel {
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
                     + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.";
     
-    public static final String turnout = "Turnout (1)";
-    public static final String straight = "Straight (0)";
-    public static final String red = "Red (1)";
-    public static final String green = "Green (0)";
-    public static final String left = "Left (1,0)";
-    public static final String straight3 = "Straight (0,0)";
-    public static final String right = "Right (0,1)";
+    public static final String TURNOUT = "Turnout (1)";
+    public static final String STRAIGHT = "Straight (0)";
+    public static final String RED = "Red (1)";
+    public static final String GREEN = "Green (0)";
+    public static final String LEFT = "Left (1,0)";
+    public static final String STRAIGHT3 = "Straight (0,0)";
+    public static final String RIGHT = "Right (0,1)";
 
     /**
      * Creates new form RouteEditor
@@ -578,18 +578,18 @@ public class RouteEditor extends javax.swing.JPanel {
                 
                 if (this.accType3Way.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(straight3))
+                    if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
                         newEntry += address + "," + "0" + "\n";
                         newEntry += (address + 1) + "," + "0";
 
                     }
-                    else if (this.accState.getSelectedItem().toString().equals(left))
+                    else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
                         newEntry += address + "," + "1" + "\n";
                         newEntry += (address + 1) + "," + "0";                    
                     }
-                    else if (this.accState.getSelectedItem().toString().equals(right))
+                    else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
                         newEntry += address + "," + "0" + "\n";
                         newEntry += (address + 1) + "," + "1";
@@ -597,7 +597,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 }
                 else if (this.accTypeTurnout.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(turnout))
+                    if (this.accState.getSelectedItem().toString().equals(TURNOUT))
                     {
                         newEntry += address + "," + "1";
                     }
@@ -608,7 +608,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(red))
+                    if (this.accState.getSelectedItem().toString().equals(RED))
                     {
                         newEntry += address + "," + "1";
                     }
@@ -689,15 +689,15 @@ public class RouteEditor extends javax.swing.JPanel {
     {
         if (this.accType3Way.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{left, straight3, right}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{LEFT, STRAIGHT3, RIGHT}));
         }
         else if (this.accTypeTurnout.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{straight, turnout}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{STRAIGHT, TURNOUT}));
         }
         else if (this.accTypeSignal.isSelected())
         {
-            this.accState.setModel(new DefaultComboBoxModel(new String[]{red, green}));
+            this.accState.setModel(new DefaultComboBoxModel(new String[]{RED, GREEN}));
         }  
     }
     
