@@ -1,11 +1,11 @@
 # Marklin Central Station 2/3 Train Control
 
-This program allows you to use your computer to easily control your entire Marklin layout.
+This cross-platform Java program allows you to use your computer to easily control your entire Marklin layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout / many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
 overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
-enabling functions, emergency stop, etc.
+enabling functions, emergency stop, etc.  You can also open windows with interactive track diagrams.
 
 As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
 operating your layout, with the Central Station serving solely as the track interface
