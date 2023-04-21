@@ -1,6 +1,7 @@
 package marklin;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -29,9 +30,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
     private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
-        
+    private Map<Integer, Integer> routeDelays;    
+    
     // Route state
-    private Map<Integer, Boolean> route;
+    private Object route; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
 
     // Track class version to avoid resetting state every time
     private static final long serialVersionUID = -9111893030704758839L;
@@ -72,6 +74,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
         this.conditionS88s = r.getConditionS88s();
+        this.routeDelays = r.getDelays();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -102,9 +105,22 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.preferredSpeed = l.getPreferredSpeed();
     }
     
-    public Map<Integer, Boolean> getRoute()
+    public LinkedHashMap<Integer, Boolean> getRoute()
     {
-        return this.route;
+        if (this.route instanceof LinkedHashMap)
+        {
+            
+        }
+        // Handle conversion from old map
+        else if (this.route instanceof HashMap)
+        {
+            LinkedHashMap<Integer, Boolean> routeMap = new LinkedHashMap<>();
+
+            routeMap.putAll((HashMap<Integer, Boolean>) this.route);
+            this.route = routeMap;
+        }
+
+        return (LinkedHashMap<Integer, Boolean>) this.route;
     }
     
     public boolean[] getFunctions()
@@ -176,5 +192,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public int getPreferredSpeed()
     {
         return preferredSpeed;
-    }    
+    }   
+    
+    public Map<Integer, Integer> getRouteDelays()
+    {
+        return this.routeDelays;       
+    }
 }

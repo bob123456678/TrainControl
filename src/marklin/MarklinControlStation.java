@@ -12,6 +12,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.3";
+    public static final String VERSION = "1.7.4";
     
     //// Settings
     
@@ -164,7 +165,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
-                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s());
+                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s(), c.getRouteDelays());
             }
         }
         
@@ -444,6 +445,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (this.routeDB.hasId(r.getId()) 
                         && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) || r.getS88() != this.routeDB.getById(r.getId()).getS88()
                             || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
+                            || !r.getDelays().equals(this.routeDB.getById(r.getId()).getDelays())
                         ) 
                 )
                 {
@@ -665,10 +667,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @param routeDelays 
      */
     @Override
-    public final void editRoute(String name, String newName, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            Map<Integer, Boolean> conditionS88s)
+    public final void editRoute(String name, String newName, LinkedHashMap<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
+            Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> routeDelays)
     {
         Integer id = this.routeDB.getByName(name).getId();
         
@@ -677,7 +680,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.deleteRoute(name);
         
-        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s);
+        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s, routeDelays);
     }
     
     /**
@@ -719,16 +722,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @param routeDelays 
      * @return  
      */
-    public final boolean newRoute(String name, int id, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            Map<Integer, Boolean> conditionS88s)
+    public final boolean newRoute(String name, int id, LinkedHashMap<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
+            Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> routeDelays)
     {
         name = name.trim();
         
         if (!this.routeDB.hasId(id) && !this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);    
+            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s, routeDelays), name, id);    
             return true;
         }
         else
@@ -749,8 +753,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return creation status
      */
     @Override
-    public final boolean newRoute(String name, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-        Map<Integer, Boolean> conditionS88s)
+    public final boolean newRoute(String name, LinkedHashMap<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
+        Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> routeDelays)
     {
         int newId = 1;
         if (this.routeDB.getItemIds().size() > 0)
@@ -762,7 +766,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s), name, newId);  
+            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s, routeDelays), name, newId);  
                         
             return true;
         }

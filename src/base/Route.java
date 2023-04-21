@@ -3,6 +3,7 @@ package base;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,7 @@ abstract public class Route
     private final String name;
     
     // Route map
-    protected Map<Integer, Boolean> route;
+    protected LinkedHashMap<Integer, Boolean> route;
     
     // Execution state
     private boolean isExecuting = false;
@@ -29,7 +30,7 @@ abstract public class Route
     public Route(String name)
     {
        this.name = name;
-       this.route = new HashMap<>();
+       this.route = new LinkedHashMap<>();
     }
     
     /**
@@ -37,7 +38,7 @@ abstract public class Route
      * @param name
      * @param route 
      */
-    public Route(String name, Map<Integer, Boolean> route)
+    public Route(String name, LinkedHashMap<Integer, Boolean> route)
     {
         this.name = name;
         this.setRoute(route);
@@ -55,6 +56,7 @@ abstract public class Route
     
     /**
      * Removes from the route
+     * @param i
      */
     public void removeItem(Integer i)
     {
@@ -65,7 +67,7 @@ abstract public class Route
      * Sets a full route
      * @param route 
      */
-    public final void setRoute(Map<Integer, Boolean> route)
+    public final void setRoute(LinkedHashMap<Integer, Boolean> route)
     {
         this.route = route;
     }
@@ -74,7 +76,7 @@ abstract public class Route
      * Returns the route
      * @return 
      */
-    public Map<Integer, Boolean> getRoute()
+    public LinkedHashMap<Integer, Boolean> getRoute()
     {
         return this.route;
     }
@@ -140,6 +142,22 @@ abstract public class Route
      * @return 
      */
     public String toCSV()
+    {
+        String out = "";
+        
+        for (int idx : this.route.keySet())
+        {
+            out += Integer.toString(idx) + "," + (this.route.get(idx) ? "1" : "0") + "\n";
+        }
+        
+        return out.trim();
+    }
+    
+    /**
+     * Returns a CSV representation of the route
+     * @return 
+     */
+    public String toSortedCSV()
     {
         String out = "";
         

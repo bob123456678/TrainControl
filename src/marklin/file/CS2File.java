@@ -386,13 +386,14 @@ public final class CS2File
                     // As this would duplcate functionality with the CS2, we leave it disabled
                     // r.enable();
                 }
-
+                
                 for (String piece : pieces)
                 {
                     String[] infos = piece.split(",");
 
                     Integer id = 0;
                     Integer setting = 0;
+                    Integer delay = 0;
 
                     for (String info : infos)
                     {
@@ -409,6 +410,11 @@ public final class CS2File
                             {
                                 setting = new Integer(kv[1]);
                             }
+                            
+                            if ("sekunde".equals(kv[0]))
+                            {
+                                delay = new Float(kv[1]).intValue() * 1000;
+                            }
                         }
                     }
                     
@@ -418,9 +424,20 @@ public final class CS2File
                         if (setting >= 2)
                         {
                             r.addItem(id + 1, setting == 2);
+                            
+                            if (delay > 0)
+                            {
+                                r.setDelay(id + 1, delay);
+                            }
                         }
                         
                         r.addItem(id, setting != 1 && setting != 3);
+                        
+                        // Only set the delay once for three-way switches
+                        if (delay > 0 && setting < 2)
+                        {
+                            r.setDelay(id, delay);
+                        }
                         
                         // stellung 0
                         // id -> true (red)

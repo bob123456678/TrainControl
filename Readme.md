@@ -111,6 +111,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.7.4 [Beta]
+    - Route command order is now preserved
+    - Round command delays are now parsed from the CS2 file (not yet editable in UI)
+
 * v1.7.3 [4/16/23]
     - Added wizard to simplify new route creation
     - Improved value sanitization in routes (negative numbers, etc.)

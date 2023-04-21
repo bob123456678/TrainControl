@@ -1,6 +1,7 @@
 package model;
 
 import base.Feedback;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import marklin.MarklinAccessory;
@@ -45,8 +46,8 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean isCS3();
     public String getCS3AppUrl();
-    public boolean newRoute(String name, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s);
-    public void editRoute(String name, String newName, Map<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s);
+    public boolean newRoute(String name, LinkedHashMap<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> routeDelays);
+    public void editRoute(String name, String newName, LinkedHashMap<Integer, Boolean> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> routeDelays);
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
 }

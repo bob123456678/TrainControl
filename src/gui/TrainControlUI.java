@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -6521,7 +6522,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Add route
         try
         {
-            Map<Integer, Boolean> newRoute = new HashMap<>();
+            LinkedHashMap<Integer, Boolean> newRoute = new LinkedHashMap<>();
 
             for (String line : routeContent.split("\n"))
             {
@@ -6553,7 +6554,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!"".equals(origName))
                 {                    
                     this.model.editRoute(origName, routeName, newRoute,
-                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
+                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, this.model.getRoute(origName).getDelays());
+                                 // TODO read delays from UI
                 }
                 // New route
                 else
@@ -6565,7 +6567,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                                         
                     this.model.newRoute(routeName, newRoute,
-                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
+                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, new HashMap<>());
+                             // TODO read delays from UI
                 }
                 
                 refreshRouteList();
@@ -6661,7 +6664,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s()); 
+                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s(), currentRoute.getDelays()); 
 
                 refreshRouteList();
 
@@ -6697,7 +6700,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (r.getName().contains(searchString) || "*".equals(searchString))
                     {
                          this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
+                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getDelays());
                     }
                 }
             }
@@ -6716,7 +6719,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         if (r.hasS88())
         {
-            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
+            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getDelays());
       
             refreshRouteList();
 
