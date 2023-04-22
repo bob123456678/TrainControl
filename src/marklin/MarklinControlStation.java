@@ -205,6 +205,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private void syncLayouts() throws Exception
     {
+        // List<Integer> addresses = new LinkedList<>();
+
         for (MarklinLayout l : fileParser.parseLayout())
         {
             this.layoutDB.add(l, l.getName(), l.getName());
@@ -217,6 +219,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {                            
                     int newAddress = c.getAddress() - 1;                    
                     int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
+                    
+                    // addresses.add(newAddress);
 
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
@@ -226,7 +230,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     {
                         // Skip components without a digital address
                         if (c.getAddress() == 0) continue;
-
+                        
                         if (c.isSwitch() || c.isUncoupler())
                         {
                             newSwitch(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
@@ -237,6 +241,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 {
                                     newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
                                 }
+                                
+                                // addresses.add(newAddress + 1);
                             }
                         }
                         else if (c.isSignal())
@@ -318,7 +324,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }   
         
-        // Code for basic address status
+        // Code for basic address stats
         /*Collections.sort(addresses);
 
         if (addresses.size() >= 1)
