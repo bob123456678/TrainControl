@@ -1,6 +1,7 @@
 package marklin;
 
 import base.Route;
+import base.RouteCommand;
 import gui.LayoutLabel;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -208,10 +209,11 @@ public class MarklinRoute extends Route
                 // This will highlight icons in the UI
                 this.updateTiles();
 
-                for (Integer id : this.route.keySet())
+                for (RouteCommand rc : this.route)
                 {
-                    Boolean state = this.route.get(id);
-
+                    int id = rc.getAddress();
+                    boolean state = rc.getSetting();
+                    
                     this.network.setAccessoryState(id, state);
 
                     try
@@ -279,9 +281,12 @@ public class MarklinRoute extends Route
      */
     public final void setDelay(Integer key, Integer delayMs)
     {
-        if (this.route.containsKey(key))
+        for (RouteCommand rc : this.route)
         {
-            this.delays.put(key, delayMs);
+            if (rc.getAddress() == key)
+            {
+                this.delays.put(key, delayMs);
+            }
         }
     }
     
@@ -290,10 +295,10 @@ public class MarklinRoute extends Route
      * @param i
      */
     @Override
-    public void removeItem(Integer i)
+    public void removeItem(RouteCommand rc)
     {
-        this.route.remove(i);
-        this.delays.remove(i);
+        this.route.remove(rc);
+        this.delays.remove(rc.getAddress());
     }
     
     /**

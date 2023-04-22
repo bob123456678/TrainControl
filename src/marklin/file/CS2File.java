@@ -423,7 +423,7 @@ public final class CS2File
                     {
                         if (setting >= 2)
                         {
-                            r.addItem(id + 1, setting == 2);
+                            r.addAccessory(id + 1, setting == 2);
                             
                             if (delay > 0)
                             {
@@ -431,7 +431,7 @@ public final class CS2File
                             }
                         }
                         
-                        r.addItem(id, setting != 1 && setting != 3);
+                        r.addAccessory(id, setting != 1 && setting != 3);
                         
                         // Only set the delay once for three-way switches
                         if (delay > 0 && setting < 2)

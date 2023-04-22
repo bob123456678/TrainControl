@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +19,7 @@ abstract public class Route
     private final String name;
     
     // Route map
-    protected LinkedHashMap<Integer, Boolean> route;
+    protected List<RouteCommand> route;
     
     // Execution state
     private boolean isExecuting = false;
@@ -30,7 +31,7 @@ abstract public class Route
     public Route(String name)
     {
        this.name = name;
-       this.route = new LinkedHashMap<>();
+       this.route = new LinkedList<>();
     }
     
     /**
@@ -46,21 +47,30 @@ abstract public class Route
     
     /**
      * Adds to the route
-     * @param i
-     * @param b 
+     * @param address
+     * @param setting
      */
-    public void addItem(Integer i, Boolean b)
+    public void addAccessory(int address, boolean setting)
     {
-        this.route.put(i, b);
+        this.route.add(RouteCommand.RouteCommandAccessory(address, setting));
+    }
+    
+    /**
+     * Adds to the route
+     * @param rc
+     */
+    public void addItem(RouteCommand rc)
+    {
+        this.route.add(rc);
     }
     
     /**
      * Removes from the route
-     * @param i
+     * @param rc
      */
-    public void removeItem(Integer i)
+    public void removeItem(RouteCommand rc)
     {
-        this.route.remove(i);
+        this.route.remove(rc);
     }
     
     /**
@@ -69,7 +79,12 @@ abstract public class Route
      */
     public final void setRoute(LinkedHashMap<Integer, Boolean> route)
     {
-        this.route = route;
+        this.route = new LinkedList<>();
+        
+        for (Integer i : route.keySet())
+        {
+            this.route.add(RouteCommand.RouteCommandAccessory(i, route.get(i)));
+        }
     }
     
     /**
@@ -78,7 +93,14 @@ abstract public class Route
      */
     public LinkedHashMap<Integer, Boolean> getRoute()
     {
-        return this.route;
+        LinkedHashMap routeMap = new LinkedHashMap<>();
+        
+        for (RouteCommand r : this.route)
+        {
+            routeMap.put(r.getAddress(), r.getSetting());
+        }
+        
+        return routeMap;
     }
     
     @Override
@@ -145,28 +167,9 @@ abstract public class Route
     {
         String out = "";
         
-        for (int idx : this.route.keySet())
+        for (RouteCommand r : this.route)
         {
-            out += Integer.toString(idx) + "," + (this.route.get(idx) ? "1" : "0") + "\n";
-        }
-        
-        return out.trim();
-    }
-    
-    /**
-     * Returns a CSV representation of the route
-     * @return 
-     */
-    public String toSortedCSV()
-    {
-        String out = "";
-        
-        List<Integer> keys = new ArrayList(this.route.keySet());
-        Collections.sort(keys);
-        
-        for (int idx : keys)
-        {
-            out += Integer.toString(idx) + "," + (this.route.get(idx) ? "1" : "0") + "\n";
+            out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
         }
         
         return out.trim();
