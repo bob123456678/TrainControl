@@ -39,7 +39,7 @@ abstract public class Route
      * @param name
      * @param route 
      */
-    public Route(String name, LinkedHashMap<Integer, Boolean> route)
+    public Route(String name, List<RouteCommand> route)
     {
         this.name = name;
         this.setRoute(route);
@@ -75,32 +75,20 @@ abstract public class Route
     
     /**
      * Sets a full route
-     * @param route 
+     * @param rcl 
      */
-    public final void setRoute(LinkedHashMap<Integer, Boolean> route)
+    public final void setRoute(List<RouteCommand> rcl)
     {
-        this.route = new LinkedList<>();
-        
-        for (Integer i : route.keySet())
-        {
-            this.route.add(RouteCommand.RouteCommandAccessory(i, route.get(i)));
-        }
+        this.route = rcl;
     }
     
     /**
      * Returns the route
      * @return 
      */
-    public LinkedHashMap<Integer, Boolean> getRoute()
+    public List<RouteCommand> getRoute()
     {
-        LinkedHashMap routeMap = new LinkedHashMap<>();
-        
-        for (RouteCommand r : this.route)
-        {
-            routeMap.put(r.getAddress(), r.getSetting());
-        }
-        
-        return routeMap;
+        return this.route;
     }
     
     @Override
@@ -169,7 +157,11 @@ abstract public class Route
         
         for (RouteCommand r : this.route)
         {
-            out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
+            // TODO others not yet supported
+            if (r.isAccessory())
+            {
+                out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + (r.getDelay() > 0 ? "," + r.getDelay() : "") + "\n";
+            }
         }
         
         return out.trim();

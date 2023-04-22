@@ -27,6 +27,7 @@ public class RouteEditor extends javax.swing.JPanel {
     
     private final String helpMessage = "In the Route Commands field, one per line, enter the accessory address (integer) and state (0 or 1), separated by a comma."
                     + "\nFor example, 20,1 would set switch 20 to turnout, or signal 20 to red."
+                    + "\nAn optional third number specifies a delay before execution, in milliseconds."
                     + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
                     + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
                     + "\n(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
@@ -114,6 +115,7 @@ public class RouteEditor extends javax.swing.JPanel {
         }
         
         this.updateSettingSelections();
+        this.accState.setPrototypeDisplayValue("XXXXXXXXXXXXXX");
     }
 
     public JRadioButton getExecutionAuto() {
@@ -191,6 +193,8 @@ public class RouteEditor extends javax.swing.JPanel {
         accTypeTurnout = new javax.swing.JRadioButton();
         accType3Way = new javax.swing.JRadioButton();
         accTypeSignal = new javax.swing.JRadioButton();
+        jLabel12 = new javax.swing.JLabel();
+        delay = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
         Help = new javax.swing.JButton();
 
@@ -293,12 +297,10 @@ public class RouteEditor extends javax.swing.JPanel {
                                 .addComponent(executionManual)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(executionAuto)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20, Short.MAX_VALUE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(triggerOccupiedThenClear, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(triggerClearThenOccupied, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGap(18, 18, 18)))
+                        .addGap(0, 2, Short.MAX_VALUE))
+                    .addComponent(triggerOccupiedThenClear, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(triggerClearThenOccupied, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -438,11 +440,26 @@ public class RouteEditor extends javax.swing.JPanel {
             }
         });
 
+        jLabel12.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel12.setText("Delay (ms)");
+
+        delay.setText("0");
+        delay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                delayActionPerformed(evt);
+            }
+        });
+        delay.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                delayKeyReleased(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -458,36 +475,37 @@ public class RouteEditor extends javax.swing.JPanel {
                         .addComponent(accType3Way)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel11))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(addToRouteButton))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel11)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(3, 3, 3)
+                        .addComponent(delay))
+                    .addComponent(jLabel12))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(addToRouteButton)
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGap(29, 29, 29)
-                        .addComponent(addToRouteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel8)
-                            .addComponent(jLabel10)
-                            .addComponent(jLabel11))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(accTypeTurnout)
-                            .addComponent(accType3Way)
-                            .addComponent(accTypeSignal)
-                            .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel8)
+                    .addComponent(jLabel10)
+                    .addComponent(jLabel11)
+                    .addComponent(jLabel12))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(accTypeTurnout)
+                    .addComponent(accType3Way)
+                    .addComponent(accTypeSignal)
+                    .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(delay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(addToRouteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(121, Short.MAX_VALUE))
         );
 
         jLabel7.setForeground(new java.awt.Color(0, 0, 115));
@@ -576,22 +594,33 @@ public class RouteEditor extends javax.swing.JPanel {
             {
                 int address = Math.abs(Integer.parseInt(this.accAddr.getText()));
                 
+                String delayString = "";
+                
+                if (!"".equals(this.delay.getText()))
+                {
+                    int delayVal = Math.abs(Integer.parseInt(this.delay.getText()));
+
+                    if (delayVal > 0)
+                    {
+                        delayString = "," + delayVal;
+                    }
+                }
+                
                 if (this.accType3Way.isSelected())
                 {
                     if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
-                        newEntry += address + "," + "0" + "\n";
+                        newEntry += address + "," + "0" + delayString + "\n";
                         newEntry += (address + 1) + "," + "0";
-
                     }
                     else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
-                        newEntry += address + "," + "1" + "\n";
+                        newEntry += address + "," + "1" + delayString + "\n";
                         newEntry += (address + 1) + "," + "0";                    
                     }
                     else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
-                        newEntry += address + "," + "0" + "\n";
+                        newEntry += address + "," + "0" + delayString + "\n";
                         newEntry += (address + 1) + "," + "1";
                     }
                 }
@@ -599,22 +628,22 @@ public class RouteEditor extends javax.swing.JPanel {
                 {
                     if (this.accState.getSelectedItem().toString().equals(TURNOUT))
                     {
-                        newEntry += address + "," + "1";
+                        newEntry += address + "," + "1" + delayString;
                     }
                     else
                     {
-                        newEntry += address + "," + "0";
+                        newEntry += address + "," + "0" + delayString;
                     }      
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
                     if (this.accState.getSelectedItem().toString().equals(RED))
                     {
-                        newEntry += address + "," + "1";
+                        newEntry += address + "," + "1" + delayString;
                     }
                     else
                     {
-                        newEntry += address + "," + "0";
+                        newEntry += address + "," + "0" + delayString;
                     }
                 }
                 
@@ -676,7 +705,7 @@ public class RouteEditor extends javax.swing.JPanel {
             
             if (addr < 0)
             {
-                this.accAddr.setText("");    
+                this.s88.setText("");    
             }
         }
         catch (Exception e)
@@ -684,6 +713,26 @@ public class RouteEditor extends javax.swing.JPanel {
             this.s88.setText("");
         }
     }//GEN-LAST:event_s88KeyReleased
+
+    private void delayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delayActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_delayActionPerformed
+
+    private void delayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_delayKeyReleased
+        try
+        {
+            int addr = Integer.parseInt(this.delay.getText());
+            
+            if (addr < 0)
+            {
+                this.delay.setText("0");    
+            }
+        }
+        catch (Exception e)
+        {
+            this.delay.setText("");
+        }
+    }//GEN-LAST:event_delayKeyReleased
 
     private void updateSettingSelections()
     {
@@ -714,11 +763,13 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.JTextArea conditionS88;
+    private javax.swing.JTextField delay;
     private javax.swing.JRadioButton executionAuto;
     private javax.swing.JRadioButton executionManual;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;

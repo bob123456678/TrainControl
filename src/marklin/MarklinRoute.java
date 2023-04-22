@@ -33,7 +33,6 @@ public class MarklinRoute extends Route
     private final Set<LayoutLabel> tiles;
     
     // Extra delay between route commands
-    private Map<Integer, Integer> delays;
     private static final int DEFAULT_SLEEP_MS = 150;
     
     // State for routes with S88 trigger
@@ -63,8 +62,6 @@ public class MarklinRoute extends Route
 
         this.enabled = false;
         this.triggerType = s88Triggers.CLEAR_THEN_OCCUPIED;
-        
-        this.delays = new HashMap<>();       
     }
     
     /**
@@ -77,10 +74,9 @@ public class MarklinRoute extends Route
      * @param triggerType 
      * @param enabled 
      * @param conditionS88s
-     * @param delays
      */
-    public MarklinRoute(MarklinControlStation network, String name, int id, LinkedHashMap<Integer, Boolean> route, int s88, s88Triggers triggerType, boolean enabled,
-            Map<Integer, Boolean> conditionS88s, Map<Integer, Integer> delays)
+    public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
+            Map<Integer, Boolean> conditionS88s)
     { 
         super(name, route);
         
@@ -92,17 +88,6 @@ public class MarklinRoute extends Route
         this.triggerType = triggerType;
         this.enabled = enabled;
         this.conditionS88s = conditionS88s;
-        
-        // This ensures delays are not set for non-existing IDs
-        this.delays = new HashMap<>();
-        
-        if (delays != null)
-        {
-            for (int key : delays.keySet())
-            {
-                this.setDelay(key, delays.get(key));
-            }
-        }
         
         // Execute the automatic route
         if (this.enabled && this.hasS88())
@@ -218,13 +203,17 @@ public class MarklinRoute extends Route
 
                     try
                     {
-                        if (this.getDelay(id) > MarklinRoute.DEFAULT_SLEEP_MS)
+                        if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
                         {
-                            this.network.log("Delay for accessory " + id + " is " + this.getDelay(id));
+                            this.network.log("Delay for accessory " + id + " is " + rc.getDelay());
+                            Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
                         }
-                        
-                        Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + this.getDelay(id));
-                    } catch (InterruptedException ex)
+                        else
+                        {
+                            Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
+                        }    
+                    } 
+                    catch (InterruptedException ex)
                     {
 
                     }
@@ -256,24 +245,7 @@ public class MarklinRoute extends Route
     {
         return this.s88;
     }
-    
-    /**
-     * Gets the delay for a specific route command
-     * @param key
-     * @return 
-     */
-    public Integer getDelay(Integer key)
-    {
-        if (this.delays.containsKey(key))
-        {
-            return this.delays.get(key);
-        }    
-        else
-        {
-            return MarklinRoute.DEFAULT_SLEEP_MS;
-        }    
-    }
-    
+     
     /**
      * Sets the delay for an individual item
      * @param key
@@ -285,31 +257,24 @@ public class MarklinRoute extends Route
         {
             if (rc.getAddress() == key)
             {
-                this.delays.put(key, delayMs);
+                rc.setDelay(delayMs);
+                return;
             }
         }
+        
+        this.network.log("Error: route key " + key + " not found");
     }
     
     /**
      * Removes from the route
-     * @param i
+     * @param rc
      */
     @Override
     public void removeItem(RouteCommand rc)
     {
         this.route.remove(rc);
-        this.delays.remove(rc.getAddress());
     }
-    
-    /**
-     * Returns the delays between route executions
-     * @return 
-     */
-    public Map<Integer, Integer> getDelays()
-    {
-        return this.delays;
-    }
-    
+        
     /**
      * Get the s88 sensors and require state to execute the route
      * @return 

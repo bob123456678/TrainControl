@@ -1,6 +1,7 @@
 package gui;
 
 import base.Locomotive;
+import base.RouteCommand;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
@@ -6522,7 +6523,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Add route
         try
         {
-            LinkedHashMap<Integer, Boolean> newRoute = new LinkedHashMap<>();
+            List<RouteCommand> newRoute = new LinkedList<>();
 
             for (String line : routeContent.split("\n"))
             {
@@ -6530,8 +6531,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
                     boolean state = line.split(",")[1].trim().equals("1");
+                    
+                    RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
+                    
+                    if (line.split(",").length > 2)
+                    {
+                        rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[2].trim())));     
+                    }
 
-                    newRoute.put(address, state);
+                    newRoute.add(rc);
                 }
             }
             
@@ -6552,9 +6560,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {    
                 // Editing a route
                 if (!"".equals(origName))
-                {                    
+                {
                     this.model.editRoute(origName, routeName, newRoute,
-                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, this.model.getRoute(origName).getDelays());
+                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                                  // TODO read delays from UI
                 }
                 // New route
@@ -6567,7 +6575,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                                         
                     this.model.newRoute(routeName, newRoute,
-                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, new HashMap<>());
+                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                              // TODO read delays from UI
                 }
                 
@@ -6664,7 +6672,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s(), currentRoute.getDelays()); 
+                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s()); 
 
                 refreshRouteList();
 
@@ -6700,7 +6708,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (r.getName().contains(searchString) || "*".equals(searchString))
                     {
                          this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getDelays());
+                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
                     }
                 }
             }
@@ -6719,7 +6727,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         if (r.hasS88())
         {
-            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getDelays());
+            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
       
             refreshRouteList();
 

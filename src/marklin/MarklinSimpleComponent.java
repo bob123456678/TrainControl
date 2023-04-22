@@ -1,7 +1,10 @@
 package marklin;
 
+import base.RouteCommand;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,7 +33,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
     private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
-    private Map<Integer, Integer> routeDelays;    
     
     // Route state
     private Object route; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
@@ -74,7 +76,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
         this.conditionS88s = r.getConditionS88s();
-        this.routeDelays = r.getDelays();
     }
     
     public MarklinSimpleComponent(MarklinLocomotive l)
@@ -105,22 +106,36 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.preferredSpeed = l.getPreferredSpeed();
     }
     
-    public LinkedHashMap<Integer, Boolean> getRoute()
+    public List<RouteCommand> getRoute()
     {
         if (this.route instanceof LinkedHashMap)
         {
+            List<RouteCommand> rcs = new LinkedList<>();
             
+            LinkedHashMap<Integer, Boolean> tempRoute = (LinkedHashMap<Integer, Boolean>) this.route;
+            for (Integer key : tempRoute.keySet() )
+            {
+                rcs.add(RouteCommand.RouteCommandAccessory(key, tempRoute.get(key)));
+            }
+            
+            this.route = rcs;
+
         }
         // Handle conversion from old map
         else if (this.route instanceof HashMap)
         {
-            LinkedHashMap<Integer, Boolean> routeMap = new LinkedHashMap<>();
-
-            routeMap.putAll((HashMap<Integer, Boolean>) this.route);
-            this.route = routeMap;
+            List<RouteCommand> rcs = new LinkedList<>();
+            
+            HashMap<Integer, Boolean> tempRoute = (HashMap<Integer, Boolean>) this.route;
+            for (Integer key : tempRoute.keySet() )
+            {
+                rcs.add(RouteCommand.RouteCommandAccessory(key, tempRoute.get(key)));
+            }
+            
+            this.route = rcs;
         }
 
-        return (LinkedHashMap<Integer, Boolean>) this.route;
+        return (List<RouteCommand>) this.route;
     }
     
     public boolean[] getFunctions()
@@ -193,9 +208,4 @@ public class MarklinSimpleComponent implements java.io.Serializable
     {
         return preferredSpeed;
     }   
-    
-    public Map<Integer, Integer> getRouteDelays()
-    {
-        return this.routeDelays;       
-    }
 }

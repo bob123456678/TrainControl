@@ -4,14 +4,13 @@ import static base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
 import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Individual route command
  * 
  * @author Adam
  */
-public class RouteCommand
+public class RouteCommand implements java.io.Serializable
 {    
     public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION};
 
@@ -29,6 +28,9 @@ public class RouteCommand
     
     // Arbitrary command configuration
     protected LinkedHashMap<String, String> commandConfig;
+    
+    // Track class version to avoid resetting state every time
+    private static final long serialVersionUID = -9112930314120758839L;
         
     /**
      * Base constructor
@@ -145,9 +147,24 @@ public class RouteCommand
         return Integer.parseInt(this.commandConfig.get(KEY_FUNCTION));
     }
     
-    public boolean equals(RouteCommand r)
+    @Override
+    public boolean equals(Object o)
     {
-        return this.type == r.getType() && this.commandConfig.equals(r.getCommandConfig());
+        // If the object is compared with itself then return true 
+        if (o == this)
+        {
+            return true;
+        }
+ 
+        if (!(o instanceof RouteCommand))
+        {
+            return false;
+        }
+         
+        // typecast o to Complex so that we can compare data members
+        RouteCommand rc = (RouteCommand) o;
+        
+        return this.type == rc.getType() && this.commandConfig.equals(rc.getCommandConfig());
     }
     
     public void setDelay(int delay)
@@ -173,6 +190,6 @@ public class RouteCommand
             typeString = "Locomotive";
         }
         
-        return "Route Command " + typeString + " -> " + this.commandConfig.toString();
+        return typeString + ": " + this.commandConfig.toString();
     }
 }
