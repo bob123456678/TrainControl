@@ -79,6 +79,12 @@ Route 9 (lower circuit)
 102,0
 30,0
 37,1
+25,0
+92,0
+57,0
+36,0
+82,0
+83,0
 
 Route 10 (lower track 1)
 
@@ -331,3 +337,31 @@ Condition S88:
 
 9,0
 
+Route 34 (Lower Parking 12)
+
+57,1
+101,0
+88,0
+
+Route 35 (Lower Parking 14)
+
+82,1
+84,1
+88,0
+
+Route 36 (Lower Parking 13)
+
+82,1
+84,0
+88,0
+
+Route 37 (Lower Parking 18)
+
+57,1
+101,1
+88,0
+
+Route 38 (Lower Parking 16)
+
+88,0
+25,1
