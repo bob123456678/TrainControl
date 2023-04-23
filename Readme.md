@@ -111,7 +111,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.4 [Beta]
+* v1.7.4 [4/22/23]
     - Route command order is now preserved
     - Round command delays are now parsed from the CS2 file and editable in the UI
     - Duplicate accessory commands are now allowed in routes
