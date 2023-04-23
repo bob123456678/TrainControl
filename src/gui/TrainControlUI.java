@@ -1795,6 +1795,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
+        setMinimumSize(new java.awt.Dimension(1078, 572));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -4642,6 +4643,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CurrentKeyLabel.setToolTipText(null);
         CurrentKeyLabel.setFocusable(false);
 
+        locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
 
         FunctionTabs.setBackground(new java.awt.Color(255, 255, 255));
