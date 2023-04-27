@@ -370,22 +370,35 @@ Route 38 (Lower Parking 16)
 
 Route 39 (Auto Bottom Sec Track 1 Crossover)
 Clear then occupied
-s88: 1009
+s88: 1011
 Condition S88: 
-1011,1
+9,0
 
 103,1
 
 Route 40 (Auto Bottom Sec Track 1 Crossover 2)
-Occupied then clear
-s88: 1009
+Clear then occupied
+s88: 1011
 Condition S88: 
-1011,1
+10,0
 
 103,1
 
-Route 41 (Auto Bottom Sec Track 1 Crossover)
+Route 41 (Auto Bottom Sec Track 1 Crossover 3)
 Clear then occupied
-s88: 8
+s88: 1011
+Condition S88: 
+4,0
+
+103,1
+
+Route 42 (Auto Bottom Sec Track 1 Crossover 4)
+Clear then occupied
+s88: 1011
+Condition S88: 
+4,1
+9,1
+10,1
 
 103,0
+52,0
