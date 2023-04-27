@@ -256,8 +256,8 @@ Route 25 (mid parking 5)
 98,0
 
 Route 26 (Auto Bottom Main Track 1)
-Occupied then clear
-s88: 1030
+Clear then occupied
+s88: 1032
 Condition S88: 
 9,0
 
@@ -266,8 +266,8 @@ Condition S88:
 87,1
 
 Route 27 (Auto Bottom Main Track 2)
-Occupied then clear
-s88: 1030
+Clear then occupied
+s88: 1032
 Condition S88: 
 9,1 
 10,0
@@ -278,8 +278,8 @@ Condition S88:
 87,0
 
 Route 28 (Auto Bottom Main Track 3)
-Occupied then clear
-s88: 1030
+Clear then occupied
+s88: 1032
 Condition S88: 
 9,1
 10,1
@@ -365,3 +365,25 @@ Route 38 (Lower Parking 16)
 
 88,0
 25,1
+
+Route 39 (Auto Bottom Sec Track 1 Crossover)
+Clear then occupied
+s88: 1009
+Condition S88: 
+1011,1
+
+103,1
+
+Route 40 (Auto Bottom Sec Track 1 Crossover 2)
+Occupied then clear
+s88: 1009
+Condition S88: 
+1011,1
+
+103,1
+
+Route 41 (Auto Bottom Sec Track 1 Crossover)
+Clear then occupied
+s88: 8
+
+103,0
