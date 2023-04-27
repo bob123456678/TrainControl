@@ -223,6 +223,8 @@ Route 20 (Reset)
 83,0
 98,1
 69,0
+103,0
+104,0
 
 Route 21 (mid parking 1)
 
