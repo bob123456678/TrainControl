@@ -424,14 +424,13 @@ element
  .artikel=-1
 element
  .id=0x40a
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=linksweiche
+ .drehung=2
+ .artikel=208
 element
  .id=0x40b
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=linksweiche
+ .artikel=206
 element
  .id=0x40e
  .typ=tunnel
