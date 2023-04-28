@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -235,6 +234,16 @@ public class MarklinRoute extends Route
     public void setS88(int s88)
     {
         this.s88 = s88;
+    }
+    
+    /**
+     * Adds a s88 condition to the route
+     * @param id
+     * @param state 
+     */
+    public void addConditionS88(Integer id, boolean state)
+    {
+        this.conditionS88s.put(id, state);
     }
     
     /**

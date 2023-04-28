@@ -369,7 +369,7 @@ public final class CS2File
                 
                 String route = m.get("item").replace("{", "").replace("}","");
                 String[] pieces = route.split("\\|");
-                                
+
                 if (m.containsKey("s88"))
                 {
                     r.setS88(Integer.parseInt(m.get("s88")));
@@ -395,6 +395,9 @@ public final class CS2File
                     Integer setting = 0;
                     Integer delay = 0;
 
+                    Integer conditionS88 = 0;
+                    Integer s88Status = 1;
+                    
                     for (String info : infos)
                     {
                         if (info.contains("="))
@@ -403,18 +406,42 @@ public final class CS2File
                             
                             if ("magnetartikel".equals(kv[0]))
                             {
-                                id = new Integer(kv[1]);
+                                id = new Integer(kv[1].trim());
                             }
                             
                             if ("stellung".equals(kv[0]))
                             {
-                                setting = new Integer(kv[1]);
+                                setting = new Integer(kv[1].trim());
                             }
                             
                             if ("sekunde".equals(kv[0]))
                             {
                                 delay = new Float(kv[1]).intValue() * 1000;
                             }
+                               
+                            // Condition S88s
+                            if ("kont".equals(kv[0]))
+                            {         
+                                // Already saw a previous condition - add it to route
+                                if (conditionS88 != 0)
+                                {
+                                    r.addConditionS88(conditionS88, s88Status != 0);
+                                    s88Status = 1;
+                                }
+                                
+                                conditionS88 = new Integer(kv[1].trim());
+                            }
+                            
+                            if ("hi".equals(kv[0]))
+                            {                                
+                                s88Status = new Integer(kv[1].trim());
+                            }
+                        }
+                        
+                        // Add final condition to route
+                        if (conditionS88 != 0)
+                        {
+                            r.addConditionS88(conditionS88, s88Status != 0);
                         }
                     }
                     

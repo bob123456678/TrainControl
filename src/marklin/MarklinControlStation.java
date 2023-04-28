@@ -37,7 +37,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.4";
+    public static final String VERSION = "1.7.5";
     
     //// Settings
     
@@ -453,6 +453,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) 
                             || r.getS88() != this.routeDB.getById(r.getId()).getS88()
                             || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
+                            || !r.getConditionS88s().equals(this.routeDB.getById(r.getId()).getConditionS88s())
                         ) 
                 )
                 {   
