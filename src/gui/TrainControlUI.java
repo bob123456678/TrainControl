@@ -5900,17 +5900,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_RouteListMouseClicked
     {//GEN-HEADEREND:event_RouteListMouseClicked
-        //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
-        Object route = this.getRouteAtCursor(evt);
-        
-        if (route != null)
+        if (SwingUtilities.isLeftMouseButton(evt))
         {
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
-            if(dialogResult == JOptionPane.YES_OPTION)
+            //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
+            Object route = this.getRouteAtCursor(evt);
+
+            if (route != null)
             {
-                executeRoute(route.toString());
-            }
-        }   
+                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                if(dialogResult == JOptionPane.YES_OPTION)
+                {
+                    executeRoute(route.toString());
+                }
+            }   
+        }
     }//GEN-LAST:event_RouteListMouseClicked
 
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
@@ -6725,22 +6728,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void enableOrDisableRoute(String routeName, boolean enable)
     {  
-        MarklinRoute r = this.model.getRoute(routeName);
-
-        if (r.hasS88())
+        new Thread(() -> 
         {
-            this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
-      
-            refreshRouteList();
+            MarklinRoute r = this.model.getRoute(routeName);
 
-            // Ensure route changes are synced
-            this.model.syncWithCS2();
-            this.repaintLayout();
-        }
-        else
-        {
-            JOptionPane.showMessageDialog(this, "Route must have an S88 configured to fire automatically.");
-        }
+            if (r.hasS88())
+            {
+                this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
+
+                refreshRouteList();
+
+                // Ensure route changes are synced
+                this.model.syncWithCS2();
+                this.repaintLayout();
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(this, "Route must have an S88 configured to fire automatically.");
+            }
+        }).start();
     }
     
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed

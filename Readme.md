@@ -113,6 +113,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.7.5 [Beta]
     - Route conditions are now parsed form the CS2 file
+    - Fixed occasional UI bug with right-click route menus
 
 * v1.7.4 [4/22/23]
     - Route command order is now preserved
