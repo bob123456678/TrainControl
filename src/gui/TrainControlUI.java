@@ -22,10 +22,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.prefs.Preferences;
@@ -424,7 +424,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.sortByName.setSelected(this.prefs.getBoolean(ROUTE_SORT_PREF, false));
         
         // Right-clicks on the route list
-        this.RouteList.addMouseListener(new RightClickRouteMenu(this));
+        this.RouteList.addMouseListener(new RightClickRouteMenu(this));        
     }
     
     /*private static void setupTabTraversalKeys(JTabbedPane tabbedPane)
@@ -727,7 +727,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         selector.init();
 
         // Show window        
-        this.setVisible(true);
+        this.setVisible(true);        
     }
     
     public LocomotiveSelector getLocSelector()
@@ -1170,7 +1170,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Pre-compute this so we can check if it has changed
             String locLabel = "Page " + this.locMappingNumber + " Button " 
                 + this.currentButton.getText()
-                + "  (" + this.model.getLocAddress(this.activeLoc.getName())
+                + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
                 + ")";
 
             // Only repaint icon if the locomotive is changed
@@ -1687,6 +1687,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocNameInput = new javax.swing.JTextField();
         LocTypeMFX = new javax.swing.JRadioButton();
         LocTypeDCC = new javax.swing.JRadioButton();
+        checkDuplicates = new javax.swing.JButton();
         AddNewLocLabel = new javax.swing.JLabel();
         EditExistingLocLabel1 = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
@@ -4304,6 +4305,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocTypeDCC.setText("DCC");
         LocTypeDCC.setFocusable(false);
 
+        checkDuplicates.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        checkDuplicates.setText("Check Duplicates");
+        checkDuplicates.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkDuplicatesActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -4311,6 +4320,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(AddLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel3)
@@ -4318,16 +4328,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(jLabel1))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(LocNameInput)
-                                .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(LocNameInput)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(LocTypeMM2)
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(LocAddressInput, javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(LocTypeMM2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeMFX)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeDCC))))
-                    .addComponent(AddLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addComponent(LocTypeMFX)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(LocTypeDCC)
+                                        .addGap(0, 0, Short.MAX_VALUE))
+                                    .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -4340,7 +4353,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
-                    .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(checkDuplicates))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
@@ -4414,10 +4428,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(clearButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, 352, Short.MAX_VALUE)
                     .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
@@ -4498,20 +4512,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(ManageLocPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addComponent(EditExistingLocLabel3)
-                        .addGap(0, 570, Short.MAX_VALUE))
                     .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(AddNewLocLabel)
-                                    .addComponent(EditExistingLocLabel1))
-                                .addGap(221, 221, 221))
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(354, 354, Short.MAX_VALUE))))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                        .addGap(358, 358, Short.MAX_VALUE))
+                    .addGroup(ManageLocPanelLayout.createSequentialGroup()
+                        .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(EditExistingLocLabel3)
+                            .addComponent(AddNewLocLabel)
+                            .addComponent(EditExistingLocLabel1))
+                        .addGap(0, 0, Short.MAX_VALUE))))
         );
         ManageLocPanelLayout.setVerticalGroup(
             ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -5424,6 +5436,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(ActiveLocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                         .addComponent(PowerOff, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5431,7 +5444,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(OnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                         .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                                 .addComponent(Backward, javax.swing.GroupLayout.DEFAULT_SIZE, 141, Short.MAX_VALUE)
                                 .addGap(18, 18, 18)
@@ -6757,6 +6769,65 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
         BulkEnableOrDisable(false);
     }//GEN-LAST:event_BulkDisableActionPerformed
+
+    private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
+        
+        int locAddress;
+
+        try
+        {
+            if (this.LocTypeMFX.isSelected())
+            {
+                locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+            }
+            else
+            {
+                locAddress = Integer.parseInt(this.LocAddressInput.getText());
+            }
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a numerical address");
+            return;
+        }
+        
+        Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
+        String message;
+        
+        if (locs.containsKey(locAddress))
+        {   
+            message = "Locomotive address is already in use.  See log for details.";
+        }
+        else
+        {
+            message = "Address is not in use.  See log for details.";
+        }
+        
+        if (locs.size() > 0)
+        {
+            List<Integer> sortedLocs = new ArrayList(locs.keySet());
+            Collections.sort(sortedLocs, Collections.reverseOrder());
+            
+            for (Integer addr : sortedLocs)
+            {
+                for (MarklinLocomotive l : locs.get(addr))
+                {
+                    this.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                }
+                
+                this.log("---- Address " + addr + " ----");
+            }   
+
+            this.log("Duplicate locomotive address report:");
+        }
+        else
+        {
+            this.log("There are no duplicate locomotive addresses in the database.");
+        }
+        
+        JOptionPane.showMessageDialog(this, message);
+    }//GEN-LAST:event_checkDuplicatesActionPerformed
      
     public class CustomTableRenderer extends DefaultTableCellRenderer {
 
@@ -7086,6 +7157,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton allButton;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
+    private javax.swing.JButton checkDuplicates;
     private javax.swing.JButton clearButton;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JLabel jLabel1;

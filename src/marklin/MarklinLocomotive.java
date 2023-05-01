@@ -2,7 +2,6 @@ package marklin;
 
 import base.Locomotive;
 import base.RemoteDevice;
-import java.util.Arrays;
 import marklin.udp.CS2Message;
 import util.Conversion;
 
@@ -92,6 +91,7 @@ public class MarklinLocomotive extends Locomotive
      * @param functions
      * @param functionTypes
      * @param preferredFunctions
+     * @param preferredSpeed
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
@@ -141,7 +141,7 @@ public class MarklinLocomotive extends Locomotive
             
         return 0;
     }
-    
+        
     /**
      * Returns the image URL for a function icon, if any
      * @param fType
@@ -524,6 +524,21 @@ public class MarklinLocomotive extends Locomotive
         else
         {
             return Integer.toString(UID);
+        }
+    }
+    
+    /**
+     * User-friendly string representation of the decoder type
+     * @return 
+     */
+    public String getDecoderTypeLabel()
+    {
+        switch (this.type)
+        {
+            case MULTI_UNIT:
+                return "Multi Unit";
+            default:
+                return type.name();    
         }
     }
     

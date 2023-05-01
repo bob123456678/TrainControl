@@ -3,6 +3,7 @@ package model;
 import base.RouteCommand;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
@@ -49,4 +50,5 @@ public interface ViewListener
     public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s);
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
+    public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
 }

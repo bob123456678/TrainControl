@@ -13,10 +13,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
 import marklin.file.CS2File;
@@ -662,7 +663,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.log("Bad data file for DB");            
         }
-
+                
         return instance;
     }
         
@@ -688,6 +689,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.deleteRoute(name);
         
         this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s);
+    }
+    
+    /**
+     * Checks the locomotive database for duplicate non-MFX addresses
+     * @return 
+     */
+    @Override
+    public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses()
+    {
+        Map<Integer, Set<MarklinLocomotive>> locs = new HashMap<>();
+                
+        for (MarklinLocomotive l : this.locDB.getItems())
+        {
+            if (l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
+            {        
+                if (!locs.containsKey(l.getAddress()))
+                {
+                    locs.put(l.getAddress(), new HashSet<>());
+                }
+
+                locs.get(l.getAddress()).add(l);
+            }            
+        }
+          
+        locs.keySet().removeIf(key -> locs.get(key).size() == 1);
+                
+        return locs;
     }
     
     /**
@@ -729,7 +757,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
-     * @param routeDelays 
      * @return  
      */
     public final boolean newRoute(String name, int id, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
@@ -1533,6 +1560,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param simulate
      * @param showUI
      * @param autoPowerOn
+     * @param debug
      * @return
      * @throws UnknownHostException
      * @throws IOException 

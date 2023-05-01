@@ -111,9 +111,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.5 [Beta]
+* v1.7.5 [4/30/23]
     - Route conditions are now parsed form the CS2 file
     - Fixed occasional UI bug with right-click route menus
+    - Decoder type is now displayed below the active locomotive name
+    - Added button under "Tools" to check for duplicate MM2/DCC addresses
 
 * v1.7.4 [4/22/23]
     - Route command order is now preserved
