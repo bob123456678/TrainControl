@@ -1,16 +1,22 @@
 package marklin.file;
 
+import automation.Layout;
+import base.Locomotive;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import marklin.MarklinAccessory;
 import marklin.MarklinControlStation;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
+import model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -348,7 +354,7 @@ public final class CS2File
     
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(parseJSON(fetchURL(this.getCS3LocDBUrl())));
+        return parseLocomotivesCS3(parseJSONArray(fetchURL(this.getCS3LocDBUrl())));
     }
     
     /**
@@ -760,7 +766,7 @@ public final class CS2File
      * @return
      * @throws IOException 
      */
-    private JSONArray parseJSON (BufferedReader in) throws IOException
+    public static JSONArray parseJSONArray (BufferedReader in) throws IOException
     {
         StringBuilder sb = new StringBuilder();
         String line;
@@ -770,6 +776,24 @@ public final class CS2File
         }
                 
         return new JSONArray(sb.toString());
+    }
+    
+    /**
+     * Converts input file to JSON
+     * @param in
+     * @return
+     * @throws IOException 
+     */
+    public static JSONObject parseJSONObject (BufferedReader in) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = in.readLine()) != null)
+        {
+            sb.append(line);
+        }
+
+        return new JSONObject(sb.toString());
     }
     
     /**
@@ -1004,7 +1028,7 @@ public final class CS2File
         
         return out;
     }
-    
+
     /**
     * Checks if a there is a connection
     * @param host
@@ -1022,5 +1046,262 @@ public final class CS2File
        }
 
        return true;
+    }
+     
+    /**
+     * Parses an autonomous operation configuration file
+     * @param config 
+     * @return  
+     */
+    public Layout parseAutonomyConfig(String config)
+    {       
+        JSONObject o = new JSONObject(config);
+        
+        Layout layout = new Layout(control);
+        
+        List<String> locomotives = new LinkedList<>();
+
+        JSONArray points;
+        JSONArray edges;
+        Integer minDelay;
+        Integer maxDelay;
+        
+        // Validate basic data
+        try
+        {
+            points = o.getJSONArray("points");
+            edges = o.getJSONArray("edges");
+            minDelay  = Math.abs(o.getInt("minDelay"));
+            maxDelay  = Math.abs(o.getInt("maxDelay"));
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay)");
+            layout.invalidate();
+            return layout;
+        }
+        
+        if (points == null || edges == null)
+        {
+            control.log("Auto layout error: missing keys (points, edges)");
+            layout.invalidate();
+            return layout;        
+        }
+        
+        if (minDelay >= maxDelay)
+        {
+            control.log("Auto layout error: minDelay must be less than maxDelay");
+            layout.invalidate();
+            return layout;        
+        }
+
+        
+        // Add points
+        points.forEach(pnt -> { 
+            JSONObject point = (JSONObject) pnt; 
+
+            String s88 = null;
+            if (point.has("s88"))
+            {
+                if (point.get("s88") instanceof Integer)
+                {
+                    s88 = Integer.toString(point.getInt("s88"));
+                }
+                else if (!point.isNull("s88"))
+                {
+                    control.log("Auto layout error: s88 not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+
+            try 
+            {
+                layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
+            } 
+            catch (Exception ex)
+            {
+                control.log("Auto layout error: Point error " + point.toString() + " check for duplicates or empty name");
+                layout.invalidate();
+                return;
+            }
+
+            // Set the locomotive
+            if (point.has("loc") && !point.isNull("loc"))
+            {
+                String loc = point.getString("loc");
+
+                if (control.getLocByName(loc) != null)
+                {
+                    Locomotive l = control.getLocByName(loc);
+                    layout.getPoint(point.getString("name")).setLocomotive(l);
+                    
+                    // Set start and end callbacks
+                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.applyPreferredFunctions().delay(minDelay, maxDelay);});
+                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                    
+                    if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
+                    {
+                        try
+                        {
+                            point.getInt("locArrivalFunc");
+                            l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(point.getInt("locArrivalFunc"));});
+                        }
+                        catch (Exception ex)
+                        {
+                            control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
+                            layout.invalidate();
+                        }
+                    }
+
+                    if (l.getPreferredSpeed() == 0)
+                    {
+                        l.setPreferredSpeed(35);
+                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to 35.");
+                    }
+                    
+                    if (locomotives.contains(loc))
+                    {
+                        control.log("Auto layout error: dupliate locomotive " + loc);
+                        layout.invalidate();
+                    }
+                    else
+                    {
+                        locomotives.add(loc);
+                    }
+                }
+                else
+                {
+                    control.log("Auto layout error: Locomotive " + loc + " does not exist");
+                    layout.invalidate();
+                }
+            }                
+        });
+
+        // Add edges
+        edges.forEach(edg -> { 
+            JSONObject edge = (JSONObject) edg; 
+            try 
+            {
+                Consumer<ViewListener> commandCallback = null;
+
+                String start = edge.getString("start");
+                String end = edge.getString("end");
+
+                if (edge.has("commands") && !edge.isNull("commands"))
+                {
+                    JSONArray commands = edge.getJSONArray("commands");
+
+                    // Validate commands
+                    commands.forEach((cmd) -> {
+                        JSONObject command = (JSONObject) cmd;
+                        
+                        // Validate accessory
+                        if (command.has("acc") && !command.isNull("acc"))
+                        {
+                            String accessory = command.getString("acc");
+                            if (null == control.getAccessoryByName(accessory))
+                            {
+                                control.log("Auto layout error: Accessory " + accessory + " does not exist in layout");
+                                layout.invalidate();  
+                            } 
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: Edge command missing accessory " + start + "-" + end + " action: " + command.toString());
+                            layout.invalidate(); 
+                        }
+                        
+                        // Validate state
+                        if (command.has("state") && !command.isNull("state"))
+                        {            
+                            String action = command.getString("state");
+
+                            if (!"turn".equals(action) && !"straight".equals(action) &&! "green".equals(action) && !"red".equals(action))
+                            {
+                                control.log("Auto layout error: Error in edge " + start + "-" + end + " action: " + command.toString());
+                                layout.invalidate();
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: Edge command missing state " + start + "-" + end + " action: " + command.toString());
+                            layout.invalidate();
+                        }
+                    });
+                    
+                    // Create lambda
+                    commandCallback = (ViewListener control1) -> 
+                    {
+                        commands.forEach((cmd) -> {
+                            JSONObject command = (JSONObject) cmd;
+                            String action = command.getString("state");
+                            MarklinAccessory acc = control1.getAccessoryByName(command.getString("acc"));
+                            
+                            if ("turn".equals(action))
+                            {
+                                acc.turn();
+                            } 
+                            else if ("straight".equals(action))
+                            {
+                                acc.straight();
+                            } 
+                            else if ("green".equals(action))
+                            {
+                                acc.green();
+                            } 
+                            else if ("red".equals(action))
+                            {
+                                acc.red();
+                            } 
+                        });
+                    };
+                }
+
+                layout.createEdge(start, end, commandCallback);    
+            } 
+            catch (Exception ex)
+            {
+                control.log("Auto layout error: Invalid edge " + edge.toString());
+                layout.invalidate();
+            }
+        });
+
+        // Add lock edges
+        edges.forEach(edg -> { 
+            JSONObject edge = (JSONObject) edg; 
+            try 
+            { 
+                String start = edge.getString("start");
+                String end = edge.getString("end");  
+
+                if (layout.getEdge(start, end) != null && edge.has("lockedges"))
+                {
+                    edge.getJSONArray("lockedges").forEach(lckedg -> {
+                        JSONObject lockEdge = (JSONObject) lckedg;
+
+                        if (layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end")) == null)
+                        {
+                            control.log("Auto layout error: Lock edge" + lockEdge.toString() + " does not exist");  
+                            layout.invalidate();
+                        }
+                        else
+                        {
+                            layout.getEdge(start, end).addLockEdge(
+                                layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end"))
+                            );
+                        }
+                    });
+                }
+            } 
+            catch (Exception ex)
+            {
+                control.log("Auto layout error: Lock edge error - " + edge.toString());
+                layout.invalidate();
+            }
+        });
+
+        layout.setLocomotivesToRun(locomotives);
+            
+        return layout;
     }
 }

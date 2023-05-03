@@ -1,6 +1,8 @@
 package model;
 
+import automation.Layout;
 import base.RouteCommand;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,4 +53,6 @@ public interface ViewListener
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
+    public void parseAuto(String s) throws IOException;
+    public Layout getAutoLayout();
 }

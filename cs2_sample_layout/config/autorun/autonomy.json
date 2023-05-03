@@ -1,0 +1,453 @@
+{
+    "minDelay" : 1,
+    "maxDelay" : 5,
+    "points": [
+        {
+            "name": "ParkingFrontPre",
+            "station": false,
+            "s88" : 5,
+            "loc" : null,
+            "locArrivalFunc" : 3
+        },
+        {
+            "name": "ParkingFront",
+            "station": true,
+            "s88" : 1002
+        },
+        {
+            "name": "ParkingBackPre",
+            "station": false,
+            "s88" : 2005
+        },
+        {
+            "name": "ParkingBack",
+            "station": true,
+            "s88" : 1
+        },
+        {
+            "name": "BottomMainPost",
+            "station": false,
+            "s88" : 2013
+        },
+        {
+            "name": "BottomInner",
+            "station": false,
+            "s88" : 1011
+        },
+        {
+            "name": "BottomInnerOtherside",
+            "station": true,
+            "s88" : 2011
+        },
+        {
+            "name": "BottomCrossover",
+            "station": false,
+            "s88" : 14
+        },
+        
+        {
+            "name": "RampUp",
+            "station": false,
+            "s88" : 1027
+        },
+        {
+            "name": "RampDown",
+            "station": false,
+            "s88" : 2012
+        },
+        {
+            "name": "Tunnel",
+            "station": false,
+            "s88" : 1032
+        },
+        {
+            "name": "BottomSecondary",
+            "station": true,
+            "s88" : 1009
+        },
+        {
+            "name": "BottomSecondaryPre",
+            "station": false,
+            "s88" : null
+        },
+        {
+            "name": "BottomSecondaryVirtual",
+            "station": false,
+            "s88" : null
+        },
+        {
+            "name": "BottomMainA",
+            "station": true,
+            "s88" : 9
+        },
+        {
+            "name": "BottomMainB",
+            "station": true,
+            "s88" : 10
+        },
+        {
+            "name": "BottomMainAPre",
+            "station": false,
+            "s88" : 1007
+        },
+        {
+            "name": "BottomMainBPre",
+            "station": false,
+            "s88" : 1006
+        }, 
+        {
+            "name": "TopMainR1",
+            "station": true,
+            "s88" : 1022
+        },
+        {
+            "name": "TopMainR2",
+            "station": true,
+            "s88" : 1023
+        },
+        {
+            "name": "TopMainR1Pre",
+            "station": false,
+            "s88" : 1012
+        },
+        {
+            "name": "TopMainR2Pre",
+            "station": false,
+            "s88" : 1013
+        },
+        {
+            "name": "TopMainPost",
+            "station": false,
+            "s88" : 2015
+        }
+    ],
+    
+    "edges": [
+        {
+            "start": "BottomInnerOtherside",
+            "end": "BottomCrossover",
+            "commands" : [
+                {
+                    "acc" : "Switch 52",
+                    "state" : "turn"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "RampDown",
+                   "end": "BottomSecondaryVirtual"  
+                }
+            ]
+        },
+        
+        {
+            "start": "BottomCrossover",
+            "end": "BottomSecondaryVirtual"
+        },
+        
+        {
+            "start": "RampUp",
+            "end": "TopMainR1Pre",
+            "commands" : [
+                {
+                    "acc" : "Switch 9",
+                    "state" : "turn"  
+                }
+            ]
+        },
+        
+        {
+            "start": "RampUp",
+            "end": "TopMainR2Pre",
+            "commands" : [
+                {
+                    "acc" : "Switch 9",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR1Pre",
+            "end": "TopMainR1",
+            "commands" : [
+                {
+                    "acc" : "Signal 63",
+                    "state" : "red"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR2Pre",
+            "end": "TopMainR2",
+            "commands" : [
+                {
+                    "acc" : "Signal 64",
+                    "state" : "red"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR1",
+            "end": "TopMainPost",
+            "commands" : [
+                {
+                    "acc" : "Signal 63",
+                    "state" : "green"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR2",
+            "end": "TopMainPost",
+            "commands" : [
+                {
+                    "acc" : "Signal 64",
+                    "state" : "green"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainPost",
+            "end": "RampDown"
+        },
+        
+        {
+            "start": "RampDown",
+            "end": "BottomSecondaryVirtual",
+            "commands" : [
+                {
+                    "acc" : "Signal 39",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Switch 12",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        
+        {
+            "start": "RampDown",
+            "end": "BottomInner",
+            "commands" : [
+                {
+                    "acc" : "Signal 39",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 12",
+                    "state" : "turn"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "BottomInnerOtherside",
+                   "end": "BottomCrossover"  
+                }
+            ]
+        },
+        {
+            "start": "BottomSecondaryVirtual",
+            "end": "BottomSecondaryPre"
+        },
+        {
+            "start": "BottomInner",
+            "end": "BottomInnerOtherside",
+             "commands" : [
+                {
+                    "acc" : "Switch 103",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {
+            "start": "BottomInner",
+            "end": "Tunnel",
+            "commands" : [
+                {
+                    "acc" : "Switch 103",
+                    "state" : "turn"  
+                }
+            ]
+        },
+        {
+            "start": "BottomInnerOtherside",
+            "end": "BottomInner",
+             "commands" : [
+                {
+                    "acc" : "Switch 52",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {
+            "start": "BottomSecondaryPre",
+            "end": "BottomSecondary",
+            "commands" : [
+                {
+                    "acc" : "Signal 62",
+                    "state" : "red"  
+                }
+            ]
+        },
+        {
+            "start": "BottomSecondary",
+            "end": "Tunnel",
+            "commands" : [
+                {
+                    "acc" : "Signal 62",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Switch 58",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {
+            "start": "Tunnel",
+            "end": "BottomMainAPre",
+            "commands" : [
+                {
+                    "acc" : "Signal 86",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Signal 87",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Signal 40",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 1",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 100",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 69",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {
+            "start": "Tunnel",
+            "end": "BottomMainBPre",
+            "commands" : [
+                {
+                    "acc" : "Signal 86",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Signal 87",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Signal 38",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 1",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 60",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {
+            "start": "BottomMainAPre",
+            "end": "BottomMainA"
+        },
+        {
+            "start": "BottomMainBPre",
+            "end": "BottomMainB"
+        },
+        {
+            "start": "BottomMainA",
+            "end": "BottomMainPost",
+            "commands" : [
+                {
+                    "acc" : "Signal 40",
+                    "state" : "green"  
+                }
+            ]
+        },
+        {
+            "start": "BottomMainB",
+            "end": "BottomMainPost",
+            "commands" : [
+                {
+                    "acc" : "Signal 38",
+                    "state" : "green"  
+                }
+            ]
+        },
+        {
+            "start": "BottomMainPost",
+            "end": "RampUp"
+        },
+        {
+            "start": "ParkingFront",
+            "end": "ParkingBackPre",
+            "commands" : [
+                {
+                    "acc" : "Switch 25",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {  
+            "start": "ParkingBackPre",
+            "end": "ParkingBack",
+            "commands" : [
+                {
+                    "acc" : "Switch 32",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 102",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {  
+            "start": "ParkingBack",
+            "end": "ParkingFrontPre",
+            "commands" : [
+                {
+                    "acc" : "Switch 10",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 30",
+                    "state" : "straight"  
+                }
+            ]
+        },
+        {  
+            "start": "ParkingFrontPre",
+            "end": "ParkingFront",
+            "commands" : [
+                {
+                    "acc" : "Switch 82",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 52",
+                    "state" : "straight"  
+                }
+            ]
+        }
+    ]
+}

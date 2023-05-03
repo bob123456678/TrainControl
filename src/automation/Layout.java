@@ -23,6 +23,12 @@ public class Layout
     
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 200;
+    
+    // Set to fale to disable locomotives
+    private boolean running = true;
+    
+    // Is the layout state valid?
+    private boolean isValid = true;
         
     /**
      * Helper class for BFS
@@ -43,6 +49,7 @@ public class Layout
     private final Map<String, Edge> edges;
     private final Map<String, Point> points;
     private final Map<String, List<Edge>> adjacency;
+    private final List<String> locomotivesToRun;
     
     /**
      * Initialize the layout model 
@@ -53,8 +60,68 @@ public class Layout
         this.control = control;
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
-        this.adjacency = new HashMap<>();        
+        this.adjacency = new HashMap<>();    
+        this.locomotivesToRun = new LinkedList<>();
     }
+    
+    /**
+     * Sets the list of locomotives that will be run
+     * @param locs 
+     */
+    public void setLocomotivesToRun(List<String> locs)
+    {
+        this.locomotivesToRun.clear();
+        this.locomotivesToRun.addAll(locs);
+    }
+    
+    /**
+     * Marks the layout state as invalid
+     * Used to show error message in UI
+     */
+    public void invalidate()
+    {
+        this.isValid = false;
+    }
+    
+    /**
+     * Returns validity status
+     * @return 
+     */
+    public boolean isValid()
+    {
+        return this.isValid;
+    }
+    
+    /**
+     * Stops locomotives
+     */
+    public void stopLocomotives()
+    {
+        this.running = false;
+    }
+    
+    /**
+     * Starts locomotives as configured
+     */
+    public void runLocomotives()
+    {
+        this.running = true;
+        
+        // Start locomotives
+        this.locomotivesToRun.forEach(loc ->
+        {
+            try 
+            {
+                runLocomotive(control.getLocByName(loc), control.getLocByName(loc).getPreferredSpeed());
+            } 
+            catch (Exception ex)
+            {
+               control.log("Auto layout error: Failed to run locomotive " + loc);
+               this.invalidate();
+               this.stopLocomotives();
+            }
+        });
+    }     
     
     /**
      * Retrieves a saved point by its name
@@ -100,6 +167,11 @@ public class Layout
         if (feedback != null && !this.control.isFeedbackSet(feedback))
         {
             throw new Exception("Feedback " + feedback + " does not exist");
+        }
+        
+        if ("".equals(name) || name == null)
+        {
+            throw new Exception("Point must have a name");
         }
         
         if (this.points.containsKey(name))
@@ -328,7 +400,7 @@ public class Layout
         
         new Thread( () -> {
             
-            while(true)
+            while(running)
             {
                 try {
                     List<Edge> path = this.pickPath(loc);

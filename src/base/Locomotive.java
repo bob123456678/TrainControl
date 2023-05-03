@@ -87,12 +87,24 @@ public abstract class Locomotive
         return this.preferredFunctions;
     }
     
-     /**
+    /**
      * Saves current speed as the new preferred speed preset
      */
     public void savePreferredSpeed()
     {
         this.preferredSpeed = this.speed;
+    }
+    
+    /**
+     * Sets a new preferred speed preset
+     * @param speed
+     */
+    public void setPreferredSpeed(int speed)
+    {
+        if (speed >= 0 && speed <= 100)
+        {
+            this.preferredSpeed = speed;
+        }
     }
     
     /**
@@ -106,16 +118,20 @@ public abstract class Locomotive
     
     /**
      * Applies the saved function preset
+     * @return 
      */
-    public void applyPreferredSpeed()
+    public Locomotive applyPreferredSpeed()
     {
         this.setSpeed(this.preferredSpeed);
+        
+        return this;
     }
     
     /**
      * Applies the saved function preset
+     * @return 
      */
-    public void applyPreferredFunctions()
+    public Locomotive applyPreferredFunctions()
     {
         if (this.preferredFunctions != null)
         {
@@ -124,6 +140,25 @@ public abstract class Locomotive
                 this.setF(i, this.preferredFunctions[i]);
             }
         }
+        
+        return this;
+    }
+    
+    /**
+     * Turns off all functions known to be on
+     * @return 
+     */
+    public Locomotive functionsOff()
+    {
+        for (int i = 0; i < this.getNumF(); i++)
+        {
+            if (this.getF(i))
+            {
+                this.setF(i, false);
+            }
+        }
+        
+        return this;
     }
     
     /**

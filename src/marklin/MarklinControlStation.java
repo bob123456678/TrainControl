@@ -1,5 +1,6 @@
 package marklin;
 
+import automation.Layout;
 import base.Accessory;
 import base.RemoteDeviceCollection;
 import base.RouteCommand;
@@ -38,7 +39,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.7.5";
+    public static final String VERSION = "1.7.6";
     
     //// Settings
     
@@ -95,6 +96,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Is this a CS3?
     private boolean isCS3 = false;
+    
+    // Automation controller
+    private Layout autoLayout;
             
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
@@ -349,6 +353,34 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private Preferences getPrefs()
     {
         return Preferences.userNodeForPackage(TrainControlUI.class);
+    }
+    
+    /**
+     * Returns the auto layout class
+     * @return 
+     */
+    @Override
+    public Layout getAutoLayout()
+    {
+        return this.autoLayout;
+    }
+    
+    /**
+     * Parses JSON corresponding to a layout automation config file
+     * Resets any existing automation
+     * @param s
+     * @throws IOException 
+     */
+    @Override
+    public void parseAuto(String s) throws IOException
+    {        
+        if (this.autoLayout != null)
+        {
+            this.autoLayout.invalidate();
+            this.autoLayout.stopLocomotives();
+        }
+        
+        this.autoLayout = this.fileParser.parseAutonomyConfig(s);
     }
     
     /**
@@ -1192,13 +1224,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void locFunctionsOff(MarklinLocomotive l)
     {
-        for (int i = 0; i < l.getNumF(); i++)
-        {
-            if (l.getF(i))
-            {
-                l.setF(i, false);
-            }
-        }
+        l.functionsOff();
     }
     
     /**

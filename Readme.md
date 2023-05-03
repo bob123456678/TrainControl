@@ -111,6 +111,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.7.6 [Beta]
+    - Added JSON-based layout autonomy configuration interface
+
 * v1.7.5 [4/30/23]
     - Route conditions are now parsed from the CS2 file
     - Fixed occasional UI bug with right-click route menus
