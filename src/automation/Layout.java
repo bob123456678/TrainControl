@@ -24,8 +24,8 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 200;
     
-    // Set to fale to disable locomotives
-    private boolean running = true;
+    // Set to false to disable locomotives
+    private boolean running = false;
     
     // Is the layout state valid?
     private boolean isValid = true;
@@ -90,6 +90,15 @@ public class Layout
     public boolean isValid()
     {
         return this.isValid;
+    }
+    
+    /**
+     * Returns running status
+     * @return 
+     */
+    public boolean isRunning()
+    {
+        return this.running;
     }
     
     /**

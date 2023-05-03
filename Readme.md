@@ -113,6 +113,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.7.6 [Beta]
     - Added JSON-based layout autonomy configuration interface
+    - Added ability to run autonomous layouts via the UI
 
 * v1.7.5 [4/30/23]
     - Route conditions are now parsed from the CS2 file

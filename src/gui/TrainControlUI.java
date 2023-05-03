@@ -4560,9 +4560,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 384, Short.MAX_VALUE))
@@ -4571,8 +4568,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(EditExistingLocLabel3)
                             .addComponent(AddNewLocLabel)
-                            .addComponent(EditExistingLocLabel1))
-                        .addGap(0, 0, Short.MAX_VALUE))))
+                            .addComponent(EditExistingLocLabel1)
+                            .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(54, 54, 54))))
         );
         ManageLocPanelLayout.setVerticalGroup(
             ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4597,6 +4595,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
         autonomyJSON.setColumns(20);
+        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
         autonomyJSON.setRows(5);
         autonomyJSON.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -6835,7 +6834,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 MarklinRoute r = this.model.getRoute(routeName);
                 
-                if (r.hasS88())
+                if (r.hasS88() || r.isEnabled())
                 {
                     if (r.getName().contains(searchString) || "*".equals(searchString))
                     {
@@ -6959,14 +6958,37 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else
         {
             this.startAutonomy.setEnabled(true);
-        }     
+        }  
+        
+        // Stop all locomotives
+        AltEmergencyStopActionPerformed(null);
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
         
-        if(this.model.getAutoLayout().isValid())
+        for (String routeName : this.model.getRouteList())
+        {
+            MarklinRoute r = this.model.getRoute(routeName);
+
+            if (r.isEnabled())
+            {
+                this.model.log(r.toString());
+                JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                return;
+            }
+        }
+        
+        if(this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
         {
             this.model.getAutoLayout().runLocomotives();
+            
+            // Advance to log
+            this.KeyboardTab.setSelectedIndex(
+                (this.KeyboardTab.getSelectedIndex() + 1) 
+                    % this.KeyboardTab.getComponentCount()
+            );
+            
+            this.startAutonomy.setEnabled(false);
         }
     }//GEN-LAST:event_startAutonomyActionPerformed
      
