@@ -6980,7 +6980,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if(this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
         {
-            this.model.getAutoLayout().runLocomotives();
+            new Thread( () -> {
+                this.model.getAutoLayout().runLocomotives();
+            }).start();
             
             // Advance to log
             this.KeyboardTab.setSelectedIndex(

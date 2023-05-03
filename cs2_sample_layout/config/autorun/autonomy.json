@@ -1,39 +1,65 @@
 {
-    "minDelay" : 1,
-    "maxDelay" : 5,
-    "defaultLocSpeed" : 35,
     "points": [
         {
-            "name": "ParkingFrontPre",
-            "station": false,
-            "s88" : 5,
-            "loc" : null,
+            "name": "BottomMainA",
+            "station": true,
+            "s88" : 9,
+            "loc": "EU46-520",
             "locArrivalFunc" : 3
+        },
+        {
+            "name": "BottomMainB",
+            "station": true,
+            "s88" : 10,
+            "loc": "BR232-275",
+            "locArrivalFunc" : 3
+        },
+        {
+            "name": "BottomInner",
+            "station": true,
+            "s88" : 1011
+        },
+        {
+            "name": "BottomSecondary",
+            "station": true,
+            "s88" : 1009
+        },
+        {
+            "name": "TopMainR1",
+            "station": true,
+            "s88" : 1022
+        },
+        {
+            "name": "TopMainR2",
+            "station": true,
+            "s88" : 1023
         },
         {
             "name": "ParkingFront",
             "station": true,
+            "s88" : 5,
+            "loc": "BR101",
+            "locArrivalFunc" : 3
+        },
+        {
+            "name": "ParkingFrontPre",
+            "station": false,
             "s88" : 1002
         },
         {
             "name": "ParkingBackPre",
             "station": false,
-            "s88" : 2005
+            "s88" : 1
         },
         {
             "name": "ParkingBack",
             "station": true,
-            "s88" : 1
+            "s88" : 2005
         },
         {
             "name": "BottomMainPost",
             "station": false,
             "s88" : 2013
-        },
-        {
-            "name": "BottomInner",
-            "station": false,
-            "s88" : 1011
         },
         {
             "name": "BottomInnerOtherside",
@@ -62,11 +88,6 @@
             "s88" : 1032
         },
         {
-            "name": "BottomSecondary",
-            "station": true,
-            "s88" : 1009
-        },
-        {
             "name": "BottomSecondaryPre",
             "station": false,
             "s88" : null
@@ -75,16 +96,6 @@
             "name": "BottomSecondaryVirtual",
             "station": false,
             "s88" : null
-        },
-        {
-            "name": "BottomMainA",
-            "station": true,
-            "s88" : 9
-        },
-        {
-            "name": "BottomMainB",
-            "station": true,
-            "s88" : 10
         },
         {
             "name": "BottomMainAPre",
@@ -96,16 +107,6 @@
             "station": false,
             "s88" : 1006
         }, 
-        {
-            "name": "TopMainR1",
-            "station": true,
-            "s88" : 1022
-        },
-        {
-            "name": "TopMainR2",
-            "station": true,
-            "s88" : 1023
-        },
         {
             "name": "TopMainR1Pre",
             "station": false,
@@ -307,6 +308,14 @@
                 {
                     "acc" : "Signal 62",
                     "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 51",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 99",
+                    "state" : "straight"  
                 }
             ]
         },
@@ -441,7 +450,7 @@
             "end": "ParkingFrontPre",
             "commands" : [
                 {
-                    "acc" : "Switch 10",
+                    "acc" : "Switch 83",
                     "state" : "straight"  
                 },
                 {
@@ -464,5 +473,8 @@
                 }
             ]
         }
-    ]
+    ],
+    "minDelay" : 1,
+    "maxDelay" : 5,
+    "defaultLocSpeed" : 35
 }

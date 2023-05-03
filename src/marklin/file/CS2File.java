@@ -1155,7 +1155,7 @@ public final class CS2File
                     
                     // Set start and end callbacks
                     l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.applyPreferredFunctions().delay(minDelay, maxDelay);});
-                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                    l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
                     
                     if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
                     {
@@ -1174,7 +1174,7 @@ public final class CS2File
                     if (l.getPreferredSpeed() == 0)
                     {
                         l.setPreferredSpeed(defaultLocSpeed);
-                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of" + defaultLocSpeed);
+                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
                     }
                     
                     if (locomotives.contains(loc))
