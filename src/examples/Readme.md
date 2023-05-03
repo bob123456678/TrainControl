@@ -158,6 +158,121 @@ A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
 * Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  The more S88's you have, the better!
 
+# Running via TrainControl UI
+
+To make execution and modifications easier, the logic above can be expressed in JSON format and executed via the TrainControl UI's "autonomy" tab. 
+The JSON below corresponds to the above code, plus the edge locking described in the follow section.
+
+Note that `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
+The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks.
+
+TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.
+
+Each locomotive's preferred speed will be used (as set in the UI), unless it is 0, in which case the program will revert to `defaultLocSpeed`.
+The optional `locArrivalFunc` function number will be toggled when the locomotive is about to reach its destination.
+
+```
+{
+    "minDelay" : 1,
+    "maxDelay" : 5,
+    "defaultLocSpeed" : 35,
+    "points": [
+        {
+            "name": "Station 1",
+            "station": true,
+            "s88" : 1,
+            "loc" : "SNCF 422365",
+            "locArrivalFunc" : 3
+        },
+        {
+            "name": "Station 2",
+            "station": true,
+            "s88" : 2,
+            "loc" : "140 024-1 DB AG",
+            "locArrivalFunc" : 3
+        },
+        {
+            "name": "Pre Arrival",
+            "station": true,
+            "s88" : 3
+        },
+        {
+            "name": "Main Track",
+            "station": false
+        }
+    ],
+    "edges": [
+       {
+            "start": "Station 2",
+            "end": "Main Track",
+            "commands" : [
+                {
+                    "acc" : "Signal 2",
+                    "state" : "green"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "Station 1",
+                   "end": "Main Track"  
+                }
+            ]
+        },
+        {
+            "start": "Station 1",
+            "end": "Main Track",
+            "commands" : [
+                {
+                    "acc" : "Signal 1",
+                    "state" : "green"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "Station 2",
+                   "end": "Main Track"  
+                }
+            ]
+        },
+        {
+            "start": "Main Track",
+            "end": "Pre Arrival",
+        },
+        {
+            "start": "Pre Arrival",
+            "end": "Station 1",
+            "commands" : [
+                {
+                    "acc" : "Signal 1",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 10",
+                    "state" : "turn"  
+                }
+            ]
+        },
+        {
+            "start": "Pre Arrival",
+            "end": "Station 2",
+            "commands" : [
+                {
+                    "acc" : "Signal 2",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Switch 10",
+                    "state" : "straight"  
+                }
+            ]
+        }
+    ]
+}
+
+```
+
+In the future, a graphical equivalent of this representation is planned.
+
 # Improving the layout
 
 How could this layout be modified to be a bit more exciting?  Suppose we wanted to allow trains to arrive at the opposite station.

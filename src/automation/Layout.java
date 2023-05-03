@@ -110,6 +110,8 @@ public class Layout
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
         {
+            control.log("Starting autonomous operation of locomotive " + loc);
+            
             try 
             {
                 runLocomotive(control.getLocByName(loc), control.getLocByName(loc).getPreferredSpeed());

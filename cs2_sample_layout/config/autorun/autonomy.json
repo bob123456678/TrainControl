@@ -1,6 +1,7 @@
 {
     "minDelay" : 1,
     "maxDelay" : 5,
+    "defaultLocSpeed" : 35,
     "points": [
         {
             "name": "ParkingFrontPre",
@@ -136,6 +137,10 @@
                 {
                    "start": "RampDown",
                    "end": "BottomSecondaryVirtual"  
+                },
+                {
+                   "start": "RampDown",
+                   "end": "BottomInner"  
                 }
             ]
         },
@@ -258,7 +263,7 @@
         {
             "start": "BottomInner",
             "end": "BottomInnerOtherside",
-             "commands" : [
+            "commands" : [
                 {
                     "acc" : "Switch 103",
                     "state" : "straight"  
@@ -278,10 +283,20 @@
         {
             "start": "BottomInnerOtherside",
             "end": "BottomInner",
-             "commands" : [
+            "commands" : [
                 {
                     "acc" : "Switch 52",
                     "state" : "straight"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "BottomInnerOtherside",
+                   "end": "BottomCrossover"  
+                },
+                {
+                   "start": "RampDown",
+                   "end": "BottomInner"  
                 }
             ]
         },

@@ -369,10 +369,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Parses JSON corresponding to a layout automation config file
      * Resets any existing automation
      * @param s
-     * @throws IOException 
      */
     @Override
-    public void parseAuto(String s) throws IOException
+    public void parseAuto(String s)
     {        
         if (this.autoLayout != null)
         {

@@ -53,6 +53,6 @@ public interface ViewListener
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
-    public void parseAuto(String s) throws IOException;
+    public void parseAuto(String s);
     public Layout getAutoLayout();
 }

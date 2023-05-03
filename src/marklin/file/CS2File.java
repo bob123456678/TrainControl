@@ -1054,17 +1054,28 @@ public final class CS2File
      * @return  
      */
     public Layout parseAutonomyConfig(String config)
-    {       
-        JSONObject o = new JSONObject(config);
-        
+    {           
         Layout layout = new Layout(control);
+        JSONObject o;
         
+        try
+        {
+            o = new JSONObject(config);
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout error: JSON parsing error");
+            layout.invalidate();
+            return layout;
+        }
+               
         List<String> locomotives = new LinkedList<>();
 
         JSONArray points;
         JSONArray edges;
         Integer minDelay;
         Integer maxDelay;
+        Integer defaultLocSpeed;
         
         // Validate basic data
         try
@@ -1073,10 +1084,11 @@ public final class CS2File
             edges = o.getJSONArray("edges");
             minDelay  = Math.abs(o.getInt("minDelay"));
             maxDelay  = Math.abs(o.getInt("maxDelay"));
+            defaultLocSpeed  = Math.abs(o.getInt("defaultLocSpeed"));
         }
         catch (Exception e)
         {
-            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay)");
+            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
             layout.invalidate();
             return layout;
         }
@@ -1094,8 +1106,14 @@ public final class CS2File
             layout.invalidate();
             return layout;        
         }
-
         
+        if (defaultLocSpeed <= 0 || defaultLocSpeed > 100)
+        {
+            control.log("Auto layout error: defaultLocSpeed must be between 1 and 100");
+            layout.invalidate();
+            return layout;        
+        }
+
         // Add points
         points.forEach(pnt -> { 
             JSONObject point = (JSONObject) pnt; 
@@ -1155,8 +1173,8 @@ public final class CS2File
 
                     if (l.getPreferredSpeed() == 0)
                     {
-                        l.setPreferredSpeed(35);
-                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to 35.");
+                        l.setPreferredSpeed(defaultLocSpeed);
+                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of" + defaultLocSpeed);
                     }
                     
                     if (locomotives.contains(loc))
@@ -1201,13 +1219,28 @@ public final class CS2File
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
-                                control.log("Auto layout error: Accessory " + accessory + " does not exist in layout");
-                                layout.invalidate();  
-                            } 
+                                control.log("Auto layout warning: accessory  " + accessory + " does not exist in CS2 layout");
+                                
+                                if (accessory.contains("Signal "))
+                                {
+                                    control.newSignal(accessory.replace("Signal ", ""), Integer.parseInt(accessory.replace("Signal ", "")), false);
+                                    control.log("Auto layout warning: created " + accessory);
+                                }
+                                else if (accessory.contains("Switch "))
+                                {
+                                    control.newSwitch(accessory.replace("Switch ", ""), Integer.parseInt(accessory.replace("Switch ", "")), false);
+                                    control.log("Auto layout warning: created " + accessory);                       
+                                }
+                                else
+                                {
+                                    control.log("Auto layout error: unrecognized accessory type");
+                                    layout.invalidate();
+                                }
+                            }   
                         }
                         else
                         {
-                            control.log("Auto layout error: Edge command missing accessory " + start + "-" + end + " action: " + command.toString());
+                            control.log("Auto layout error: Edge command missing accessory definition in " + start + "-" + end + " action: " + command.toString());
                             layout.invalidate(); 
                         }
                         
@@ -1300,6 +1333,12 @@ public final class CS2File
             }
         });
 
+        if (locomotives.isEmpty())
+        {
+            control.log("Auto layout error: No locomotives placed.");
+            layout.invalidate();
+        }
+        
         layout.setLocomotivesToRun(locomotives);
             
         return layout;
