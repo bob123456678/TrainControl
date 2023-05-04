@@ -6962,6 +6962,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Stop all locomotives
         AltEmergencyStopActionPerformed(null);
+        
+        this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed

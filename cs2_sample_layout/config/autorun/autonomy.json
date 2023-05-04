@@ -4,14 +4,14 @@
             "name": "BottomMainA",
             "station": true,
             "s88" : 9,
-            "loc": "EU46-520",
+            "loc": "BR101",
             "locArrivalFunc" : 3
         },
         {
             "name": "BottomMainB",
             "station": true,
             "s88" : 10,
-            "loc": "BR232-275",
+            "loc": "EU46-520",
             "locArrivalFunc" : 3
         },
         {
@@ -38,8 +38,16 @@
             "name": "ParkingFront",
             "station": true,
             "s88" : 5,
-            "loc": "BR101",
-            "locArrivalFunc" : 3
+        },
+        {
+            "name": "ParkingDown",
+            "station": false,
+            "s88" : 2001
+        },
+        {
+            "name": "ParkingUp",
+            "station": false,
+            "s88" : 1001
         },
         {
             "name": "ParkingFrontPre",
@@ -84,7 +92,7 @@
         },
         {
             "name": "Tunnel",
-            "station": false,
+            "station": true,
             "s88" : 1032
         },
         {
@@ -268,6 +276,10 @@
                 {
                     "acc" : "Switch 103",
                     "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 59",
+                    "state" : "turn"  
                 }
             ]
         },
@@ -354,10 +366,6 @@
                     "state" : "turn"  
                 },
                 {
-                    "acc" : "Switch 100",
-                    "state" : "straight"  
-                },
-                {
                     "acc" : "Switch 69",
                     "state" : "straight"  
                 }
@@ -391,8 +399,209 @@
         },
         {
             "start": "BottomMainAPre",
-            "end": "BottomMainA"
+            "end": "BottomMainA",
+            "commands" : [
+                {
+                    "acc" : "Switch 100",
+                    "state" : "straight"  
+                }
+            ]
         },
+        
+        {
+            "start": "BottomMainAPre",
+            "end": "ParkingDown",
+            "commands" : [
+                {
+                    "acc" : "Switch 100",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 99",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 51",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 50",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 5",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 8",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 102",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 32",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Signal 37",
+                    "state" : "red"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "BottomInnerOtherside",
+                   "end": "BottomCrossover"  
+                },
+                {
+                   "start": "RampDown",
+                   "end": "BottomInner"  
+                },
+                {
+                   "start": "BottomSecondaryPre",
+                   "end": "BottomSecondary"  
+                },
+                {
+                   "start": "BottomMainAPre",
+                   "end": "BottomMainA" 
+                }
+            ]
+        },
+        
+        {
+            "start": "ParkingDown",
+            "end": "ParkingFrontPre",
+            "lockedges" : [
+                {
+                   "start": "ParkingBackPre",
+                   "end": "ParkingBack"  
+                },
+                {
+                   "start": "ParkingBack",
+                   "end": "ParkingFrontPre"  
+                }
+            ]
+        },
+        
+        {
+            "start": "ParkingBackPre",
+            "end": "ParkingUp",
+             "commands" : [
+                {
+                    "acc" : "Switch 102",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Signal 37",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Switch 32",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 71",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 55",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 56",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 4",
+                    "state" : "turn"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "ParkingDown",
+                   "end": "ParkingFrontPre"  
+                },
+                {
+                   "start": "ParkingBack",
+                   "end": "ParkingFrontPre"  
+                },
+                {
+                   "start": "ParkingFront",
+                   "end": "ParkingBackPre"  
+                },
+                {
+                   "start": "ParkingBackPre",
+                   "end": "ParkingBack"  
+                }
+            ]
+        },
+        {
+            "start": "ParkingUp",
+            "end": "Tunnel",
+             "commands" : [
+                {
+                    "acc" : "Switch 58",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Signal 61",
+                    "state" : "red"  
+                },
+                {
+                    "acc" : "Signal 62",
+                    "state" : "green"  
+                },
+                {
+                    "acc" : "Switch 50",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 99",
+                    "state" : "straight"  
+                },
+                {
+                    "acc" : "Switch 51",
+                    "state" : "turn"  
+                },
+                {
+                    "acc" : "Switch 59",
+                    "state" : "straight"  
+                }
+            ],
+            "lockedges" : [
+                {
+                   "start": "ParkingDown",
+                   "end": "ParkingFrontPre"  
+                },
+                {
+                   "start": "ParkingBack",
+                   "end": "ParkingFrontPre"  
+                },
+                {
+                   "start": "BottomInnerOtherside",
+                   "end": "BottomCrossover"  
+                },
+                {
+                   "start": "BottomInner",
+                   "end": "BottomInnerOtherside"  
+                },
+                {
+                   "start": "RampDown",
+                   "end": "BottomInner"  
+                },
+                {
+                   "start": "BottomSecondaryPre",
+                   "end": "BottomSecondary"  
+                },
+                {
+                   "start": "BottomSecondary",
+                   "end": "Tunnel"  
+                }
+            ]
+        },
+        
+      
         {
             "start": "BottomMainBPre",
             "end": "BottomMainB"

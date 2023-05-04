@@ -25,10 +25,16 @@ public class Layout
     public static final int CONFIGURE_SLEEP = 200;
     
     // Set to false to disable locomotives
-    private boolean running = false;
+    private volatile boolean running = false;
     
     // Is the layout state valid?
     private boolean isValid = true;
+       
+    private final ViewListener control;
+    private final Map<String, Edge> edges;
+    private final Map<String, Point> points;
+    private final Map<String, List<Edge>> adjacency;
+    private final List<String> locomotivesToRun;
         
     /**
      * Helper class for BFS
@@ -44,12 +50,6 @@ public class Layout
             this.path = path;
         }
     }
-    
-    private final ViewListener control;
-    private final Map<String, Edge> edges;
-    private final Map<String, Point> points;
-    private final Map<String, List<Edge>> adjacency;
-    private final List<String> locomotivesToRun;
     
     /**
      * Initialize the layout model 
