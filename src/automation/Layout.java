@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import model.ViewListener;
 
 /**
@@ -20,6 +22,9 @@ public class Layout
     public static final String CB_ROUTE_END = "routeEnd";
     public static final String CB_ROUTE_START = "routeStart";
     public static final String CB_PRE_ARRIVAL = "preArrival";
+    
+    // ms to wait if no paths exist 
+    public static final int ROUTE_FIND_SLEEP = 5000;
     
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 200;
@@ -469,6 +474,15 @@ public class Layout
         }
         
         this.control.log(loc.getName() + " has no free paths at the moment");
+        
+        try
+        {
+            Thread.sleep(Layout.ROUTE_FIND_SLEEP);
+        } 
+        catch (InterruptedException ex)
+        {
+            
+        }
         
         return null;
     }

@@ -8,6 +8,7 @@ import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -826,6 +827,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         copyTarget = this.currentLocMapping().get(button);
         copyTargetButton = button;
         copyTargetPage = this.locMappingNumber;
+        
+        // Put locomotive name in clipboard
+        StringSelection selection = new StringSelection(copyTarget.getName());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
     }
     
     /**
