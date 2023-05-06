@@ -1753,6 +1753,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel6 = new javax.swing.JLabel();
         validateButton = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
+        jLabel9 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         debugArea = new javax.swing.JTextArea();
@@ -4610,7 +4611,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane2.setViewportView(autonomyJSON);
 
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel6.setText("Autonomy JSON");
+        jLabel6.setText("Autonomy JSON (Beta)");
 
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         validateButton.setText("Validate JSON / Stop Execution");
@@ -4631,6 +4632,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel9.setText("Documentation");
+        jLabel9.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                documentationClicked(evt);
+            }
+        });
+
         javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
         autoPanel.setLayout(autoPanelLayout);
         autoPanelLayout.setHorizontalGroup(
@@ -4641,7 +4651,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jScrollPane2)
                     .addGroup(autoPanelLayout.createSequentialGroup()
                         .addComponent(jLabel6)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel9))
                     .addGroup(autoPanelLayout.createSequentialGroup()
                         .addComponent(validateButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 373, Short.MAX_VALUE)
@@ -4652,7 +4663,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autoPanelLayout.createSequentialGroup()
                 .addGap(13, 13, 13)
-                .addComponent(jLabel6)
+                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel9))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 526, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
@@ -7000,6 +7013,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.startAutonomy.setEnabled(false);
         }
     }//GEN-LAST:event_startAutonomyActionPerformed
+
+    private void documentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_documentationClicked
+        try {
+            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
+        } 
+        catch (IOException | URISyntaxException e1) {
+        }
+    }//GEN-LAST:event_documentationClicked
      
     public class CustomTableRenderer extends DefaultTableCellRenderer {
 
@@ -7377,6 +7398,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JList jList1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
