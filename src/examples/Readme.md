@@ -158,7 +158,7 @@ A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
 * Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  The more S88's you have, the better!
 
-# <a name="autonomy"></a> Running via TrainControl UI
+# Running via TrainControl UI
 
 To make execution and modifications easier, the logic above can be expressed in JSON format and executed via the TrainControl UI's "autonomy" tab. 
 The JSON below corresponds to the above code/layout, plus the edge locking described in the following section. 
