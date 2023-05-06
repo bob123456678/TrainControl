@@ -158,10 +158,10 @@ A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
 * Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  The more S88's you have, the better!
 
-# Running via TrainControl UI
+# Running via TrainControl UI <a name="autonomy"></a>
 
 To make execution and modifications easier, the logic above can be expressed in JSON format and executed via the TrainControl UI's "autonomy" tab. 
-The JSON below corresponds to the above code, plus the edge locking described in the following section.
+The JSON below corresponds to the above code/layout, plus the edge locking described in the following section. 
 
 Note that `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
 The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks.
@@ -170,6 +170,10 @@ TrainControl will enable/disable each locomotive's preferred functions, if any, 
 
 Each locomotive's preferred speed will be used (as set in the UI), unless it is 0, in which case the program will revert to `defaultLocSpeed`.
 The optional `locArrivalFunc` function number will be toggled when the locomotive is about to reach its destination.
+
+To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
+If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
+Locomotives will then continue running per the specified layout until stopped via the former button.  Chosen paths will be shown in the log.
 
 ```
 {
