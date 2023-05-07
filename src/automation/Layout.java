@@ -1,6 +1,7 @@
 package automation;
 
 import base.Locomotive;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -8,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import model.ViewListener;
 
 /**
@@ -40,7 +39,10 @@ public class Layout
     private final Map<String, Point> points;
     private final Map<String, List<Edge>> adjacency;
     private final List<String> locomotivesToRun;
-        
+    
+    // custom Event callbacks
+    protected Map<String, Consumer<List<Edge>>> callbacks;
+            
     /**
      * Helper class for BFS
      */
@@ -67,6 +69,7 @@ public class Layout
         this.points = new HashMap<>();
         this.adjacency = new HashMap<>();    
         this.locomotivesToRun = new LinkedList<>();
+        this.callbacks = new HashMap<>();
     }
     
     /**
@@ -525,6 +528,15 @@ public class Layout
         }
         else
         {
+            // Fire callbacks
+            for (Consumer<List<Edge>> callback : this.callbacks.values())
+            {
+                if (callback != null)
+                {
+                    callback.accept(path);
+                }
+            }
+            
             this.control.log("Executing path " + path.toString() + " for " + loc.getName());
         }
         
@@ -576,7 +588,63 @@ public class Layout
         }
 
         this.unlockPath(path);
+        
+        for (Consumer<List<Edge>> callback : this.callbacks.values())
+        {
+            if (callback != null)
+            {
+                callback.accept(path);
+            }
+        }
 
         this.control.log("Locomotive " + loc.getName() + " finished its path: " + path.toString());              
+    }
+    
+    /**
+     * Returns all edges in the graph
+     * @return 
+     */
+    public Collection<Edge> getEdges()
+    {
+        return this.edges.values();   
+    }
+    
+    /**
+     * Returns all points in the graph
+     * @return 
+     */
+    public Collection<Point> getPoints()
+    {
+        return this.points.values();
+    }
+    
+    /**
+     * Checks if the specified callback has been defined
+     * @param callbackName 
+     * @return  
+     */
+    public boolean hasCallback(String callbackName)
+    {
+        return this.callbacks.containsKey(callbackName);
+    }
+    
+    /**
+     * Returns the requested callback function
+     * @param callbackName
+     * @return 
+     */
+    public Consumer<List<Edge>> getCallback(String callbackName)
+    {
+        return this.callbacks.get(callbackName);
+    }
+    
+    /**
+     * Sets a new callback function for a given name
+     * @param callbackName
+     * @param callback 
+     */
+    public void setCallback(String callbackName, Consumer<List<Edge>> callback)
+    {
+        this.callbacks.put(callbackName, callback);
     }
 }

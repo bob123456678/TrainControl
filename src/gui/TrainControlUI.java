@@ -1,5 +1,7 @@
 package gui;
 
+import automation.Edge;
+import automation.Point;
 import base.Locomotive;
 import base.RouteCommand;
 import java.awt.Color;
@@ -20,6 +22,7 @@ import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,6 +58,9 @@ import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 import model.View;
 import model.ViewListener;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.ui.view.Viewer;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -142,6 +150,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public TrainControlUI()
     {
+        System.setProperty("org.graphstream.ui", "swing");
+        
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -6964,6 +6974,52 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void autonomyJSONKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_autonomyJSONKeyReleased
     }//GEN-LAST:event_autonomyJSONKeyReleased
 
+    private void renderAutoLayoutGraph()
+    {
+        Graph graph = new SingleGraph("hi"); 
+        Viewer viewer = graph.display();
+        viewer.enableAutoLayout();
+        viewer.setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
+        
+        URL resource = TrainControlUI.class.getResource("resources/graph.css");
+
+        try
+        {
+            graph.setAttribute("ui.stylesheet", "url('" + resource.toURI() +"')");
+
+            for (Point p : this.model.getAutoLayout().getPoints())
+            {
+                graph.addNode(p.getName());
+                graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
+            }
+
+            for (Edge e : this.model.getAutoLayout().getEdges())
+            {
+                graph.addEdge(e.getName(), graph.getNode(e.getStart().getName()), graph.getNode(e.getEnd().getName()), true);
+                graph.getEdge(e.getName()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
+                graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );
+                
+                // TODO - getEnd above?
+            }
+            
+            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges) -> {
+                this.model.log("callback fired");
+                for (Edge e : edges)
+                {
+                    graph.getEdge(e.getName()).setAttribute("ui.label", e.getEnd().getCurrentLocomotive() != null ?  e.getEnd().getCurrentLocomotive().getName() : "" );
+                    graph.getEdge(e.getName()).setAttribute("ui.style", e.getEnd().isOccupied() ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
+                }
+                
+                // TODO clear original occupancy
+                
+            });
+        } 
+        catch (URISyntaxException ex)
+        {
+            this.model.log("Error loading graph UI.");
+        }        
+    }
+    
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         this.model.parseAuto(this.autonomyJSON.getText());
@@ -6976,6 +7032,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else
         {
             this.startAutonomy.setEnabled(true);
+            this.renderAutoLayoutGraph();
         }  
         
         // Stop all locomotives
@@ -7015,7 +7072,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void documentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_documentationClicked
-        try {
+        try
+        {
             Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
         } 
         catch (IOException | URISyntaxException e1) {

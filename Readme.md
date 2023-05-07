@@ -74,7 +74,8 @@ Expanded support for CS3 layouts is planned for the future.
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json
+* org.json (json-20220924.jar) (from v1.6.0)
+* org.graphstream (gs-algo-2.0.jar, gs-core-2.0.jar, gs-ui-swing-2.0.jar  (from v1.8.0)
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
@@ -111,7 +112,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.7.6 [Beta]
+* v1.8.0 [Beta]
+    - Added graph UI to monitor autonomous layouts
+
+* v1.7.6 [5/5/23]
     - Added JSON-based layout autonomy configuration interface
     - Added ability to run autonomous layouts via the UI
 

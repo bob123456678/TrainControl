@@ -3,33 +3,33 @@
         {
             "name": "BottomMainA",
             "station": true,
-            "s88" : 9,
-            "loc" : "SU 46-035",
-            "locArrivalFunc" : 2
+            "s88" : 9
         },
         {
             "name": "BottomMainB",
             "station": true,
             "s88" : 10,
-            "loc" : "BR232-275",
-            "locArrivalFunc" : 2
+            "loc" : "BR101",
+            "locArrivalFunc" : 3
         },
         {
             "name": "BottomInner",
             "station": true,
-            "s88" : 1011
+            "s88" : 1011,
+            "loc" : "SU 46-012",
+            "locArrivalFunc" : 2
         },
         {
             "name": "BottomSecondary",
             "station": true,
-            "s88" : 1009,
-             "loc": "EU46-520",
-            "locArrivalFunc" : 3
+            "s88" : 1009
         },
         {
             "name": "TopMainR1",
             "station": true,
-            "s88" : 1022
+            "s88" : 1022,
+            "loc": "EU46-520",
+            "locArrivalFunc" : 3
         },
         {
             "name": "TopMainR2",
@@ -39,9 +39,7 @@
         {
             "name": "ParkingFront",
             "station": true,
-            "s88" : 5,
-            "loc": "BR101",
-            "locArrivalFunc" : 3
+            "s88" : 5
         },
         {
             "name": "ParkingDown",
@@ -175,23 +173,23 @@
         },
         
         {
-            "start": "RampUp",
-            "end": "TopMainR2Pre",
-            "commands" : [
-                {
-                    "acc" : "Switch 9",
-                    "state" : "straight"  
-                }
-            ]
-        },
-        
-        {
             "start": "TopMainR1Pre",
             "end": "TopMainR1",
             "commands" : [
                 {
                     "acc" : "Signal 63",
                     "state" : "red"  
+                }
+            ]
+        },
+        
+        {
+            "start": "RampUp",
+            "end": "TopMainR2Pre",
+            "commands" : [
+                {
+                    "acc" : "Switch 9",
+                    "state" : "straight"  
                 }
             ]
         },
@@ -266,6 +264,10 @@
                 {
                    "start": "BottomInnerOtherside",
                    "end": "BottomCrossover"  
+                },
+                {
+                   "start": "BottomCrossover",
+                   "end": "BottomSecondaryVirtual"  
                 }
             ]
         },
@@ -469,6 +471,10 @@
                 {
                    "start": "BottomMainAPre",
                    "end": "BottomMainA" 
+                },
+                {
+                   "start": "BottomMainA",
+                   "end": "BottomMainPost" 
                 }
             ]
         },
@@ -595,6 +601,10 @@
                    "end": "BottomInner"  
                 },
                 {
+                   "start": "RampDown",
+                   "end": "BottomSecondaryVirtual"  
+                },
+                {
                    "start": "BottomCrossover",
                    "end": "BottomSecondaryVirtual"  
                 },
@@ -605,6 +615,10 @@
                 {
                    "start": "BottomSecondaryPre",
                    "end": "BottomSecondary"  
+                },
+                {
+                   "start": "BottomInner",
+                   "end": "Tunnel"  
                 }
             ]
         },

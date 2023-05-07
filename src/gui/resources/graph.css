@@ -1,0 +1,13 @@
+node { 
+    shape: rounded-box;  
+    fill-color: white; 
+    stroke-mode: plain; 
+    shape: freeplane;
+    text-background-mode: rounded-box;
+    size-mode: fit;
+}
+edge { 
+    shape: freeplane;
+    arrow-shape: arrow;
+    size: 3px;
+}
