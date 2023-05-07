@@ -8,7 +8,8 @@ package base;
 abstract public class Accessory
 {
     public static enum accessoryType {SWITCH, SIGNAL};
-    
+    public static enum accessorySetting {GREEN, RED, STRAIGHT, TURN};
+
     // State of the switch/signal
     protected boolean switched;
     

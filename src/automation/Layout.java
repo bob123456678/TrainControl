@@ -1,5 +1,10 @@
 package automation;
 
+import base.Accessory;
+import static base.Accessory.accessorySetting.GREEN;
+import static base.Accessory.accessorySetting.RED;
+import static base.Accessory.accessorySetting.STRAIGHT;
+import static base.Accessory.accessorySetting.TURN;
 import base.Locomotive;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
+import marklin.MarklinAccessory;
 import model.ViewListener;
 
 /**
@@ -41,7 +47,12 @@ public class Layout
     private final List<String> locomotivesToRun;
     
     // custom Event callbacks
-    protected Map<String, Consumer<List<Edge>>> callbacks;
+    protected Map<String, TriFunction<List<Edge>, Locomotive, Boolean, Void>> callbacks;
+    
+    // Used to check if accessories within a route conflict with each other
+    private final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
+    private boolean configIsValid;
+    private boolean preConfigure;
             
     /**
      * Helper class for BFS
@@ -70,6 +81,16 @@ public class Layout
         this.adjacency = new HashMap<>();    
         this.locomotivesToRun = new LinkedList<>();
         this.callbacks = new HashMap<>();
+        this.configHistory = new HashMap<>();
+    }
+    
+    /**
+     * Resets the current config history
+     */
+    public void resetConfigHistory()
+    {
+        this.configHistory.clear();
+        this.configIsValid = true;
     }
     
     /**
@@ -295,6 +316,53 @@ public class Layout
     }
     
     /**
+     * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
+     * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
+     * @param name - the name of the accessory (Switch 1, Signal 2, etc.) as used in control.getAccessoryByName
+     * @param state - one of turn, straight, red, green
+     */
+    public void configure(String name, Accessory.accessorySetting state)
+    {
+        // Sanity check
+        MarklinAccessory acc = control.getAccessoryByName(name);
+        
+        if (acc == null)
+        {
+            control.log("Accessory does not exist: " + name + " " + state);
+            this.configIsValid = false;
+            return;
+        }
+        
+        // An opposite configuration was already issued - invalidate!
+        if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
+        {
+            // this.control.log("Conflicting command " + acc + " " + state);
+            this.configIsValid = false;
+        }
+        else
+        {
+            this.configHistory.put(acc, state);
+
+            if (!this.preConfigure)
+            {
+                if (state == TURN || state == RED)
+                {   
+                    acc.turn();
+                }
+                else if (state == STRAIGHT || state == GREEN)
+                {
+                    acc.straight();
+                }
+                else
+                {
+                    // This should never happen
+                    control.log("Invalid configuration command: " + name + " " + state);
+                }
+            }
+        }
+    }
+    
+    /**
      * Marks all the edges in a path as occupied, effectively locking it
      * @param path a list of edges to traverse
      * @param loc
@@ -307,7 +375,24 @@ public class Layout
         {
             return false;
         }
-                
+        
+        // Preview the configuration
+        this.resetConfigHistory();
+        
+        for (Edge e : path)
+        {
+            this.preConfigure = true;
+            e.configure(control);
+            this.preConfigure = false;
+        }    
+        
+        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
+        if (!this.configIsValid)
+        {
+            this.control.log("Path " + path + " has conflicting commands - skipping");
+            return false;
+        }
+            
         for (Edge e : path)
         {
             e.setOccupied();
@@ -529,11 +614,11 @@ public class Layout
         else
         {
             // Fire callbacks
-            for (Consumer<List<Edge>> callback : this.callbacks.values())
+            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
             {
                 if (callback != null)
                 {
-                    callback.accept(path);
+                    callback.apply(path, loc, true);
                 }
             }
             
@@ -589,11 +674,12 @@ public class Layout
 
         this.unlockPath(path);
         
-        for (Consumer<List<Edge>> callback : this.callbacks.values())
+        // Fire callbacks
+        for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
         {
             if (callback != null)
             {
-                callback.accept(path);
+                callback.apply(path, loc, false);
             }
         }
 
@@ -633,7 +719,7 @@ public class Layout
      * @param callbackName
      * @return 
      */
-    public Consumer<List<Edge>> getCallback(String callbackName)
+    public TriFunction<List<Edge>, Locomotive, Boolean, Void> getCallback(String callbackName)
     {
         return this.callbacks.get(callbackName);
     }
@@ -643,8 +729,22 @@ public class Layout
      * @param callbackName
      * @param callback 
      */
-    public void setCallback(String callbackName, Consumer<List<Edge>> callback)
+    public void setCallback(String callbackName, TriFunction<List<Edge>, Locomotive, Boolean, Void> callback)
     {
         this.callbacks.put(callbackName, callback);
     }
+    
+    /**
+     * Lambda with 3 arguments
+     * @param <T>
+     * @param <U>
+     * @param <V>
+     * @param <R> 
+     */
+    @FunctionalInterface
+    public interface TriFunction<T, U, V, R> {
+        public R apply(T t, U u, V v);
+    }
 }
+
+

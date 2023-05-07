@@ -111,13 +111,16 @@ These commands will execute before that edge is traversed by a locomotive.
     //
     // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
     //
-    layout.createEdge("Station 2", "Main Track", (control) -> {control.getAccessoryByName("Signal 2").green();});
-    layout.createEdge("Station 1", "Main Track", (control) -> {control.getAccessoryByName("Signal 1").green();});
+    // Note that from v1.8.0 of TrainControl,
+    // we can and should use control.getAutoLayout().configure instead of control.getAccessoryByName().turn/straight/red/green 
+    // This gives us additional sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would thus never be chosen
+    layout.createEdge("Station 2", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 2", GREEN);});
+    layout.createEdge("Station 1", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 1", GREEN);});
 
     layout.createEdge("Main Track", "Pre Arrival", null);
 
-    layout.createEdge("Pre Arrival", "Station 1", (control) -> {control.getAccessoryByName("Switch 10").turn(); control.getAccessoryByName("Signal 1").red();});
-    layout.createEdge("Pre Arrival", "Station 2", (control) -> {control.getAccessoryByName("Switch 10").straight(); control.getAccessoryByName("Signal 2").red();});
+    layout.createEdge("Pre Arrival", "Station 1", (control) -> {control.getAutoLayout().configure("Switch 10", TURN); control.getAutoLayout().configure("Signal 1", RED);});
+    layout.createEdge("Pre Arrival", "Station 2", (control) -> {control.getAutoLayout().configure("Switch 10", STRAIGHT); control.getAutoLayout().configure("Signal 2", RED);});
 
 From here, all we need to do is place our locomotives on the layout and tell them to run!
 

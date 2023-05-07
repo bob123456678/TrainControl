@@ -1,6 +1,7 @@
 package marklin.file;
 
 import automation.Layout;
+import base.Accessory;
 import base.Locomotive;
 import java.io.*;
 import java.net.*;
@@ -10,7 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import marklin.MarklinAccessory;
 import marklin.MarklinControlStation;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
@@ -1147,44 +1147,53 @@ public final class CS2File
             if (point.has("loc") && !point.isNull("loc"))
             {
                 String loc = point.getString("loc");
-
+                
                 if (control.getLocByName(loc) != null)
                 {
                     Locomotive l = control.getLocByName(loc);
-                    layout.getPoint(point.getString("name")).setLocomotive(l);
                     
-                    // Set start and end callbacks
-                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.applyPreferredFunctions().delay(minDelay, maxDelay);});
-                    l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
-                    
-                    if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
+                    if (point.getBoolean("station") != true)
                     {
-                        try
-                        {
-                            point.getInt("locArrivalFunc");
-                            l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(point.getInt("locArrivalFunc"));});
-                        }
-                        catch (Exception ex)
-                        {
-                            control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
-                            layout.invalidate();
-                        }
-                    }
-
-                    if (l.getPreferredSpeed() == 0)
-                    {
-                        l.setPreferredSpeed(defaultLocSpeed);
-                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
-                    }
-                    
-                    if (locomotives.contains(loc))
-                    {
-                        control.log("Auto layout error: dupliate locomotive " + loc);
+                        control.log("Auto layout error: " + loc + " placed on a non-station");
                         layout.invalidate();
                     }
                     else
-                    {
-                        locomotives.add(loc);
+                    {                    
+                        layout.getPoint(point.getString("name")).setLocomotive(l);
+
+                        // Set start and end callbacks
+                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.applyPreferredFunctions().delay(minDelay, maxDelay);});
+                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+
+                        if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
+                        {
+                            try
+                            {
+                                point.getInt("locArrivalFunc");
+                                l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(point.getInt("locArrivalFunc"));});
+                            }
+                            catch (Exception ex)
+                            {
+                                control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
+                                layout.invalidate();
+                            }
+                        }
+
+                        if (l.getPreferredSpeed() == 0)
+                        {
+                            l.setPreferredSpeed(defaultLocSpeed);
+                            control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
+                        }
+
+                        if (locomotives.contains(loc))
+                        {
+                            control.log("Auto layout error: dupliate locomotive " + loc);
+                            layout.invalidate();
+                        }
+                        else
+                        {
+                            locomotives.add(loc);
+                        }
                     }
                 }
                 else
@@ -1268,23 +1277,16 @@ public final class CS2File
                         commands.forEach((cmd) -> {
                             JSONObject command = (JSONObject) cmd;
                             String action = command.getString("state");
-                            MarklinAccessory acc = control1.getAccessoryByName(command.getString("acc"));
+                            String acc = command.getString("acc");
                             
-                            if ("turn".equals(action))
+                            if ("turn".equals(action) || "red".equals(action))
                             {
-                                acc.turn();
+                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.TURN);
                             } 
-                            else if ("straight".equals(action))
+                            else if ("straight".equals(action) || "green".equals(action))
                             {
-                                acc.straight();
-                            } 
-                            else if ("green".equals(action))
-                            {
-                                acc.green();
-                            } 
-                            else if ("red".equals(action))
-                            {
-                                acc.red();
+                                // Test, shorten name, then update api/documentation
+                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.STRAIGHT);
                             } 
                         });
                     };

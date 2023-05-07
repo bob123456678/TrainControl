@@ -3,6 +3,10 @@ package examples;
 import static marklin.MarklinControlStation.init;
 import javax.swing.JOptionPane;
 import automation.Layout;
+import static base.Accessory.accessorySetting.GREEN;
+import static base.Accessory.accessorySetting.RED;
+import static base.Accessory.accessorySetting.STRAIGHT;
+import static base.Accessory.accessorySetting.TURN;
 import marklin.MarklinControlStation;
 
 
@@ -28,17 +32,24 @@ public class FullAutonomyExample
             
             // The train cannot stop here, but we create an extra point so that both routes share a common edge
             layout.createPoint("Main Track", false, null);
-
+            
             //
             // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
             //
-            layout.createEdge("Station 2", "Main Track", (control) -> {control.getAccessoryByName("Signal 2").green();});
-            layout.createEdge("Station 1", "Main Track", (control) -> {control.getAccessoryByName("Signal 1").green();});
+            
+            // Note that from v1.8.0 of TrainControl,
+            // we can and should use control.getAutoLayout().configure instead of control.getAccessoryByName().turn/straight/red/green 
+            // This gives us additional sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would thus never be chosen
+            
+            // If an accessory is not yet in the database, use control.newSignal or control.newSwitch
+            
+            layout.createEdge("Station 2", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 2", GREEN);});
+            layout.createEdge("Station 1", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 1", GREEN);});
 
             layout.createEdge("Main Track", "Pre Arrival", null);
 
-            layout.createEdge("Pre Arrival", "Station 1", (control) -> {control.getAccessoryByName("Switch 10").turn(); control.getAccessoryByName("Signal 1").red();});
-            layout.createEdge("Pre Arrival", "Station 2", (control) -> {control.getAccessoryByName("Switch 10").straight(); control.getAccessoryByName("Signal 2").red();});
+            layout.createEdge("Pre Arrival", "Station 1", (control) -> {control.getAutoLayout().configure("Switch 10", TURN); control.getAutoLayout().configure("Signal 1", RED);});
+            layout.createEdge("Pre Arrival", "Station 2", (control) -> {control.getAutoLayout().configure("Switch 10", STRAIGHT); control.getAutoLayout().configure("Signal 2", RED);});
 
             /*
             // We can force an edge to lock another edge that crosses over it / merges into it

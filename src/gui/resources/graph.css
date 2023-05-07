@@ -1,13 +1,17 @@
 node { 
-    shape: rounded-box;  
-    fill-color: white; 
-    stroke-mode: plain; 
-    shape: freeplane;
+    text-alignment: under; 
+    text-color: black; 
+    text-style: bold; 
     text-background-mode: rounded-box;
-    size-mode: fit;
+    text-background-color: #EEE; 
+    text-padding: 2px; 
+    text-offset: 0px, 2px;
+    text-size: 14;
+    padding: 2px;
 }
 edge { 
     shape: freeplane;
     arrow-shape: arrow;
-    size: 3px;
+    size: 4px;
+    fill-color: rgb(0,0,0);
 }

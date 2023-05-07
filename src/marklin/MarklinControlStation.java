@@ -356,12 +356,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Returns the auto layout class
+     * Returns the auto layout class (and creates it if it does not yet exist)
      * @return 
      */
     @Override
     public Layout getAutoLayout()
     {
+        if (this.autoLayout == null)
+        {
+            this.autoLayout = new Layout(this);
+        }
+        
         return this.autoLayout;
     }
     
@@ -1645,7 +1650,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Initialize the central station
         MarklinControlStation model = 
-          new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
+            new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
 
         // Set model
         if (showUI)

@@ -88,6 +88,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // View listener (model) reference
     private ViewListener model;
     
+    // Graph viewer instance
+    private Viewer viewer;
+    
     // The active locomotive
     private MarklinLocomotive activeLoc;
     
@@ -6976,8 +6979,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void renderAutoLayoutGraph()
     {
+        if (this.viewer != null)
+        {
+            this.viewer.close();
+        }
+        
         Graph graph = new SingleGraph("hi"); 
-        Viewer viewer = graph.display();
+        viewer = graph.display();
         viewer.enableAutoLayout();
         viewer.setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
         
@@ -6990,28 +6998,62 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             for (Point p : this.model.getAutoLayout().getPoints())
             {
                 graph.addNode(p.getName());
-                graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
+                
+                graph.getNode(p.getName()).setAttribute("weight", 3);
+                
+                if (p.isOccupied() && p.getCurrentLocomotive() != null)
+                {
+                    graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+                    graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                }
+                else
+                {
+                    graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
+                    graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
+                }
             }
 
             for (Edge e : this.model.getAutoLayout().getEdges())
             {
                 graph.addEdge(e.getName(), graph.getNode(e.getStart().getName()), graph.getNode(e.getEnd().getName()), true);
-                graph.getEdge(e.getName()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
-                graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );
-                
-                // TODO - getEnd above?
+                //graph.getEdge(e.getName()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
+                //graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );                
             }
             
-            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges) -> {
-                this.model.log("callback fired");
-                for (Edge e : edges)
-                {
-                    graph.getEdge(e.getName()).setAttribute("ui.label", e.getEnd().getCurrentLocomotive() != null ?  e.getEnd().getCurrentLocomotive().getName() : "" );
-                    graph.getEdge(e.getName()).setAttribute("ui.style", e.getEnd().isOccupied() ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
+            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> {
+                
+                synchronized(graph)
+                {  
+                    // Update edge colors and labels
+                    for (Edge e : edges)
+                    {
+                        // graph.getEdge(e.getName()).setAttribute("ui.label", locked ? l.getName() : "" );
+                        graph.getEdge(e.getName()).setAttribute("ui.style", locked ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
+                    }
+
+                    // Update point labels
+                    for (Point p : this.model.getAutoLayout().getPoints())
+                    {
+                        if (p.isOccupied() && p.getCurrentLocomotive() != null)
+                        {
+                            graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+                            graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                        }
+                        else
+                        {
+                            graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
+                            graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
+                        }
+                    }   
+                    
+                    // Highlight destination
+                    if (locked && edges.size() > 0)
+                    {
+                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,135,0);");
+                    }                    
                 }
-                
-                // TODO clear original occupancy
-                
+
+                return null;                
             });
         } 
         catch (URISyntaxException ex)
