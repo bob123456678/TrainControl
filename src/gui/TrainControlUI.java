@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -7024,33 +7025,47 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 
                 synchronized(graph)
                 {  
+                    // Grey out locked edges
+                    for (Edge e : edges)
+                    {
+                        for (Edge e2 : e.getLockEdges())
+                        {
+                            graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(238,238,238);" );
+                        }
+                    }
+                    
                     // Update edge colors and labels
                     for (Edge e : edges)
                     {
                         // graph.getEdge(e.getName()).setAttribute("ui.label", locked ? l.getName() : "" );
                         graph.getEdge(e.getName()).setAttribute("ui.style", locked ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
-                    }
-
-                    // Update point labels
-                    for (Point p : this.model.getAutoLayout().getPoints())
-                    {
-                        if (p.isOccupied() && p.getCurrentLocomotive() != null)
-                        {
-                            graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
-                            graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
-                        }
-                        else
-                        {
-                            graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
-                            graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
-                        }
-                    }   
                     
-                    // Highlight destination
+                        // Update point labels
+                        for (Point p : Arrays.asList(e.getStart(), e.getEnd()))    
+                        {
+                            if (p.isOccupied() && p.getCurrentLocomotive() != null)
+                            {
+                                graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+                                // graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                            }
+                            else
+                            {
+                                graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
+                                graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
+                            }
+                        }
+                    }
+                    
+                    // Highlight start and destination
                     if (locked && edges.size() > 0)
                     {
-                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,135,0);");
-                    }                    
+                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
+                    } 
+                    
+                    if (locked && edges.size() > 0)
+                    {
+                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                    }
                 }
 
                 return null;                

@@ -113,11 +113,9 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.8.0 [Beta]
-    - Added graph UI to monitor autonomous layouts
-
-* v1.7.6 [5/5/23]
     - Added JSON-based layout autonomy configuration interface
     - Added ability to run autonomous layouts via the UI
+    - Added GraphStream UI to monitor autonomous layouts
 
 * v1.7.5 [4/30/23]
     - Route conditions are now parsed from the CS2 file

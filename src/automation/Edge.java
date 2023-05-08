@@ -152,6 +152,15 @@ public class Edge
     }
     
     /**
+     * Returns lock edges
+     * @return 
+     */
+    public List<Edge> getLockEdges()
+    {
+        return this.lockEdges;
+    }
+    
+    /**
      * Mark this edge, as well as any linked edges, as occupied
      */
     synchronized public void setOccupied()

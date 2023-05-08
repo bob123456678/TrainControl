@@ -8,10 +8,13 @@ node {
     text-offset: 0px, 2px;
     text-size: 14;
     padding: 2px;
+    /*fill-color: rgb(255,135,0);*/
+    fill-color: rgb(0,0,255);
 }
 edge { 
     shape: freeplane;
     arrow-shape: arrow;
     size: 4px;
     fill-color: rgb(0,0,0);
+    arrow-size: 12px, 6px;
 }
