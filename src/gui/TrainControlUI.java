@@ -6989,7 +6989,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         viewer = graph.display();
         viewer.enableAutoLayout();
         viewer.setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
-        
+             
         URL resource = TrainControlUI.class.getResource("resources/graph.css");
 
         try
