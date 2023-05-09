@@ -324,6 +324,6 @@ Point colors:
 
 This graph model can be used to automate layouts with complex designs and tons of switches.  
 
-A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../layout/config/)
+A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../cs2_sample_layout/config/)
 
 Planned features include ways to create/edit the graph in the UI and specify/prioritize automation logic.
