@@ -320,7 +320,6 @@ Point colors:
 
 ![Sample layout](../../assets/graph2.png?raw=true)
 
-
 # Advanced layouts
 
-This graph model can be used to automate layouts with complex designs and tons of switches.  More advanced examples are coming soon!  Planned features also include ways to visualize the graph and determine/prioritize automation logic.
+This graph model can be used to automate layouts with complex designs and tons of switches.  More advanced examples are coming soon!  Planned features also include ways to create the graph in the UI and determine/prioritize automation logic.

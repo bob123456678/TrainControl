@@ -29,7 +29,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 ![UI screenshot: keyboard](assets/routes3.png?raw=true)
 
-![UI screenshot: autonomous graph visualizer](assets/graph3.png?raw=true)
+<img src="assets/graph3.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="400">
 
 **Features:**
 
