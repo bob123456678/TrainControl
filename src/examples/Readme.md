@@ -161,35 +161,63 @@ A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
 * Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  The more S88's you have, the better!
 
-# Running via TrainControl UI
+# Improving the layout
 
-To make execution and modifications easier, the logic above can be expressed in JSON format and executed via the TrainControl UI's "autonomy" tab. 
-The JSON below corresponds to the above code/layout, plus the edge locking described in the following section. 
+How could this layout be modified to be a bit more exciting?  Suppose we wanted to allow trains to arrive at the opposite station.
+To accomplish this, we can convert "Main Track" to a valid station (second argument to `true`) and give it an S88 sensor (hypothetically at address 4):
+
+    layout.createPoint("Main Track", true, "4");
+
+With this setup, a train at "Station 1" or "Station 2" could go to "Main Track" after the other train reaches "Pre Arrival".  
+But there's a problem!  Since the path from "Station 1" to "Main Track" shares no edges with "Station 2" to "Main Track", the graph might allow two trains to proceed at the same time.
+One solution would be to add an imaginary point between the two stations and "Main Track", and then connect them with a shared edge, similar to what we already did with "Pre Arrival".
+
+Alternatively, for any edge, the graph actually allows us to explicitly specify a list of additional edges that should be locked whenever it is chosen. 
+This way, we can make the two paths to "Main Track" mutually exclusive without adding any more points or edges to the graph:
+
+    layout.getEdge("Station 1", "Main Track").addLockEdge(
+        layout.getEdge("Station 2", "Main Track")
+    );
+    layout.getEdge("Station 2", "Main Track").addLockEdge(
+        layout.getEdge("Station 1", "Main Track")
+    );
+
+This functionality is essential when your layout includes crossings, since these cannot easily be modeled with a directed graph.
+
+# Running and Visualizing via TrainControl UI
+
+From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
+The following example JSON corresponds to the above code/layout and edge locking.
 
 Note that `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
 The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks.
 
-TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.
+TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.  
+However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the function on arrival.
 
 Each locomotive's preferred speed will be used (as set in the UI), unless it is 0, in which case the program will revert to `defaultLocSpeed`.
-The optional `locArrivalFunc` function number will be toggled when the locomotive is about to reach its destination.
+The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
 
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via the former button.  Chosen paths will be shown in the log.
+
+Note that a path with conflicting accessory commands will never be chosen.
 
 ```
 {
     "minDelay" : 1,
     "maxDelay" : 5,
     "defaultLocSpeed" : 35,
+    "turnOffFunctionsOnArrival": true,
     "points": [
         {
             "name": "Station 1",
             "station": true,
             "s88" : 1,
             "loc" : "SNCF 422365",
-            "locArrivalFunc" : 3
+            "locArrivalFunc" : 3,
+            "locDepartureFunc" : 10
         },
         {
             "name": "Station 2",
@@ -278,30 +306,20 @@ Locomotives will then continue running per the specified layout until stopped vi
 
 ```
 
-In the future, a graphical equivalent of this representation is planned.
+When the "Validate JSON" button is pressed, if the layout is valid, a visual representation will also be shown.  This visualization is updated in real time as the paths execute.
 
-# Improving the layout
+Edge colors:
+* Red - path is executing along this edge, edges are occupied
+* Gray - edges are locked to avoid collisions, per `lockedges` definition
+* Black - edges are unoccupied / unlocked with no active path
 
-How could this layout be modified to be a bit more exciting?  Suppose we wanted to allow trains to arrive at the opposite station.
-To accomplish this, we can convert "Main Track" to a valid station (second argument to `true`) and give it an S88 sensor (hypothetically at address 4):
+Point colors:
+* Black - no locomotive stationed or arriving
+* Green - locomotive stationed or arriving
+* Red - locomotive departing
 
-    layout.createPoint("Main Track", true, "4");
+![Sample layout](../../assets/graph2.png?raw=true)
 
-With this setup, a train at "Station 1" or "Station 2" could go to "Main Track" after the other train reaches "Pre Arrival".  
-But there's a problem!  Since the path from "Station 1" to "Main Track" shares no edges with "Station 2" to "Main Track", the graph might allow two trains to proceed at the same time.
-One solution would be to add an imaginary point between the two stations and "Main Track", and then connect them with a shared edge, similar to what we already did with "Pre Arrival".
-
-Alternatively, for any edge, the graph actually allows us to explicitly specify a list of additional edges that should be locked whenever it is chosen. 
-This way, we can make the two paths to "Main Track" mutually exclusive without adding any more points or edges to the graph:
-
-    layout.getEdge("Station 1", "Main Track").addLockEdge(
-        layout.getEdge("Station 2", "Main Track")
-    );
-    layout.getEdge("Station 2", "Main Track").addLockEdge(
-        layout.getEdge("Station 1", "Main Track")
-    );
-
-This functionality is essential when your layout includes crossings, since these cannot easily be modeled with a directed graph.
 
 # Advanced layouts
 

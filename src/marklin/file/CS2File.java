@@ -1162,8 +1162,32 @@ public final class CS2File
                         layout.getPoint(point.getString("name")).setLocomotive(l);
 
                         // Set start and end callbacks
-                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> {lc.applyPreferredFunctions().delay(minDelay, maxDelay);});
-                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> {
+                            lc.applyPreferredFunctions().delay(minDelay, maxDelay);
+                        
+                            if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
+                            {
+                                try
+                                {
+                                    point.getInt("locDepartureFunc");
+                                    lc.toggleF(point.getInt("locDepartureFunc")).delay(minDelay, maxDelay);
+                                }
+                                catch (Exception ex)
+                                {
+                                    control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
+                                }
+                            }
+                        });
+                        
+                        // Optionally disable the arrival functions
+                        if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
+                        {
+                            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                        }
+                        else
+                        {
+                            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
+                        }
 
                         if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
                         {

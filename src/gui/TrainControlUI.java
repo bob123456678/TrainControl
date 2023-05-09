@@ -22,7 +22,6 @@ import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,8 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,6 +44,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -61,6 +59,8 @@ import model.View;
 import model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.ui.swing_viewer.SwingViewer;
+import org.graphstream.ui.swing_viewer.ViewPanel;
 import org.graphstream.ui.view.Viewer;
 
 /**
@@ -90,7 +90,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private ViewListener model;
     
     // Graph viewer instance
-    private Viewer viewer;
+    private GraphViewer graphViewer;
     
     // The active locomotive
     private MarklinLocomotive activeLoc;
@@ -1861,6 +1861,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setTitle("Marklin Layout Controller v" + MarklinControlStation.VERSION);
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
+        setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(1078, 572));
         setResizable(false);
@@ -6980,16 +6981,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void renderAutoLayoutGraph()
     {
-        if (this.viewer != null)
+        if (this.graphViewer != null)
         {
-            this.viewer.close();
+            this.graphViewer.dispose();
         }
         
-        Graph graph = new SingleGraph("hi"); 
-        viewer = graph.display();
-        viewer.enableAutoLayout();
-        viewer.setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
-             
+        Graph graph = new SingleGraph("Layout Graph"); 
+        graphViewer = new GraphViewer(graph, this);
+
+        // Custom stylsheet
         URL resource = TrainControlUI.class.getResource("resources/graph.css");
 
         try

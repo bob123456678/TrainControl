@@ -29,6 +29,8 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 ![UI screenshot: keyboard](assets/routes3.png?raw=true)
 
+![UI screenshot: autonomous graph visualizer](assets/graph3.png?raw=true)
+
 **Features:**
 
 * Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
@@ -40,7 +42,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 * Download locomotive layout, and route information from the CS2/CS3
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
-* (Beta) Graph model w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
+* (Beta) Graph model w/ JSON configuration for dynamic layout modeling and fully autonomous train operation - [see documentation](src/examples/Readme.md)) 
 
 **Requirements:**
 
