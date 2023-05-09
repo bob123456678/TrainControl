@@ -322,4 +322,8 @@ Point colors:
 
 # Advanced layouts
 
-This graph model can be used to automate layouts with complex designs and tons of switches.  More advanced examples are coming soon!  Planned features also include ways to create the graph in the UI and determine/prioritize automation logic.
+This graph model can be used to automate layouts with complex designs and tons of switches.  
+
+A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../layout/config/)
+
+Planned features include ways to create/edit the graph in the UI and specify/prioritize automation logic.
