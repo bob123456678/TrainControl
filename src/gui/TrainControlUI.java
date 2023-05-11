@@ -7021,7 +7021,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 //graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );                
             }
             
+            /*for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
+            {
+                this.model.log("---------------");
+                
+                for (List<Edge> path : this.model.getAutoLayout().getPossiblePaths(this.model.getLocByName(loc)))
+                {
+                    this.model.log("  " + path.toString());
+                }
+                
+                this.model.log(loc + " possible paths "); 
+            }*/
+            // TODO - open UI and display possible paths for each locomotive. 
+            
             this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> {
+                
+                // TODO - update possible paths.  Grey out if running.
                 
                 synchronized(graph)
                 {  

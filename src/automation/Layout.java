@@ -44,15 +44,18 @@ public class Layout
     private final Map<String, Edge> edges;
     private final Map<String, Point> points;
     private final Map<String, List<Edge>> adjacency;
-    private final List<String> locomotivesToRun;
     
-    // custom Event callbacks
+    // Custom callbacks before/after path execution
     protected Map<String, TriFunction<List<Edge>, Locomotive, Boolean, Void>> callbacks;
     
     // Used to check if accessories within a route conflict with each other
     private final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
     private boolean configIsValid;
     private boolean preConfigure;
+    
+    // List of all / active locomotives
+    private final List<String> locomotivesToRun;
+    private final List<String> activeLocomotives;
             
     /**
      * Helper class for BFS
@@ -82,6 +85,7 @@ public class Layout
         this.locomotivesToRun = new LinkedList<>();
         this.callbacks = new HashMap<>();
         this.configHistory = new HashMap<>();
+        this.activeLocomotives = new LinkedList<>();
     }
     
     /**
@@ -101,6 +105,24 @@ public class Layout
     {
         this.locomotivesToRun.clear();
         this.locomotivesToRun.addAll(locs);
+    }
+    
+    /**
+     * Gets the locomotives that will be run
+     * @return  
+     */
+    public List<String> getLocomotivesToRun()
+    {
+        return this.locomotivesToRun;
+    }
+    
+    /**
+     * Gets locomotives currently running
+     * @return  
+     */
+    public List<String> getActiveLocomotives()
+    {
+        return this.activeLocomotives;
     }
     
     /**
@@ -574,6 +596,51 @@ public class Layout
         
         return null;
     }
+    
+    /**
+     * Returns all possible paths for a given locomotive
+     * @param loc 
+     * @return  
+     */
+    public List<List<Edge>> getPossiblePaths(Locomotive loc)
+    {
+        List<List<Edge>> output = new LinkedList<>();
+        
+        // If the locomotive is currently running, it has no possible paths
+        if (!this.activeLocomotives.contains(loc.toString()))
+        {     
+            List<Point> ends = new LinkedList<>(this.points.values());
+            Collections.shuffle(ends);
+
+            for (Point start : this.points.values())
+            {
+                if (loc.equals(start.getCurrentLocomotive()))
+                {
+                    for (Point end : ends)
+                    {
+                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                        {
+                            try 
+                            {
+                                List<Edge> path = this.bfs(start, end);
+
+                                if (path != null && this.isPathClear(path, loc))
+                                {
+                                    output.add(path);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+
+                            }      
+                        }
+                    }
+                }
+            }
+        }
+        
+        return output;
+    }
   
     /**
      * Locks a path and runs the locomotive from the start to the end
@@ -625,6 +692,11 @@ public class Layout
             this.control.log("Executing path " + path.toString() + " for " + loc.getName());
         }
         
+        synchronized (this.activeLocomotives)
+        {
+            this.activeLocomotives.add(loc.getName());
+        }       
+        
         // TODO - make the delay & loc functions configurable
         
         if (loc.hasCallback(CB_ROUTE_START))
@@ -673,6 +745,11 @@ public class Layout
         }
 
         this.unlockPath(path);
+        
+        synchronized (this.activeLocomotives)
+        {
+            this.activeLocomotives.remove(loc.getName());
+        }
         
         // Fire callbacks
         for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
