@@ -39,7 +39,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
 * Set up automatic and conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions
-* Download locomotive layout, and route information from the CS2/CS3
+* Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * (Beta) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
