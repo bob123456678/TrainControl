@@ -1735,6 +1735,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardNumberLabel = new javax.swing.JLabel();
         NextKeyboard = new javax.swing.JButton();
         KeyboardLabel1 = new javax.swing.JLabel();
+        autoPanel = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        autonomyJSON = new javax.swing.JTextArea();
+        jLabel6 = new javax.swing.JLabel();
+        validateButton = new javax.swing.JButton();
+        startAutonomy = new javax.swing.JButton();
+        jLabel9 = new javax.swing.JLabel();
         ManageLocPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         LocTypeMM2 = new javax.swing.JRadioButton();
@@ -1761,13 +1768,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         OverrideCS2DataPath = new javax.swing.JButton();
         CS3OpenBrowser = new javax.swing.JButton();
         EditExistingLocLabel3 = new javax.swing.JLabel();
-        autoPanel = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        autonomyJSON = new javax.swing.JTextArea();
-        jLabel6 = new javax.swing.JLabel();
-        validateButton = new javax.swing.JButton();
-        startAutonomy = new javax.swing.JButton();
-        jLabel9 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         debugArea = new javax.swing.JTextArea();
@@ -4321,6 +4321,85 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Keyboard", KeyboardPanel);
 
+        autoPanel.setBackground(new java.awt.Color(238, 238, 238));
+
+        autonomyJSON.setColumns(20);
+        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
+        autonomyJSON.setRows(5);
+        autonomyJSON.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                autonomyJSONKeyReleased(evt);
+            }
+        });
+        jScrollPane2.setViewportView(autonomyJSON);
+
+        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel6.setText("Autonomy JSON (Beta)");
+
+        validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        validateButton.setText("Validate JSON / Stop Execution");
+        validateButton.setFocusable(false);
+        validateButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                validateButtonActionPerformed(evt);
+            }
+        });
+
+        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        startAutonomy.setText("Start Autonomous Operation");
+        startAutonomy.setEnabled(false);
+        startAutonomy.setFocusable(false);
+        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startAutonomyActionPerformed(evt);
+            }
+        });
+
+        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel9.setText("Documentation");
+        jLabel9.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                documentationClicked(evt);
+            }
+        });
+
+        javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
+        autoPanel.setLayout(autoPanelLayout);
+        autoPanelLayout.setHorizontalGroup(
+            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(autoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2)
+                    .addGroup(autoPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel9))
+                    .addGroup(autoPanelLayout.createSequentialGroup()
+                        .addComponent(validateButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 373, Short.MAX_VALUE)
+                        .addComponent(startAutonomy)))
+                .addContainerGap())
+        );
+        autoPanelLayout.setVerticalGroup(
+            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autoPanelLayout.createSequentialGroup()
+                .addGap(13, 13, 13)
+                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel9))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 526, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(startAutonomy)
+                    .addComponent(validateButton))
+                .addContainerGap())
+        );
+
+        KeyboardTab.addTab("Autonomy", autoPanel);
+
         ManageLocPanel.setBackground(new java.awt.Color(238, 238, 238));
         ManageLocPanel.setToolTipText(null);
         ManageLocPanel.setFocusable(false);
@@ -4612,85 +4691,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
-
-        autoPanel.setBackground(new java.awt.Color(238, 238, 238));
-
-        autonomyJSON.setColumns(20);
-        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
-        autonomyJSON.setRows(5);
-        autonomyJSON.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                autonomyJSONKeyReleased(evt);
-            }
-        });
-        jScrollPane2.setViewportView(autonomyJSON);
-
-        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel6.setText("Autonomy JSON (Beta)");
-
-        validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate JSON / Stop Execution");
-        validateButton.setFocusable(false);
-        validateButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                validateButtonActionPerformed(evt);
-            }
-        });
-
-        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        startAutonomy.setText("Start Autonomous Operation");
-        startAutonomy.setEnabled(false);
-        startAutonomy.setFocusable(false);
-        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startAutonomyActionPerformed(evt);
-            }
-        });
-
-        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Documentation");
-        jLabel9.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                documentationClicked(evt);
-            }
-        });
-
-        javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
-        autoPanel.setLayout(autoPanelLayout);
-        autoPanelLayout.setHorizontalGroup(
-            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
-                    .addGroup(autoPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel6)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jLabel9))
-                    .addGroup(autoPanelLayout.createSequentialGroup()
-                        .addComponent(validateButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 373, Short.MAX_VALUE)
-                        .addComponent(startAutonomy)))
-                .addContainerGap())
-        );
-        autoPanelLayout.setVerticalGroup(
-            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autoPanelLayout.createSequentialGroup()
-                .addGap(13, 13, 13)
-                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(jLabel9))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 526, Short.MAX_VALUE)
-                .addGap(18, 18, 18)
-                .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(startAutonomy)
-                    .addComponent(validateButton))
-                .addContainerGap())
-        );
-
-        KeyboardTab.addTab("Autonomy", autoPanel);
 
         logPanel.setBackground(new java.awt.Color(238, 238, 238));
 

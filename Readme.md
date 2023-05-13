@@ -1,8 +1,8 @@
 # Marklin Central Station 2/3 Train Control
 
-This cross-platform Java program allows you to use your computer to easily control your entire Marklin layout.
+This cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix digital layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
-It is primarily designed for users with a large layout / many locomotives, as
+It is primarily designed for users with a large layout and many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
 overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
 enabling functions, emergency stop, etc.  You can also open windows with interactive track diagrams.
@@ -70,7 +70,7 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-Expanded support for CS3 layouts is planned for the future.
+Expanded support for CS3 layouts is planned for the future, and a program to generate/edit CS2 layout files is coming soon!
 
 **Building the project from source:**
 
