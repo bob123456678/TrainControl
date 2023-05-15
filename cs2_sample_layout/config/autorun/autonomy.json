@@ -12,15 +12,15 @@
             "name": "BottomMainB",
             "station": true,
             "s88" : 10,
-            "loc": "EU46-520",
-            "locArrivalFunc" : 3
+            "loc" : "EN57-925",
+            "locArrivalFunc" : 2
         },
         {
             "name": "BottomInner",
             "station": true,
             "s88" : 1011,
-            "loc" : "EN57-925",
-            "locArrivalFunc" : 2
+            "loc": "EU46-520",
+            "locArrivalFunc" : 3
         },
         {
             "name": "BottomSecondary",
@@ -844,5 +844,6 @@
     "minDelay" : 3,
     "maxDelay" : 10,
     "defaultLocSpeed" : 35,
-    "turnOffFunctionsOnArrival" : true
+    "turnOffFunctionsOnArrival" : true,
+    "reversibleLocs" : ["EN57-925"]
 }

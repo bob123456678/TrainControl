@@ -59,6 +59,9 @@ public class Layout
     private final Map<String, List<Edge>> activeLocomotives;
     private final Map<String, List<Point>> locomotiveMilestones;
     
+    // Reversible locomotives (can travel to a terminus station)
+    private final List<String> reversibleLocs;
+    
     /**
      * Helper class for BFS
      */
@@ -89,6 +92,7 @@ public class Layout
         this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
+        this.reversibleLocs = new LinkedList<>();
     }
     
     /**
@@ -111,6 +115,25 @@ public class Layout
     }
     
     /**
+     * Sets the list of locomotives that can travel to a terminus station
+     * @param locs 
+     */
+    public void setReversibleLocs(List<String> locs)
+    {
+        this.reversibleLocs.clear();
+        this.reversibleLocs.addAll(locs);
+    }
+    
+    /**
+     * Add a locomotive that can travel to a terminus station
+     * @param loc
+     */
+    public void addReversibleLoc(Locomotive loc)
+    {
+        this.reversibleLocs.add(loc.getName());
+    }
+    
+    /**
      * Gets the locomotives that will be run
      * @return  
      */
@@ -130,6 +153,7 @@ public class Layout
     
     /**
      * Gets milestones already reached by a locomotive
+     * @param loc
      * @return  
      */
     public List<Point> getReachedMilestones(String loc)
@@ -344,6 +368,20 @@ public class Layout
                 control.log("Path " + path.toString() + " expects feedback " + e.getEnd().getS88() + " to be clear");
                 return false;
             }
+            
+            // Terminus stations may only be at the end of a path
+            if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
+            {
+                // control.log("Path " + path.toString() + " contains an intermediate terminus station");
+                return false;
+            }
+        }
+        
+        // Only reversible locomotives can go to a terminus
+        if (path.get(path.size() - 1).getEnd().isTerminus() && !this.reversibleLocs.contains(loc.getName()))
+        {
+            // control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
+            return false;
         }
         
         return true;
@@ -768,6 +806,14 @@ public class Layout
         if (loc.hasCallback(CB_ROUTE_END))
         {
             loc.getCallback(CB_ROUTE_END).accept(loc);
+        }
+        
+        // Reverse at terminus station
+        // TODO - need a way to specify which locomotives are allows to travel to a terminus
+        if (path.get(path.size() - 1).getEnd().isTerminus())
+        {
+            loc.switchDirection();
+            this.control.log("Locomotive " + loc.getName() + " reached terminus. Reversing");   
         }
 
         this.unlockPath(path);

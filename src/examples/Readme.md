@@ -210,6 +210,7 @@ Note that a path with conflicting accessory commands will never be chosen.
     "maxDelay" : 5,
     "defaultLocSpeed" : 35,
     "turnOffFunctionsOnArrival": true,
+    "reversibleLocs" : [],
     "points": [
         {
             "name": "Station 1",
@@ -319,6 +320,14 @@ Point colors:
 * Red - locomotive departing
 
 ![Sample layout](../../assets/graph2.png?raw=true)
+
+# Terminus Stations
+
+Basic support for terminus stations has been added as of v1.8.0.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
+also specify `"terminus" : "true"`.  Only locomotives listed in the `reversibleLocs` array will be able to go there, and they will automatically change direction after arrival.
+Terminus stations must have a separate set of outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
+
+If using the Java API, `Point.setTerminus` and `Layout.addReversibleLoc` correspond to the JSON settings above.
 
 # Advanced layouts
 

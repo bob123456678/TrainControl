@@ -1073,6 +1073,7 @@ public final class CS2File
 
         JSONArray points;
         JSONArray edges;
+        JSONArray reversible;
         Integer minDelay;
         Integer maxDelay;
         Integer defaultLocSpeed;
@@ -1082,13 +1083,14 @@ public final class CS2File
         {
             points = o.getJSONArray("points");
             edges = o.getJSONArray("edges");
+            reversible = o.getJSONArray("reversibleLocs");
             minDelay  = Math.abs(o.getInt("minDelay"));
             maxDelay  = Math.abs(o.getInt("maxDelay"));
             defaultLocSpeed  = Math.abs(o.getInt("defaultLocSpeed"));
         }
         catch (Exception e)
         {
-            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
+            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed, reversibleLocs)");
             layout.invalidate();
             return layout;
         }
@@ -1131,10 +1133,31 @@ public final class CS2File
                     layout.invalidate();
                 }
             }
-
+            
             try 
             {
                 layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
+                
+                if (point.has("terminus"))
+                {
+                    if (point.get("terminus") instanceof Boolean)
+                    {
+                        if (point.getBoolean("station") && point.getBoolean("terminus"))    
+                        {
+                            layout.getPoint(point.getString("name")).setTerminus();
+                        }
+                        else if (point.getBoolean("terminus"))
+                        {
+                            control.log("Auto layout error: only stations can be a terminus " + point.toString());
+                            layout.invalidate();
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for terminus " + point.toString());
+                        layout.invalidate();
+                    }
+                }
             } 
             catch (Exception ex)
             {
@@ -1355,6 +1378,22 @@ public final class CS2File
             catch (Exception ex)
             {
                 control.log("Auto layout error: Lock edge error - " + edge.toString());
+                layout.invalidate();
+            }
+        });
+        
+        // Set list of reversible locomotives
+        reversible.forEach(locc -> { 
+            String loc = (String) locc;
+                            
+            if (control.getLocByName(loc) != null)
+            {
+                layout.addReversibleLoc(control.getLocByName(loc));
+                control.log("Reversible " + loc);
+            }
+            else
+            {
+                control.log("Auto layout error: Reversible locomotive " + loc + " does not exist");
                 layout.invalidate();
             }
         });

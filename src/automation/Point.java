@@ -11,6 +11,7 @@ public class Point
     private final boolean isDestination;
     private final String name;
     private final String s88;
+    private boolean isTerminus;
     
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
@@ -18,11 +19,33 @@ public class Point
         this.isDestination = isDestination;
         this.s88 = s88;
         this.currentLoc = null;
+        this.isTerminus = false;
         
         if (isDestination && !hasS88())
         {
             throw new Exception("Destination point must have S88");
         }
+    }
+    
+    /**
+     * A terminus station will require the departing train to change direction
+     * @throws Exception 
+     */
+    public void setTerminus() throws Exception
+    {
+        if (!isDestination)
+        {
+            throw new Exception("Only destination points can be a terminus");
+        }
+        else
+        {
+            this.isTerminus = true;
+        }
+    }
+    
+    public boolean isTerminus()
+    {
+        return isTerminus;
     }
     
     public boolean equals(Point other)
@@ -60,7 +83,7 @@ public class Point
         return this.s88;
     }
     
-    public boolean hasS88()
+    public final boolean hasS88()
     {
         return this.s88 != null;
     }
