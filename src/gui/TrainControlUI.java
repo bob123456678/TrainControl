@@ -7156,14 +7156,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Callback fires at the beginning and end of each path
             this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> {
                 
-                for (Object o : this.autoLocPanel.getComponents())
-                {
-                    AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                    status.updateState(null);
-                }
-                
                 synchronized(graph)
                 {  
+                    // Update locomotive panel
+                    for (Object o : this.autoLocPanel.getComponents())
+                    {
+                        AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
+                        status.updateState(null);
+                    }
+                
                     // Grey out locked edges
                     for (Edge e : edges)
                     {
@@ -7178,9 +7179,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     // Update edge colors and labels
                     for (Edge e : edges)
                     {
-                        // graph.getEdge(e.getName()).setAttribute("ui.label", locked ? l.getName() : "" );
+                        // Make active edges red
                         graph.getEdge(e.getName()).setAttribute("ui.style", locked ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
-                    
+                        // graph.getEdge(e.getName()).setAttribute("ui.label", locked ? l.getName() : "" );
+
                         // Update point labels
                         for (Point p : Arrays.asList(e.getStart(), e.getEnd()))    
                         {
@@ -7203,20 +7205,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             }
                             else
                             {
-                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(0,0,0);");
+                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(0,0,255);");
                             }
                         }    
                     }
                     
-                    // Highlight start and destination
-                    if (locked && edges.size() > 0)
+                    // Mark completed edges green
+                    if (milestones != null && locked)
                     {
-                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
-                    } 
+                        for (int i = 1; i < milestones.size(); i++)
+                        {
+                            graph.getEdge(Edge.getEdgeName(milestones.get(i - 1), milestones.get(i)))
+                                    .setAttribute("ui.style", "fill-color: rgb(50,205,50);" );
+                        }
+                    }
                     
+                    // Highlight start and destination if path is active
                     if (locked && edges.size() > 0)
                     {
-                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
                     }
                     
                     // TODO - update the JSON data with the new locomotive location
