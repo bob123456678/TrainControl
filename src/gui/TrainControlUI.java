@@ -7173,6 +7173,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         }
                     }
                     
+                    List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(l.getName());
+                    
                     // Update edge colors and labels
                     for (Edge e : edges)
                     {
@@ -7192,7 +7194,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
                                 graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
                             }
-                        }
+                            
+                            // Point reached and route is active
+                            if (milestones != null && milestones.contains(p) && locked)
+                            {
+                                // TODO - update this to instead highlight edges in green
+                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(50,205,50);");
+                            }
+                            else
+                            {
+                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(0,0,0);");
+                            }
+                        }    
                     }
                     
                     // Highlight start and destination

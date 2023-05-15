@@ -7,6 +7,7 @@ package gui;
 
 import automation.Edge;
 import automation.Layout;
+import automation.Point;
 import base.Locomotive;
 import java.awt.Color;
 import java.util.List;
@@ -56,7 +57,9 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive.getName()))
             {
-                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive.getName())));
+                List<Point> milestones = layout.getReachedMilestones(locomotive.getName());
+                
+                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive.getName())) + " [" + milestones.get(milestones.size() - 1).getName() + "]"  );
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
             }

@@ -57,7 +57,8 @@ public class Layout
     // List of all / active locomotives
     private final List<String> locomotivesToRun;
     private final Map<String, List<Edge>> activeLocomotives;
-            
+    private final Map<String, List<Point>> locomotiveMilestones;
+    
     /**
      * Helper class for BFS
      */
@@ -87,6 +88,7 @@ public class Layout
         this.callbacks = new HashMap<>();
         this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
+        this.locomotiveMilestones = new HashMap<>();
     }
     
     /**
@@ -124,6 +126,15 @@ public class Layout
     public Map<String, List<Edge>> getActiveLocomotives()
     {
         return this.activeLocomotives;
+    }
+    
+    /**
+     * Gets milestones already reached by a locomotive
+     * @return  
+     */
+    public List<Point> getReachedMilestones(String loc)
+    {
+        return this.locomotiveMilestones.get(loc);
     }
     
     /**
@@ -685,6 +696,8 @@ public class Layout
             synchronized (this.activeLocomotives)
             {
                 this.activeLocomotives.put(loc.getName(), path);
+                this.locomotiveMilestones.put(loc.getName(), new LinkedList<>());
+                this.locomotiveMilestones.get(loc.getName()).add(start);
             }   
             
             // Fire callbacks
@@ -719,6 +732,17 @@ public class Layout
                 {
                     loc.waitForOccupiedFeedback(current.getS88());
                     this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());
+                    
+                    this.locomotiveMilestones.get(loc.getName()).add(current);
+
+                    // Fire callbacks for milestones
+                    for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+                    {
+                        if (callback != null)
+                        {
+                            callback.apply(path, loc, true);
+                        }
+                    }                    
                 }
                 
                 // We can also clear this edges dynamically 
@@ -751,6 +775,7 @@ public class Layout
         synchronized (this.activeLocomotives)
         {
             this.activeLocomotives.remove(loc.getName());
+            this.locomotiveMilestones.remove(loc.getName());
         }
         
         // Fire callbacks
