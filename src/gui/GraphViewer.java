@@ -70,7 +70,8 @@ final public class GraphViewer extends javax.swing.JFrame {
         // Render window
         initComponents(); 
         getContentPane().add((Component) view);
-             
+        
+        setLocationRelativeTo(parent); // center
         pack();
         setVisible(true);
     }

@@ -462,7 +462,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         // Right-clicks on the route list
-        this.RouteList.addMouseListener(new RightClickRouteMenu(this));        
+        this.RouteList.addMouseListener(new RightClickRouteMenu(this));   
+
+        // Hide initially
+        locCommandPanels.remove(this.locCommandTab);
     }
     
     /*private static void setupTabTraversalKeys(JTabbedPane tabbedPane)
@@ -1744,7 +1747,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autonomyJSON = new javax.swing.JTextArea();
         jLabel6 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
-        jPanel4 = new javax.swing.JPanel();
+        locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
         ManageLocPanel = new javax.swing.JPanel();
@@ -4348,7 +4351,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         locCommandPanels.setBackground(new java.awt.Color(255, 255, 255));
-        locCommandPanels.setFocusable(false);
 
         autonomyPanel.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -4398,35 +4400,36 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 349, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 363, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
 
-        jPanel4.setMaximumSize(new java.awt.Dimension(718, 5000));
+        locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
 
         jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
         jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
 
         autoLocPanel.setBackground(new java.awt.Color(238, 238, 238));
+        autoLocPanel.setEnabled(false);
         autoLocPanel.setFocusable(false);
         autoLocPanel.setMaximumSize(new java.awt.Dimension(716, 5000));
         autoLocPanel.setLayout(new java.awt.GridLayout(100, 3, 5, 5));
         jScrollPane4.setViewportView(autoLocPanel);
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
+        locCommandTab.setLayout(locCommandTabLayout);
+        locCommandTabLayout.setHorizontalGroup(
+            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        locCommandTabLayout.setVerticalGroup(
+            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
-        locCommandPanels.addTab("Locomotive Commands", jPanel4);
+        locCommandPanels.addTab("Locomotive Commands", locCommandTab);
 
         javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
         autoPanel.setLayout(autoPanelLayout);
@@ -4445,9 +4448,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autoPanelLayout.setVerticalGroup(
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autoPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(locCommandPanels, javax.swing.GroupLayout.PREFERRED_SIZE, 455, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addContainerGap()
+                .addComponent(locCommandPanels)
+                .addGap(2, 2, 2)
                 .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(startAutonomy)
                     .addComponent(validateButton))
@@ -7059,28 +7062,37 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         this.model.parseAuto(this.autonomyJSON.getText());
+        
 
         if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
         {
+            locCommandPanels.remove(this.locCommandTab);
+            
             this.startAutonomy.setEnabled(false);
             JOptionPane.showMessageDialog(this, "Validation failed.  Check log for details.");
+            
+            this.KeyboardTab.requestFocus();
         }
         else
         {
+            locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+
             this.startAutonomy.setEnabled(true);
             this.renderAutoLayoutGraph();
             
-            // Advance to log
+            // Advance to locomotive tab
             this.locCommandPanels.setSelectedIndex(
-                (this.locCommandPanels.getSelectedIndex() + 1)
-                % this.locCommandPanels.getComponentCount()
+                1
+                //(this.locCommandPanels.getSelectedIndex() + 1)
+                //% this.locCommandPanels.getComponentCount()
             );
+            
+            this.KeyboardTab.requestFocus();
+            this.graphViewer.requestFocus();
         }
 
         // Stop all locomotives
         AltEmergencyStopActionPerformed(null);
-
-        this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void documentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_documentationClicked
@@ -7616,7 +7628,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
@@ -7632,6 +7643,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
     private javax.swing.JTabbedPane locCommandPanels;
+    private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
     private javax.swing.JPanel logPanel;
     private javax.swing.JLabel sizeLabel;

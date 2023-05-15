@@ -709,6 +709,10 @@
                    "end": "BottomInnerOtherside"  
                 },
                 {
+                   "start": "BottomInnerOtherside",
+                   "end": "BottomInner"  
+                },
+                {
                    "start": "RampDown",
                    "end": "BottomInner"  
                 },

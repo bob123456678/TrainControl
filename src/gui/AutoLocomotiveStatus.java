@@ -8,6 +8,7 @@ package gui;
 import automation.Edge;
 import automation.Layout;
 import base.Locomotive;
+import java.awt.Color;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
@@ -49,23 +50,33 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
             this.paths = layout.getPossiblePaths(locomotive);
 
             DefaultListModel<String> pathList = new DefaultListModel<>();
+            
+            this.locDest.setForeground(new Color(0, 0, 115));
 
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive.getName()))
             {
                 this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive.getName())));
+                this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is in auto mode but loc is not running - show stauts message and hide the list
             else if (layout.isRunning())
             {
-                this.locDest.setText("No current path.");
+                this.locDest.setText("No active path.");
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is standing by.  Show the list.
             else
             {
-                this.locDest.setText("Double-click a path to execute");
+                if (!this.paths.isEmpty())
+                {
+                    this.locDest.setText("Double-click a path to execute");
+                }
+                else
+                {
+                    this.locDest.setText("No available paths.");
+                }
                 
                 for (List<Edge> path : this.paths)
                 {
@@ -103,6 +114,7 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
         locName.setText("jLabel1");
         locName.setFocusable(false);
 
+        locDest.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         locDest.setForeground(new java.awt.Color(0, 0, 115));
         locDest.setText("jLabel2");
         locDest.setFocusable(false);
@@ -137,14 +149,14 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(locName)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE)
+                .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -153,10 +165,8 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
         if (evt.getClickCount() == 2) {
             // Double-click detected
             int index = list.locationToIndex(evt.getPoint());
-            
-            System.out.println(list.getModel().getElementAt(index));
-            
-            if (!layout.isRunning())
+                        
+            if (!layout.isRunning() && !this.paths.isEmpty())
             {
                 new Thread( () -> {
                     boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed());

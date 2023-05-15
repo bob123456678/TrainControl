@@ -116,8 +116,9 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.8.0 [Beta]
     - Added JSON-based layout autonomy configuration interface
-    - Added ability to run autonomous layouts via the UI
-    - Added GraphStream UI to monitor autonomous layouts
+    - Added ability to run fully autonomous operation via the UI
+    - Added GraphStream UI to monitor autonomous operation
+    - Added controls to execute locomotive paths based on start and end station
 
 * v1.7.5 [4/30/23]
     - Route conditions are now parsed from the CS2 file
