@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.function.Consumer;
 import marklin.MarklinAccessory;
 import model.ViewListener;
@@ -55,7 +56,7 @@ public class Layout
     
     // List of all / active locomotives
     private final List<String> locomotivesToRun;
-    private final List<String> activeLocomotives;
+    private final Map<String, List<Edge>> activeLocomotives;
             
     /**
      * Helper class for BFS
@@ -85,7 +86,7 @@ public class Layout
         this.locomotivesToRun = new LinkedList<>();
         this.callbacks = new HashMap<>();
         this.configHistory = new HashMap<>();
-        this.activeLocomotives = new LinkedList<>();
+        this.activeLocomotives = new HashMap<>();
     }
     
     /**
@@ -120,7 +121,7 @@ public class Layout
      * Gets locomotives currently running
      * @return  
      */
-    public List<String> getActiveLocomotives()
+    public Map<String, List<Edge>> getActiveLocomotives()
     {
         return this.activeLocomotives;
     }
@@ -528,7 +529,8 @@ public class Layout
             
             while(running)
             {
-                try {
+                try 
+                {
                     List<Edge> path = this.pickPath(loc);
                     
                     if (path != null)
@@ -607,10 +609,10 @@ public class Layout
         List<List<Edge>> output = new LinkedList<>();
         
         // If the locomotive is currently running, it has no possible paths
-        if (!this.activeLocomotives.contains(loc.toString()))
+        if (!this.activeLocomotives.containsKey(loc.toString()))
         {     
             List<Point> ends = new LinkedList<>(this.points.values());
-            Collections.shuffle(ends);
+            //Collections.shuffle(ends);
 
             for (Point start : this.points.values())
             {
@@ -680,6 +682,11 @@ public class Layout
         }
         else
         {
+            synchronized (this.activeLocomotives)
+            {
+                this.activeLocomotives.put(loc.getName(), path);
+            }   
+            
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
             {
@@ -691,12 +698,7 @@ public class Layout
             
             this.control.log("Executing path " + path.toString() + " for " + loc.getName());
         }
-        
-        synchronized (this.activeLocomotives)
-        {
-            this.activeLocomotives.add(loc.getName());
-        }       
-        
+            
         // TODO - make the delay & loc functions configurable
         
         if (loc.hasCallback(CB_ROUTE_START))

@@ -89,7 +89,6 @@ final public class GraphViewer extends javax.swing.JFrame {
         setAlwaysOnTop(true);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(100, 100));
-        setPreferredSize(new java.awt.Dimension(900, 572));
         setSize(new java.awt.Dimension(600, 572));
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
