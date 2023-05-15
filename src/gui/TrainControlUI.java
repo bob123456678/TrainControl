@@ -7052,12 +7052,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.getAutoLayout().runLocomotives();
             }).start();
 
-            // Advance to log
-            this.locCommandPanels.setSelectedIndex(
-                (this.locCommandPanels.getSelectedIndex() + 1)
-                % this.locCommandPanels.getComponentCount()
-            );
-
             this.startAutonomy.setEnabled(false);
         }
     }//GEN-LAST:event_startAutonomyActionPerformed
@@ -7075,6 +7069,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.startAutonomy.setEnabled(true);
             this.renderAutoLayoutGraph();
+            
+            // Advance to log
+            this.locCommandPanels.setSelectedIndex(
+                (this.locCommandPanels.getSelectedIndex() + 1)
+                % this.locCommandPanels.getComponentCount()
+            );
         }
 
         // Stop all locomotives
@@ -7096,6 +7096,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     }//GEN-LAST:event_autonomyJSONKeyReleased
 
+    /**
+     * Renders a graph visualization of the automated layout
+     */
     private void renderAutoLayoutGraph()
     {
         if (this.graphViewer != null)
@@ -7212,7 +7215,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             int gridCols = 3;
             
             autoLocPanel.setLayout(new java.awt.GridLayout(
-                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols) + 1, 
+                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
                     gridCols, // cols
                     5, // padding
                     5)
@@ -7221,11 +7224,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
             {
                 this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout()));
-            }       
-            
-                            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName("BR101"), this.model.getAutoLayout()));
-                            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName("BR101"), this.model.getAutoLayout()));
-this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName("BR101"), this.model.getAutoLayout()));
+            }
         } 
         catch (URISyntaxException ex)
         {
