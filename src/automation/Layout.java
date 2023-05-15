@@ -650,18 +650,18 @@ public class Layout
      * @param loc
      * @param speed 
      */
-    public void executePath(List<Edge> path, Locomotive loc, int speed)
+    public boolean executePath(List<Edge> path, Locomotive loc, int speed)
     {        
         if (path.isEmpty())
         {
             this.control.log("Path is empty");
-            return;
+            return false;
         }
         
         if (loc == null)
         {
             this.control.log("Locomotive is null");
-            return;
+            return false;
         }
         
         Point start = path.get(0).getStart();
@@ -670,7 +670,7 @@ public class Layout
         if (!loc.equals(start.getCurrentLocomotive()))
         {
             this.control.log("Locomotive does not currently occupy the start of the path");
-            return;
+            return false;
         }
         
         boolean result = configureAndLockPath(path, loc);
@@ -678,7 +678,7 @@ public class Layout
         if (!result)
         {
             this.control.log("Error: path is occupied");
-            return;
+            return false;
         }
         else
         {
@@ -762,7 +762,9 @@ public class Layout
             }
         }
 
-        this.control.log("Locomotive " + loc.getName() + " finished its path: " + path.toString());              
+        this.control.log("Locomotive " + loc.getName() + " finished its path: " + path.toString());   
+        
+        return true;
     }
     
     /**

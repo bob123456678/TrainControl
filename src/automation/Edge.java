@@ -185,5 +185,26 @@ public class Edge
             e.setLockedEdgeUnoccupied();
         }
     }
+    
+    /**
+     * Returns a pretty textual representation of the start and end of a path
+     * @param e
+     * @return 
+     */
+    public static String pathToString(List<Edge> e)
+    {
+        if (e.isEmpty())
+        {
+            return "Empty path";
+        }
+        else if (e.get(0) == null || e.get(e.size() - 1) == null)
+        {
+            return "Error in path";
+        }
+        else
+        {
+            return e.get(0).getStart().getName() + " -> " + e.get(e.size() - 1).getEnd().getName();
+        }
+    }
 }
             
