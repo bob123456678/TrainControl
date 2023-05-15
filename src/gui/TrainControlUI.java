@@ -7153,18 +7153,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 //graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );                
             }
             
-            /*for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
-            {
-                this.model.log("---------------");
-                
-                for (List<Edge> path : this.model.getAutoLayout().getPossiblePaths(this.model.getLocByName(loc)))
-                {
-                    this.model.log("  " + path.toString());
-                }
-                
-                this.model.log(loc + " possible paths "); 
-            }*/
-                                    
+            // Callback fires at the beginning and end of each path
             this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> {
                 
                 for (Object o : this.autoLocPanel.getComponents())
@@ -7216,6 +7205,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     {
                         graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
                     }
+                    
+                    // TODO - update the JSON data with the new locomotive location
                 }
 
                 return null;                
@@ -7224,6 +7215,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Display locomotive status and possible paths
             this.autoLocPanel.removeAll();
 
+            // Number of columns in the grid
             int gridCols = 3;
             
             autoLocPanel.setLayout(new java.awt.GridLayout(
