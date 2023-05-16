@@ -357,6 +357,16 @@ public class Layout
                 return false;
             }
             
+            // Ensure all lock edges are unoccupied
+            for (Edge e2 : e.getLockEdges())
+            {
+                if (e2.isOccupied(loc))
+                {
+                    // control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
+                    return false;
+                }
+            }
+            
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
@@ -409,7 +419,7 @@ public class Layout
         // An opposite configuration was already issued - invalidate!
         if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
         {
-            // this.control.log("Conflicting command " + acc + " " + state);
+            this.control.log("Conflicting command " + acc.getName() + " " + state);
             this.configIsValid = false;
         }
         else

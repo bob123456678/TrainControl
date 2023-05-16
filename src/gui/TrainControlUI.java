@@ -3159,7 +3159,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(sliderSetting))
                     .addComponent(PrimaryControls)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, 0, Short.MAX_VALUE))
                 .addContainerGap(57, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -4351,6 +4351,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         locCommandPanels.setBackground(new java.awt.Color(255, 255, 255));
+        locCommandPanels.setFocusable(false);
+        locCommandPanels.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                locCommandPanelsMouseClicked(evt);
+            }
+        });
 
         autonomyPanel.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -4721,7 +4727,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 384, Short.MAX_VALUE))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
                         .addGap(404, 404, Short.MAX_VALUE))
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4781,6 +4787,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocFunctionsPanel.setBackground(new java.awt.Color(255, 255, 255));
         LocFunctionsPanel.setToolTipText(null);
         LocFunctionsPanel.setMinimumSize(new java.awt.Dimension(326, 560));
+        LocFunctionsPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                LocFunctionsPanelMouseEntered(evt);
+            }
+        });
         LocFunctionsPanel.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 LocControlPanelKeyPressed(evt);
@@ -7108,6 +7119,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     }//GEN-LAST:event_autonomyJSONKeyReleased
 
+    private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
+        this.KeyboardTab.requestFocus();
+    }//GEN-LAST:event_locCommandPanelsMouseClicked
+
+    private void LocFunctionsPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocFunctionsPanelMouseEntered
+        this.KeyboardTab.requestFocus();
+    }//GEN-LAST:event_LocFunctionsPanelMouseEntered
+
     /**
      * Renders a graph visualization of the automated layout
      */
@@ -7165,12 +7184,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         status.updateState(null);
                     }
                 
-                    // Grey out locked edges
                     for (Edge e : edges)
-                    {
+                    {                        
                         for (Edge e2 : e.getLockEdges())
                         {
-                            graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(238,238,238);" );
+                            // Grey out locked-lock edges
+                            if (locked)
+                            {
+                                graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(238,238,238);" );
+                            }
+                            // Reset unlocked lock edges
+                            else
+                            {
+                                graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(0,0,0);" );
+                            }
                         }
                     }
                     

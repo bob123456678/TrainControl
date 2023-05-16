@@ -120,6 +120,7 @@ Requires JDK 1.8+ and the following libraries:
     - Added GraphStream UI to monitor autonomous operation
     - Added controls to execute locomotive paths based on start and end station
     - Added basic support for terminus stations and reversible trains
+    - Autonomous operation: fixed issue where occupied (but not active) lock edges would not properly invalidate a conflicting route
 
 * v1.7.5 [4/30/23]
     - Route conditions are now parsed from the CS2 file
