@@ -9,6 +9,7 @@ import base.Locomotive;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class Layout
     private final Map<String, List<Point>> locomotiveMilestones;
     
     // Reversible locomotives (can travel to a terminus station)
-    private final List<String> reversibleLocs;
+    private final Set<String> reversibleLocs;
     
     /**
      * Helper class for BFS
@@ -92,7 +93,7 @@ public class Layout
         this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
-        this.reversibleLocs = new LinkedList<>();
+        this.reversibleLocs = new HashSet<>();
     }
     
     /**
