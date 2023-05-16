@@ -310,14 +310,14 @@ Note that a path with conflicting accessory commands will never be chosen.
 When the "Validate JSON" button is pressed, if the layout is valid, a visual representation will also be shown.  This visualization is updated in real time as the paths execute.
 
 Edge colors:
-* Red - path is executing along this edge, edges are occupied
+* Red - path is executing along this edge, edges not yet reached by the incoming train
+* Green - path is executing along this edge, edges have been reached
 * Gray - edges are locked to avoid collisions, per `lockedges` definition
 * Black - edges are unoccupied / unlocked with no active path
 
 Point colors:
-* Black - no locomotive stationed or arriving
-* Green - locomotive stationed or arriving
-* Red - locomotive departing
+* Blue - no locomotive stationed or passing through
+* Green - locomotive stationed or has passed through
 
 ![Sample layout](../../assets/graph2.png?raw=true)
 
