@@ -1389,7 +1389,7 @@ public final class CS2File
             if (control.getLocByName(loc) != null)
             {
                 layout.addReversibleLoc(control.getLocByName(loc));
-                control.log("Reversible " + loc);
+                //control.log("Flagged as reversible: " + loc);
             }
             else
             {
