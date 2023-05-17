@@ -3,17 +3,23 @@
         {
             "name": "BottomMainA",
             "station": true,
-            "s88" : 9
+            "s88" : 9,
+            "loc": "EU46-520",
+            "locArrivalFunc" : 3
         },
         {
             "name": "BottomMainB",
             "station": true,
-            "s88" : 10
+            "s88" : 10,
+            "loc" : "BR101",
+            "locArrivalFunc" : 3
         },
         {
             "name": "BottomInner",
             "station": true,
-            "s88" : 1011
+            "s88" : 1011,
+            "loc" : "MCK ME",
+            "locArrivalFunc" : 2
         },
         {
             "name": "BottomSecondary",
@@ -31,16 +37,12 @@
         {
             "name": "TopMainR2",
             "station": true,
-            "s88" : 1023,
-            "loc" : "MCK ME",
-            "locArrivalFunc" : 2
+            "s88" : 1023
         },
         {
             "name": "ParkingFront",
             "station": true,
-            "s88" : 5,
-            "loc" : "BR101",
-            "locArrivalFunc" : 3
+            "s88" : 5
         },
         {
             "name": "ParkingDown",
@@ -75,9 +77,7 @@
         {
             "name": "BottomInnerOtherside",
             "station": true,
-            "s88" : 2011,
-            "loc": "EU46-520",
-            "locArrivalFunc" : 3
+            "s88" : 2011
         },
         {
             "name": "BottomCrossover",
@@ -323,8 +323,8 @@
                    "end": "TunnelPre"  
                 },
                 {
-                   "start": "RampDown",
-                   "end": "BottomInner"  
+                   "start": "TopMainPost",
+                   "end": "RampDown"  
                 }
             ]
         },
