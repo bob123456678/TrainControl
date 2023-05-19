@@ -49,6 +49,19 @@
             "station": false,
             "s88" : 2001
         },
+        
+        {
+            "name": "TopMainR1Bypass",
+            "station": false,
+            "s88" : 1022
+        },
+        
+        {
+            "name": "TopMainR2Bypass",
+            "station": false,
+            "s88" : 1023
+        },
+        
         {
             "name": "ParkingUp",
             "station": false,
@@ -247,6 +260,50 @@
                 {
                     "acc" : "Signal 63",
                     "state" : "red"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR1Pre",
+            "end": "TopMainR1Bypass",
+            "lockedges" : [
+                {
+                   "start": "TopMainR1Pre",
+                   "end": "TopMainR1"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR1Bypass",
+            "end": "TopMainPost",
+            "lockedges" : [
+                {
+                   "start": "TopMainR1",
+                   "end": "TopMainPost"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR2Pre",
+            "end": "TopMainR2Bypass",
+            "lockedges" : [
+                {
+                   "start": "TopMainR2Pre",
+                   "end": "TopMainR2"  
+                }
+            ]
+        },
+        
+        {
+            "start": "TopMainR2Bypass",
+            "end": "TopMainPost",
+            "lockedges" : [
+                {
+                   "start": "TopMainR2",
+                   "end": "TopMainPost"  
                 }
             ]
         },

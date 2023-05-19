@@ -48,9 +48,15 @@ public class Point
         return isTerminus;
     }
     
-    public boolean equals(Point other)
+    @Override
+    public boolean equals(Object other)
     {
-        return this.name.equals(other.getName());
+        if (!(other instanceof Point))
+        {
+            return false;
+        }
+        
+        return this.name.equals(((Point) other).getName());
     }
       
     public String getName()

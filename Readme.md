@@ -114,6 +114,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.1 [5/19/23]
+    - Improved path selection logic in autonomous operation
+        - Alternative paths are now checked if the shortest path is blocked
+        - The chosen path is randomized if there are multiple options of the same length
+    - Added current station information to autonomy UI when a locomotive has no available paths
+    - Autonomy UI bug fixes
+
 * v1.8.0 [5/17/23]
     - Added JSON-based layout autonomy configuration interface
     - Added ability to run fully autonomous operation via the UI

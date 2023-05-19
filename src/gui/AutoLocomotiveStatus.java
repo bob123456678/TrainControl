@@ -10,17 +10,19 @@ import automation.Layout;
 import automation.Point;
 import base.Locomotive;
 import java.awt.Color;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.ListModel;
 
 /**
  *
  * @author Adam
  */
-public class AutoLocomotiveStatus extends javax.swing.JPanel {
+public final class AutoLocomotiveStatus extends javax.swing.JPanel {
 
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
@@ -48,7 +50,8 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
         // We only need to update if the callback corresponding to our locomotive was fired
         if (someLoc == null || someLoc.equals(locomotive))
         {
-            this.paths = layout.getPossiblePaths(locomotive);
+            // true -> Only include unique starts/end pairs
+            this.paths = layout.getPossiblePaths(locomotive, true);
 
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
@@ -66,7 +69,7 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
             // Layout is in auto mode but loc is not running - show stauts message and hide the list
             else if (layout.isRunning())
             {
-                this.locDest.setText("No active path.");
+                this.locDest.setText("No active path. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is standing by.  Show the list.
@@ -78,7 +81,7 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
                 }
                 else
                 {
-                    this.locDest.setText("No available paths.");
+                    this.locDest.setText("No available paths. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
                 }
                 
                 for (List<Edge> path : this.paths)
@@ -128,9 +131,17 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
             public String getElementAt(int i) { return strings[i]; }
         });
         locAvailPaths.setFocusable(false);
+        locAvailPaths.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                locAvailPathsMouseMoved(evt);
+            }
+        });
         locAvailPaths.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 locAvailPathsMouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                locAvailPathsMouseEntered(evt);
             }
         });
         jScrollPane1.setViewportView(locAvailPaths);
@@ -164,7 +175,9 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
-        JList list = (JList)evt.getSource();
+        
+        JList list = (JList) evt.getSource();
+        
         if (evt.getClickCount() == 2) {
             // Double-click detected
             int index = list.locationToIndex(evt.getPoint());
@@ -182,6 +195,33 @@ public class AutoLocomotiveStatus extends javax.swing.JPanel {
             }
         } 
     }//GEN-LAST:event_locAvailPathsMouseClicked
+
+    private void locAvailPathsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered
+         
+       
+    }//GEN-LAST:event_locAvailPathsMouseEntered
+
+    private void locAvailPathsMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseMoved
+        
+        // Show a tooltip with the path
+        /*JList list = (JList) evt.getSource();
+
+        int index = list.locationToIndex(evt.getPoint());
+                
+        if (index < this.paths.size() && index >= 0)
+        {
+            List<String> strings = new LinkedList<>();
+            this.paths.get(index).forEach((e) -> {
+                strings.add(e.toString());
+            });
+            
+            list.setToolTipText("<html>" + String.join("<br>", strings) + "</html>");
+        }
+        else
+        {
+            list.setToolTipText("");
+        }*/      
+    }//GEN-LAST:event_locAvailPathsMouseMoved
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

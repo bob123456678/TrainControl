@@ -7072,38 +7072,40 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
-        this.model.parseAuto(this.autonomyJSON.getText());
-        
+        new Thread( () -> {
+            this.model.parseAuto(this.autonomyJSON.getText());
 
-        if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
-        {
-            locCommandPanels.remove(this.locCommandTab);
-            
-            this.startAutonomy.setEnabled(false);
-            JOptionPane.showMessageDialog(this, "Validation failed.  Check log for details.");
-            
-            this.KeyboardTab.requestFocus();
-        }
-        else
-        {
-            locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+            if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
+            {
+                locCommandPanels.remove(this.locCommandTab);
 
-            this.startAutonomy.setEnabled(true);
-            this.renderAutoLayoutGraph();
-            
-            // Advance to locomotive tab
-            this.locCommandPanels.setSelectedIndex(
-                1
-                //(this.locCommandPanels.getSelectedIndex() + 1)
-                //% this.locCommandPanels.getComponentCount()
-            );
-            
-            this.KeyboardTab.requestFocus();
-            this.graphViewer.requestFocus();
-        }
+                this.startAutonomy.setEnabled(false);
+                JOptionPane.showMessageDialog(this, "Validation failed.  Check log for details.");
 
-        // Stop all locomotives
-        AltEmergencyStopActionPerformed(null);
+                this.KeyboardTab.requestFocus();
+            }
+            else
+            {
+                locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+
+                this.startAutonomy.setEnabled(true);
+                this.renderAutoLayoutGraph();
+
+                // Advance to locomotive tab
+                this.locCommandPanels.setSelectedIndex(
+                    1
+                    //(this.locCommandPanels.getSelectedIndex() + 1)
+                    //% this.locCommandPanels.getComponentCount()
+                );
+
+                this.KeyboardTab.requestFocus();
+                this.graphViewer.requestFocus();
+            }
+
+            // Stop all locomotives
+            AltEmergencyStopActionPerformed(null);
+            
+        }).start();
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void documentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_documentationClicked

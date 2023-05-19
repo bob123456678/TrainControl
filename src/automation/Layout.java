@@ -337,7 +337,10 @@ public class Layout
                 neighbors.add(e);
             }
         }
-        
+
+        // Randomize order to allow for variation in paths
+        Collections.shuffle(neighbors);
+
         return neighbors;
     }
 
@@ -392,6 +395,23 @@ public class Layout
         if (path.get(path.size() - 1).getEnd().isTerminus() && !this.reversibleLocs.contains(loc.getName()))
         {
             // control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
+            return false;
+        }
+        
+        // Preview the configuration
+        this.resetConfigHistory();
+        
+        for (Edge e : path)
+        {
+            this.preConfigure = true;
+            e.configure(control);
+            this.preConfigure = false;
+        }    
+        
+        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
+        if (!this.configIsValid)
+        {
+            this.control.log("Path " + path + " has conflicting commands - skipping");
             return false;
         }
         
@@ -458,24 +478,7 @@ public class Layout
         {
             return false;
         }
-        
-        // Preview the configuration
-        this.resetConfigHistory();
-        
-        for (Edge e : path)
-        {
-            this.preConfigure = true;
-            e.configure(control);
-            this.preConfigure = false;
-        }    
-        
-        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
-        if (!this.configIsValid)
-        {
-            this.control.log("Path " + path + " has conflicting commands - skipping");
-            return false;
-        }
-            
+                    
         for (Edge e : path)
         {
             e.setOccupied();
@@ -516,10 +519,11 @@ public class Layout
      * Finds the shortest path between two points using BFS
      * @param start
      * @param end
+     * @param excludePaths
      * @return
      * @throws Exception 
      */
-    public List<Edge> bfs(Point start, Point end) throws Exception
+    public List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths) throws Exception
     {
         start = this.getPoint(start.getName());
         end = this.getPoint(end.getName());
@@ -554,8 +558,18 @@ public class Layout
                 if (next.getEnd().equals(end))
                 {
                     path.add(next);
-                    //this.control.log("Path: " + path.toString());
-                    return path;
+                                        
+                    // Path is not within the list of disallowed paths - return it
+                    if (excludePaths == null || !excludePaths.contains(path))
+                    {                                  
+                        //this.control.log("Path: " + path.toString());
+                        return path;
+                    }
+                    // Path is disallowed - continue and get another one
+                    else
+                    {
+                        path.remove(path.size() - 1);
+                    }
                 }
                 else if (!visited.contains(next.getEnd()))
                 {
@@ -607,6 +621,24 @@ public class Layout
             
         }).start();
     }
+    
+    /**
+     * Returns the current location of the given locomotive
+     * @param loc
+     * @return 
+     */
+    public Point getLocomotiveLocation(Locomotive loc)
+    {
+        for (Point start : this.points.values())
+        {
+            if (loc.equals(start.getCurrentLocomotive()))
+            {
+                return start;
+            }
+        }
+        
+        return null;
+    }
        
     /**
      * Picks a random (valid and unoccupied) path for a given locomotive
@@ -629,12 +661,25 @@ public class Layout
                     {
                         try 
                         {
-                            List<Edge> path = this.bfs(start, end);
+                            // If the first shortest path is invalid, check all alternatives                            
+                            List<Edge> path;
+                            List<List<Edge>> seenPaths = new LinkedList<>();
                             
-                            if (path != null && this.isPathClear(path, loc))
+                            do 
                             {
-                                return path;
-                            }
+                                path = this.bfs(start, end, seenPaths);
+
+                                if (path != null && this.isPathClear(path, loc))
+                                {
+                                    return path;
+                                }
+                                else if (path != null)
+                                {
+                                    // Get another path other than the one we just saw
+                                    seenPaths.add(path);
+                                }
+                                
+                            } while (path != null);
                         }
                         catch (Exception e)
                         {
@@ -662,9 +707,10 @@ public class Layout
     /**
      * Returns all possible paths for a given locomotive
      * @param loc 
+     * @param uniqueDest - do we want to return multiple possible paths for the same start and end?
      * @return  
      */
-    public List<List<Edge>> getPossiblePaths(Locomotive loc)
+    public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
         List<List<Edge>> output = new LinkedList<>();
         
@@ -684,12 +730,44 @@ public class Layout
                         {
                             try 
                             {
-                                List<Edge> path = this.bfs(start, end);
+                                List<Edge> path;
+                                List<List<Edge>> seenPaths = new LinkedList<>();
 
-                                if (path != null && this.isPathClear(path, loc))
+                                // If the first shortest path is invalid, check all alternatives                            
+                                do 
                                 {
-                                    output.add(path);
-                                }
+                                    path = this.bfs(start, end, seenPaths);
+
+                                    if (path != null && this.isPathClear(path, loc))
+                                    {
+                                        boolean unique = true;
+                                        
+                                        // Only return unique starts and ends
+                                        if (uniqueDest)
+                                        {
+                                            for (List<Edge> e : output)
+                                            {
+                                                if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
+                                                {
+                                                    unique = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (unique)
+                                        {
+                                            output.add(path);
+                                        }
+                                    }
+                                    
+                                    if (path != null)
+                                    {
+                                        // Get another path other than the one we just saw
+                                        seenPaths.add(path);
+                                    }
+                                    
+                                } while (path != null);
                             }
                             catch (Exception e)
                             {
@@ -709,6 +787,7 @@ public class Layout
      * @param path
      * @param loc
      * @param speed 
+     * @return  
      */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed)
     {        

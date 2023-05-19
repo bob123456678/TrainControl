@@ -77,9 +77,15 @@ public class Edge
         return "Edge: " + getName();
     }
     
-    public boolean equals(Edge other)
+    @Override
+    public boolean equals(Object other)
     {
-        return this.getName().equals(other.getName());
+        if (!(other instanceof Edge))
+        {
+            return false;
+        }
+        
+        return this.getName().equals(((Edge) other).getName());
     }
     
     /**
