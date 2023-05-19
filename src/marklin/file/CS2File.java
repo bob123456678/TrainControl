@@ -1134,9 +1134,44 @@ public final class CS2File
                 }
             }
             
+            // Read optional coordinates
+            Integer x = null, y = null;
+            if (point.has("x"))
+            {
+                if (point.get("x") instanceof Integer)
+                {
+                    x = point.getInt("x");
+                }
+                else
+                {
+                    control.log("Auto layout error: x not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+            
+            if (point.has("y"))
+            {
+                if (point.get("y") instanceof Integer)
+                {
+                    y = point.getInt("y");
+                }
+                else
+                {
+                    control.log("Auto layout error: y not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+            
             try 
             {
                 layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
+                
+                // Set optional coordinates
+                if (x != null && y != null)
+                {
+                    layout.getPoint(point.getString("name")).setX(x);
+                    layout.getPoint(point.getString("name")).setY(y);
+                }
                 
                 if (point.has("terminus"))
                 {

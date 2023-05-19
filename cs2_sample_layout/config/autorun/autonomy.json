@@ -5,26 +5,34 @@
             "station": true,
             "s88" : 9,
             "loc": "EU46-520",
-            "locArrivalFunc" : 3
+            "locArrivalFunc" : 3,
+            "x" : 1,
+            "y" : 2
         },
         {
             "name": "BottomMainB",
             "station": true,
             "s88" : 10,
             "loc" : "BR101",
-            "locArrivalFunc" : 3
+            "locArrivalFunc" : 3,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomInner",
             "station": true,
             "s88" : 1011,
             "loc" : "MCK ME",
-            "locArrivalFunc" : 2
+            "locArrivalFunc" : 2,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomSecondary",
             "station": true,
-            "s88" : 1009
+            "s88" : 1009,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "TopMainR1",
@@ -32,121 +40,167 @@
             "s88" : 1022,
             "loc" : "EN57-925",
             "locArrivalFunc" : 2,
-            "locDepartureFunc" : 15
+            "locDepartureFunc" : 15,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "TopMainR2",
             "station": true,
-            "s88" : 1023
+            "s88" : 1023,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "ParkingFront",
             "station": true,
-            "s88" : 5
+            "s88" : 5,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "ParkingDown",
             "station": false,
-            "s88" : 2001
+            "s88" : 2001,
+            "x" : 1,
+            "y" : 3
         },
         
         {
             "name": "TopMainR1Bypass",
             "station": false,
-            "s88" : 1022
+            "s88" : 1022,
+            "x" : 1,
+            "y" : 3
         },
         
         {
             "name": "TopMainR2Bypass",
             "station": false,
-            "s88" : 1023
+            "s88" : 1023,
+            "x" : 1,
+            "y" : 3
         },
         
         {
             "name": "ParkingUp",
             "station": false,
-            "s88" : 1001
+            "s88" : 1001,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "ParkingFrontPre",
             "station": false,
-            "s88" : 1002
+            "s88" : 1002,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "ParkingBackPre",
             "station": false,
-            "s88" : 1
+            "s88" : 1,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "ParkingBack",
             "station": true,
-            "s88" : 2005
+            "s88" : 2005,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomMainPost",
             "station": false,
-            "s88" : 2013
+            "s88" : 2013,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomInnerOtherside",
             "station": true,
-            "s88" : 2011
+            "s88" : 2011,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomCrossover",
             "station": false,
-            "s88" : 14
+            "s88" : 14,
+            "x" : 1,
+            "y" : 3
         },
         
         {
             "name": "RampUp",
             "station": false,
-            "s88" : 1027
+            "s88" : 1027,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "RampDown",
             "station": false,
-            "s88" : 2012
+            "s88" : 2012,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "Tunnel",
             "station": true,
-            "s88" : 1032
+            "s88" : 1032,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "TunnelPre",
             "station": false,
-            "s88" : 1030
+            "s88" : 1030,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomSecondaryPre",
             "station": false,
-            "s88" : null
+            "s88" : null,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomMainAPre",
             "station": false,
-            "s88" : 1007
+            "s88" : 1007,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "BottomMainBPre",
             "station": false,
-            "s88" : 1006
+            "s88" : 1006,
+            "x" : 1,
+            "y" : 3
         }, 
         {
             "name": "TopMainR1Pre",
             "station": false,
-            "s88" : 1012
+            "s88" : 1012,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "TopMainR2Pre",
             "station": false,
-            "s88" : 1013
+            "s88" : 1013,
+            "x" : 1,
+            "y" : 3
         },
         {
             "name": "TopMainPost",
             "station": false,
-            "s88" : 2015
+            "s88" : 2015,
+            "x" : 1,
+            "y" : 3
         }
     ],
     

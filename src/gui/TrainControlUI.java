@@ -53,6 +53,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
+import marklin.MarklinLayoutComponent;
 import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 import model.View;
@@ -7139,8 +7140,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.graphViewer.dispose();
         }
         
+        // Do we set coordinates manually?
+        boolean setPoints = true;
+        for (Point p : this.model.getAutoLayout().getPoints())
+        {
+            if (!p.coordinatesSet())
+            {
+                this.model.log(p.getName() + " has no coordinate info - enabling auto graph layout.");
+                setPoints = false;
+                break;
+            }
+        }
+        
         Graph graph = new SingleGraph("Layout Graph"); 
-        graphViewer = new GraphViewer(graph, this);
+        graphViewer = new GraphViewer(graph, this, !setPoints);
 
         // Custom stylsheet
         URL resource = TrainControlUI.class.getResource("resources/graph.css");
@@ -7148,12 +7161,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         try
         {
             graph.setAttribute("ui.stylesheet", "url('" + resource.toURI() +"')");
-
+                                    
             for (Point p : this.model.getAutoLayout().getPoints())
             {
                 graph.addNode(p.getName());
                 
                 graph.getNode(p.getName()).setAttribute("weight", 3);
+                
+                // Set manual coordinates
+                if (setPoints)
+                {
+                    graph.getNode(p.getName()).setAttribute("x", p.getX());
+                    graph.getNode(p.getName()).setAttribute("y", p.getY());
+                }
                 
                 if (p.isOccupied() && p.getCurrentLocomotive() != null)
                 {

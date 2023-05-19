@@ -27,15 +27,24 @@ final public class GraphViewer extends javax.swing.JFrame {
      * Creates new form GraphViewer
      * @param graph
      * @param ui
+     * @param autoLayout
      */
-    public GraphViewer(Graph graph, TrainControlUI ui)
+    public GraphViewer(Graph graph, TrainControlUI ui, boolean autoLayout)
     {
         parent = ui;
                 
         // Initialize viewer   
         swingViewer = new SwingViewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
         View view = swingViewer.addDefaultView(false);
-        swingViewer.enableAutoLayout();
+        
+        if (autoLayout)
+        {
+            swingViewer.enableAutoLayout();
+        }
+        else
+        {
+            swingViewer.disableAutoLayout();
+        }
         
         // Set custom key listener
         view.setShortcutManager(new DefaultShortcutManager() {

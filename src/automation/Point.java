@@ -12,6 +12,8 @@ public class Point
     private final String name;
     private final String s88;
     private boolean isTerminus;
+    private Integer x;
+    private Integer y;
     
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
@@ -98,5 +100,30 @@ public class Point
     public String toString()
     {
         return this.getName();
+    }
+
+    public int getX()
+    {
+        return x;
+    }
+
+    public void setX(int x)
+    {
+        this.x = x;
+    }
+
+    public int getY()
+    {
+        return y;
+    }
+
+    public void setY(int y)
+    {
+        this.y = y;
+    } 
+    
+    public boolean coordinatesSet()
+    {
+        return this.x != null && this.y != null;
     }
 }
