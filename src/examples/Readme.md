@@ -193,7 +193,7 @@ Note that `minDelay` and `maxDelay` specify the minimum and maximum delay, in se
 The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks.
 
 TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.  
-However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the function on arrival.
+However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the functions on arrival.
 
 Each locomotive's preferred speed will be used (as set in the UI), unless it is 0, in which case the program will revert to `defaultLocSpeed`.
 The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
@@ -201,6 +201,8 @@ The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be to
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via the former button.  Chosen paths will be shown in the log.
+
+You can also manually specify where each locomotive should go through the "Locomotive Commands" tab.  The list of available paths is automatically calculated based on the graph state and S88 feedback.
 
 Note that a path with conflicting accessory commands will never be chosen.
 
