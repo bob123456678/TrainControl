@@ -5720,6 +5720,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    public ViewListener getModel()
+    {
+        return model;
+    }
+    
     private void LocControlPanelKeyPressed(java.awt.event.KeyEvent evt)//GEN-FIRST:event_LocControlPanelKeyPressed
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
         int keyCode = evt.getKeyCode();
@@ -7090,7 +7095,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
 
                 this.startAutonomy.setEnabled(true);
-                this.renderAutoLayoutGraph();
 
                 // Advance to locomotive tab
                 this.locCommandPanels.setSelectedIndex(
@@ -7100,6 +7104,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 );
 
                 this.KeyboardTab.requestFocus();
+                
+                this.renderAutoLayoutGraph();
+                
                 this.graphViewer.requestFocus();
             }
 
@@ -7158,6 +7165,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Custom stylsheet
         URL resource = TrainControlUI.class.getResource("resources/graph.css");
 
+        int maxY = 0;
+        
+        for (Point p : this.model.getAutoLayout().getPoints())
+        {
+            if (p.coordinatesSet() && p.getY() > maxY)
+            {
+                maxY = p.getY();
+            }
+        }
+        
         try
         {
             graph.setAttribute("ui.stylesheet", "url('" + resource.toURI() +"')");

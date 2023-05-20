@@ -6,9 +6,11 @@
 package gui;
 
 import java.awt.Component;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import org.graphstream.graph.Graph;
+import org.graphstream.graph.Node;
+import org.graphstream.algorithm.Toolkit;
+import org.graphstream.ui.geom.Point3;
 import org.graphstream.ui.graphicGraph.GraphicGraph;
 import org.graphstream.ui.swing_viewer.SwingViewer;
 import org.graphstream.ui.swing_viewer.util.DefaultShortcutManager;
@@ -43,6 +45,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         }
         else
         {
+            swingViewer.getDefaultView().enableMouseOptions();
             swingViewer.disableAutoLayout();
         }
         
@@ -64,6 +67,31 @@ final public class GraphViewer extends javax.swing.JFrame {
 
             @Override
             public void keyPressed(KeyEvent e) {
+                
+                // Print out coordinates of each node to assist with making the JSON file
+                if (e.getKeyCode() == KeyEvent.VK_C)
+                {
+                    int maxY =  0;
+                    
+                    for (Object o : swingViewer.getGraphicGraph().nodes().toArray())
+                    {
+                        Node node = (Node) o;
+                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        
+                        if (new Double(position.y).intValue() > maxY)
+                        {
+                            maxY = new Double(position.y).intValue();
+                        }
+                    }
+                    
+                    final int maxYY = maxY;
+                
+                    swingViewer.getGraphicGraph().nodes().forEach((node) -> {
+                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        parent.getModel().log(node.getId() + "\n \"x\" : " + new Double(position.x).intValue() + ",\n \"y\" : " + (maxYY - new Double(position.y).intValue()) + "\n");
+                    });
+                }
+                
                 parent.childWindowKeyEvent(e);
             }
 
@@ -97,7 +125,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Auto Layout Graph View");
         setAlwaysOnTop(true);
-        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
+        setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(2000, 2000));
         setMinimumSize(new java.awt.Dimension(400, 400));
         setSize(new java.awt.Dimension(600, 572));

@@ -114,12 +114,15 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.8.1 [5/19/23]
+* v1.8.1 [5/20/23]
     - Improved path selection logic in autonomous operation
         - Alternative paths are now checked if the shortest path is blocked
         - The chosen path is randomized if there are multiple options of the same length
     - Added current station information to autonomy UI when a locomotive has no available paths
     - Autonomy UI bug fixes
+    - Added ability to manually specify x/y node coordinates in auto layout JSON
+        - Nodes can be moved around using the mouse if all coordinates are specified
+        - Pressing the `C` key in the graph UI will list all of the current coordinates
 
 * v1.8.0 [5/17/23]
     - Added JSON-based layout autonomy configuration interface

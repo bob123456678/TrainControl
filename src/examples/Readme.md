@@ -218,23 +218,31 @@ Note that a path with conflicting accessory commands will never be chosen.
             "s88" : 1,
             "loc" : "SNCF 422365",
             "locArrivalFunc" : 3,
-            "locDepartureFunc" : 10
+            "locDepartureFunc" : 10,
+            "x" : 1521,
+            "y" : 291
         },
         {
             "name": "Station 2",
             "station": true,
             "s88" : 2,
             "loc" : "140 024-1 DB AG",
-            "locArrivalFunc" : 3
+            "locArrivalFunc" : 3,
+            "x" : 1554,
+            "y" : 0
         },
         {
             "name": "Pre Arrival",
             "station": true,
-            "s88" : 3
+            "s88" : 3,
+            "x" : 503,
+            "y" : 1241
         },
         {
             "name": "Main Track",
-            "station": false
+            "station": false,
+            "x" : 2056,
+            "y" : 1274
         }
     ],
     "edges": [
@@ -320,6 +328,12 @@ Point colors:
 * Green - locomotive stationed or has passed through
 
 ![Sample layout](../../assets/graph2.png?raw=true)
+
+# Prettifying the Graph Visualizaton
+
+For each point, you can specify optional, relative `x` and `y` coordinates in the JSON: these will fix the points to a specific location on the graph.  If any point is missing a coordinate, the points on the graph will assume a random layout.
+
+If you want to adjust the graph once created, maximize it, use your mouse to move points around, and then press the `C` key.  Coordinates will be shown in the console, which you can then paste into your JSON file.
 
 # Terminus Stations
 
