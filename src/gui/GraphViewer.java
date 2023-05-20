@@ -7,12 +7,14 @@ package gui;
 
 import java.awt.Component;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.algorithm.Toolkit;
 import org.graphstream.ui.geom.Point3;
 import org.graphstream.ui.graphicGraph.GraphicGraph;
 import org.graphstream.ui.swing_viewer.SwingViewer;
+import org.graphstream.ui.swing_viewer.util.DefaultMouseManager;
 import org.graphstream.ui.swing_viewer.util.DefaultShortcutManager;
 import org.graphstream.ui.view.Viewer;
 import org.graphstream.ui.view.View;
@@ -39,16 +41,29 @@ final public class GraphViewer extends javax.swing.JFrame {
         swingViewer = new SwingViewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
         View view = swingViewer.addDefaultView(false);
         
+        // swingViewer.getDefaultView().enableMouseOptions();
+
         if (autoLayout)
         {
             swingViewer.enableAutoLayout();
+            
+            // Disable the auto layout if a node gets dragged
+            view.setMouseManager(new DefaultMouseManager() {
+
+                @Override
+                public void mouseReleased(MouseEvent me) {
+                    if (autoLayout)
+                    {
+                        swingViewer.disableAutoLayout();
+                    }
+                }
+            });
         }
         else
         {
-            swingViewer.getDefaultView().enableMouseOptions();
             swingViewer.disableAutoLayout();
         }
-        
+                
         // Set custom key listener
         view.setShortcutManager(new DefaultShortcutManager() {
 
@@ -64,10 +79,10 @@ final public class GraphViewer extends javax.swing.JFrame {
             public void release() {
                 view.removeListener("Key", this);
             }
-
+            
             @Override
             public void keyPressed(KeyEvent e) {
-                
+                                
                 // Print out coordinates of each node to assist with making the JSON file
                 if (e.getKeyCode() == KeyEvent.VK_C)
                 {
