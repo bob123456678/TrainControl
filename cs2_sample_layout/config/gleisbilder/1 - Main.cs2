@@ -739,9 +739,10 @@ element
  .artikel=-1
 element
  .id=0x801
- .typ=bogen
+ .typ=s88bogen
  .drehung=1
- .artikel=-1
+ .artikel=1015
+ .deviceId=0xc
 element
  .id=0x802
  .typ=gerade
@@ -814,9 +815,10 @@ element
  .artikel=-1
 element
  .id=0x900
- .typ=bogen
+ .typ=s88bogen
  .drehung=1
- .artikel=-1
+ .artikel=1016
+ .deviceId=0xc
 element
  .id=0x901
  .typ=gerade

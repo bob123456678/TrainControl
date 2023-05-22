@@ -514,9 +514,10 @@ element
  .artikel=-1
 element
  .id=0x20a07
- .typ=doppelbogen
+ .typ=s88doppelbogen
  .drehung=1
- .artikel=-1
+ .artikel=1015
+ .deviceId=0xc
 element
  .id=0x20a08
  .typ=gerade
@@ -572,9 +573,10 @@ element
  .artikel=-1
 element
  .id=0x20b07
- .typ=bogen
+ .typ=s88bogen
  .drehung=1
- .artikel=-1
+ .artikel=1016
+ .deviceId=0xc
 element
  .id=0x20b08
  .typ=gerade
