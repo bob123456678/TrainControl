@@ -7137,6 +7137,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_LocFunctionsPanelMouseEntered
 
     /**
+     * Disables the start autonomy button
+     */
+    public void greyOutAutonomy()
+    {
+        this.startAutonomy.setEnabled(false);
+        AltEmergencyStopActionPerformed(null);
+    }
+    
+    /**
      * Renders a graph visualization of the automated layout
      */
     private void renderAutoLayoutGraph()
@@ -7278,14 +7287,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             }
                             
                             // Point reached and route is active
-                            if (milestones != null && milestones.contains(p) && locked)
+                            if (locked)
                             {
-                                // TODO - update this to instead highlight edges in green
-                                graph.getNode(p.getName()).setAttribute("ui.class", "completed");
-                            }
-                            else
-                            {
-                                graph.getNode(p.getName()).setAttribute("ui.class", "active");
+                                if (milestones != null && milestones.contains(p))
+                                {
+                                    // TODO - update this to instead highlight edges in green
+                                    graph.getNode(p.getName()).setAttribute("ui.class", "completed");
+                                }
+                                else
+                                {
+                                    graph.getNode(p.getName()).setAttribute("ui.class", "active");
+                                }
                             }
                         }    
                     }
