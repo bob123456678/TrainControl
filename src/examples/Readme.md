@@ -327,7 +327,12 @@ Edge colors:
 
 Point colors:
 * Blue - no locomotive stationed or passing through
+* Red - locomotive soon to pass through
 * Green - locomotive stationed or has passed through
+
+Point shaped:
+* Circle - station
+* Diamond - not a station
 
 ![Sample layout](../../assets/graph2.png?raw=true)
 

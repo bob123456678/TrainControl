@@ -29,7 +29,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 ![UI screenshot: keyboard](assets/routes3.png?raw=true)
 
-<img src="assets/graph3.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="400">
+<img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="400">
 
 **Features:**
 
@@ -114,7 +114,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.8.2 [Beta]
+* v1.8.2 [5/23/23]
+    - Improved auto layout appearance (colors and staiton shape)
     - Made log window focusable
     - Improved logging of conflicting autonomous path information
 

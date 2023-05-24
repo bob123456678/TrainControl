@@ -1,23 +1,76 @@
 node { 
     text-alignment: under; 
-    text-color: black; 
     text-style: bold; 
     text-background-mode: rounded-box;
     text-background-color: #EEE; 
     text-padding: 2px; 
     text-offset: 0px, 2px;
-    text-size: 14;
-    padding: 2px;
-    /*fill-color: rgb(255,135,0);*/
-    fill-color: rgb(0,0,255);
+    text-size: 15;
+    /*padding: 2px;*/
+    fill-color: rgb(0,0,200);
+    stroke-mode: plain; 
+    stroke-color: #EEE;
+    stroke-width: 1px;
 }
+
+node.occupied {
+    text-color: rgb(255,255,255);
+    text-background-color: rgb(0,0,200); 
+
+    fill-color: rgb(0,0,200);
+}
+node.unoccupied {
+    text-color: rgb(0,0,0);
+    text-background-color: #EEE; 
+    
+    fill-color: rgb(0,0,200);
+}
+node.start {
+    text-color: rgb(255,255,255);
+    text-background-color: rgb(0,196,33); 
+    fill-color: rgb(0,196,33);
+}
+node.end {
+    text-color: rgb(255,255,255);
+    text-background-color: rgb(196,0,0); 
+    fill-color: rgb(196,0,0);
+}
+node.completed { 
+    text-color: rgb(255,255,255);
+    text-background-color: rgb(0,196,33); 
+
+    fill-color: rgb(0,196,33);
+}
+node.active {    
+    text-color: rgb(0,0,0);
+    text-background-color: #EEE;
+
+    fill-color: rgb(196,0,0);
+}
+
 edge { 
-    shape: freeplane;
+    /*shape: freeplane;*/
     arrow-shape: arrow;
-    size: 4px;
-    fill-color: rgb(0,0,0);
-    arrow-size: 12px, 6px;
+    size: 3px;
+    arrow-size: 20px, 7px;
+    z-index: 0;
 }
+
+edge.locked {
+    fill-color: rgb(238,238,238);
+}
+
+edge.inactive {
+    fill-color: rgb(0,0,0);
+}
+
+edge.active {
+    fill-color: rgb(196,0,0);
+}
+edge.completed {
+    fill-color: rgb(0,196,33);
+}
+
 graph { 
     padding: 50px;
 }

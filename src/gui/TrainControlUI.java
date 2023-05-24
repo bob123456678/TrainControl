@@ -7194,12 +7194,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (p.isOccupied() && p.getCurrentLocomotive() != null)
                 {
                     graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
-                    graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                    graph.getNode(p.getName()).setAttribute("ui.class", "occupied");
                 }
                 else
                 {
                     graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
-                    graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
+                    graph.getNode(p.getName()).setAttribute("ui.class", "unoccupied");
+                }
+                
+                // Different styles for stations and non-stations
+                if (p.isDestination())
+                {
+                    graph.getNode(p.getName()).setAttribute("ui.style", "shape: circle; size: 20px;");
+                }
+                else
+                {
+                    graph.getNode(p.getName()).setAttribute("ui.style", "shape: diamond; size: 17px;");
                 }
             }
 
@@ -7207,7 +7217,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 graph.addEdge(e.getName(), graph.getNode(e.getStart().getName()), graph.getNode(e.getEnd().getName()), true);
                 //graph.getEdge(e.getName()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
-                //graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );                
+                //graph.getEdge(e.getName()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );    
+                graph.getEdge(e.getName()).setAttribute("ui.class", "inactive");
             }
             
             // Callback fires at the beginning and end of each path
@@ -7229,12 +7240,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             // Grey out locked-lock edges
                             if (locked)
                             {
-                                graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(238,238,238);" );
+                                graph.getEdge(e2.getName()).setAttribute("ui.class",  "locked" );
                             }
                             // Reset unlocked lock edges
                             else
                             {
-                                graph.getEdge(e2.getName()).setAttribute("ui.style",  "fill-color: rgb(0,0,0);" );
+                                graph.getEdge(e2.getName()).setAttribute("ui.class",  "inactive" );
                             }
                         }
                     }
@@ -7245,7 +7256,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     for (Edge e : edges)
                     {
                         // Make active edges red
-                        graph.getEdge(e.getName()).setAttribute("ui.style", locked ? "fill-color: rgb(255,0,0);" : "fill-color: rgb(0,0,0);" );
+                        graph.getEdge(e.getName()).setAttribute("ui.class", locked ? "active" : "inactive" );
                         // graph.getEdge(e.getName()).setAttribute("ui.label", locked ? l.getName() : "" );
 
                         // Update point labels
@@ -7254,23 +7265,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             if (p.isOccupied() && p.getCurrentLocomotive() != null)
                             {
                                 graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+                                graph.getNode(p.getName()).setAttribute("ui.class", "occupied");
+
                                 // graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
                             }
                             else
                             {
                                 graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
-                                graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
+                                graph.getNode(p.getName()).setAttribute("ui.class", "unoccupied");
+
+                                //graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
                             }
                             
                             // Point reached and route is active
                             if (milestones != null && milestones.contains(p) && locked)
                             {
                                 // TODO - update this to instead highlight edges in green
-                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(50,205,50);");
+                                graph.getNode(p.getName()).setAttribute("ui.class", "completed");
                             }
                             else
                             {
-                                graph.getNode(p.getName()).setAttribute("ui.style", "fill-color: rgb(0,0,255);");
+                                graph.getNode(p.getName()).setAttribute("ui.class", "active");
                             }
                         }    
                     }
@@ -7281,15 +7296,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         for (int i = 1; i < milestones.size(); i++)
                         {
                             graph.getEdge(Edge.getEdgeName(milestones.get(i - 1), milestones.get(i)))
-                                    .setAttribute("ui.style", "fill-color: rgb(50,205,50);" );
+                                   .setAttribute("ui.class", "completed" );
+                                   // .setAttribute("ui.style", "fill-color: rgb(50,205,50);" );
                         }
                     }
                     
                     // Highlight start and destination if path is active
                     if (locked && edges.size() > 0)
                     {
-                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
-                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
+                        //graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
+                        //graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
+                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.class", "end");
+                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.class", "start");
                     }
                     
                     // TODO - update the JSON data with the new locomotive location
