@@ -114,6 +114,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.2 [Beta]
+    - Made log window focusable
+    - Improved logging of conflicting autonomous path information
+
 * v1.8.1 [5/20/23]
     - Improved path selection logic in autonomous operation
         - Alternative paths are now checked if the shortest path is blocked

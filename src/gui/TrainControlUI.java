@@ -3160,7 +3160,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(sliderSetting))
                     .addComponent(PrimaryControls)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, 0, Short.MAX_VALUE))
+                    .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addContainerGap(57, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -4728,7 +4728,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 384, Short.MAX_VALUE))
                         .addGap(404, 404, Short.MAX_VALUE))
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4763,7 +4763,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         debugArea.setColumns(20);
         debugArea.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
         debugArea.setRows(5);
-        debugArea.setFocusable(false);
         jScrollPane3.setViewportView(debugArea);
 
         javax.swing.GroupLayout logPanelLayout = new javax.swing.GroupLayout(logPanel);

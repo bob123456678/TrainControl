@@ -53,6 +53,7 @@ public class Layout
     // Used to check if accessories within a route conflict with each other
     private final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
     private boolean configIsValid;
+    private List<String> invalidConfigs;
     private boolean preConfigure;
     
     // List of all / active locomotives
@@ -103,6 +104,7 @@ public class Layout
     {
         this.configHistory.clear();
         this.configIsValid = true;
+        this.invalidConfigs = new LinkedList<>();
     }
     
     /**
@@ -411,7 +413,7 @@ public class Layout
         // Invalid state means there were conflicting accessory commands, so this path would not work as intended
         if (!this.configIsValid)
         {
-            this.control.log("Path " + path + " has conflicting commands - skipping");
+            this.control.log("Path " + path + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
             return false;
         }
         
@@ -439,7 +441,8 @@ public class Layout
         // An opposite configuration was already issued - invalidate!
         if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
         {
-            this.control.log("Conflicting command " + acc.getName() + " " + state);
+            //this.control.log("Conflicting command " + acc.getName() + " " + state);
+            this.invalidConfigs.add(acc.getName() + " " + state);
             this.configIsValid = false;
         }
         else

@@ -1126,6 +1126,12 @@ public final class CS2File
                 if (point.get("s88") instanceof Integer)
                 {
                     s88 = Integer.toString(point.getInt("s88"));
+                    
+                    if (!control.isFeedbackSet(s88))
+                    {
+                        control.log("Auto layout warning: feedback " + s88 + " does not exist in CS2 layout");
+                        control.newFeedback(point.getInt("s88"), null);
+                    }
                 }
                 else if (!point.isNull("s88"))
                 {
@@ -1196,6 +1202,11 @@ public final class CS2File
             } 
             catch (Exception ex)
             {
+                if (control.isDebug())
+                {
+                    ex.printStackTrace();
+                }
+                
                 control.log("Auto layout error: Point error " + point.toString() + " check for duplicates or empty name");
                 layout.invalidate();
                 return;
@@ -1310,7 +1321,7 @@ public final class CS2File
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
-                                control.log("Auto layout warning: accessory  " + accessory + " does not exist in CS2 layout");
+                                control.log("Auto layout warning: accessory " + accessory + " does not exist in CS2 layout");
                                 
                                 if (accessory.contains("Signal "))
                                 {
