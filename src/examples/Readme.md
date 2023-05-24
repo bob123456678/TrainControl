@@ -326,11 +326,11 @@ Edge colors:
 * Black - edges are unoccupied / unlocked with no active path
 
 Point colors:
-* Blue - no locomotive stationed or passing through
-* Red - locomotive soon to pass through
-* Green - locomotive stationed or has passed through
+* Blue - no active route.  Label indicates if locomotive is stationed.
+* Red - active route - locomotive soon to pass through
+* Green - active route - locomotive has passed through
 
-Point shaped:
+Point shapes:
 * Circle - station
 * Diamond - not a station
 
