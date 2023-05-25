@@ -367,7 +367,7 @@ public class Layout
             {
                 if (e2.isOccupied(loc))
                 {
-                    // control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
+                    control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
                     return false;
                 }
             }
