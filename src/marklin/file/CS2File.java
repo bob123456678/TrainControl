@@ -1229,22 +1229,26 @@ public final class CS2File
                     else
                     {                    
                         layout.getPoint(point.getString("name")).setLocomotive(l);
-
+                        
                         // Set start and end callbacks
+                        if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
+                        {
+                            try
+                            {
+                                l.setDepartureFunc(point.getInt("locDepartureFunc"));
+                            }
+                            catch (Exception ex)
+                            {
+                                control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
+                            }
+                        }
+
                         l.setCallback(Layout.CB_ROUTE_START, (lc) -> {
                             lc.applyPreferredFunctions().delay(minDelay, maxDelay);
                         
-                            if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
+                            if (lc.hasDepartureFunc())
                             {
-                                try
-                                {
-                                    point.getInt("locDepartureFunc");
-                                    lc.toggleF(point.getInt("locDepartureFunc")).delay(minDelay, maxDelay);
-                                }
-                                catch (Exception ex)
-                                {
-                                    control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
-                                }
+                                lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
                             }
                         });
                         
@@ -1262,8 +1266,8 @@ public final class CS2File
                         {
                             try
                             {
-                                point.getInt("locArrivalFunc");
-                                l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(point.getInt("locArrivalFunc"));});
+                                l.setArrivalFunc(point.getInt("locArrivalFunc"));;
+                                l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(lc.getArrivalFunc());});
                             }
                             catch (Exception ex)
                             {
@@ -1435,7 +1439,7 @@ public final class CS2File
             if (control.getLocByName(loc) != null)
             {
                 layout.addReversibleLoc(control.getLocByName(loc));
-                //control.log("Flagged as reversible: " + loc);
+                control.log("Flagged as reversible: " + loc);
             }
             else
             {

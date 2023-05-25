@@ -114,8 +114,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.3 [5/25/23]
+    - Final edge is now correctly highlighted in green prior to auto route completion
+    - Improved autonomy JSON error handling
+
 * v1.8.2 [5/23/23]
-    - Improved auto layout appearance (colors and staiton shape)
+    - Improved auto layout appearance (colors and station shape)
     - Made log window focusable
     - Improved logging of conflicting autonomous path information
 
@@ -129,7 +133,7 @@ Requires JDK 1.8+ and the following libraries:
         - Nodes can be moved around using the mouse if all coordinates are specified
         - Pressing the `C` key in the graph UI will list all of the current coordinates
 
-* v1.8.0 [5/17/23]
+* v1.8.0 [5/17/23] (New feature: autonomous operation)
     - Added JSON-based layout autonomy configuration interface
     - Added ability to run fully autonomous operation via the UI
     - Added GraphStream UI to monitor autonomous operation
@@ -159,7 +163,7 @@ Requires JDK 1.8+ and the following libraries:
 * v1.7.1 [4/10/23]
     - Corrected potential route name duplication issue when importing routes from CS2
 
-* v1.7.0 [4/9/23]
+* v1.7.0 [4/9/23] (New feature: advanced routes)
     - Routes can now automatically trigger when a specified S88 sensor sends feedback
     - Routes can further be configured with required conditions based on one or more other S88 sensors
     - Route S88 sensors and trigger types are now read from the CS2
@@ -238,7 +242,7 @@ Requires JDK 1.8+ and the following libraries:
     - Fixed lag when switching between locomotive pages
     - Fixed loading of locomotive icons with special characters
 
-* v1.6.0 [10/2/22] (Beta)
+* v1.6.0 [10/2/22] (Beta, new feature: CS3 and DCC support)
     - Tested basic functionality with CS3
     - Added ability to load layout files from the local filesystem (see further details under "Layouts with the CS3" above)
     - Added option to delete locomotives from the loc control UI
@@ -309,7 +313,7 @@ Requires JDK 1.8+ and the following libraries:
     - Added lamp layout icon
     - Fixed a possible crash if an S88 event fires without existing on any layout
 
-* v1.5.0 [12/13/21]
+* v1.5.0 [12/13/21] (New feature: better CS2 compatibility)
     - Function types are now read from the CS2 file
     - Automatic recognition of pulse/momentary functions
     - Added function icons to UI
@@ -329,7 +333,7 @@ Requires JDK 1.8+ and the following libraries:
     - Fix bug affecting locomotive thumbnail refreshes
     - Swapped mislabeled keyboard buttons 28/29
 
-* v1.4.0 [11/5/21]
+* v1.4.0 [11/5/21] (New feature: easier layout control)
     - Support for viewing layouts in (unlimited) pop-up windows
     - Added function hotkeys (F1-F16)
     - Mapped `~` to F0

@@ -47,9 +47,13 @@ public abstract class Locomotive
     // Types of functions
     protected final int[] functionTypes;
     
-    // custom Event callbacks
+    // Custom event callbacks
     protected Map<String, Consumer<Locomotive>> callbacks;
     
+    // Functions that fire on/prior to arrival
+    protected Integer arrivalFunc;
+    protected Integer departureFunc;
+ 
     /**
      * Constructor with name and all functions off
      * @param name
@@ -733,5 +737,45 @@ public abstract class Locomotive
     public void setCallback(String callbackName, Consumer<Locomotive> callback)
     {
         this.callbacks.put(callbackName, callback);
+    }
+    
+    /**
+     * Getters and setters for functions
+     * @return 
+     */
+    public Integer getArrivalFunc()
+    {
+        return arrivalFunc;
+    }
+
+    public void setArrivalFunc(int arrivalFunc)
+    {
+        if (arrivalFunc <= numF && arrivalFunc > 0)
+        {
+            this.arrivalFunc = arrivalFunc;
+        }
+    }
+
+    public Integer getDepartureFunc()
+    {
+        return departureFunc;
+    }
+
+    public void setDepartureFunc(Integer departureFunc)
+    {
+        if (departureFunc <= numF && departureFunc > 0)
+        {
+            this.departureFunc = departureFunc;
+        }
+    }
+    
+    public boolean hasArrivalFunc()
+    {
+        return this.arrivalFunc != null;
+    }
+    
+    public boolean hasDepartureFunc()
+    {
+        return this.departureFunc != null;
     }
 }

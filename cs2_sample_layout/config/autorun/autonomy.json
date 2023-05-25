@@ -6,8 +6,8 @@
             "s88" : 9,
             "loc": "EU46-520",
             "locArrivalFunc" : 3,
-            "x" : 1842,
-            "y" : 91
+            "x" : 1728,
+            "y" : 111
         },
         {
             "name": "BottomMainB",
@@ -41,15 +41,15 @@
             "loc" : "EN57-925",
             "locArrivalFunc" : 2,
             "locDepartureFunc" : 15,
-            "x" : 709,
-            "y" : 894
+            "x" : 723,
+            "y" : 870
         },
         {
             "name": "TopMainR2",
             "station": true,
             "s88" : 1023,
-            "x" : 514,
-            "y" : 951
+            "x" : 534,
+            "y" : 926
         },
         {
             "name": "ParkingFront",
@@ -70,16 +70,16 @@
             "name": "TopMainR1Bypass",
             "station": false,
             "s88" : 1022,
-            "x" : 914,
-            "y" : 855
+            "x" : 937,
+            "y" : 812
         },
         
         {
             "name": "TopMainR2Bypass",
             "station": false,
             "s88" : 1023,
-            "x" : 396,
-            "y" : 856
+            "x" : 421,
+            "y" : 809
         },
         
         {
@@ -185,14 +185,31 @@
             "name": "TopMainR1Pre",
             "station": false,
             "s88" : 1012,
-            "x" : 697,
-            "y" : 1164
+            "x" : 712,
+            "y" : 1115
         },
+        
+        {
+            "name": "TopMainR1Inter",
+            "station": true,
+            "s88" : 1015,
+            "x" : 941,
+            "y" : 1053
+        },
+        
+        {
+            "name": "TopMainR2Inter",
+            "station": true,
+            "s88" : 1016,
+            "x" : 925,
+            "y" : 1183
+        },
+
         {
             "name": "TopMainR2Pre",
             "station": false,
             "s88" : 1013,
-            "x" : 655,
+            "x" : 671,
             "y" : 1234
         },
         {
@@ -298,13 +315,18 @@
         
         {
             "start": "RampUp",
-            "end": "TopMainR1Pre",
+            "end": "TopMainR1Inter",
             "commands" : [
                 {
                     "acc" : "Switch 9",
                     "state" : "turn"  
                 }
             ]
+        },
+        
+        {
+            "start": "TopMainR1Inter",
+            "end": "TopMainR1Pre"
         },
         
         {
@@ -364,13 +386,18 @@
         
         {
             "start": "RampUp",
-            "end": "TopMainR2Pre",
+            "end": "TopMainR2Inter",
             "commands" : [
                 {
                     "acc" : "Switch 9",
                     "state" : "straight"  
                 }
             ]
+        },
+        
+        {
+            "start": "TopMainR2Inter",
+            "end": "TopMainR2Pre"
         },
         
         {

@@ -361,27 +361,11 @@ public class Layout
                 // control.log("Edge is occupied: " + e.getName());
                 return false;
             }
-            
-            // Ensure all lock edges are unoccupied
-            for (Edge e2 : e.getLockEdges())
-            {
-                if (e2.isOccupied(loc))
-                {
-                    control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
-                    return false;
-                }
-            }
-            
+                        
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
                 // control.log("Edge is occupied: " + e.getOppositeName());
-                return false;
-            }
-            
-            if (control.getFeedbackState(e.getEnd().getS88()) != false)
-            {
-                control.log("Path " + path.toString() + " expects feedback " + e.getEnd().getS88() + " to be clear");
                 return false;
             }
             
@@ -391,6 +375,22 @@ public class Layout
                 // control.log("Path " + path.toString() + " contains an intermediate terminus station");
                 return false;
             }
+            
+            if (control.getFeedbackState(e.getEnd().getS88()) != false)
+            {
+                control.log("Path " + path.toString() + " expects feedback " + e.getEnd().getS88() + " to be clear");
+                return false;
+            }
+            
+            // Ensure all lock edges are unoccupied
+            for (Edge e2 : e.getLockEdges())
+            {
+                if (e2.isOccupied(loc))
+                {
+                    control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
+                    return false;
+                }
+            } 
         }
         
         // Only reversible locomotives can go to a terminus
@@ -862,18 +862,6 @@ public class Layout
                 if (current.hasS88())
                 {
                     loc.waitForOccupiedFeedback(current.getS88());
-                    this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());
-                    
-                    this.locomotiveMilestones.get(loc.getName()).add(current);
-
-                    // Fire callbacks for milestones
-                    for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
-                    {
-                        if (callback != null)
-                        {
-                            callback.apply(path, loc, true);
-                        }
-                    }                    
                 }
                 
                 // We can also clear this edges dynamically 
@@ -894,6 +882,19 @@ public class Layout
                 
                 loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0);
             }    
+            
+            this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());                    
+            
+            this.locomotiveMilestones.get(loc.getName()).add(current);                  
+            
+            // Fire callbacks
+            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+            {
+                if (callback != null)
+                {
+                    callback.apply(path, loc, true);
+                }
+            }
         }
         
         if (loc.hasCallback(CB_ROUTE_END))

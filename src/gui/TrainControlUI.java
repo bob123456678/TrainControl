@@ -7275,23 +7275,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             {
                                 graph.getNode(p.getName()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
                                 graph.getNode(p.getName()).setAttribute("ui.class", "occupied");
-
-                                // graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
                             }
                             else
                             {
                                 graph.getNode(p.getName()).setAttribute("ui.label", p.getName());
                                 graph.getNode(p.getName()).setAttribute("ui.class", "unoccupied");
-
-                                //graph.getNode(p.getName()).setAttribute("ui.style", "text-color: rgb(0,0,0);");
                             }
-                            
+                                                        
                             // Point reached and route is active
                             if (locked)
                             {
                                 if (milestones != null && milestones.contains(p))
                                 {
-                                    // TODO - update this to instead highlight edges in green
                                     graph.getNode(p.getName()).setAttribute("ui.class", "completed");
                                 }
                                 else
@@ -7308,20 +7303,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         for (int i = 1; i < milestones.size(); i++)
                         {
                             graph.getEdge(Edge.getEdgeName(milestones.get(i - 1), milestones.get(i)))
-                                   .setAttribute("ui.class", "completed" );
-                                   // .setAttribute("ui.style", "fill-color: rgb(50,205,50);" );
+                                .setAttribute("ui.class", "completed" );
                         }
                     }
                     
                     // Highlight start and destination if path is active
                     if (locked && edges.size() > 0)
                     {
-                        //graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.style", "text-color: rgb(255,0,0);");
-                        //graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.style", "text-color: rgb(50,205,50);");
-                        graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.class", "end");
-                        graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.class", "start");
+                        if (!milestones.contains(edges.get(edges.size() - 1).getEnd()))
+                        {
+                            graph.getNode(edges.get(edges.size() - 1).getEnd().getName()).setAttribute("ui.class", "end");
+                        }
+                        
+                        if (!milestones.contains(edges.get(0).getStart()))
+                        {
+                            graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.class", "start");
+                        }
                     }
-                    
+                                    
                     // TODO - update the JSON data with the new locomotive location
                 }
 
@@ -7352,9 +7351,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }        
     }
          
-    public class CustomTableRenderer extends DefaultTableCellRenderer {
-
-        // You should override getTableCellRendererComponent
+    public class CustomTableRenderer extends DefaultTableCellRenderer
+    {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
@@ -7362,19 +7360,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Component c = super.getTableCellRendererComponent(table, value, isSelected,
                     hasFocus, row, column);
 
-            // Check the column name, if it is "version"
-                // You know version column includes string
             if (value != null)
             {
                 String name = (String) value;
                 
                 if (model.getRoute(name).isEnabled() && model.getRoute(name).hasS88())
                 {
-                    //set to red bold font
+                    // set to red bold font
                     c.setForeground(Color.RED);
                     c.setFont(new Font("Dialog", Font.BOLD, 12));
-                } else {
-                    //stay at default
+                } 
+                else 
+                {
+                    // stay at default
                     c.setForeground(Color.BLACK);
                     c.setFont(new Font("Dialog", Font.PLAIN, 12));
                 }
