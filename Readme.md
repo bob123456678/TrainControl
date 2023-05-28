@@ -43,7 +43,7 @@ Useful for testing, individual accessories can be directly controlled.
 
 **Routes**
 
-Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an imcoming train to an unoccupied station track.  Normal routes can also be defined and activated via the layout.
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Normal routes can also be defined and activated via the layout.
 
 ![UI screenshot: layout](assets/ui_route.png?raw=true)
 
@@ -95,6 +95,8 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 Some sample files are included in the `cs2_sample_layout` folder.
 
 Expanded support for CS3 layouts is planned for the future, and a program to generate/edit CS2 layout files is coming soon!
+
+## Running TrainControl
 
 **Building the project from source:**
 
