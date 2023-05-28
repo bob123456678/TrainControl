@@ -15,23 +15,47 @@ Under the hood, this program implements the Marklin CAN protocol and can therefo
 also be used to fully automate a layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
-![UI screenshot: locomotive control](assets/interface9.png?raw=true)
+## Overview
 
-![UI screenshot: layout](assets/interface4.png?raw=true)
+**Main UI**
 
-![UI screenshot: keyboard](assets/interface5.png?raw=true)
+You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.
+
+![UI screenshot: locomotive control](assets/ui_main.png?raw=true)
+
+Right-click a locomotive to change it or set additional options, such as preferred speed or functions.
 
 ![UI screenshot: locomotive control](assets/interface8.png?raw=true)
 
-![UI screenshot: locomotive control](assets/interface6.png?raw=true)
+![UI screenshot: locomotive control](assets/ui_sel_loc.png?raw=true)
 
-![UI screenshot: keyboard](assets/routes2.png?raw=true)
+**Layout View**
 
-![UI screenshot: keyboard](assets/routes3.png?raw=true)
+Layouts are downloaded automatically from the CS2, or configurable manually via a layout file.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
-<img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="400">
+![UI screenshot: layout](assets/ui_layout.png?raw=true)
 
-**Features:**
+**Keyboard**
+
+Useful for testing, individual accessories can be directly controlled.
+
+![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
+
+**Routes**
+
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an imcoming train to an unoccupied station track.  Normal routes can also be defined and activated via the layout.
+
+![UI screenshot: layout](assets/ui_route.png?raw=true)
+
+**Full Autonomy**
+
+Defined via a special [JSON configuration file](src/examples/Readme.md), represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  You can pick destinations for specific trains, or let the system continuously execute random routes.
+
+![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
+
+<img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
+
+## Features
 
 * Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
 * View and interact with layout diagrams, with support for multiple windows
