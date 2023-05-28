@@ -25,7 +25,7 @@ You can assign locomotives to any letter on the keyboard, then quickly switch be
 
 Right-click a locomotive to change it or set additional options, such as preferred speed or functions.
 
-![UI screenshot: locomotive control](assets/interface8.png?raw=true)
+![UI screenshot: locomotive control](assets/ui_right_click.png?raw=true)
 
 ![UI screenshot: locomotive control](assets/ui_sel_loc.png?raw=true)
 
