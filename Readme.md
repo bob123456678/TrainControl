@@ -19,7 +19,7 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 **Main UI**
 
-You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.
+You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3.
 
 ![UI screenshot: locomotive control](assets/ui_main.png?raw=true)
 
@@ -31,19 +31,19 @@ Right-click a locomotive to change it or set additional options, such as preferr
 
 **Layout View**
 
-Layouts are downloaded automatically from the CS2, or configurable manually via a layout file.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Layouts are downloaded automatically from the CS2, or configurable manually via a layout file with the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
 ![UI screenshot: layout](assets/ui_layout.png?raw=true)
 
 **Keyboard**
 
-Useful for testing, individual accessories can be directly controlled.
+Useful for testing, individual accessories can be directly controlled via their digital address.
 
 ![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
 
 **Routes**
 
-Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Normal routes can also be defined and activated via the layout.
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Manual routes can also be defined and activated directly or via the layout tab.
 
 ![UI screenshot: layout](assets/ui_route.png?raw=true)
 
@@ -66,7 +66,7 @@ Defined via a special [JSON configuration file](src/examples/Readme.md), represe
 * Download locomotive, layout, and route information from the CS2/CS3
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
-* (Beta from v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
+* (From v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
 
 **Requirements:**
 
