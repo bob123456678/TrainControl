@@ -331,7 +331,8 @@ Point colors:
 * Green - active route - locomotive has passed through
 
 Point shapes:
-* Circle - station
+* Circle - regular station
+* Square - terminus station
 * Diamond - not a station
 
 ![Sample layout](../../assets/graph2.png?raw=true)

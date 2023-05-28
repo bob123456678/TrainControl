@@ -1376,14 +1376,23 @@ public final class CS2File
                             String action = command.getString("state");
                             String acc = command.getString("acc");
                             
-                            if ("turn".equals(action) || "red".equals(action))
+                            if ("turn".equals(action))
                             {
                                 control1.getAutoLayout().configure(acc, Accessory.accessorySetting.TURN);
                             } 
-                            else if ("straight".equals(action) || "green".equals(action))
+                            else if ("red".equals(action))
                             {
-                                // Test, shorten name, then update api/documentation
+                                // == turn
+                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.RED);
+                            }
+                            else if ("straight".equals(action))
+                            {
                                 control1.getAutoLayout().configure(acc, Accessory.accessorySetting.STRAIGHT);
+                            } 
+                            else if ("green".equals(action))
+                            {
+                                // == straight
+                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.GREEN);
                             } 
                         });
                     };

@@ -114,6 +114,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.4 [5/27/23]
+    - Terminus stations are now drawn as a square
+    - Clarified lock edge route debug output
+
 * v1.8.3 [5/25/23]
     - Final edge is now correctly highlighted in green prior to auto route completion
     - Improved autonomy JSON error handling

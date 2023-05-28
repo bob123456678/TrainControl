@@ -7214,7 +7214,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Different styles for stations and non-stations
                 if (p.isDestination())
                 {
-                    graph.getNode(p.getName()).setAttribute("ui.style", "shape: circle; size: 20px;");
+                    if (p.isTerminus())
+                    {
+                        graph.getNode(p.getName()).setAttribute("ui.style", "shape: box; size: 20px;");
+                    }
+                    else
+                    {
+                        graph.getNode(p.getName()).setAttribute("ui.style", "shape: circle; size: 20px;");
+                    }
                 }
                 else
                 {
