@@ -68,7 +68,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is in auto mode but loc is not running - show stauts message and hide the list
-            else if (layout.isRunning())
+            else if (layout.isAutoRunning())
             {
                 if (layout.getLocomotiveLocation(locomotive) != null)
                 {
@@ -195,7 +195,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             // Double-click detected
             int index = list.locationToIndex(evt.getPoint());
                         
-            if (!layout.isRunning() && !this.paths.isEmpty())
+            if (!layout.isAutoRunning() && !this.paths.isEmpty())
             {
                 new Thread( () -> {
                     boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed());

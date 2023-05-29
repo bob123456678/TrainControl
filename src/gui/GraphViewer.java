@@ -169,8 +169,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 //if (evt.getClickCount() == 2)
                 //{
                     if (SwingUtilities.isRightMouseButton(evt) 
-                            && !parent.getModel().getAutoLayout().isRunning()
-                            && parent.getModel().getAutoLayout().getActiveLocomotives().isEmpty())
+                            && !parent.getModel().getAutoLayout().isRunning())
                     {
                         GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
                         if(element != null)

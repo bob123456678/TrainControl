@@ -200,6 +200,15 @@ public class Layout
     }
     
     /**
+     * Returns auto running status
+     * @return 
+     */
+    public boolean isAutoRunning()
+    {
+        return this.running;
+    }
+    
+    /**
      * Stops locomotives
      */
     public void stopLocomotives()
