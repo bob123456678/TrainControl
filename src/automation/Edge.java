@@ -1,9 +1,12 @@
 package automation;
 
+import base.Accessory;
 import base.Locomotive;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import model.ViewListener;
 
 /**
@@ -16,9 +19,10 @@ public class Edge
     private boolean occupied;
     private final Point start;
     private final Point end;
+    private final Map<String, String> configCommands;
     
     // A lambda function with accessory commands needed to connect this edge
-    private final Consumer<ViewListener> configureFunc;
+    private final BiConsumer<ViewListener, Edge> configureFunc;
     
     // A list of edges that should be locked whenever this edge is locked
     // This is useful if the layout contains crossings that cannot otherwise be modeled as a graph edge
@@ -31,7 +35,7 @@ public class Edge
      *                      (i.e., set switches and signals correctly to 
      *                       ensure the train can reach its destination)
      */
-    public Edge(Point start, Point end, Consumer<ViewListener> configureFunc)
+    public Edge(Point start, Point end, BiConsumer<ViewListener, Edge> configureFunc)
     {
         this.start = start;
         this.end = end;
@@ -39,6 +43,66 @@ public class Edge
         this.configureFunc = configureFunc;
         this.occupied = false;
         this.lockEdges = new LinkedList<>();
+        this.configCommands = new HashMap<>();
+    }
+    
+    /**
+     * Returns all the config commands set for this edge
+     * @return 
+     */
+    public Map<String, String> getConfigCommands()
+    {
+        return this.configCommands;
+    }
+    
+    /**
+     * Adds a new config command
+     * @param acc
+     * @param state 
+     */
+    public void addConfigCommand(String acc, String state)
+    {
+        this.configCommands.put(acc, state);
+    }
+    
+    /**
+     * Clears config commands
+     * @param acc 
+     */
+    public void clearConfigCommand(String acc)
+    {
+        this.configCommands.remove(acc);
+    }
+    
+    /**
+     * Executes config commands as defined in configCommands
+     * @param control1 
+     */
+    public void executeConfigCommands(ViewListener control1)
+    {
+        for (String acc : this.getConfigCommands().keySet())
+        {
+            String action = this.getConfigCommands().get(acc);
+
+            if ("turn".equals(action))
+            {
+                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.TURN);
+            } 
+            else if ("red".equals(action))
+            {
+                // == turn
+                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.RED);
+            }
+            else if ("straight".equals(action))
+            {
+                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.STRAIGHT);
+            } 
+            else if ("green".equals(action))
+            {
+                // == straight
+                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.GREEN);
+            } 
+        }
     }
     
     /**
@@ -49,7 +113,7 @@ public class Edge
     {
         if (configureFunc != null)
         {
-            this.configureFunc.accept(control);
+            this.configureFunc.accept(control, this);
         }
     }
     
@@ -211,6 +275,39 @@ public class Edge
         {
             return e.get(0).getStart().getName() + " -> " + e.get(e.size() - 1).getEnd().getName();
         }
+    }
+    
+    /**
+     * Converts this edge to a JSON representation
+     * @return 
+     */
+    public String toJSON()
+    {
+        String json = "\"start\" : \"%s\", \"end\" : \"%s\"";
+        List<String> lockEdgeList = new LinkedList<>();
+        List<String> commandList = new LinkedList<>();
+ 
+        for (Edge e : this.lockEdges)
+        {
+            lockEdgeList.add("{\"start\": \"" + e.getStart().getName() + "\", \"end\" : \""+ e.getEnd().getName()+"\"}");
+        }
+        
+        for (String accName : this.configCommands.keySet())
+        {
+            commandList.add("{\"acc\": \"" + accName + "\", \"state\" : \"" + this.configCommands.get(accName) + "\"}");
+        }
+        
+        if (!lockEdgeList.isEmpty())
+        {
+            json += ", \"lockedges\" : [" + String.join(",", lockEdgeList) + "]";
+        }
+        
+        if (!commandList.isEmpty())
+        {
+            json += ", \"commands\" : [" + String.join(",", commandList) + "]";
+        }
+        
+        return "{" + String.format(json, this.start.getName(), this.end.getName()) + "}";   
     }
 }
             

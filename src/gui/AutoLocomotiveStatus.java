@@ -70,7 +70,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             // Layout is in auto mode but loc is not running - show stauts message and hide the list
             else if (layout.isRunning())
             {
-                this.locDest.setText("No active path. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
+                if (layout.getLocomotiveLocation(locomotive) != null)
+                {
+                    this.locDest.setText("No active path. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
+                }
+                else
+                {
+                    this.locDest.setText("Locomotive is not placed on the graph.");
+                }
+                
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is standing by.  Show the list.

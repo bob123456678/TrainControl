@@ -98,15 +98,68 @@ final public class GraphViewer extends javax.swing.JFrame {
         // Disable the auto layout if a node gets dragged
         swingView.setMouseManager(new DefaultMouseManager() {
 
+            GraphicElement lastNode;
+            
             @Override
-            public void mouseReleased(MouseEvent me)
+            public void mouseReleased(MouseEvent evt)
             {
                 if (autoLayout)
                 {
                     swingViewer.disableAutoLayout();
                 }
+                
+                if (SwingUtilities.isLeftMouseButton(evt))
+                {
+                    int maxY =  0;
+                    
+                    for (Object o : swingViewer.getGraphicGraph().nodes().toArray())
+                    {
+                        Node node = (Node) o;
+                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        
+                        if (new Double(position.y).intValue() > maxY)
+                        {
+                            maxY = new Double(position.y).intValue();
+                        }
+                    }
+                    
+                    final int maxYY = maxY;
+                
+                    GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+                    
+                    // The above sometimes fails if the element has the lowest Y value.  Use stored element instead.
+                    if (element == null)
+                    {
+                        element = lastNode;
+                    }
+                    
+                    if(element != null)
+                    {
+                        Node node = swingViewer.getGraphicGraph().getNode(element.getId());
+                        
+                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(new Double(position.x).intValue());
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                        
+                        parent.getModel().log("Moved " + element.getId() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
+                    }
+                }
             }
 
+            @Override
+            public void mousePressed(MouseEvent evt)
+            {
+                // Save the element due to the glitch above
+                GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+                if(element != null)
+                {
+                     lastNode = element;
+                }
+                
+                super.mousePressed(evt);
+            }
+            
             /**
              * Support right click menus for nodes (and eventually edges)
              */
@@ -122,7 +175,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
                         if(element != null)
                         {
-                            String nodeName = element.getLabel().split("\\[")[0].trim();
+                            String nodeName = element.getId();
                             
                             if (parent.getModel().getAutoLayout().getPoint(nodeName).isDestination())
                             {                            
@@ -176,7 +229,9 @@ final public class GraphViewer extends javax.swing.JFrame {
                     swingViewer.getGraphicGraph().nodes().forEach((node) -> {
                         Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         parent.getModel().log(node.getId() + "\n \"x\" : " + new Double(position.x).intValue() + ",\n \"y\" : " + (maxYY - new Double(position.y).intValue()) + "\n");
-                    });
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(new Double(position.x).intValue());
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                    });  
                 }
                 
                 parent.childWindowKeyEvent(e);

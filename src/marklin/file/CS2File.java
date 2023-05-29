@@ -1,7 +1,7 @@
 package marklin.file;
 
+import automation.Edge;
 import automation.Layout;
-import base.Accessory;
 import base.Locomotive;
 import java.io.*;
 import java.net.*;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import marklin.MarklinControlStation;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
@@ -1115,7 +1115,13 @@ public final class CS2File
             layout.invalidate();
             return layout;        
         }
-
+        
+        // Save values in layout class
+        layout.setDefaultLocSpeed(defaultLocSpeed);
+        layout.setMaxDelay(maxDelay);
+        layout.setMinDelay(minDelay);
+        layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+   
         // Add points
         points.forEach(pnt -> { 
             JSONObject point = (JSONObject) pnt; 
@@ -1198,7 +1204,7 @@ public final class CS2File
                         control.log("Auto layout error: invalid value for terminus " + point.toString());
                         layout.invalidate();
                     }
-                }
+                }                
             } 
             catch (Exception ex)
             {
@@ -1316,7 +1322,7 @@ public final class CS2File
             JSONObject edge = (JSONObject) edg; 
             try 
             {
-                Consumer<ViewListener> commandCallback = null;
+                BiConsumer<ViewListener, Edge> commandCallback = null;
 
                 String start = edge.getString("start");
                 String end = edge.getString("end");
@@ -1378,37 +1384,27 @@ public final class CS2File
                         }
                     });
                     
-                    // Create lambda
-                    commandCallback = (ViewListener control1) -> 
+                    // Create generic lambda; commands will be set directly on the edge (below)
+                    commandCallback = (ViewListener control1, Edge currentEdge) -> 
                     {
-                        commands.forEach((cmd) -> {
-                            JSONObject command = (JSONObject) cmd;
-                            String action = command.getString("state");
-                            String acc = command.getString("acc");
-                            
-                            if ("turn".equals(action))
-                            {
-                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.TURN);
-                            } 
-                            else if ("red".equals(action))
-                            {
-                                // == turn
-                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.RED);
-                            }
-                            else if ("straight".equals(action))
-                            {
-                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.STRAIGHT);
-                            } 
-                            else if ("green".equals(action))
-                            {
-                                // == straight
-                                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.GREEN);
-                            } 
-                        });
+                        currentEdge.executeConfigCommands(control1);
                     };
                 }
 
-                layout.createEdge(start, end, commandCallback);    
+                Edge e = layout.createEdge(start, end, commandCallback); 
+                
+                // Store the raw config commands so that we can reference them later
+                if (edge.has("commands") && !edge.isNull("commands"))
+                {
+                    JSONArray commands = edge.getJSONArray("commands");
+                    commands.forEach((cmd) -> {
+                        JSONObject command = (JSONObject) cmd;
+                        String action = command.getString("state");
+                        String acc = command.getString("acc");
+
+                        e.addConfigCommand(acc, action);
+                    });                    
+                }                
             } 
             catch (Exception ex)
             {
@@ -1474,7 +1470,7 @@ public final class CS2File
         }
         
         layout.setLocomotivesToRun(locomotives);
-            
+                    
         return layout;
     }
 }

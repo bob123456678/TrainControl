@@ -43,13 +43,13 @@ public class FullAutonomyExample
             
             // If an accessory is not yet in the database, use control.newSignal or control.newSwitch
             
-            layout.createEdge("Station 2", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 2", GREEN);});
-            layout.createEdge("Station 1", "Main Track", (control) -> {control.getAutoLayout().configure("Signal 1", GREEN);});
+            layout.createEdge("Station 2", "Main Track", (control, edge) -> {control.getAutoLayout().configure("Signal 2", GREEN);});
+            layout.createEdge("Station 1", "Main Track", (control, edge) -> {control.getAutoLayout().configure("Signal 1", GREEN);});
 
             layout.createEdge("Main Track", "Pre Arrival", null);
 
-            layout.createEdge("Pre Arrival", "Station 1", (control) -> {control.getAutoLayout().configure("Switch 10", TURN); control.getAutoLayout().configure("Signal 1", RED);});
-            layout.createEdge("Pre Arrival", "Station 2", (control) -> {control.getAutoLayout().configure("Switch 10", STRAIGHT); control.getAutoLayout().configure("Signal 2", RED);});
+            layout.createEdge("Pre Arrival", "Station 1", (control, edge) -> {control.getAutoLayout().configure("Switch 10", TURN); control.getAutoLayout().configure("Signal 1", RED);});
+            layout.createEdge("Pre Arrival", "Station 2", (control, edge) -> {control.getAutoLayout().configure("Switch 10", STRAIGHT); control.getAutoLayout().configure("Signal 2", RED);});
 
             /*
             // We can force an edge to lock another edge that crosses over it / merges into it

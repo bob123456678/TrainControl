@@ -45,7 +45,9 @@ import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
@@ -1751,6 +1753,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
+        exportJSON = new javax.swing.JButton();
+        gracefulStop = new javax.swing.JButton();
         ManageLocPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         LocTypeMM2 = new javax.swing.JRadioButton();
@@ -4333,7 +4337,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate JSON / Stop Execution");
+        validateButton.setText("Validate JSON / Instant Stop");
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4438,6 +4442,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         locCommandPanels.addTab("Locomotive Commands", locCommandTab);
 
+        exportJSON.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        exportJSON.setText("Export State to JSON");
+        exportJSON.setEnabled(false);
+        exportJSON.setFocusable(false);
+        exportJSON.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportJSONActionPerformed(evt);
+            }
+        });
+
+        gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        gracefulStop.setText("Graceful Stop");
+        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
+        gracefulStop.setEnabled(false);
+        gracefulStop.setFocusable(false);
+        gracefulStop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gracefulStopActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
         autoPanel.setLayout(autoPanelLayout);
         autoPanelLayout.setHorizontalGroup(
@@ -4448,7 +4473,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(locCommandPanels)
                     .addGroup(autoPanelLayout.createSequentialGroup()
                         .addComponent(validateButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(exportJSON)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(gracefulStop)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(startAutonomy)))
                 .addContainerGap())
         );
@@ -4459,8 +4488,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(locCommandPanels)
                 .addGap(2, 2, 2)
                 .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(startAutonomy)
-                    .addComponent(validateButton))
+                    .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(startAutonomy)
+                        .addComponent(gracefulStop))
+                    .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(validateButton)
+                        .addComponent(exportJSON)))
                 .addContainerGap())
         );
 
@@ -7072,12 +7105,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }).start();
 
             this.startAutonomy.setEnabled(false);
+            this.gracefulStop.setEnabled(true);
+        }
+        else if (this.model.getAutoLayout().isRunning())
+        {
+            JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
         }
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         new Thread( () -> {
+            
             this.model.parseAuto(this.autonomyJSON.getText());
 
             if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
@@ -7088,6 +7127,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, "Validation failed.  Check log for details.");
 
                 this.KeyboardTab.requestFocus();
+                
+                this.exportJSON.setEnabled(false);      
             }
             else
             {
@@ -7107,6 +7148,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.renderAutoLayoutGraph();
                 
                 this.graphViewer.requestFocus();
+                
+                this.exportJSON.setEnabled(true);
+                this.gracefulStop.setEnabled(false);
             }
 
             // Stop all locomotives
@@ -7135,6 +7179,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void LocFunctionsPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocFunctionsPanelMouseEntered
         this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_LocFunctionsPanelMouseEntered
+
+    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
+        
+        JTextArea textArea = new JTextArea();
+        textArea.setColumns(50);
+        textArea.setRows(30);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+        textArea.setText(this.getModel().getAutoLayout().toJSON());
+        JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);        
+    }//GEN-LAST:event_exportJSONActionPerformed
+
+    private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
+        this.getModel().getAutoLayout().stopLocomotives();
+        this.gracefulStop.setEnabled(false);
+        this.startAutonomy.setEnabled(true);
+    }//GEN-LAST:event_gracefulStopActionPerformed
 
     /**
      * Disables the start autonomy button
@@ -7332,8 +7394,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             graph.getNode(edges.get(0).getStart().getName()).setAttribute("ui.class", "start");
                         }
                     }
-                                    
-                    // TODO - update the JSON data with the new locomotive location
+                             
+                    // Update button visibility
+                    if (!this.model.getAutoLayout().isRunning())
+                    {
+                        this.exportJSON.setEnabled(true);
+                        this.gracefulStop.setEnabled(false);
+                    }
+                    else
+                    {
+                        this.exportJSON.setEnabled(false);
+                        // this.gracefulStop.setEnabled(true);
+                    }
                 }
 
                 return null;                
@@ -7697,6 +7769,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton checkDuplicates;
     private javax.swing.JButton clearButton;
     private javax.swing.JTextArea debugArea;
+    private javax.swing.JButton exportJSON;
+    private javax.swing.JButton gracefulStop;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;

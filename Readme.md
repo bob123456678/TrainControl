@@ -53,6 +53,8 @@ Defined via a special [JSON configuration file](src/examples/Readme.md), represe
 
 ![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
 
+The graph UI will show you which routes are active, which edges are locked, and where different trains are stationed.  This can also help you debug your graph as you build it.  While trains are not running, you can right-click any station to reassign a train.
+
 <img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
 
 ## Features
@@ -139,6 +141,11 @@ Requires JDK 1.8+ and the following libraries:
 
 
 ## Changelog
+
+* v1.8.6 [5/29/23]
+    - Added button to export current graph state in JSON format
+    - Added button to request a graceful stop of autonomous operation (active locomotives will stop at their next station)
+    - Fixed bug from v1.8.5 where execution would fail if any locomotives were removed from the graph via the UI
 
 * v1.8.5 [5/28/23]
     - Added right-click menus to graph UI.  Locomotives can now be moved/removed from stations without editing the JSON.

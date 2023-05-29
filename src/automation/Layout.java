@@ -15,9 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import marklin.MarklinAccessory;
 import model.ViewListener;
+import org.json.JSONObject;
 
 /**
  * Represent layout as a directed graph to support fully automated train operation
@@ -63,6 +65,12 @@ public class Layout
     
     // Reversible locomotives (can travel to a terminus station)
     private final Set<String> reversibleLocs;
+    
+    // Additional configuration
+    private int minDelay;
+    private int maxDelay;
+    private int defaultLocSpeed;
+    private boolean turnOffFunctionsOnArrival;
     
     /**
      * Helper class for BFS
@@ -188,7 +196,7 @@ public class Layout
      */
     public boolean isRunning()
     {
-        return this.running;
+        return this.running || !this.getActiveLocomotives().isEmpty();
     }
     
     /**
@@ -293,9 +301,10 @@ public class Layout
      * @param startPoint name of the starting point
      * @param endPoint name of the ending point
      * @param configureFunc optional, a lambda that configures all accessories needed to connecte the two points
+     * @return 
      * @throws java.lang.Exception 
      */
-    public void createEdge(String startPoint, String endPoint, Consumer<ViewListener> configureFunc) throws Exception
+    public Edge createEdge(String startPoint, String endPoint, BiConsumer<ViewListener, Edge> configureFunc) throws Exception
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
@@ -321,6 +330,8 @@ public class Layout
         {
             this.adjacency.get(newEdge.getStart().getName()).add(newEdge);
         }
+        
+        return newEdge;
     }
 
     /**
@@ -1063,6 +1074,82 @@ public class Layout
     @FunctionalInterface
     public interface TriFunction<T, U, V, R> {
         public R apply(T t, U u, V v);
+    }
+    
+    public int getMinDelay()
+    {
+        return minDelay;
+    }
+
+    public void setMinDelay(int minDelay)
+    {
+        this.minDelay = minDelay;
+    }
+
+    public int getMaxDelay()
+    {
+        return maxDelay;
+    }
+
+    public void setMaxDelay(int maxDelay)
+    {
+        this.maxDelay = maxDelay;
+    }
+
+    public int getDefaultLocSpeed()
+    {
+        return defaultLocSpeed;
+    }
+
+    public void setDefaultLocSpeed(int defaultLocSpeed)
+    {
+        this.defaultLocSpeed = defaultLocSpeed;
+    }
+
+    public boolean isTurnOffFunctionsOnArrival()
+    {
+        return turnOffFunctionsOnArrival;
+    }
+
+    public void setTurnOffFunctionsOnArrival(boolean turnOffFunctionsOnArrival)
+    {
+        this.turnOffFunctionsOnArrival = turnOffFunctionsOnArrival;
+    }
+    
+    /**
+     * Returns the layout configuration in JSON format
+     * @return 
+     */
+    public String toJSON()
+    {
+        String json = "{\"points\" : [%s], \"edges\" : [%s], \"minDelay\" : %s, \"maxDelay\" : %s, \"defaultLocSpeed\" : %s, \"turnOffFunctionsOnArrival\" : %s, \"reversibleLocs\" : [%s] }";
+        
+        List<String> pointJson = new LinkedList<>();
+        List<String> edgeJson = new LinkedList<>();
+        List<String> revLocJson = new LinkedList<>();
+
+        for (Point p : this.getPoints())
+        {
+            pointJson.add(p.toJSON());
+        }
+        
+        for (Edge e : this.getEdges())
+        {
+            edgeJson.add(e.toJSON());
+        }
+        
+        for (String loc : this.reversibleLocs)
+        {
+            revLocJson.add("\"" + loc + "\"");
+        }
+        
+        json = String.format(json, String.join(",", pointJson), String.join(",", edgeJson), this.getMinDelay(), this.getMaxDelay(), this.getDefaultLocSpeed(), 
+                this.isTurnOffFunctionsOnArrival(), String.join(",", revLocJson));
+        
+        // Pretty printing
+        JSONObject jsonObj = new JSONObject(json);
+        
+        return jsonObj.toString(4);
     }
 }
 

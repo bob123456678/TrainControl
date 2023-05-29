@@ -1,5 +1,7 @@
 package automation;
 import base.Locomotive;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Represent stations/stops as graph points
@@ -125,5 +127,43 @@ public class Point
     public boolean coordinatesSet()
     {
         return this.x != null && this.y != null;
+    }
+    
+    /**
+     * Converts this point to a JSON representation
+     * @return 
+     */
+    public String toJSON()
+    {		
+        String json = "\"name\" : \"%s\", \"station\" : %s, \"s88\" : %s";
+        
+        json = String.format(json, this.getName(), this.isDestination, this.s88);
+        
+        if (this.currentLoc != null && this.isDestination)
+        {
+            json += ", \"loc\" : \"" + this.currentLoc.getName() + "\"";
+        }
+        
+        if (this.isTerminus)
+        {
+            json += ", \"terminus\" : " + this.isTerminus;
+        }
+        
+        if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)
+        {
+            json += ", \"locArrivalFunc\" : " + this.currentLoc.getArrivalFunc() + "";
+        }
+        
+        if (this.currentLoc != null && this.currentLoc.getDepartureFunc() != null)
+        {
+            json += ", \"locDepartureFunc\" : " + this.currentLoc.getDepartureFunc() + "";
+        }
+        
+        if (this.coordinatesSet())
+        {
+            json += ", \"x\" : " + this.getX() + " , \"y\" : " + this.getY();
+        }
+        
+        return "{" + json + "}";
     }
 }
