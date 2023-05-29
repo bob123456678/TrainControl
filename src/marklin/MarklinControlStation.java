@@ -39,7 +39,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.8.4";
+    public static final String VERSION = "1.8.5";
     
     //// Settings
     
@@ -124,33 +124,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Restore state
         for (MarklinSimpleComponent c : this.restoreState())
         {            
-            if (c.getType() == MarklinSimpleComponent.Type.LOC_MFX)
+            if (c.getLocType() != null)
             {
                 newLocomotive(c.getName(), c.getAddress(), 
-                    MarklinLocomotive.decoderType.MFX, 
+                    c.getLocType(), 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
-            }
-            else if (c.getType() == MarklinSimpleComponent.Type.LOC_DCC)
-            {
-                newLocomotive(c.getName(), c.getAddress(), 
-                    MarklinLocomotive.decoderType.DCC, 
-                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
-            }
-            else if (c.getType() == MarklinSimpleComponent.Type.LOC_MM2)
-            {
-                newLocomotive(c.getName(), c.getAddress(), 
-                    MarklinLocomotive.decoderType.MM2, 
-                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
-            }
-            else if (c.getType() == MarklinSimpleComponent.Type.LOC_MULTI_UNIT)
-            {
-                newLocomotive(c.getName(), c.getAddress(), 
-                    MarklinLocomotive.decoderType.MULTI_UNIT, 
-                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed());                
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(), c.getDepartureFunction(), c.getArrivalFunction());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -1333,9 +1312,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
-        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
+        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, Integer arrivalFunc)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions, preferredSpeed);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions, preferredSpeed,
+            departureFunc, arrivalFunc);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         

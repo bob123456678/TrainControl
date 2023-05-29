@@ -7266,7 +7266,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         }
                     }
                     
-                    List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(l.getName());
+                    List<Point> milestones = null;
+                    
+                    if (l != null)
+                    {
+                        milestones = this.model.getAutoLayout().getReachedMilestones(l.getName());
+                    }
                     
                     // Update edge colors and labels
                     for (Edge e : edges)
@@ -7315,7 +7320,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                     
                     // Highlight start and destination if path is active
-                    if (locked && edges.size() > 0)
+                    if (milestones != null && locked && edges.size() > 0)
                     {
                         if (!milestones.contains(edges.get(edges.size() - 1).getEnd()))
                         {

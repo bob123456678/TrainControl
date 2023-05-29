@@ -10,9 +10,6 @@ import automation.Layout;
 import automation.Point;
 import base.Locomotive;
 import java.awt.Color;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
@@ -45,6 +42,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         this.setVisible(true);
     }
 
+    /**
+     * Refreshes the available routes shown in the UI
+     * @param someLoc 
+     */
     public void updateState(Locomotive someLoc)
     {
         // We only need to update if the callback corresponding to our locomotive was fired
@@ -79,9 +80,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     this.locDest.setText("Double-click a path to execute");
                 }
-                else
+                else if (layout.getLocomotiveLocation(locomotive) != null)
                 {
                     this.locDest.setText("No available paths. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
+                }
+                else
+                {
+                    this.locDest.setText("Locomotive is not placed on the graph.");
                 }
                 
                 for (List<Edge> path : this.paths)

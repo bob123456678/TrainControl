@@ -933,6 +933,79 @@ public class Layout
     }
     
     /**
+     * Requests to move a locomotive to a new station.  Called from the UI.
+     * @param locomotive
+     * @param targetPoint
+     * @return 
+     */
+    synchronized public boolean moveLocomotive(String locomotive, String targetPoint)
+    {
+        boolean result = false;
+        
+        if (this.running || !this.getActiveLocomotives().isEmpty())
+        {                
+            this.control.log("Cannot edit auto layout while running.");
+            return result;
+        }
+        
+        if (locomotive != null && this.control.getLocByName(locomotive) != null)
+        {
+            Locomotive l = this.control.getLocByName(locomotive);
+            
+            // Can only place loc on a station
+            if (!this.getPoint(targetPoint).isDestination())
+            {
+                this.control.log(targetPoint + " is not a station.");
+                return result;
+            }
+            
+            // Can only place reversible trains on a terminus
+            /* if (!this.getPoint(targetPoint).isTerminus() && !this.reversibleLocs.contains(locomotive))
+            {
+                this.control.log(locomotive + " is not reversible, but " + targetPoint + " is a terminus station.");
+                return result;
+            }*/
+            
+            // Remove from elsewhere
+            for (Point p : this.getPoints())
+            {
+                if (l.equals(p.getCurrentLocomotive()))
+                {
+                    p.setLocomotive(null);
+                    break;
+                }
+            }
+            
+            // Set new location
+            this.getPoint(targetPoint).setLocomotive(l);
+            
+            result = true;
+        }
+        
+        if (locomotive == null && this.getPoint(targetPoint) != null)
+        {
+            // Set new location
+            this.getPoint(targetPoint).setLocomotive(null);
+              
+            result = true;
+        }
+        
+        if (result)
+        {
+            // Fire callbacks to repaint UI
+            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+            {
+                if (callback != null)
+                {
+                    callback.apply(new LinkedList<>(this.getEdges()), locomotive == null ? null : this.control.getLocByName(locomotive), false);
+                }
+            }
+        }
+        
+        return result; 
+    }
+    
+    /**
      * Returns all edges in the graph
      * @return 
      */

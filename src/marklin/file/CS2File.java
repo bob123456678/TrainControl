@@ -1230,6 +1230,9 @@ public final class CS2File
                     {                    
                         layout.getPoint(point.getString("name")).setLocomotive(l);
                         
+                        // Reset if none present
+                        l.setDepartureFunc(null);
+                        
                         // Set start and end callbacks
                         if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
                         {
@@ -1262,12 +1265,19 @@ public final class CS2File
                             l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
                         }
 
+                        // Reset if none present
+                        l.setArrivalFunc(null);
+                        
                         if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
                         {
                             try
                             {
-                                l.setArrivalFunc(point.getInt("locArrivalFunc"));;
-                                l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(lc.getArrivalFunc());});
+                                l.setArrivalFunc(point.getInt("locArrivalFunc"));
+                                
+                                if (l.hasArrivalFunc())
+                                {
+                                    l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(lc.getArrivalFunc());});
+                                }
                             }
                             catch (Exception ex)
                             {

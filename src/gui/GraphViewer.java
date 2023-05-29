@@ -8,16 +8,23 @@ package gui;
 import java.awt.Component;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.EnumSet;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.algorithm.Toolkit;
 import org.graphstream.ui.geom.Point3;
+import org.graphstream.ui.graphicGraph.GraphicElement;
 import org.graphstream.ui.graphicGraph.GraphicGraph;
 import org.graphstream.ui.swing_viewer.SwingViewer;
 import org.graphstream.ui.swing_viewer.util.DefaultMouseManager;
 import org.graphstream.ui.swing_viewer.util.DefaultShortcutManager;
 import org.graphstream.ui.view.Viewer;
 import org.graphstream.ui.view.View;
+import org.graphstream.ui.view.util.InteractiveElement;
 
 /**
  *
@@ -27,6 +34,42 @@ final public class GraphViewer extends javax.swing.JFrame {
     
     TrainControlUI parent;
     SwingViewer swingViewer;
+    View swingView;
+    
+    final class RightClickMenu extends JPopupMenu
+    {
+        JMenuItem menuItem;
+
+        public RightClickMenu(TrainControlUI ui, String nodeName)
+        {       
+            // Select the active locomotive
+            menuItem = new JMenuItem("Assign Locomotive to " + nodeName);
+            menuItem.addActionListener(event -> 
+                {
+                    GraphLocAssign edit = new GraphLocAssign(parent, nodeName);
+
+                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                    if(dialogResult == JOptionPane.OK_OPTION)
+                    {
+                        parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName);                    
+                    }
+                }
+            );    
+
+            add(menuItem);
+
+            if (parent.getModel().getAutoLayout().getPoint(nodeName).isOccupied())
+            {
+                addSeparator();
+
+                menuItem = new JMenuItem("Remove Locomotive");
+                menuItem.addActionListener(event -> parent.getModel().getAutoLayout().moveLocomotive(null, nodeName));    
+
+                add(menuItem);
+            }
+        }
+    }
+    
     /**
      * Creates new form GraphViewer
      * @param graph
@@ -39,33 +82,62 @@ final public class GraphViewer extends javax.swing.JFrame {
                 
         // Initialize viewer   
         swingViewer = new SwingViewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
-        View view = swingViewer.addDefaultView(false);
+        swingView = swingViewer.addDefaultView(false);
         
         // swingViewer.getDefaultView().enableMouseOptions();
 
         if (autoLayout)
         {
-            swingViewer.enableAutoLayout();
-            
-            // Disable the auto layout if a node gets dragged
-            view.setMouseManager(new DefaultMouseManager() {
-
-                @Override
-                public void mouseReleased(MouseEvent me) {
-                    if (autoLayout)
-                    {
-                        swingViewer.disableAutoLayout();
-                    }
-                }
-            });
+            swingViewer.enableAutoLayout();    
         }
         else
         {
             swingViewer.disableAutoLayout();
         }
+        
+        // Disable the auto layout if a node gets dragged
+        swingView.setMouseManager(new DefaultMouseManager() {
+
+            @Override
+            public void mouseReleased(MouseEvent me)
+            {
+                if (autoLayout)
+                {
+                    swingViewer.disableAutoLayout();
+                }
+            }
+
+            /**
+             * Support right click menus for nodes (and eventually edges)
+             */
+            @Override
+            public void mouseClicked(MouseEvent evt)
+            {
+                //if (evt.getClickCount() == 2)
+                //{
+                    if (SwingUtilities.isRightMouseButton(evt) 
+                            && !parent.getModel().getAutoLayout().isRunning()
+                            && parent.getModel().getAutoLayout().getActiveLocomotives().isEmpty())
+                    {
+                        GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+                        if(element != null)
+                        {
+                            String nodeName = element.getLabel().split("\\[")[0].trim();
+                            
+                            if (parent.getModel().getAutoLayout().getPoint(nodeName).isDestination())
+                            {                            
+                                RightClickMenu menu = new RightClickMenu(parent, nodeName);
+
+                                menu.show(evt.getComponent(), evt.getX(), evt.getY());
+                            }
+                        }      
+                    }
+                //}    
+            }
+        });
                 
         // Set custom key listener
-        view.setShortcutManager(new DefaultShortcutManager() {
+        swingView.setShortcutManager(new DefaultShortcutManager() {
 
             private View view;
 
@@ -121,7 +193,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         
         // Render window
         initComponents(); 
-        getContentPane().add((Component) view);
+        getContentPane().add((Component) swingView);
         
         setLocationRelativeTo(parent); // center
         pack();

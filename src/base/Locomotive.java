@@ -225,9 +225,11 @@ public abstract class Locomotive
      * @param functionTypes 
      * @param preferredFunctions 
      * @param preferredSpeed 
+     * @param departureFunc 
+     * @param arrivalFunc 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed)
+        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, Integer arrivalFunc)
     {
         this.name = name;
         this.direction = direction;
@@ -246,6 +248,9 @@ public abstract class Locomotive
         
         this.preferredFunctions = preferredFunctions;
         this.preferredSpeed = preferredSpeed;
+        
+        this.departureFunc = departureFunc;
+        this.arrivalFunc = arrivalFunc;
     }
 
     /* Internal functionality */
@@ -748,9 +753,13 @@ public abstract class Locomotive
         return arrivalFunc;
     }
 
-    public void setArrivalFunc(int arrivalFunc)
+    public void setArrivalFunc(Integer arrivalFunc)
     {
-        if (arrivalFunc <= numF && arrivalFunc > 0)
+        if (arrivalFunc == null)
+        {
+            this.arrivalFunc = null;
+        }
+        else if (arrivalFunc <= numF && arrivalFunc >= 0)
         {
             this.arrivalFunc = arrivalFunc;
         }
@@ -760,10 +769,14 @@ public abstract class Locomotive
     {
         return departureFunc;
     }
-
+    
     public void setDepartureFunc(Integer departureFunc)
     {
-        if (departureFunc <= numF && departureFunc > 0)
+        if (departureFunc == null)
+        {
+            this.departureFunc = null;
+        }
+        else if (departureFunc <= numF && departureFunc >= 0)
         {
             this.departureFunc = departureFunc;
         }

@@ -27,6 +27,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean[] preferredFunctions;
     private int[] functionTypes;
     private int preferredSpeed;
+    private Integer departureFunction;
+    private Integer arrivalFunction;
     
     // Route state
     private int s88;
@@ -78,6 +80,32 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.conditionS88s = r.getConditionS88s();
     }
     
+    /**
+     * Returns the locomotive decoderType, or null if not a locomotive
+     * @return 
+     */
+    public MarklinLocomotive.decoderType getLocType()
+    {
+        if (null != this.type)
+        {
+            switch (this.type)
+            {
+                case LOC_MFX:
+                    return MarklinLocomotive.decoderType.MFX;
+                case LOC_DCC:
+                    return MarklinLocomotive.decoderType.DCC;
+                case LOC_MULTI_UNIT:
+                    return MarklinLocomotive.decoderType.MULTI_UNIT;
+                case LOC_MM2:
+                    return MarklinLocomotive.decoderType.MM2;
+                default:
+                    break;
+            }
+        }
+        
+        return null;
+    }
+    
     public MarklinSimpleComponent(MarklinLocomotive l)
     {
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
@@ -104,6 +132,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.functionTypes = l.getFunctionTypes();
         this.preferredFunctions = l.getPreferredFunctions();
         this.preferredSpeed = l.getPreferredSpeed();
+        this.departureFunction = l.getDepartureFunc();
+        this.arrivalFunction = l.getArrivalFunc();
     }
     
     public List<RouteCommand> getRoute()
@@ -208,4 +238,14 @@ public class MarklinSimpleComponent implements java.io.Serializable
     {
         return preferredSpeed;
     }   
+    
+    public Integer getDepartureFunction()
+    {
+        return this.departureFunction;
+    }
+    
+    public Integer getArrivalFunction()
+    {
+        return this.arrivalFunction;
+    }
 }
