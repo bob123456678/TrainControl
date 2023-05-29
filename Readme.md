@@ -149,7 +149,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.8.5 [5/28/23]
     - Added right-click menus to graph UI.  Locomotives can now be moved/removed from stations without editing the JSON.
-    - Miscellaneous refactoring to support future JSON export / editing of graph via UI.
+    - Miscellaneous refactoring to support future JSON export / editing of graph via UI
 
 * v1.8.4 [5/27/23]
     - Terminus stations are now drawn as a square
