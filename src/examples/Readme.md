@@ -195,7 +195,7 @@ The actual value is randomly chosen in this range, and this replaces the need fo
 TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.  
 However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the functions on arrival.
 
-Each locomotive's preferred speed will be used (as set in the UI), unless it is 0, in which case the program will revert to `defaultLocSpeed`.
+Unless `locSpeed` is specified, each locomotive's preferred speed will be used (as set in the UI).  If neither are set, the program will revert to `defaultLocSpeed`.
 The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
 
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  

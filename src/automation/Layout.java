@@ -1139,11 +1139,10 @@ public class Layout
      */
     public String toJSON()
     {
-        String json = "{\"points\" : [%s], \"edges\" : [%s], \"minDelay\" : %s, \"maxDelay\" : %s, \"defaultLocSpeed\" : %s, \"turnOffFunctionsOnArrival\" : %s, \"reversibleLocs\" : [%s] }";
+        String json = "{\"points\" : [%s], \"edges\" : [%s], \"minDelay\" : %s, \"maxDelay\" : %s, \"defaultLocSpeed\" : %s, \"turnOffFunctionsOnArrival\" : %s }";
         
         List<String> pointJson = new LinkedList<>();
         List<String> edgeJson = new LinkedList<>();
-        List<String> revLocJson = new LinkedList<>();
 
         for (Point p : this.getPoints())
         {
@@ -1156,7 +1155,7 @@ public class Layout
         }
                 
         json = String.format(json, String.join(",", pointJson), String.join(",", edgeJson), this.getMinDelay(), this.getMaxDelay(), this.getDefaultLocSpeed(), 
-                this.isTurnOffFunctionsOnArrival(), String.join(",", revLocJson));
+                this.isTurnOffFunctionsOnArrival());
         
         // Pretty printing
         JSONObject jsonObj = new JSONObject(json);

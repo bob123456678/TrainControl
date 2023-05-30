@@ -144,6 +144,7 @@ public class Point
             json += ", \"loc\" : \"" + this.currentLoc.getName().replace("\"", "\\\"") + "\"";
             
             json += ", \"locReversible\" : " + this.currentLoc.isReversible();
+            json += ", \"locSpeed\" : " + this.currentLoc.getPreferredSpeed();
         }
         
         if (this.isTerminus)

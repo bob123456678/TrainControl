@@ -142,11 +142,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.8.7 [5/30/23] (Beta)
+* v1.8.7 [5/30/23]
     - The "Validate JSON / Stop Locomotives" button will now forcefully terminate all running locomotive commands
     - Added option to completely remove a locomotive from the graph
     - Added option to add an entirely new locomotive to the graph and set its functions
-    - Added options edit locomotive arrival/departure functions and reversible status via the UI (note: change in the JSON keys for reversible locomotives, see documentation)
+    - Added options edit locomotive arrival/departure functions, speed, and reversible status via the UI (note: change in the JSON keys for reversible locomotives and speed, see documentation)
 
 * v1.8.6 [5/29/23]
     - Added button to export current graph state in JSON format

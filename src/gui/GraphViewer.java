@@ -50,7 +50,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                     {
                         GraphLocAssign edit = new GraphLocAssign(parent, nodeName, false);
 
-                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Locomotive to Point", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
                             parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
@@ -58,6 +58,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
                             parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
                             parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
+                            parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
 
                             parent.repaintAutoLocList();
                         }
@@ -72,7 +73,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 {
                     GraphLocAssign edit = new GraphLocAssign(parent, nodeName, true);
 
-                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Add New Locomotive to Graph", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                     if(dialogResult == JOptionPane.OK_OPTION)
                     {
                         parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
@@ -80,6 +81,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
                         parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
                         parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
+                        parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
 
                         parent.repaintAutoLocList();
                     }

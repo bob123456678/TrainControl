@@ -1262,6 +1262,23 @@ public final class CS2File
                         l.setDepartureFunc(null);
                         
                         // Set start and end callbacks
+                        if (point.has("locSpeed") && point.get("locSpeed") != null)
+                        {
+                            try
+                            {
+                                if (point.getInt("locSpeed") > 0 && point.getInt("locSpeed") <= 100)
+                                {
+                                    l.setPreferredSpeed(point.getInt("locSpeed"));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                control.log("Auto layout error: Error in locSpeed value for " + point.getString("name"));
+                                layout.invalidate();
+                            }
+                        }
+                        
+                        // Set start and end callbacks
                         if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
                         {
                             try
@@ -1271,6 +1288,7 @@ public final class CS2File
                             catch (Exception ex)
                             {
                                 control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
+                                layout.invalidate();
                             }
                         }
 

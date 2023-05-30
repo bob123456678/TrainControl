@@ -53,7 +53,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
         
         // Always show
         boolean visibility = true;
-        
+                
         if (newOnly)
         {
             this.arrivalFunc.setSelectedIndex(0);
@@ -95,13 +95,34 @@ public class GraphLocAssign extends javax.swing.JPanel {
             else
             {
                 this.departureFunc.setSelectedIndex(0);
-            }            
+            }    
+            
+            if (loc.getPreferredSpeed() > 0)
+            {
+                this.speed.setValue(loc.getPreferredSpeed());
+            }
+            else
+            {
+                this.speed.setValue(this.parent.getModel().getAutoLayout().getDefaultLocSpeed());
+            }
+            
+            updateSpeedLabel();
         }
+    }
+    
+    public void updateSpeedLabel()
+    {
+        this.speedLabel.setText("Speed (" + this.speed.getValue() + ")");
     }
     
     public boolean isReversible()
     {
         return this.reversible.isSelected();
+    }
+    
+    public Integer getSpeed()
+    {
+        return this.speed.getValue();
     }
     
     public Integer getDepartureFunc()
@@ -144,6 +165,8 @@ public class GraphLocAssign extends javax.swing.JPanel {
         arrivalFuncLabel = new javax.swing.JLabel();
         departureFuncLabel = new javax.swing.JLabel();
         departureFunc = new javax.swing.JComboBox<>();
+        speedLabel = new javax.swing.JLabel();
+        speed = new javax.swing.JSlider();
 
         locAssign.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         locAssign.addActionListener(new java.awt.event.ActionListener() {
@@ -172,31 +195,47 @@ public class GraphLocAssign extends javax.swing.JPanel {
         departureFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32" }));
         departureFunc.setFocusable(false);
 
+        speedLabel.setForeground(new java.awt.Color(0, 0, 115));
+        speedLabel.setText("Speed");
+
+        speed.setMinimum(1);
+        speed.setMinorTickSpacing(5);
+        speed.setPaintLabels(true);
+        speed.setPaintTicks(true);
+        speed.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                speedStateChanged(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(locAssign, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(reversible)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                            .addComponent(arrivalFuncLabel)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(arrivalFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                            .addComponent(departureFuncLabel)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(departureFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(118, Short.MAX_VALUE))
+                    .addComponent(locAssign, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(arrivalFuncLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(arrivalFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(departureFuncLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(departureFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(speedLabel)
+                    .addComponent(speed, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(locAssign, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(reversible)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(arrivalFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -206,7 +245,9 @@ public class GraphLocAssign extends javax.swing.JPanel {
                     .addComponent(departureFuncLabel)
                     .addComponent(departureFunc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(reversible)
+                .addComponent(speedLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -219,6 +260,10 @@ public class GraphLocAssign extends javax.swing.JPanel {
        updateValues();
     }//GEN-LAST:event_locAssignActionPerformed
 
+    private void speedStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_speedStateChanged
+        updateSpeedLabel();
+    }//GEN-LAST:event_speedStateChanged
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> arrivalFunc;
@@ -227,5 +272,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
     private javax.swing.JLabel departureFuncLabel;
     private javax.swing.JComboBox<String> locAssign;
     private javax.swing.JCheckBox reversible;
+    private javax.swing.JSlider speed;
+    private javax.swing.JLabel speedLabel;
     // End of variables declaration//GEN-END:variables
 }
