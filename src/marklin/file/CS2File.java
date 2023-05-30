@@ -1073,7 +1073,7 @@ public final class CS2File
 
         JSONArray points;
         JSONArray edges;
-        JSONArray reversible;
+        // JSONArray reversible;
         Integer minDelay;
         Integer maxDelay;
         Integer defaultLocSpeed;
@@ -1083,14 +1083,14 @@ public final class CS2File
         {
             points = o.getJSONArray("points");
             edges = o.getJSONArray("edges");
-            reversible = o.getJSONArray("reversibleLocs");
+            // reversible = o.getJSONArray("reversibleLocs");
             minDelay  = Math.abs(o.getInt("minDelay"));
             maxDelay  = Math.abs(o.getInt("maxDelay"));
             defaultLocSpeed  = Math.abs(o.getInt("defaultLocSpeed"));
         }
         catch (Exception e)
         {
-            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed, reversibleLocs)");
+            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
             layout.invalidate();
             return layout;
         }
@@ -1226,6 +1226,28 @@ public final class CS2File
                 if (control.getLocByName(loc) != null)
                 {
                     Locomotive l = control.getLocByName(loc);
+                    
+                    if (point.has("locReversible"))
+                    {
+                        if (point.get("locReversible") instanceof Boolean)
+                        {
+                            l.setReversible(point.getBoolean("locReversible"));   
+                            
+                            if (point.getBoolean("locReversible"))
+                            {
+                                control.log("Flagged as reversible: " + loc);
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: " + loc + " has invalid locReversible value");
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        l.setReversible(false);   
+                    }
                     
                     if (point.getBoolean("station") != true)
                     {
@@ -1448,7 +1470,7 @@ public final class CS2File
         });
         
         // Set list of reversible locomotives
-        reversible.forEach(locc -> { 
+        /*reversible.forEach(locc -> { 
             String loc = (String) locc;
                             
             if (control.getLocByName(loc) != null)
@@ -1461,7 +1483,7 @@ public final class CS2File
                 control.log("Auto layout error: Reversible locomotive " + loc + " does not exist");
                 layout.invalidate();
             }
-        });
+        });*/
 
         if (locomotives.isEmpty())
         {

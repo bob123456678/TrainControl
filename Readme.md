@@ -142,12 +142,17 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.7 [5/30/23] (Beta)
+    - The "Validate JSON / Stop Locomotives" button will now forcefully terminate all running locomotive commands
+    - Added option to completely remove a locomotive from the graph
+    - Added option to add an entirely new locomotive to the graph and set its functions
+
 * v1.8.6 [5/29/23]
     - Added button to export current graph state in JSON format
     - Added button to request a graceful stop of autonomous operation (active locomotives will stop at their next station)
     - Fixed bug from v1.8.5 where execution would fail if any locomotives were removed from the graph via the UI
 
-* v1.8.5 [5/28/23]
+* v1.8.5 [5/28/23] (Beta)
     - Added right-click menus to graph UI.  Locomotives can now be moved/removed from stations without editing the JSON.
     - Miscellaneous refactoring to support future JSON export / editing of graph via UI
 

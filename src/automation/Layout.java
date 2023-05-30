@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import marklin.MarklinAccessory;
 import model.ViewListener;
 import org.json.JSONObject;
@@ -59,7 +58,7 @@ public class Layout
     private boolean preConfigure;
     
     // List of all / active locomotives
-    private final List<String> locomotivesToRun;
+    private final Set<String> locomotivesToRun;
     private final Map<String, List<Edge>> activeLocomotives;
     private final Map<String, List<Point>> locomotiveMilestones;
     
@@ -71,6 +70,9 @@ public class Layout
     private int maxDelay;
     private int defaultLocSpeed;
     private boolean turnOffFunctionsOnArrival;
+    
+    // Track the layout version so we know whether an orphan instance of this class is stale
+    private static int layoutVersion = 0;
     
     /**
      * Helper class for BFS
@@ -97,12 +99,14 @@ public class Layout
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
         this.adjacency = new HashMap<>();    
-        this.locomotivesToRun = new LinkedList<>();
+        this.locomotivesToRun = new HashSet<>();
         this.callbacks = new HashMap<>();
         this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
         this.reversibleLocs = new HashSet<>();
+        
+        Layout.layoutVersion += 1;
     }
     
     /**
@@ -114,7 +118,7 @@ public class Layout
         this.configIsValid = true;
         this.invalidConfigs = new LinkedList<>();
     }
-    
+        
     /**
      * Sets the list of locomotives that will be run
      * @param locs 
@@ -145,10 +149,28 @@ public class Layout
     }
     
     /**
+     * Removes a locomotive that can travel to a terminus station
+     * @param loc
+     */
+    public void removeReversibleLoc(Locomotive loc)
+    {
+        this.reversibleLocs.remove(loc.getName());
+    }
+    
+    /**
+     * Gets the list of reversible locomotives
+     * @return 
+     */
+    public Set<String> getReversibleLocs()
+    {
+        return this.reversibleLocs;
+    }
+    
+    /**
      * Gets the locomotives that will be run
      * @return  
      */
-    public List<String> getLocomotivesToRun()
+    public Set<String> getLocomotivesToRun()
     {
         return this.locomotivesToRun;
     }
@@ -191,7 +213,7 @@ public class Layout
     }
     
     /**
-     * Returns running status
+     * Returns auto or manual running status
      * @return 
      */
     public boolean isRunning()
@@ -209,7 +231,7 @@ public class Layout
     }
     
     /**
-     * Stops locomotives
+     * Stops locomotives gracefully (i.e., at their next station for those that are running)
      */
     public void stopLocomotives()
     {
@@ -827,7 +849,7 @@ public class Layout
         }
         
         Point start = path.get(0).getStart();
-        Point end = path.get(path.size() - 1).getEnd();
+        // Point end = path.get(path.size() - 1).getEnd();
           
         if (!loc.equals(start.getCurrentLocomotive()))
         {
@@ -862,9 +884,10 @@ public class Layout
             
             this.control.log("Executing path " + path.toString() + " for " + loc.getName());
         }
-            
-        // TODO - make the delay & loc functions configurable
         
+        // Check to see if the layout class has been re-created since this run
+        int currentLayoutVersion = Layout.layoutVersion;
+                    
         if (loc.hasCallback(CB_ROUTE_START))
         {
             loc.getCallback(CB_ROUTE_START).accept(loc);
@@ -891,19 +914,34 @@ public class Layout
                 // path.get(i).getEnd().setLocomotive(null);
             }
             else
-            {
-                // Destination is next - reduce speed and wait for occupied feedback
-                loc.setSpeed(loc.getSpeed() / 2);
+            {           
+                // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
+                if (currentLayoutVersion == Layout.layoutVersion)
+                {        
+                    // Destination is next - reduce speed and wait for occupied feedback
+                    loc.setSpeed(loc.getSpeed() / 2);
 
-                if (loc.hasCallback(CB_PRE_ARRIVAL))
+                    if (loc.hasCallback(CB_PRE_ARRIVAL))
+                    {
+                        loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
+                    }
+
+                    loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0);
+                }
+            }  
+            
+            // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
+            if (currentLayoutVersion != Layout.layoutVersion)
+            {
+                if (control.isDebug())
                 {
-                    loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
+                    this.control.log("Locomotive " + loc.getName() + " path execution halted from prior layout version.");
                 }
                 
-                loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0);
-            }    
+                return true;
+            }
             
-            this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());                    
+            this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());   
             
             this.locomotiveMilestones.get(loc.getName()).add(current);                  
             
@@ -923,7 +961,6 @@ public class Layout
         }
         
         // Reverse at terminus station
-        // TODO - need a way to specify which locomotives are allows to travel to a terminus
         if (path.get(path.size() - 1).getEnd().isTerminus())
         {
             loc.switchDirection();
@@ -956,9 +993,10 @@ public class Layout
      * Requests to move a locomotive to a new station.  Called from the UI.
      * @param locomotive
      * @param targetPoint
+     * @param purge if locomotive is null, do we also permanently remove it from the list to run?
      * @return 
      */
-    synchronized public boolean moveLocomotive(String locomotive, String targetPoint)
+    synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge)
     {
         boolean result = false;
         
@@ -971,6 +1009,12 @@ public class Layout
         if (locomotive != null && this.control.getLocByName(locomotive) != null)
         {
             Locomotive l = this.control.getLocByName(locomotive);
+            
+            // Add the locomotive to our list if needed
+            if (!this.locomotivesToRun.contains(l.getName()))
+            {
+                this.locomotivesToRun.add(l.getName());
+            }
             
             // Can only place loc on a station
             if (!this.getPoint(targetPoint).isDestination())
@@ -1004,9 +1048,14 @@ public class Layout
         
         if (locomotive == null && this.getPoint(targetPoint) != null)
         {
+            if (purge && this.getPoint(targetPoint).getCurrentLocomotive() != null)
+            {
+                this.locomotivesToRun.remove(this.getPoint(targetPoint).getCurrentLocomotive().getName());
+            }
+            
             // Set new location
             this.getPoint(targetPoint).setLocomotive(null);
-              
+             
             result = true;
         }
         

@@ -55,4 +55,5 @@ public interface ViewListener
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
     public void parseAuto(String s);
     public Layout getAutoLayout();
+    public boolean isDebug();
 }

@@ -46,25 +46,60 @@ final public class GraphViewer extends javax.swing.JFrame {
             menuItem = new JMenuItem("Assign Locomotive to " + nodeName);
             menuItem.addActionListener(event -> 
                 {
-                    GraphLocAssign edit = new GraphLocAssign(parent, nodeName);
+                    GraphLocAssign edit = new GraphLocAssign(parent, nodeName, false);
 
-                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Existing Locomotive to Point", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                     if(dialogResult == JOptionPane.OK_OPTION)
                     {
-                        parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName);                    
+                        parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
+                        parent.repaintAutoLocList();
                     }
                 }
             );    
 
             add(menuItem);
+               
+            menuItem = new JMenuItem("Add New Locomotive to " + nodeName + " and Graph");
+            menuItem.addActionListener(event -> 
+                {
+                    GraphLocAssign edit = new GraphLocAssign(parent, nodeName, true);
 
+                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Add New Locomotive to Graph", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                    if(dialogResult == JOptionPane.OK_OPTION)
+                    {
+                        parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
+
+                        if (edit.isReversible())
+                        {
+                            parent.getModel().getAutoLayout().addReversibleLoc(parent.getModel().getLocByName(edit.getLoc()));
+                        }
+                        else
+                        {
+                            parent.getModel().getAutoLayout().removeReversibleLoc(parent.getModel().getLocByName(edit.getLoc()));
+                        }
+
+                        parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
+                        parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
+
+                        parent.repaintAutoLocList();
+                    }
+                }
+            ); 
+
+            add(menuItem);
+            
             if (parent.getModel().getAutoLayout().getPoint(nodeName).isOccupied())
             {
                 addSeparator();
 
-                menuItem = new JMenuItem("Remove Locomotive");
-                menuItem.addActionListener(event -> parent.getModel().getAutoLayout().moveLocomotive(null, nodeName));    
+                menuItem = new JMenuItem("Remove Locomotive from Node");
+                menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList();});    
+                add(menuItem);
 
+                addSeparator();
+
+                menuItem = new JMenuItem("Remove Locomotive from Graph");
+                menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
                 add(menuItem);
             }
         }

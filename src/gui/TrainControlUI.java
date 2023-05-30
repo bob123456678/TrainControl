@@ -7210,7 +7210,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     /**
      * Renders a graph visualization of the automated layout
      */
-    private void renderAutoLayoutGraph()
+    synchronized private void renderAutoLayoutGraph()
     {
         if (this.graphViewer != null)
         {
@@ -7411,28 +7411,40 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 return null;                
             });
             
-            // Display locomotive status and possible paths
-            this.autoLocPanel.removeAll();
-
-            // Number of columns in the grid
-            int gridCols = 3;
-            
-            autoLocPanel.setLayout(new java.awt.GridLayout(
-                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
-                    gridCols, // cols
-                    5, // padding
-                    5)
-            );
-                        
-            for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
-            {
-                this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout()));
-            }
+            this.repaintAutoLocList();
         } 
         catch (URISyntaxException ex)
         {
             this.model.log("Error loading graph UI.");
         }        
+    }
+    
+    /**
+     * Repaints the auto locomotive list based on auto layout state
+     */
+    public void repaintAutoLocList()
+    {
+        // Display locomotive status and possible paths
+        this.autoLocPanel.removeAll();
+
+        // Number of columns in the grid
+        int gridCols = 3;
+
+        autoLocPanel.setLayout(new java.awt.GridLayout(
+                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                gridCols, // cols
+                5, // padding
+                5)
+        );
+
+        for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
+        {
+            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout()));
+        }
+
+        // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
+        this.autoLocPanel.repaint(1000);
+        this.locCommandPanels.repaint(1000);
     }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer

@@ -53,6 +53,7 @@ public abstract class Locomotive
     // Functions that fire on/prior to arrival
     protected Integer arrivalFunc;
     protected Integer departureFunc;
+    protected boolean reversible;
  
     /**
      * Constructor with name and all functions off
@@ -227,9 +228,10 @@ public abstract class Locomotive
      * @param preferredSpeed 
      * @param departureFunc 
      * @param arrivalFunc 
+     * @param reversible 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, Integer arrivalFunc)
+        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible)
     {
         this.name = name;
         this.direction = direction;
@@ -251,6 +253,7 @@ public abstract class Locomotive
         
         this.departureFunc = departureFunc;
         this.arrivalFunc = arrivalFunc;
+        this.reversible = reversible;
     }
 
     /* Internal functionality */
@@ -790,5 +793,15 @@ public abstract class Locomotive
     public boolean hasDepartureFunc()
     {
         return this.departureFunc != null;
+    }
+    
+    public boolean isReversible()
+    {
+        return reversible;
+    }
+
+    public void setReversible(boolean reversible)
+    {
+        this.reversible = reversible;
     }
 }

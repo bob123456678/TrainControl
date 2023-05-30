@@ -29,6 +29,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private int preferredSpeed;
     private Integer departureFunction;
     private Integer arrivalFunction;
+    private boolean reversible;
     
     // Route state
     private int s88;
@@ -134,6 +135,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.preferredSpeed = l.getPreferredSpeed();
         this.departureFunction = l.getDepartureFunc();
         this.arrivalFunction = l.getArrivalFunc();
+        this.reversible = l.isReversible();
     }
     
     public List<RouteCommand> getRoute()
@@ -247,5 +249,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public Integer getArrivalFunction()
     {
         return this.arrivalFunction;
+    }
+    
+    public boolean getReversible()
+    {
+        return this.reversible;
     }
 }
