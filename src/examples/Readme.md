@@ -212,13 +212,13 @@ Note that a path with conflicting accessory commands will never be chosen.
     "maxDelay" : 5,
     "defaultLocSpeed" : 35,
     "turnOffFunctionsOnArrival": true,
-    "reversibleLocs" : [],
     "points": [
         {
             "name": "Station 1",
             "station": true,
             "s88" : 1,
             "loc" : "SNCF 422365",
+            "locReversible" : false,
             "locArrivalFunc" : 3,
             "locDepartureFunc" : 10,
             "x" : 1521,
@@ -229,6 +229,7 @@ Note that a path with conflicting accessory commands will never be chosen.
             "station": true,
             "s88" : 2,
             "loc" : "140 024-1 DB AG",
+            "locReversible" : false,
             "locArrivalFunc" : 3,
             "x" : 1554,
             "y" : 0
@@ -346,10 +347,10 @@ If you want to adjust the graph once created, maximize it, use your mouse to mov
 # Terminus Stations
 
 Basic support for terminus stations has been added as of v1.8.0.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
-also specify `"terminus" : "true"`.  Only locomotives listed in the `reversibleLocs` array will be able to go there, and they will automatically change direction after arrival.
-Terminus stations must have a separate set of outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
+also specify `"terminus" : "true"`.  For the corresponding point/locomotive, set `"locReversible" : "true"`.  Only such reversible locomotives can travel to a terminus and they will automatically change direction after arrival.
+Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
-If using the Java API, `Point.setTerminus` and `Layout.addReversibleLoc` correspond to the JSON settings above.
+If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
 
 # Advanced layouts
 

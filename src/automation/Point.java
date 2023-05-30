@@ -19,7 +19,7 @@ public class Point
     
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
-        this.name = name;
+        this.name = name.replace("\"", "");
         this.isDestination = isDestination;
         this.s88 = s88;
         this.currentLoc = null;
@@ -141,7 +141,9 @@ public class Point
         
         if (this.currentLoc != null && this.isDestination)
         {
-            json += ", \"loc\" : \"" + this.currentLoc.getName() + "\"";
+            json += ", \"loc\" : \"" + this.currentLoc.getName().replace("\"", "\\\"") + "\"";
+            
+            json += ", \"locReversible\" : " + this.currentLoc.isReversible();
         }
         
         if (this.isTerminus)
@@ -151,12 +153,12 @@ public class Point
         
         if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)
         {
-            json += ", \"locArrivalFunc\" : " + this.currentLoc.getArrivalFunc() + "";
+            json += ", \"locArrivalFunc\" : " + this.currentLoc.getArrivalFunc();
         }
         
         if (this.currentLoc != null && this.currentLoc.getDepartureFunc() != null)
         {
-            json += ", \"locDepartureFunc\" : " + this.currentLoc.getDepartureFunc() + "";
+            json += ", \"locDepartureFunc\" : " + this.currentLoc.getDepartureFunc();
         }
         
         if (this.coordinatesSet())

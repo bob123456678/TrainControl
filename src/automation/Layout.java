@@ -62,9 +62,6 @@ public class Layout
     private final Map<String, List<Edge>> activeLocomotives;
     private final Map<String, List<Point>> locomotiveMilestones;
     
-    // Reversible locomotives (can travel to a terminus station)
-    private final Set<String> reversibleLocs;
-    
     // Additional configuration
     private int minDelay;
     private int maxDelay;
@@ -104,7 +101,6 @@ public class Layout
         this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
-        this.reversibleLocs = new HashSet<>();
         
         Layout.layoutVersion += 1;
     }
@@ -128,44 +124,7 @@ public class Layout
         this.locomotivesToRun.clear();
         this.locomotivesToRun.addAll(locs);
     }
-    
-    /**
-     * Sets the list of locomotives that can travel to a terminus station
-     * @param locs 
-     */
-    public void setReversibleLocs(List<String> locs)
-    {
-        this.reversibleLocs.clear();
-        this.reversibleLocs.addAll(locs);
-    }
-    
-    /**
-     * Add a locomotive that can travel to a terminus station
-     * @param loc
-     */
-    public void addReversibleLoc(Locomotive loc)
-    {
-        this.reversibleLocs.add(loc.getName());
-    }
-    
-    /**
-     * Removes a locomotive that can travel to a terminus station
-     * @param loc
-     */
-    public void removeReversibleLoc(Locomotive loc)
-    {
-        this.reversibleLocs.remove(loc.getName());
-    }
-    
-    /**
-     * Gets the list of reversible locomotives
-     * @return 
-     */
-    public Set<String> getReversibleLocs()
-    {
-        return this.reversibleLocs;
-    }
-    
+      
     /**
      * Gets the locomotives that will be run
      * @return  
@@ -436,7 +395,7 @@ public class Layout
         }
         
         // Only reversible locomotives can go to a terminus
-        if (path.get(path.size() - 1).getEnd().isTerminus() && !this.reversibleLocs.contains(loc.getName()))
+        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
             // control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
             return false;
@@ -1195,12 +1154,7 @@ public class Layout
         {
             edgeJson.add(e.toJSON());
         }
-        
-        for (String loc : this.reversibleLocs)
-        {
-            revLocJson.add("\"" + loc + "\"");
-        }
-        
+                
         json = String.format(json, String.join(",", pointJson), String.join(",", edgeJson), this.getMinDelay(), this.getMaxDelay(), this.getDefaultLocSpeed(), 
                 this.isTurnOffFunctionsOnArrival(), String.join(",", revLocJson));
         

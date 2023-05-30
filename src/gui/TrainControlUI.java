@@ -7097,8 +7097,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 return;
             }
         }
-
-        if(this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
+        
+        if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
+            return;
+        }
+        
+        if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
         {
             new Thread( () -> {
                 this.model.getAutoLayout().runLocomotives();

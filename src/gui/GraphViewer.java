@@ -43,21 +43,29 @@ final public class GraphViewer extends javax.swing.JFrame {
         public RightClickMenu(TrainControlUI ui, String nodeName)
         {       
             // Select the active locomotive
-            menuItem = new JMenuItem("Assign Locomotive to " + nodeName);
-            menuItem.addActionListener(event -> 
-                {
-                    GraphLocAssign edit = new GraphLocAssign(parent, nodeName, false);
-
-                    int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Existing Locomotive to Point", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                    if(dialogResult == JOptionPane.OK_OPTION)
+            if (!parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+            {
+                menuItem = new JMenuItem("Assign Locomotive to " + nodeName);
+                menuItem.addActionListener(event -> 
                     {
-                        parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
-                        parent.repaintAutoLocList();
-                    }
-                }
-            );    
+                        GraphLocAssign edit = new GraphLocAssign(parent, nodeName, false);
 
-            add(menuItem);
+                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Locomotive to Point", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                        if(dialogResult == JOptionPane.OK_OPTION)
+                        {
+                            parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
+
+                            parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
+                            parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
+                            parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
+
+                            parent.repaintAutoLocList();
+                        }
+                    }
+                );    
+
+                add(menuItem);
+            }
                
             menuItem = new JMenuItem("Add New Locomotive to " + nodeName + " and Graph");
             menuItem.addActionListener(event -> 
@@ -69,15 +77,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                     {
                         parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
 
-                        if (edit.isReversible())
-                        {
-                            parent.getModel().getAutoLayout().addReversibleLoc(parent.getModel().getLocByName(edit.getLoc()));
-                        }
-                        else
-                        {
-                            parent.getModel().getAutoLayout().removeReversibleLoc(parent.getModel().getLocByName(edit.getLoc()));
-                        }
-
+                        parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
                         parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
                         parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
 
@@ -192,7 +192,10 @@ final public class GraphViewer extends javax.swing.JFrame {
                      lastNode = element;
                 }
                 
-                super.mousePressed(evt);
+                if (SwingUtilities.isLeftMouseButton(evt)) 
+                {
+                    super.mousePressed(evt);
+                }
             }
             
             /**

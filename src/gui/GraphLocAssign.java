@@ -45,15 +45,24 @@ public class GraphLocAssign extends javax.swing.JPanel {
         this.parent = parent;
         this.nodeName = nodeName;
         
-        boolean visibility = false;
+        // Select current locomotive if possible
+        if (this.parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive() != null)
+        {
+            this.locAssign.setSelectedItem(this.parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive().getName());
+        }
+        
+        // Always show
+        boolean visibility = true;
+        
         if (newOnly)
         {
             this.arrivalFunc.setSelectedIndex(0);
             this.departureFunc.setSelectedIndex(0);
             visibility = true;
-            updateValues();
         }
         
+        updateValues();
+
         this.arrivalFunc.setVisible(visibility);
         this.arrivalFuncLabel.setVisible(visibility);
         this.departureFunc.setVisible(visibility);
@@ -61,18 +70,18 @@ public class GraphLocAssign extends javax.swing.JPanel {
         this.reversible.setVisible(visibility);
     }
     
-    public void updateValues()
+    public final void updateValues()
     {
         if (this.locAssign.getModel().getSize() > 0)
         {
             String locomotive = (String) this.locAssign.getSelectedItem();
             Locomotive loc = this.parent.getModel().getLocByName(locomotive);
             
-            this.reversible.setSelected(this.parent.getModel().getAutoLayout().getReversibleLocs().contains(locomotive));
+            this.reversible.setSelected(loc.isReversible());
             
             if (loc.getArrivalFunc() != null)
             {
-                this.arrivalFunc.setSelectedIndex(loc.getArrivalFunc());
+                this.arrivalFunc.setSelectedIndex(loc.getArrivalFunc() + 1);
             }
             else
             {
@@ -81,7 +90,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             
             if (loc.getDepartureFunc() != null)
             {
-                this.departureFunc.setSelectedIndex(loc.getDepartureFunc());
+                this.departureFunc.setSelectedIndex(loc.getDepartureFunc() + 1);
             }
             else
             {
@@ -102,7 +111,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             return null;
         }
         
-        return (Integer) this.departureFunc.getSelectedItem();
+        return new Integer((String) this.departureFunc.getSelectedItem());
     }
     
     public Integer getArrivalFunc()
@@ -112,7 +121,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             return null;
         }
         
-        return (Integer) this.arrivalFunc.getSelectedItem();
+        return new Integer((String) this.arrivalFunc.getSelectedItem());
     }
     
     public String getLoc()
@@ -137,7 +146,6 @@ public class GraphLocAssign extends javax.swing.JPanel {
         departureFunc = new javax.swing.JComboBox<>();
 
         locAssign.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        locAssign.setFocusable(false);
         locAssign.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 locAssignActionPerformed(evt);
@@ -152,7 +160,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             }
         });
 
-        arrivalFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32" }));
+        arrivalFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32" }));
         arrivalFunc.setFocusable(false);
 
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
@@ -161,7 +169,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel.setText("Departure Function");
 
-        departureFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32" }));
+        departureFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32" }));
         departureFunc.setFocusable(false);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
