@@ -7194,8 +7194,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-        textArea.setText(this.getModel().getAutoLayout().toJSON());
-        JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);        
+        
+        try
+        {
+            textArea.setText(this.getModel().getAutoLayout().toJSON());
+            JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);     
+        }
+        catch (Exception e)
+        {
+            if (this.getModel().isDebug())
+            {
+                e.printStackTrace();
+            }
+            
+            this.log("JSON error: " + e.getMessage());
+            
+            JOptionPane.showMessageDialog(this, "Failed to geenrate JSON.  Check log for details.");
+        }
     }//GEN-LAST:event_exportJSONActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed

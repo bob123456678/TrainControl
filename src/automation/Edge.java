@@ -2,12 +2,16 @@ package automation;
 
 import base.Accessory;
 import base.Locomotive;
+import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import model.ViewListener;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Graph edge - includes start and end points and occupied state
@@ -280,34 +284,50 @@ public class Edge
     /**
      * Converts this edge to a JSON representation
      * @return 
+     * @throws java.lang.IllegalAccessException 
+     * @throws java.lang.NoSuchFieldException 
      */
-    public String toJSON()
+    public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
-        String json = "\"start\" : \"%s\", \"end\" : \"%s\"";
-        List<String> lockEdgeList = new LinkedList<>();
-        List<String> commandList = new LinkedList<>();
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+
+        List<JSONObject> lockEdgeList = new LinkedList<>();
+        List<JSONObject> commandList = new LinkedList<>();
  
         for (Edge e : this.lockEdges)
         {
-            lockEdgeList.add("{\"start\": \"" + e.getStart().getName() + "\", \"end\" : \""+ e.getEnd().getName()+"\"}");
+            JSONObject lockEdge = new JSONObject();
+            lockEdge.put("start",  e.getStart().getName());
+            lockEdge.put("end", e.getEnd().getName());
+            lockEdgeList.add(lockEdge);
         }
         
         for (String accName : this.configCommands.keySet())
         {
-            commandList.add("{\"acc\": \"" + accName + "\", \"state\" : \"" + this.configCommands.get(accName) + "\"}");
+            JSONObject command = new JSONObject();
+            command.put("acc", accName);
+            command.put("state", this.configCommands.get(accName));
+            commandList.add(command);
+        }
+        
+        jsonObj.put("start", this.start.getName());
+        jsonObj.put("end", this.end.getName());
+        
+        if (!commandList.isEmpty())
+        {
+            jsonObj.put("commands", new JSONArray(commandList));
         }
         
         if (!lockEdgeList.isEmpty())
         {
-            json += ", \"lockedges\" : [" + String.join(",", lockEdgeList) + "]";
+            jsonObj.put("lockedges", new JSONArray(lockEdgeList));
         }
         
-        if (!commandList.isEmpty())
-        {
-            json += ", \"commands\" : [" + String.join(",", commandList) + "]";
-        }
-        
-        return "{" + String.format(json, this.start.getName(), this.end.getName()) + "}";   
+        return jsonObj;
     }
 }
             

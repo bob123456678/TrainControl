@@ -142,6 +142,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.8 (Beta)
+    - Data in exported JSON now has a predicatable order
+
 * v1.8.7 [5/30/23]
     - The "Validate JSON / Stop Locomotives" button will now forcefully terminate all running locomotive commands
     - Added option to completely remove a locomotive from the graph

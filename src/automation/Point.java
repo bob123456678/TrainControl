@@ -1,7 +1,10 @@
 package automation;
 import base.Locomotive;
+import java.lang.reflect.Field;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import org.json.JSONObject;
 
 /**
  * Represent stations/stops as graph points
@@ -132,41 +135,53 @@ public class Point
     /**
      * Converts this point to a JSON representation
      * @return 
+     * @throws java.lang.IllegalAccessException 
+     * @throws java.lang.NoSuchFieldException 
      */
-    public String toJSON()
+    public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {		
-        String json = "\"name\" : \"%s\", \"station\" : %s, \"s88\" : %s";
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
         
-        json = String.format(json, this.getName(), this.isDestination, this.s88);
+        jsonObj.put("name", this.getName());
+        jsonObj.put("station", this.isDestination);
+        
+        if (this.hasS88())
+        {
+            jsonObj.put("s88", new Integer(this.s88));
+        }
         
         if (this.currentLoc != null && this.isDestination)
         {
-            json += ", \"loc\" : \"" + this.currentLoc.getName().replace("\"", "\\\"") + "\"";
-            
-            json += ", \"locReversible\" : " + this.currentLoc.isReversible();
-            json += ", \"locSpeed\" : " + this.currentLoc.getPreferredSpeed();
+            jsonObj.put("loc", this.currentLoc.getName());
+            jsonObj.put("locReversible", this.currentLoc.isReversible());
+            jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
         }
         
         if (this.isTerminus)
         {
-            json += ", \"terminus\" : " + this.isTerminus;
+            jsonObj.put("locSpeed", this.isTerminus);
         }
         
         if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)
         {
-            json += ", \"locArrivalFunc\" : " + this.currentLoc.getArrivalFunc();
+            jsonObj.put("locArrivalFunc", this.currentLoc.getArrivalFunc());
         }
         
         if (this.currentLoc != null && this.currentLoc.getDepartureFunc() != null)
         {
-            json += ", \"locDepartureFunc\" : " + this.currentLoc.getDepartureFunc();
+            jsonObj.put("locDepartureFunc", this.currentLoc.getDepartureFunc());
         }
         
         if (this.coordinatesSet())
         {
-            json += ", \"x\" : " + this.getX() + " , \"y\" : " + this.getY();
+            jsonObj.put("x", this.getX());
+            jsonObj.put("y", this.getY());
         }
         
-        return "{" + json + "}";
+        return jsonObj;
     }
 }

@@ -6,10 +6,12 @@ import static base.Accessory.accessorySetting.RED;
 import static base.Accessory.accessorySetting.STRAIGHT;
 import static base.Accessory.accessorySetting.TURN;
 import base.Locomotive;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -1134,15 +1136,15 @@ public class Layout
     }
     
     /**
-     * Returns the layout configuration in JSON format
+     * Returns the layout configuration as a JSON string
      * @return 
+     * @throws java.lang.IllegalAccessException 
+     * @throws java.lang.NoSuchFieldException 
      */
-    public String toJSON()
-    {
-        String json = "{\"points\" : [%s], \"edges\" : [%s], \"minDelay\" : %s, \"maxDelay\" : %s, \"defaultLocSpeed\" : %s, \"turnOffFunctionsOnArrival\" : %s }";
-        
-        List<String> pointJson = new LinkedList<>();
-        List<String> edgeJson = new LinkedList<>();
+    public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {        
+        List<JSONObject> pointJson = new LinkedList<>();
+        List<JSONObject> edgeJson = new LinkedList<>();
 
         for (Point p : this.getPoints())
         {
@@ -1153,13 +1155,22 @@ public class Layout
         {
             edgeJson.add(e.toJSON());
         }
-                
-        json = String.format(json, String.join(",", pointJson), String.join(",", edgeJson), this.getMinDelay(), this.getMaxDelay(), this.getDefaultLocSpeed(), 
-                this.isTurnOffFunctionsOnArrival());
         
-        // Pretty printing
-        JSONObject jsonObj = new JSONObject(json);
-        
+        // Change the map to a linkedhashmap so that ordering gets preserved
+        // https://stackoverflow.com/questions/4515676/keep-the-order-of-the-json-keys-during-json-conversion-to-csv
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+
+        jsonObj.put("points", pointJson);
+        jsonObj.put("edges", edgeJson);
+        jsonObj.put("minDelay", this.getMinDelay());
+        jsonObj.put("maxDelay", this.getMaxDelay());
+        jsonObj.put("defaultLocSpeed", this.getDefaultLocSpeed());
+        jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
+
         return jsonObj.toString(4);
     }
 }
