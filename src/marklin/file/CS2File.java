@@ -1077,6 +1077,7 @@ public final class CS2File
         Integer minDelay;
         Integer maxDelay;
         Integer defaultLocSpeed;
+        Double preArrivalSpeedReduction = 0.5;
         
         // Validate basic data
         try
@@ -1093,6 +1094,20 @@ public final class CS2File
             control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
             layout.invalidate();
             return layout;
+        }
+        
+        if (o.has("preArrivalSpeedReduction"))
+        {
+            try
+            {
+                layout.setPreArrivalSpeedReduction(o.getDouble("preArrivalSpeedReduction"));
+            }
+            catch (Exception e)
+            {
+                control.log("Auto layout error: invalid value for preArrivalSpeedReduction (must be 0-1)");
+                layout.invalidate();
+                return layout;
+            }    
         }
         
         if (points == null || edges == null)

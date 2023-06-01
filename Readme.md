@@ -144,6 +144,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.8.8 (Beta)
     - Data in exported JSON now has a predicatable order
+    - Added `preArrivalSpeedReduction` JSON key to control speed reduction prior to arriving to station
 
 * v1.8.7 [5/30/23]
     - The "Validate JSON / Stop Locomotives" button will now forcefully terminate all running locomotive commands

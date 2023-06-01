@@ -159,7 +159,7 @@ If you want to try this out for yourself, be sure to change the locomotive names
 
 A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
-* Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  The more S88's you have, the better!
+* Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  This value can be overriden by `preArrivalSpeedReduction` in the JSON (default 0.5).  The more S88's you have, the better!
 
 # Improving the layout
 
@@ -211,6 +211,7 @@ Note that a path with conflicting accessory commands will never be chosen.
     "minDelay" : 1,
     "maxDelay" : 5,
     "defaultLocSpeed" : 35,
+    "preArrivalSpeedReduction" : 0.5,
     "turnOffFunctionsOnArrival": true,
     "points": [
         {

@@ -69,7 +69,8 @@ public class Layout
     private int maxDelay;
     private int defaultLocSpeed;
     private boolean turnOffFunctionsOnArrival;
-    
+    private double preArrivalSpeedReduction = 0.5;
+
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
     
@@ -232,6 +233,22 @@ public class Layout
     public Point getPoint(String name)
     {
         return this.points.get(name);
+    }
+    
+    /**
+     * Change how much locomotives are slowed one edge prior to arrival
+     * @param preArrivalSpeedReduction 
+     */
+    public void setPreArrivalSpeedReduction(double preArrivalSpeedReduction) throws Exception
+    {
+        if (preArrivalSpeedReduction > 0 && preArrivalSpeedReduction <= 1)
+        {
+            this.preArrivalSpeedReduction = preArrivalSpeedReduction;
+        }
+        else
+        {
+            throw new Exception("preArrivalSpeedReduction must be > 0 and <= 1");
+        }
     }
     
     /**
@@ -693,6 +710,8 @@ public class Layout
                         }      
                     }
                 }
+                
+                break;
             }
         }
         
@@ -880,7 +899,7 @@ public class Layout
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    loc.setSpeed(loc.getSpeed() / 2);
+                    loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
 
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
@@ -1169,6 +1188,7 @@ public class Layout
         jsonObj.put("minDelay", this.getMinDelay());
         jsonObj.put("maxDelay", this.getMaxDelay());
         jsonObj.put("defaultLocSpeed", this.getDefaultLocSpeed());
+        jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
 
         return jsonObj.toString(4);
