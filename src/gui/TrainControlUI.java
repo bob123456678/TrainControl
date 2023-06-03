@@ -694,7 +694,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
         {
-            this.switchMapping.get(i).setText((new Integer(i + offset)).toString());
+            this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
         }
         
         repaintSwitches();
@@ -6119,7 +6119,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void UpdateSwitchState(java.awt.event.ActionEvent evt)//GEN-FIRST:event_UpdateSwitchState
     {//GEN-HEADEREND:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
-        Integer switchId = Integer.parseInt(b.getText());
+        int switchId = Integer.parseInt(b.getText());
 
         new Thread(() -> {
             this.model.setAccessoryState(switchId, b.isSelected());
