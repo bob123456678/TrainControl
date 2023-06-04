@@ -12,6 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1132,7 +1133,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.view.log(message);    
             }
             
-            System.out.println(message);
+            System.out.println(new Timestamp(System.currentTimeMillis())+ " " + message);
             this.lastMessage = message;
         }
     }
