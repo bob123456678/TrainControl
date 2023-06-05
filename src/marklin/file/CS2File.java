@@ -1369,7 +1369,14 @@ public final class CS2File
                     control.log("Auto layout error: Locomotive " + loc + " does not exist");
                     layout.invalidate();
                 }
-            }                
+            }    
+            else
+            {
+                if (point.has("locArrivalFunc") || point.has("locDepartureFunc") || point.has("locSpeed") || point.has("locReversible"))
+                {
+                    control.log("Auto layout warning: loc configuration specified without locomotive on " + point);
+                }
+            }
         });
 
         // Add edges
