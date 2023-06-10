@@ -1073,18 +1073,15 @@ public final class CS2File
 
         JSONArray points;
         JSONArray edges;
-        // JSONArray reversible;
         Integer minDelay;
         Integer maxDelay;
         Integer defaultLocSpeed;
-        Double preArrivalSpeedReduction = 0.5;
         
         // Validate basic data
         try
         {
             points = o.getJSONArray("points");
             edges = o.getJSONArray("edges");
-            // reversible = o.getJSONArray("reversibleLocs");
             minDelay  = Math.abs(o.getInt("minDelay"));
             maxDelay  = Math.abs(o.getInt("maxDelay"));
             defaultLocSpeed  = Math.abs(o.getInt("defaultLocSpeed"));
@@ -1307,7 +1304,8 @@ public final class CS2File
                             }
                         }
 
-                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> {
+                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
+                        {
                             lc.applyPreferredFunctions().delay(minDelay, maxDelay);
                         
                             if (lc.hasDepartureFunc())
@@ -1380,7 +1378,8 @@ public final class CS2File
         });
 
         // Add edges
-        edges.forEach(edg -> { 
+        edges.forEach(edg -> 
+        { 
             JSONObject edge = (JSONObject) edg; 
             try 
             {
@@ -1459,7 +1458,8 @@ public final class CS2File
                 if (edge.has("commands") && !edge.isNull("commands"))
                 {
                     JSONArray commands = edge.getJSONArray("commands");
-                    commands.forEach((cmd) -> {
+                    commands.forEach((cmd) -> 
+                    {
                         JSONObject command = (JSONObject) cmd;
                         String action = command.getString("state");
                         String acc = command.getString("acc");
@@ -1476,7 +1476,8 @@ public final class CS2File
         });
 
         // Add lock edges
-        edges.forEach(edg -> { 
+        edges.forEach(edg -> 
+        { 
             JSONObject edge = (JSONObject) edg; 
             try 
             { 
