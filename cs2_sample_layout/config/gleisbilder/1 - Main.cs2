@@ -684,7 +684,7 @@ element
  .id=0x707
  .typ=signal
  .drehung=2
- .artikel=176
+ .artikel=178
 element
  .id=0x708
  .typ=bogen

@@ -317,9 +317,9 @@ element
  .artikel=-1
 element
  .id=0x30503
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=176
 element
  .id=0x30504
  .typ=gerade
@@ -530,7 +530,7 @@ element
  .id=0x30804
  .typ=signal
  .drehung=3
- .artikel=176
+ .artikel=178
 element
  .id=0x30805
  .typ=gerade
@@ -734,9 +734,9 @@ element
  .text=14
 element
  .id=0x30b06
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=178
 element
  .id=0x30b07
  .typ=prellbock
@@ -809,9 +809,9 @@ element
  .artikel=-1
 element
  .id=0x30c04
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=176
 element
  .id=0x30c05
  .typ=prellbock
