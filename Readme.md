@@ -142,7 +142,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.8.8 (Beta)
+* v1.8.8 [6/10/23]
     - Data in exported JSON now has a predicatable order
     - Added `preArrivalSpeedReduction` JSON key to control speed reduction prior to arriving to station (default 0.5, or 50% reduction)
     - Added timestamps to standard output log
