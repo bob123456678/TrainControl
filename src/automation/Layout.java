@@ -489,6 +489,101 @@ public class Layout
     }
     
     /**
+     * Deletes a point from the graph.  Requires that no edges connect it.
+     * @param name
+     * @throws Exception 
+     */
+    synchronized public void deletePoint(String name) throws Exception
+    {
+        Point p = this.getPoint(name);
+        
+        if (p == null)
+        {
+            throw new Exception("Point " + name + " does not exist");
+        }
+        
+        if (!this.getNeighbors(p).isEmpty())
+        {
+            throw new Exception("Point " + name + " is connected to other points.  Delete edges first.");
+        }
+        
+        // Remove from db
+        this.points.remove(name);
+    }
+    
+    /**
+     * Deletes an edge from the graph
+     * @param start
+     * @param end
+     * @throws Exception 
+     */
+    synchronized public void deleteEdge(String start, String end) throws Exception
+    {
+        Edge e = this.getEdge(start, end);
+        
+        if (e == null)
+        {
+            throw new Exception("Edge " + start + " -> " + end + " does not exist");
+        }
+        
+        // Remove from adjacency list
+        this.adjacency.get(e.getStart().getName()).remove(e);
+        
+        // Remove from db
+        this.edges.remove(e.getName());
+    }
+   
+    /**
+     * Returns a list of possible new neighbors (edges) that could be added from the specified point
+     * @param pointName
+     * @return 
+     */
+    public List<Point> getPossibleEdges(String pointName)
+    {
+        List<Point> pointList = new LinkedList<>();
+        
+        if (this.points.containsKey(pointName))
+        {
+            pointList.addAll(this.getPoints());
+            pointList.removeAll(this.getNeighbors(this.getPoint(pointName)));
+        }
+        
+        return pointList;    
+    }
+    
+    /**
+     * Renames a point
+     * @param name
+     * @param newName
+     * @throws Exception 
+     */
+    synchronized public void renamePoint(String name, String newName) throws Exception
+    {
+        Point p = this.getPoint(name);
+        
+        if (p == null)
+        {
+            throw new Exception("Point " + name + " does not exist");
+        }
+        
+        // Update the point name
+        p.rename(newName);
+        
+        // Update points map key
+        this.points.put(newName, p);
+        this.points.remove(name);
+        
+        // Update adjacency list keys
+        if (this.adjacency.containsKey(name))
+        {
+            this.adjacency.put(newName, this.adjacency.get(name));
+            this.adjacency.remove(name);
+        }
+    }
+    
+    // TODO rename point
+    
+    /**
      * Marks all the edges in a path as occupied, effectively locking it
      * @param path a list of edges to traverse
      * @param loc

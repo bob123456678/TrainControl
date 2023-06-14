@@ -14,7 +14,7 @@ public class Point
 {
     private Locomotive currentLoc;
     private final boolean isDestination;
-    private final String name;
+    private String name;
     private final String s88;
     private boolean isTerminus;
     private Integer x;
@@ -64,6 +64,15 @@ public class Point
         }
         
         return this.name.equals(((Point) other).getName());
+    }
+    
+    /**
+     * Renames the point
+     * @param newName 
+     */
+    public void rename(String newName)
+    {
+        this.name = newName;
     }
       
     public String getName()

@@ -19,7 +19,7 @@ import org.json.JSONObject;
  */
 public class Edge
 {
-    private final String name;
+    // private final String name;
     private boolean occupied;
     private final Point start;
     private final Point end;
@@ -43,7 +43,7 @@ public class Edge
     {
         this.start = start;
         this.end = end;
-        this.name = getEdgeName(start, end);
+        // this.name = getEdgeName(start, end);
         this.configureFunc = configureFunc;
         this.occupied = false;
         this.lockEdges = new LinkedList<>();
@@ -136,7 +136,7 @@ public class Edge
      */
     public String getName()
     {
-        return name;
+        return getEdgeName(start, end);
     }
     
     @Override
