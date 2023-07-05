@@ -849,8 +849,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         copyTargetPage = this.locMappingNumber;
         
         // Put locomotive name in clipboard
-        StringSelection selection = new StringSelection(copyTarget.getName());
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+        if (button != null)
+        {
+            StringSelection selection = new StringSelection(copyTarget.getName());
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+        }
     }
     
     /**
