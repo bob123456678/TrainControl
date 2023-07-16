@@ -1266,7 +1266,7 @@ public final class CS2File
                     
                     if (point.has("locTrainLength"))
                     {
-                        if (point.get("locTrainLength") instanceof Integer && point.getInt("locReversible") >= 0)
+                        if (point.get("locTrainLength") instanceof Integer && point.getInt("locTrainLength") >= 0)
                         {
                             l.setTrainLength(point.getInt("locTrainLength"));   
                             
