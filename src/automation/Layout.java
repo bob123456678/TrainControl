@@ -603,9 +603,7 @@ public class Layout
             this.adjacency.remove(name);
         }
     }
-    
-    // TODO rename point
-    
+        
     /**
      * Marks all the edges in a path as occupied, effectively locking it
      * @param path a list of edges to traverse

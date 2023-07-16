@@ -200,7 +200,7 @@ The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be to
 
 From v1.8.10, you can specify the train length for any locomotive (via the optional `locTrainLength` integer JSON key), and the maximum allowed train length for a station (via the `maxTrainLength` integer JSON key), for any entry within the `points` list that is a station. 
 This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
-A value of 0 for `maxTrainLength` is default, and disables this feature.  These values can also be set programmatically via the `Locomotive` and `Point` API.
+A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
 
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  

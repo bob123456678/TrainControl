@@ -2,8 +2,6 @@ package automation;
 import base.Locomotive;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import org.json.JSONObject;
 
 /**

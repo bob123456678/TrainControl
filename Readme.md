@@ -143,7 +143,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.8.10 [Beta]
-    - Added maxTrainLength setting on `Point`s, and trainLength setting on `Locomotive`s, to enable the user to disallow long trains from stopping at short stations during autonomous operation
+    - Added `maxTrainLength` setting on `Point`s, and `trainLength` setting on `Locomotive`s, to enable the user to disallow long trains from stopping at short stations during autonomous operation
     - Added JSON keys and graph UI options to edit train length and the maximum station train length 
 
 * v1.8.9 [7/10/23]
