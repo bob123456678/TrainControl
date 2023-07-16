@@ -197,7 +197,7 @@ public class Point
             jsonObj.put("loc", this.currentLoc.getName());
             jsonObj.put("locReversible", this.currentLoc.isReversible());
             jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
-            jsonObj.put("locTrainlength", this.currentLoc.getTrainLength());
+            jsonObj.put("locTrainLength", this.currentLoc.getTrainLength());
         }
         
         if (this.isTerminus)
