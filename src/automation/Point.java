@@ -19,7 +19,8 @@ public class Point
     private boolean isTerminus;
     private Integer x;
     private Integer y;
-    
+    private Integer maxTrainLength = 0;
+  
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
         this.name = name.replace("\"", "");
@@ -141,6 +142,31 @@ public class Point
         return this.x != null && this.y != null;
     }
     
+    public Integer getMaxTrainLength()
+    {
+        return maxTrainLength;
+    }
+
+    public void setMaxTrainLength(Integer maxTrainLength)
+    {
+        assert maxTrainLength >= 0;
+        
+        this.maxTrainLength = maxTrainLength;
+    }
+    
+    /**
+     * Checks if this station's train length is long enough for the passed locomotive to stop there
+     * @param loc 
+     * @return (true if OK to proceed)
+     */
+    public boolean validateTrainLength(Locomotive loc)
+    {
+        if (!this.isDestination) return true;
+        if (this.getMaxTrainLength() == 0) return true;
+        
+        return loc.getTrainLength() <= this.getMaxTrainLength();   
+    }
+    
     /**
      * Converts this point to a JSON representation
      * @return 
@@ -163,11 +189,17 @@ public class Point
             jsonObj.put("s88", new Integer(this.s88));
         }
         
+        if (this.isDestination)
+        {
+            jsonObj.put("maxTrainLength", this.maxTrainLength);
+        }
+        
         if (this.currentLoc != null && this.isDestination)
         {
             jsonObj.put("loc", this.currentLoc.getName());
             jsonObj.put("locReversible", this.currentLoc.isReversible());
             jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
+            jsonObj.put("locTrainlength", this.currentLoc.getTrainLength());
         }
         
         if (this.isTerminus)

@@ -54,6 +54,9 @@ public abstract class Locomotive
     protected Integer arrivalFunc;
     protected Integer departureFunc;
     protected boolean reversible;
+    
+    // Length of the train corresponding to ths locomotive
+    protected Integer trainLength;
  
     /**
      * Constructor with name and all functions off
@@ -73,6 +76,7 @@ public abstract class Locomotive
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
+        this.trainLength = 0;
     }
     
     /**
@@ -191,6 +195,7 @@ public abstract class Locomotive
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
+        this.trainLength = 0;
     }
     
     /**
@@ -228,10 +233,14 @@ public abstract class Locomotive
      * @param preferredSpeed 
      * @param departureFunc 
      * @param arrivalFunc 
+     * @param trainLength
      * @param reversible 
      */
     public Locomotive(String name, int speed, locDirection direction,
-        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible)
+        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
+        int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
+        int trainLength
+    )
     {
         this.name = name;
         this.direction = direction;
@@ -254,6 +263,7 @@ public abstract class Locomotive
         this.departureFunc = departureFunc;
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
+        this.trainLength = trainLength;
     }
 
     /* Internal functionality */
@@ -803,5 +813,15 @@ public abstract class Locomotive
     public void setReversible(boolean reversible)
     {
         this.reversible = reversible;
+    }
+    
+    public Integer getTrainLength()
+    {
+        return trainLength;
+    }
+
+    public void setTrainLength(Integer trainLength)
+    {
+        this.trainLength = trainLength;
     }
 }

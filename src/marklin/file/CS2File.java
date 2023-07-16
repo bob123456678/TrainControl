@@ -1190,6 +1190,31 @@ public final class CS2File
             {
                 layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
                 
+                if (point.getBoolean("station"))
+                {
+                    if (point.has("maxTrainLength"))
+                    {
+                        if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
+                        { 
+                            layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
+                            
+                            if (point.getInt("maxTrainLength") > 0)
+                            {
+                                control.log("Set max train length of " + point.getInt("maxTrainLength") + " for " + point.getString("name"));
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: " + point.getString("name") + " has invalid maxTrainLength value");
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        layout.getPoint(point.getString("name")).setMaxTrainLength(0);
+                    }   
+                }
+                
                 // Set optional coordinates
                 if (x != null && y != null)
                 {
@@ -1238,6 +1263,25 @@ public final class CS2File
                 if (control.getLocByName(loc) != null)
                 {
                     Locomotive l = control.getLocByName(loc);
+                    
+                    if (point.has("locTrainLength"))
+                    {
+                        if (point.get("locTrainLength") instanceof Integer && point.getInt("locReversible") >= 0)
+                        {
+                            l.setTrainLength(point.getInt("locTrainLength"));   
+                            
+                            control.log("Set train length of " + point.getInt("locTrainLength") + " for " + loc);
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: " + loc + " has invalid locTrainLength value");
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        l.setTrainLength(0);   
+                    }
                     
                     if (point.has("locReversible"))
                     {

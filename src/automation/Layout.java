@@ -374,25 +374,44 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
+        // Check train length
+        if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
+        {
+            control.log("Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
+            
+            return false;
+        }
+        
         for (Edge e : path)
         {
             if (e.isOccupied(loc))
             {
-                // control.log("Edge is occupied: " + e.getName());
+                if (control.isDebug())
+                {
+                    control.log("Edge is occupied: " + e.getName());
+                }
+                
                 return false;
             }
                         
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
-                // control.log("Edge is occupied: " + e.getOppositeName());
+                if (control.isDebug())
+                {
+                    control.log("Edge is occupied: " + e.getOppositeName());
+                }
+                
                 return false;
             }
             
             // Terminus stations may only be at the end of a path
             if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
             {
-                // control.log("Path " + path.toString() + " contains an intermediate terminus station");
+                if (control.isDebug())
+                {
+                    control.log("Path " + path.toString() + " contains an intermediate terminus station");
+                }
                 return false;
             }
             
@@ -416,7 +435,11 @@ public class Layout
         // Only reversible locomotives can go to a terminus
         if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
-            // control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
+            if (control.isDebug())
+            {
+                control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
+            }
+            
             return false;
         }
         

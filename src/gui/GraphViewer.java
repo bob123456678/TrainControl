@@ -45,12 +45,12 @@ final public class GraphViewer extends javax.swing.JFrame {
             // Select the active locomotive
             if (!parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
             {
-                menuItem = new JMenuItem("Assign Locomotive to " + nodeName);
+                menuItem = new JMenuItem("Edit Locomotive at " + nodeName);
                 menuItem.addActionListener(event -> 
                     {
                         GraphLocAssign edit = new GraphLocAssign(parent, nodeName, false);
 
-                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Edit / Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
                             parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
@@ -59,6 +59,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
                             parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
                             parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
+                            parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
                             parent.repaintAutoLocList();
                         }
@@ -68,7 +69,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
             }
                
-            menuItem = new JMenuItem("Add New Locomotive to " + nodeName + " and Graph");
+            menuItem = new JMenuItem("Add New Locomotive to Graph at " + nodeName);
             menuItem.addActionListener(event -> 
                 {
                     GraphLocAssign edit = new GraphLocAssign(parent, nodeName, true);
@@ -82,6 +83,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
                         parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
                         parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
+                        parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
                         parent.repaintAutoLocList();
                     }
@@ -90,17 +92,49 @@ final public class GraphViewer extends javax.swing.JFrame {
 
             add(menuItem);
             
+            // Edit station's maximum train length
+            // Todo - in the future, this can be used to further edit/rename the point
+            if (parent.getModel().getAutoLayout().getPoint(nodeName).isDestination())
+            {
+                Integer currentLength = parent.getModel().getAutoLayout().getPoint(nodeName).getMaxTrainLength();
+                menuItem = new JMenuItem("Set Maximum Train Length at " + nodeName + " (" + (currentLength != 0 ? currentLength : "any") + ")");
+                menuItem.addActionListener(event -> 
+                    {
+                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                            "Enter the maximum length of a train that can stop at this station.",
+                            currentLength);
+                        
+                        if (dialogResult != null)
+                        {
+                            try
+                            {
+                                int newLength = Math.abs(Integer.parseInt(dialogResult));
+                                parent.getModel().getAutoLayout().getPoint(nodeName).setMaxTrainLength(newLength);
+                                parent.repaintAutoLocList();
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Invalid value (must be a positive integer, or 0 to disable)");
+                            }
+                        }
+                    }
+                );     
+            }
+            
+            add(menuItem);
+            
             if (parent.getModel().getAutoLayout().getPoint(nodeName).isOccupied())
             {
                 addSeparator();
 
-                menuItem = new JMenuItem("Remove Locomotive from Node");
+                menuItem = new JMenuItem("Remove Locomotive " + parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive().getName() + " from Node");
                 menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList();});    
                 add(menuItem);
 
                 addSeparator();
 
-                menuItem = new JMenuItem("Remove Locomotive from Graph");
+                menuItem = new JMenuItem("Remove Locomotive " + parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive().getName() + " from Graph");
                 menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
                 add(menuItem);
             }

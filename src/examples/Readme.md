@@ -198,6 +198,10 @@ However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off 
 Unless `locSpeed` is specified, each locomotive's preferred speed will be used (as set in the UI).  If neither are set, the program will revert to `defaultLocSpeed`.
 The optional `locArrivalFunc` and `locDepartureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
 
+From v1.8.10, you can specify the train length for any locomotive (via the optional `locTrainLength` integer JSON key), and the maximum allowed train length for a station (via the `maxTrainLength` integer JSON key), for any entry within the `points` list that is a station. 
+This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
+A value of 0 for `maxTrainLength` is default, and disables this feature.  These values can also be set programmatically via the `Locomotive` and `Point` API.
+
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via the former button.  Chosen paths will be shown in the log.
@@ -222,6 +226,8 @@ Note that a path with conflicting accessory commands will never be chosen.
             "locReversible" : false,
             "locArrivalFunc" : 3,
             "locDepartureFunc" : 10,
+            "locTrainLength" : 3,
+            "maxTrainLength": 4,
             "x" : 1521,
             "y" : 291
         },
@@ -232,6 +238,8 @@ Note that a path with conflicting accessory commands will never be chosen.
             "loc" : "140 024-1 DB AG",
             "locReversible" : false,
             "locArrivalFunc" : 3,
+            "locTrainLength" : 4,
+            "maxTrainLength": 0,
             "x" : 1554,
             "y" : 0
         },

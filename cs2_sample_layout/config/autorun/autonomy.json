@@ -1,40 +1,270 @@
 {
-    "minDelay": 3,
-    "maxDelay": 10,
-    "turnOffFunctionsOnArrival": true,
-    "defaultLocSpeed": 35,
+    "points": [
+        {
+            "name": "TopMainR2Inter",
+            "station": true,
+            "s88": 1016,
+            "maxTrainLength": 4,
+            "x": 925,
+            "y": 1183
+        },
+        {
+            "name": "ParkingDown",
+            "station": false,
+            "s88": 2001,
+            "x": 1652,
+            "y": 387
+        },
+        {
+            "name": "BottomMainC",
+            "station": true,
+            "s88": 4,
+            "maxTrainLength": 0,
+            "x": 507,
+            "y": 0
+        },
+        {
+            "name": "BottomMainB",
+            "station": true,
+            "s88": 10,
+            "maxTrainLength": 0,
+            "x": 1992,
+            "y": 10
+        },
+        {
+            "name": "ParkingBackPre",
+            "station": false,
+            "s88": 1,
+            "x": 2036,
+            "y": 693
+        },
+        {
+            "name": "BottomMainA",
+            "station": true,
+            "s88": 9,
+            "maxTrainLength": 0,
+            "x": 1728,
+            "y": 111
+        },
+        {
+            "name": "TopMainR1Pre",
+            "station": false,
+            "s88": 1012,
+            "x": 712,
+            "y": 1115
+        },
+        {
+            "name": "ParkingBack",
+            "station": true,
+            "s88": 2005,
+            "maxTrainLength": 0,
+            "x": 1790,
+            "y": 645
+        },
+        {
+            "name": "TopMainR2",
+            "station": true,
+            "s88": 1023,
+            "maxTrainLength": 0,
+            "x": 534,
+            "y": 926
+        },
+        {
+            "name": "TopMainR0",
+            "station": true,
+            "s88": 1010,
+            "maxTrainLength": 0,
+            "x": 1183,
+            "y": 835
+        },
+        {
+            "name": "TopMainR1",
+            "station": true,
+            "s88": 1022,
+            "maxTrainLength": 3,
+            "loc": "ET21-442",
+            "locReversible": false,
+            "locSpeed": 62,
+            "locTrainlength": 0,
+            "locArrivalFunc": 2,
+            "locDepartureFunc": 16,
+            "x": -3,
+            "y": 514
+        },
+        {
+            "name": "RampDown",
+            "station": false,
+            "s88": 2012,
+            "x": 1514,
+            "y": 744
+        },
+        {
+            "name": "BottomMainPost",
+            "station": false,
+            "s88": 2013,
+            "x": 2163,
+            "y": 253
+        },
+        {
+            "name": "BottomSecondary",
+            "station": true,
+            "s88": 1009,
+            "maxTrainLength": 0,
+            "x": 1118,
+            "y": 278
+        },
+        {
+            "name": "TopMainR2Bypass",
+            "station": false,
+            "s88": 1023,
+            "x": 421,
+            "y": 809
+        },
+        {
+            "name": "BottomCrossover",
+            "station": false,
+            "s88": 14,
+            "x": 997,
+            "y": 563
+        },
+        {
+            "name": "RampUp",
+            "station": false,
+            "s88": 1027,
+            "x": 2162,
+            "y": 1187
+        },
+        {
+            "name": "ParkingUp",
+            "station": false,
+            "s88": 1001,
+            "x": 1887,
+            "y": 781
+        },
+        {
+            "name": "TopMainPost",
+            "station": false,
+            "s88": 2015,
+            "x": 657,
+            "y": 741
+        },
+        {
+            "name": "ParkingFront",
+            "station": true,
+            "s88": 5,
+            "maxTrainLength": 0,
+            "x": 2031,
+            "y": 516
+        },
+        {
+            "name": "BottomMainBCPre",
+            "station": false,
+            "s88": 1006,
+            "x": 1124,
+            "y": 0
+        },
+        {
+            "name": "ParkingFrontPre",
+            "station": false,
+            "s88": 1002,
+            "x": 1793,
+            "y": 483
+        },
+        {
+            "name": "BottomSecondaryPre",
+            "station": false,
+            "x": 1503,
+            "y": 274
+        },
+        {
+            "name": "BottomInner",
+            "station": true,
+            "s88": 1011,
+            "maxTrainLength": 0,
+            "x": 1131,
+            "y": 402
+        },
+        {
+            "name": "TopMainR2Pre",
+            "station": false,
+            "s88": 1013,
+            "x": 671,
+            "y": 1234
+        },
+        {
+            "name": "BottomMainAPre",
+            "station": false,
+            "s88": 1007,
+            "x": 1120,
+            "y": 93
+        },
+        {
+            "name": "Tunnel",
+            "station": true,
+            "s88": 1032,
+            "maxTrainLength": 0,
+            "x": 651,
+            "y": 77
+        },
+        {
+            "name": "BottomInnerOtherside",
+            "station": true,
+            "s88": 2011,
+            "maxTrainLength": 0,
+            "loc": "SU 45-118",
+            "locReversible": false,
+            "locSpeed": 58,
+            "locTrainlength": 0,
+            "locArrivalFunc": 12,
+            "locDepartureFunc": 9,
+            "x": 1382,
+            "y": 433
+        },
+        {
+            "name": "TunnelPre",
+            "station": false,
+            "s88": 1030,
+            "x": 651,
+            "y": 406
+        },
+        {
+            "name": "TopMainPostReverse",
+            "station": false,
+            "s88": 2015,
+            "x": 1612,
+            "y": 842
+        },
+        {
+            "name": "TopMainR1Inter",
+            "station": true,
+            "s88": 1015,
+            "maxTrainLength": 4,
+            "loc": "SU 46-012",
+            "locReversible": false,
+            "locSpeed": 59,
+            "locTrainlength": 0,
+            "locArrivalFunc": 2,
+            "locDepartureFunc": 16,
+            "x": 12,
+            "y": 623
+        },
+        {
+            "name": "TopMainR1Bypass",
+            "station": false,
+            "s88": 1022,
+            "x": 937,
+            "y": 812
+        },
+        {
+            "name": "TunnelReverse",
+            "station": false,
+            "s88": 1032,
+            "x": 508,
+            "y": 218
+        }
+    ],
     "edges": [
         {
-            "lockedges": [
-                {
-                    "start": "BottomInner",
-                    "end": "BottomCrossover"
-                },
-                {
-                    "start": "RampDown",
-                    "end": "BottomInner"
-                },
-                {
-                    "start": "BottomSecondaryPre",
-                    "end": "BottomSecondary"
-                },
-                {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
-                },
-                {
-                    "start": "BottomSecondary",
-                    "end": "TunnelPre"
-                },
-                {
-                    "start": "BottomMainAPre",
-                    "end": "BottomMainA"
-                },
-                {
-                    "start": "BottomMainA",
-                    "end": "BottomMainPost"
-                }
-            ],
             "start": "BottomMainAPre",
             "end": "ParkingDown",
             "commands": [
@@ -74,6 +304,36 @@
                     "acc": "Switch 5",
                     "state": "turn"
                 }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomInner",
+                    "end": "BottomCrossover"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                },
+                {
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
+                }
             ]
         },
         {
@@ -109,6 +369,18 @@
             }]
         },
         {
+            "start": "RampDown",
+            "end": "BottomSecondaryPre",
+            "commands": [
+                {
+                    "acc": "Switch 12",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 39",
+                    "state": "green"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "BottomInner",
@@ -122,18 +394,6 @@
                     "start": "TopMainPost",
                     "end": "RampDown"
                 }
-            ],
-            "start": "RampDown",
-            "end": "BottomSecondaryPre",
-            "commands": [
-                {
-                    "acc": "Switch 12",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Signal 39",
-                    "state": "green"
-                }
             ]
         },
         {
@@ -145,6 +405,18 @@
             }]
         },
         {
+            "start": "BottomMainBCPre",
+            "end": "BottomMainC",
+            "commands": [
+                {
+                    "acc": "Switch 60",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 70",
+                    "state": "straight"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "TunnelPre",
@@ -161,18 +433,6 @@
                 {
                     "start": "BottomMainBCPre",
                     "end": "BottomMainB"
-                }
-            ],
-            "start": "BottomMainBCPre",
-            "end": "BottomMainC",
-            "commands": [
-                {
-                    "acc": "Switch 60",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 70",
-                    "state": "straight"
                 }
             ]
         },
@@ -227,16 +487,6 @@
             ]
         },
         {
-            "lockedges": [
-                {
-                    "start": "BottomCrossover",
-                    "end": "TunnelPre"
-                },
-                {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingUp"
-                }
-            ],
             "start": "BottomSecondary",
             "end": "TunnelPre",
             "commands": [
@@ -252,6 +502,16 @@
                     "acc": "Signal 62",
                     "state": "green"
                 }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomCrossover",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "ParkingBackPre",
+                    "end": "ParkingUp"
+                }
             ]
         },
         {
@@ -259,6 +519,8 @@
             "end": "TunnelReverse"
         },
         {
+            "start": "ParkingDown",
+            "end": "ParkingFrontPre",
             "lockedges": [
                 {
                     "start": "ParkingBackPre",
@@ -276,11 +538,45 @@
                     "start": "ParkingFront",
                     "end": "ParkingBackPre"
                 }
-            ],
-            "start": "ParkingDown",
-            "end": "ParkingFrontPre"
+            ]
         },
         {
+            "start": "ParkingUp",
+            "end": "BottomInnerOtherside",
+            "commands": [
+                {
+                    "acc": "Switch 58",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 99",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 51",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 61",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 62",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 103",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 59",
+                    "state": "straight"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "ParkingDown",
@@ -330,42 +626,6 @@
                     "start": "BottomInner",
                     "end": "Tunnel"
                 }
-            ],
-            "start": "ParkingUp",
-            "end": "BottomInnerOtherside",
-            "commands": [
-                {
-                    "acc": "Switch 58",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 99",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Switch 51",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 50",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Signal 61",
-                    "state": "green"
-                },
-                {
-                    "acc": "Signal 62",
-                    "state": "red"
-                },
-                {
-                    "acc": "Switch 103",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Switch 59",
-                    "state": "straight"
-                }
             ]
         },
         {
@@ -373,12 +633,12 @@
             "end": "TopMainR1Pre"
         },
         {
+            "start": "TopMainR2Bypass",
+            "end": "TopMainPost",
             "lockedges": [{
                 "start": "TopMainR2",
                 "end": "TopMainPost"
-            }],
-            "start": "TopMainR2Bypass",
-            "end": "TopMainPost"
+            }]
         },
         {
             "start": "RampUp",
@@ -389,24 +649,6 @@
             }]
         },
         {
-            "lockedges": [
-                {
-                    "start": "ParkingDown",
-                    "end": "ParkingFrontPre"
-                },
-                {
-                    "start": "ParkingBack",
-                    "end": "ParkingFrontPre"
-                },
-                {
-                    "start": "ParkingFront",
-                    "end": "ParkingBackPre"
-                },
-                {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingBack"
-                }
-            ],
             "start": "ParkingBackPre",
             "end": "ParkingUp",
             "commands": [
@@ -438,21 +680,35 @@
                     "acc": "Switch 4",
                     "state": "turn"
                 }
+            ],
+            "lockedges": [
+                {
+                    "start": "ParkingDown",
+                    "end": "ParkingFrontPre"
+                },
+                {
+                    "start": "ParkingBack",
+                    "end": "ParkingFrontPre"
+                },
+                {
+                    "start": "ParkingFront",
+                    "end": "ParkingBackPre"
+                },
+                {
+                    "start": "ParkingBackPre",
+                    "end": "ParkingBack"
+                }
             ]
         },
         {
+            "start": "TopMainR1Bypass",
+            "end": "TopMainPost",
             "lockedges": [{
                 "start": "TopMainR1",
                 "end": "TopMainPost"
-            }],
-            "start": "TopMainR1Bypass",
-            "end": "TopMainPost"
+            }]
         },
         {
-            "lockedges": [{
-                "start": "BottomMainC",
-                "end": "TunnelReverse"
-            }],
             "start": "Tunnel",
             "end": "BottomMainAPre",
             "commands": [
@@ -476,9 +732,25 @@
                     "acc": "Signal 40",
                     "state": "red"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "BottomMainC",
+                "end": "TunnelReverse"
+            }]
         },
         {
+            "start": "RampDown",
+            "end": "BottomInner",
+            "commands": [
+                {
+                    "acc": "Switch 12",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 39",
+                    "state": "red"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "BottomInner",
@@ -492,18 +764,6 @@
                     "start": "RampDown",
                     "end": "BottomSecondaryPre"
                 }
-            ],
-            "start": "RampDown",
-            "end": "BottomInner",
-            "commands": [
-                {
-                    "acc": "Switch 12",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Signal 39",
-                    "state": "red"
-                }
             ]
         },
         {
@@ -511,12 +771,12 @@
             "end": "RampUp"
         },
         {
+            "start": "TopMainR2Pre",
+            "end": "TopMainR2Bypass",
             "lockedges": [{
                 "start": "TopMainR2Pre",
                 "end": "TopMainR2"
-            }],
-            "start": "TopMainR2Pre",
-            "end": "TopMainR2Bypass"
+            }]
         },
         {
             "start": "BottomMainB",
@@ -541,10 +801,6 @@
             "end": "TopMainR2Pre"
         },
         {
-            "lockedges": [{
-                "start": "BottomMainC",
-                "end": "TunnelReverse"
-            }],
             "start": "Tunnel",
             "end": "BottomMainBCPre",
             "commands": [
@@ -564,7 +820,11 @@
                     "acc": "Signal 87",
                     "state": "green"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "BottomMainC",
+                "end": "TunnelReverse"
+            }]
         },
         {
             "start": "ParkingBack",
@@ -585,6 +845,12 @@
             ]
         },
         {
+            "start": "BottomInnerOtherside",
+            "end": "BottomInner",
+            "commands": [{
+                "acc": "Switch 52",
+                "state": "straight"
+            }],
             "lockedges": [
                 {
                     "start": "BottomInner",
@@ -594,13 +860,7 @@
                     "start": "RampDown",
                     "end": "BottomInner"
                 }
-            ],
-            "start": "BottomInnerOtherside",
-            "end": "BottomInner",
-            "commands": [{
-                "acc": "Switch 52",
-                "state": "straight"
-            }]
+            ]
         },
         {
             "start": "ParkingFrontPre",
@@ -617,6 +877,12 @@
             ]
         },
         {
+            "start": "TunnelReverse",
+            "end": "BottomInnerOtherside",
+            "commands": [{
+                "acc": "Switch 10",
+                "state": "straight"
+            }],
             "lockedges": [
                 {
                     "start": "TunnelPre",
@@ -634,19 +900,9 @@
                     "start": "BottomInner",
                     "end": "BottomCrossover"
                 }
-            ],
-            "start": "TunnelReverse",
-            "end": "BottomInnerOtherside",
-            "commands": [{
-                "acc": "Switch 10",
-                "state": "straight"
-            }]
+            ]
         },
         {
-            "lockedges": [{
-                "start": "BottomInner",
-                "end": "Tunnel"
-            }],
             "start": "TunnelPre",
             "end": "Tunnel",
             "commands": [
@@ -658,13 +914,13 @@
                     "acc": "Switch 104",
                     "state": "straight"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "BottomInner",
+                "end": "Tunnel"
+            }]
         },
         {
-            "lockedges": [{
-                "start": "TopMainPost",
-                "end": "RampDown"
-            }],
             "start": "TopMainPostReverse",
             "end": "TopMainR0",
             "commands": [
@@ -684,7 +940,11 @@
                     "acc": "Switch 18",
                     "state": "turn"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "TopMainPost",
+                "end": "RampDown"
+            }]
         },
         {
             "start": "ParkingFront",
@@ -695,6 +955,26 @@
             }]
         },
         {
+            "start": "BottomMainAPre",
+            "end": "TopMainPostReverse",
+            "commands": [
+                {
+                    "acc": "Switch 100",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 99",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 51",
+                    "state": "straight"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "BottomSecondary",
@@ -716,35 +996,15 @@
                     "start": "BottomMainAPre",
                     "end": "BottomMainA"
                 }
-            ],
-            "start": "BottomMainAPre",
-            "end": "TopMainPostReverse",
-            "commands": [
-                {
-                    "acc": "Switch 100",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 99",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 2",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 51",
-                    "state": "straight"
-                }
             ]
         },
         {
+            "start": "TopMainR1Pre",
+            "end": "TopMainR1Bypass",
             "lockedges": [{
                 "start": "TopMainR1Pre",
                 "end": "TopMainR1"
-            }],
-            "start": "TopMainR1Pre",
-            "end": "TopMainR1Bypass"
+            }]
         },
         {
             "start": "BottomInner",
@@ -761,14 +1021,20 @@
             ]
         },
         {
+            "start": "TopMainPost",
+            "end": "RampDown",
             "lockedges": [{
                 "start": "TopMainPostReverse",
                 "end": "TopMainR0"
-            }],
-            "start": "TopMainPost",
-            "end": "RampDown"
+            }]
         },
         {
+            "start": "BottomInner",
+            "end": "BottomCrossover",
+            "commands": [{
+                "acc": "Switch 52",
+                "state": "turn"
+            }],
             "lockedges": [
                 {
                     "start": "RampDown",
@@ -786,13 +1052,7 @@
                     "start": "BottomInner",
                     "end": "BottomCrossover"
                 }
-            ],
-            "start": "BottomInner",
-            "end": "BottomCrossover",
-            "commands": [{
-                "acc": "Switch 52",
-                "state": "turn"
-            }]
+            ]
         },
         {
             "start": "BottomSecondaryPre",
@@ -821,6 +1081,12 @@
             }]
         },
         {
+            "start": "BottomCrossover",
+            "end": "TunnelPre",
+            "commands": [{
+                "acc": "Switch 58",
+                "state": "straight"
+            }],
             "lockedges": [
                 {
                     "start": "BottomInner",
@@ -854,13 +1120,7 @@
                     "start": "ParkingUp",
                     "end": "BottomInnerOtherside"
                 }
-            ],
-            "start": "BottomCrossover",
-            "end": "TunnelPre",
-            "commands": [{
-                "acc": "Switch 58",
-                "state": "straight"
-            }]
+            ]
         },
         {
             "start": "BottomMainA",
@@ -877,259 +1137,9 @@
             ]
         }
     ],
-    "points": [
-        {
-            "loc": "ET 22 951",
-            "s88": 1016,
-            "locDepartureFunc": 19,
-            "locReversible": false,
-            "name": "TopMainR2Inter",
-            "station": true,
-            "x": 925,
-            "y": 1183,
-            "locArrivalFunc": 13,
-            "locSpeed": 45
-        },
-        {
-            "s88": 2001,
-            "name": "ParkingDown",
-            "station": false,
-            "x": 1652,
-            "y": 387
-        },
-        {
-            "s88": 4,
-            "name": "BottomMainC",
-            "station": true,
-            "terminus": true,
-            "x": 507,
-            "y": 0
-        },
-        {
-            "s88": 10,
-            "name": "BottomMainB",
-            "station": true,
-            "x": 1992,
-            "y": 10
-        },
-        {
-            "s88": 1,
-            "name": "ParkingBackPre",
-            "station": false,
-            "x": 2036,
-            "y": 693
-        },
-        {
-            "s88": 9,
-            "name": "BottomMainA",
-            "station": true,
-            "x": 1728,
-            "y": 111
-        },
-        {
-            "s88": 1012,
-            "name": "TopMainR1Pre",
-            "station": false,
-            "x": 712,
-            "y": 1115
-        },
-        {
-            "s88": 2005,
-            "name": "ParkingBack",
-            "station": true,
-            "x": 1790,
-            "y": 645
-        },
-        {
-            "s88": 1023,
-            "name": "TopMainR2",
-            "station": true,
-            "x": 534,
-            "y": 926
-        },
-        {
-            "s88": 1010,
-            "name": "TopMainR0",
-            "station": true,
-            "terminus": true,
-            "x": 1183,
-            "y": 835
-        },
-        {
-            "loc": "ET21-442",
-            "s88": 1022,
-            "locDepartureFunc": 16,
-            "locReversible": false,
-            "name": "TopMainR1",
-            "station": true,
-            "x": 723,
-            "y": 870,
-            "locArrivalFunc": 2,
-            "locSpeed": 62
-        },
-        {
-            "s88": 2012,
-            "name": "RampDown",
-            "station": false,
-            "x": 1514,
-            "y": 744
-        },
-        {
-            "s88": 2013,
-            "name": "BottomMainPost",
-            "station": false,
-            "x": 2163,
-            "y": 253
-        },
-        {
-            "s88": 1009,
-            "name": "BottomSecondary",
-            "station": true,
-            "x": 1118,
-            "y": 278
-        },
-        {
-            "s88": 1023,
-            "name": "TopMainR2Bypass",
-            "station": false,
-            "x": 421,
-            "y": 809
-        },
-        {
-            "s88": 14,
-            "name": "BottomCrossover",
-            "station": false,
-            "x": 997,
-            "y": 563
-        },
-        {
-            "s88": 1027,
-            "name": "RampUp",
-            "station": false,
-            "x": 2162,
-            "y": 1187
-        },
-        {
-            "s88": 1001,
-            "name": "ParkingUp",
-            "station": false,
-            "x": 1887,
-            "y": 781
-        },
-        {
-            "s88": 2015,
-            "name": "TopMainPost",
-            "station": false,
-            "x": 657,
-            "y": 741
-        },
-        {
-            "s88": 5,
-            "name": "ParkingFront",
-            "station": true,
-            "x": 2031,
-            "y": 516
-        },
-        {
-            "s88": 1006,
-            "name": "BottomMainBCPre",
-            "station": false,
-            "x": 1124,
-            "y": 0
-        },
-        {
-            "s88": 1002,
-            "name": "ParkingFrontPre",
-            "station": false,
-            "x": 1793,
-            "y": 483
-        },
-        {
-            "s88": null,
-            "name": "BottomSecondaryPre",
-            "station": false,
-            "x": 1503,
-            "y": 274
-        },
-        {
-            "s88": 1011,
-            "name": "BottomInner",
-            "station": true,
-            "x": 1131,
-            "y": 402
-        },
-        {
-            "s88": 1013,
-            "name": "TopMainR2Pre",
-            "station": false,
-            "x": 671,
-            "y": 1234
-        },
-        {
-            "s88": 1007,
-            "name": "BottomMainAPre",
-            "station": false,
-            "x": 1120,
-            "y": 93
-        },
-        {
-            "s88": 1032,
-            "name": "Tunnel",
-            "station": true,
-            "x": 651,
-            "y": 77
-        },
-        {
-            "loc": "SU 45-118",
-            "s88": 2011,
-            "locDepartureFunc": 9,
-            "locReversible": false,
-            "name": "BottomInnerOtherside",
-            "station": true,
-            "x": 1382,
-            "y": 433,
-            "locArrivalFunc": 12,
-            "locSpeed": 58
-        },
-        {
-            "s88": 1030,
-            "name": "TunnelPre",
-            "station": false,
-            "x": 651,
-            "y": 406
-        },
-        {
-            "s88": 2015,
-            "name": "TopMainPostReverse",
-            "station": false,
-            "x": 1612,
-            "y": 842
-        },
-        {
-            "loc": "SU 46-012",
-            "s88": 1015,
-            "locDepartureFunc": 16,
-            "locReversible": false,
-            "name": "TopMainR1Inter",
-            "station": true,
-            "x": 941,
-            "y": 1053,
-            "locArrivalFunc": 2,
-            "locSpeed": 59
-        },
-        {
-            "s88": 1022,
-            "name": "TopMainR1Bypass",
-            "station": false,
-            "x": 937,
-            "y": 812
-        },
-        {
-            "s88": 1032,
-            "name": "TunnelReverse",
-            "station": false,
-            "x": 508,
-            "y": 218
-        }
-    ]
+    "minDelay": 3,
+    "maxDelay": 10,
+    "defaultLocSpeed": 35,
+    "preArrivalSpeedReduction": 0.5,
+    "turnOffFunctionsOnArrival": true
 }
