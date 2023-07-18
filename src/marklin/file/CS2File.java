@@ -1228,7 +1228,7 @@ public final class CS2File
                     {
                         if (point.getBoolean("station") && point.getBoolean("terminus"))    
                         {
-                            layout.getPoint(point.getString("name")).setTerminus();
+                            layout.getPoint(point.getString("name")).setTerminus(true);
                         }
                         else if (point.getBoolean("terminus"))
                         {

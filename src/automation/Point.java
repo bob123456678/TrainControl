@@ -51,9 +51,10 @@ public class Point
     
     /**
      * A terminus station will require the departing train to change direction
+     * @param state
      * @throws Exception 
      */
-    public void setTerminus() throws Exception
+    public void setTerminus(boolean state) throws Exception
     {
         if (!isDestination)
         {
@@ -61,7 +62,7 @@ public class Point
         }
         else
         {
-            this.isTerminus = true;
+            this.isTerminus = state;
         }
     }
     

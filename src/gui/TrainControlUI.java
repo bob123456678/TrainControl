@@ -7392,6 +7392,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                     graph.getNode(p.getUniqueId()).setAttribute("ui.class", "active");
                                 }
                             }
+                            
+                            // Different styles for stations and non-stations
+                            if (p.isDestination())
+                            {
+                                if (p.isTerminus())
+                                {
+                                    graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
+                                }
+                                else
+                                {
+                                    graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");
+                                }
+                            }
+                            else
+                            {
+                                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
+                            }
                         }    
                     }
                     

@@ -10,7 +10,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -641,13 +640,13 @@ public class Layout
             this.adjacency.remove(name);
         }
         
-        this.refreshUi();
+        this.refreshUI();
     }
     
     /**
      * Fires callbacks to repaint the graph UI
      */
-    public void refreshUi()
+    public void refreshUI()
     {
         for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
         {

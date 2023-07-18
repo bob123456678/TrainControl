@@ -146,6 +146,7 @@ Requires JDK 1.8+ and the following libraries:
     - Points and edges are now sorted alphabetically in generated autonomy JSON
     - 0 train lengths will be excluded from generated autonomy JSON
     - Added right-click option to rename graph nodes
+    - Added right-click option to change a station node to a terminus station
     - Fixed bug where terminus station status was not exported in generated autonomy JSON
 
 * v1.8.10 [7/17/23]
@@ -156,7 +157,7 @@ Requires JDK 1.8+ and the following libraries:
     - Fixed bug from v1.8.0 where clearing a mapped keyboard button would fail
 
 * v1.8.8 [6/10/23]
-    - Data in exported JSON now has a predicatable order
+    - Fields in exported JSON now have a predicatable order
     - Added `preArrivalSpeedReduction` JSON key to control speed reduction prior to arriving to station (default 0.5, or 50% reduction)
     - Added timestamps to standard output log
 

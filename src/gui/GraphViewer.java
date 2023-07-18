@@ -160,7 +160,22 @@ final public class GraphViewer extends javax.swing.JFrame {
             );  
                 
             add(menuItem);
-                        
+            
+            if (p.isDestination())
+            {                 
+                menuItem = new JMenuItem("Set as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
+                menuItem.addActionListener(event -> { 
+                    try
+                    { 
+                        p.setTerminus(!p.isTerminus());
+                        parent.getModel().getAutoLayout().refreshUI();
+                        parent.repaintAutoLocList(); 
+                    } catch (Exception ex) {}
+                });
+                       
+                add(menuItem);
+            }
+            
             if (p.isOccupied() && p.isDestination())
             {
                 addSeparator();
@@ -247,10 +262,10 @@ final public class GraphViewer extends javax.swing.JFrame {
                         
                         Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(new Double(position.x).intValue());
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(position.x).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(maxYY - new Double(position.y).intValue());
                         
-                        parent.getModel().log("Moved " + element.getId() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
+                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
                     }
                 }
             }
