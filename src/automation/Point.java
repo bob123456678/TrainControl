@@ -18,6 +18,10 @@ public class Point
     private Integer x;
     private Integer y;
     private Integer maxTrainLength = 0;
+    private Integer uniqueId;
+    
+    // Unique ID for any new node
+    private static Integer id = 0;
   
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
@@ -31,6 +35,18 @@ public class Point
         {
             throw new Exception("Destination point must have S88");
         }
+        
+        // Save the immutable unique ID
+        this.uniqueId = ++id;
+    }
+    
+    /**
+     * Returns this node's unique ID
+     * @return 
+     */
+    public String getUniqueId()
+    {
+        return Integer.toString(uniqueId);
     }
     
     /**
@@ -187,7 +203,7 @@ public class Point
             jsonObj.put("s88", new Integer(this.s88));
         }
         
-        if (this.isDestination)
+        if (this.isDestination && this.maxTrainLength > 0)
         {
             jsonObj.put("maxTrainLength", this.maxTrainLength);
         }
@@ -197,12 +213,16 @@ public class Point
             jsonObj.put("loc", this.currentLoc.getName());
             jsonObj.put("locReversible", this.currentLoc.isReversible());
             jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
-            jsonObj.put("locTrainLength", this.currentLoc.getTrainLength());
+            
+            if (this.currentLoc.getTrainLength() > 0)
+            {
+                jsonObj.put("locTrainLength", this.currentLoc.getTrainLength());
+            }
         }
         
         if (this.isTerminus)
         {
-            jsonObj.put("locSpeed", this.isTerminus);
+            jsonObj.put("terminus", this.isTerminus);
         }
         
         if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)

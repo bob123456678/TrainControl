@@ -5,6 +5,7 @@
  */
 package gui;
 
+import automation.Point;
 import base.Locomotive;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -17,15 +18,15 @@ import javax.swing.DefaultComboBoxModel;
  */
 public class GraphLocAssign extends javax.swing.JPanel {
     TrainControlUI parent;
-    String nodeName;
+    Point p;
 
     /**
      * Creates new form GraphLocAssign
      * @param parent
-     * @param nodeName
+     * @param p
      * @param newOnly - do we allow the selection of locomotives not currently on the graph?
      */
-    public GraphLocAssign(TrainControlUI parent, String nodeName, boolean newOnly) {
+    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly) {
         initComponents();
         
         List<String> locs;
@@ -43,12 +44,12 @@ public class GraphLocAssign extends javax.swing.JPanel {
 
         this.locAssign.setModel(new DefaultComboBoxModel(locs.toArray()));
         this.parent = parent;
-        this.nodeName = nodeName;
+        this.p = p;
         
         // Select current locomotive if possible
-        if (this.parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive() != null)
+        if (p.getCurrentLocomotive() != null)
         {
-            this.locAssign.setSelectedItem(this.parent.getModel().getAutoLayout().getPoint(nodeName).getCurrentLocomotive().getName());
+            this.locAssign.setSelectedItem(p.getCurrentLocomotive().getName());
         }
         
         // Always show

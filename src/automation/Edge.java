@@ -139,6 +139,15 @@ public class Edge
         return getEdgeName(start, end);
     }
     
+    /**
+     * Returns the unique id of this edge
+     * @return 
+     */
+    public String getUniqueId()
+    {
+        return getEdgeUniqueId(start, end);
+    }
+    
     @Override
     public String toString()
     {
@@ -192,6 +201,17 @@ public class Edge
     public static String getEdgeName(Point start, Point end)
     {
         return start.getName() + "_" + end.getName(); 
+    }
+    
+    /**
+     * Gets the ID of an edge based on two points
+     * @param start
+     * @param end
+     * @return 
+     */
+    public static String getEdgeUniqueId(Point start, Point end)
+    {
+        return start.getUniqueId() + "_" + end.getUniqueId(); 
     }
     
     /**

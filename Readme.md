@@ -142,6 +142,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.8.11 [Beta]
+    - Points and edges are now sorted alphabetically in generated autonomy JSON
+    - 0 train lengths will be excluded from generated autonomy JSON
+    - Added right-click option to rename graph nodes
+    - Fixed bug where terminus station status was not exported in generated autonomy JSON
+
 * v1.8.10 [7/17/23]
     - Added `maxTrainLength` setting on `Point`s, and `trainLength` setting on `Locomotive`s, to enable the user to disallow long trains from stopping at short stations during autonomous operation
     - Added JSON keys and graph UI options to edit train length and set an optional maximum train length on any station

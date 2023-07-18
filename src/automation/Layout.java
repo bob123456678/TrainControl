@@ -7,8 +7,10 @@ import static base.Accessory.accessorySetting.STRAIGHT;
 import static base.Accessory.accessorySetting.TURN;
 import base.Locomotive;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -233,6 +235,42 @@ public class Layout
     public Point getPoint(String name)
     {
         return this.points.get(name);
+    }
+    
+    /**
+     * Retrieves a saved point by its unique id
+     * @param id
+     * @return 
+     */
+    public Point getPointById(String id)
+    {
+        for (Point p : this.getPoints())
+        {
+            if (p.getUniqueId().equals(id))
+            {
+                return p;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Retrieves a saved edge by its unique id
+     * @param id
+     * @return 
+     */
+    public Edge getEdgeById(String id)
+    {
+        for (Edge e : this.getEdges())
+        {
+            if (e.getUniqueId().equals(id))
+            {
+                return e;
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -601,6 +639,22 @@ public class Layout
         {
             this.adjacency.put(newName, this.adjacency.get(name));
             this.adjacency.remove(name);
+        }
+        
+        this.refreshUi();
+    }
+    
+    /**
+     * Fires callbacks to repaint the graph UI
+     */
+    public void refreshUi()
+    {
+        for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+        {
+            if (callback != null)
+            {
+                callback.apply(new LinkedList<>(this.getEdges()), null, false);
+            }
         }
     }
         
@@ -1281,12 +1335,23 @@ public class Layout
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();
 
-        for (Point p : this.getPoints())
+        // Sort station names alphabetically
+        List<Point> pointList = new ArrayList<>(this.getPoints());
+        List<Edge> edgeList = new ArrayList<>(this.getEdges());
+
+        Collections.sort(pointList, 
+                (Point p1, Point p2) -> p1.getName().compareTo(p2.getName())
+        );
+        Collections.sort(edgeList, 
+                (Edge p1, Edge p2) -> p1.getName().compareTo(p2.getName())
+        );
+        
+        for (Point p : pointList)
         {
             pointJson.add(p.toJSON());
         }
         
-        for (Edge e : this.getEdges())
+        for (Edge e : edgeList)
         {
             edgeJson.add(e.toJSON());
         }
