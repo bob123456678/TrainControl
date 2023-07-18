@@ -347,7 +347,7 @@ public class Layout
      * Requires points to be added first
      * @param startPoint name of the starting point
      * @param endPoint name of the ending point
-     * @param configureFunc optional, a lambda that configures all accessories needed to connecte the two points
+     * @param configureFunc optional, a lambda that configures all accessories needed to connect the two points
      * @return 
      * @throws java.lang.Exception 
      */
