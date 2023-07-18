@@ -147,6 +147,7 @@ Requires JDK 1.8+ and the following libraries:
     - 0 train lengths will be excluded from generated autonomy JSON
     - Added right-click option to rename graph nodes
     - Added right-click option to change a station node to a terminus station
+    - Added option to toggle the main TrainControl window being always on top
     - Fixed bug where terminus station status was not exported in generated autonomy JSON
 
 * v1.8.10 [7/17/23]

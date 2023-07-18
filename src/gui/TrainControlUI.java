@@ -76,6 +76,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath";
     public static String SLIDER_SETTING_PREF = "SliderSetting";
     public static String ROUTE_SORT_PREF = "RouteSorting";
+    public static String ONTOP_SETTING_PREF = "OnTop";
 
     // Constants
     // Width of locomotive images
@@ -437,6 +438,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         //setupTabTraversalKeys(this.KeyboardTab);
         
         this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
+        this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        
+        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
 
         // Set selected route sort radio button
         this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -1651,6 +1655,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ZeroPercentSpeedLabel = new javax.swing.JLabel();
         PrimaryControls = new javax.swing.JLabel();
         sliderSetting = new javax.swing.JCheckBox();
+        alwaysOnTopCheckbox = new javax.swing.JCheckBox();
         layoutPanel = new javax.swing.JPanel();
         LayoutList = new javax.swing.JComboBox();
         layoutListLabel = new javax.swing.JLabel();
@@ -3154,6 +3159,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        alwaysOnTopCheckbox.setText("Window always on top");
+        alwaysOnTopCheckbox.setFocusable(false);
+        alwaysOnTopCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                alwaysOnTopCheckboxActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
         LocControlPanelLayout.setHorizontalGroup(
@@ -3164,11 +3177,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(alwaysOnTopCheckbox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sliderSetting))
                     .addComponent(PrimaryControls)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addContainerGap(57, Short.MAX_VALUE))
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(66, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -3176,14 +3191,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(sliderSetting))
+                    .addComponent(sliderSetting)
+                    .addComponent(alwaysOnTopCheckbox))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(PrimaryControls)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(62, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Locomotive Control", LocControlPanel);
@@ -3278,7 +3294,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 773, Short.MAX_VALUE)
+                    .addComponent(LayoutArea, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(layoutPanelLayout.createSequentialGroup()
                         .addComponent(layoutListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -3340,7 +3356,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RouteList.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         RouteList.setFocusable(false);
         RouteList.setGridColor(new java.awt.Color(0, 0, 0));
-        RouteList.setIntercellSpacing(new java.awt.Dimension(0, 0));
         RouteList.setRowHeight(30);
         RouteList.setRowSelectionAllowed(false);
         RouteList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -3433,7 +3448,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 81, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4589,7 +4604,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                         .addComponent(LocTypeDCC)
                                         .addGap(0, 0, Short.MAX_VALUE))
-                                    .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
+                                    .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE))))))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -4696,7 +4711,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(TurnOnLightsButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(TurnOffFnButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(41, Short.MAX_VALUE))
         );
 
         jPanel12.setBackground(new java.awt.Color(245, 245, 245));
@@ -4764,7 +4779,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 384, Short.MAX_VALUE))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(404, 404, Short.MAX_VALUE))
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4784,7 +4799,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(EditExistingLocLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 183, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(EditExistingLocLabel3)
                 .addGap(2, 2, 2)
@@ -5728,7 +5743,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(8, 8, 8)
-                .addComponent(FunctionTabs, javax.swing.GroupLayout.DEFAULT_SIZE, 276, Short.MAX_VALUE)
+                .addComponent(FunctionTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7222,6 +7237,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.startAutonomy.setEnabled(true);
     }//GEN-LAST:event_gracefulStopActionPerformed
 
+    private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
+        this.prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
+        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
+    }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
+
     /**
      * Disables the start autonomy button
      */
@@ -7813,6 +7833,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
     private javax.swing.JButton allButton;
+    private javax.swing.JCheckBox alwaysOnTopCheckbox;
     private javax.swing.JPanel autoLocPanel;
     private javax.swing.JPanel autoPanel;
     private javax.swing.JTextArea autonomyJSON;
