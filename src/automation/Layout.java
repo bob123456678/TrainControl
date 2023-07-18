@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -638,6 +639,29 @@ public class Layout
         {
             this.adjacency.put(newName, this.adjacency.get(name));
             this.adjacency.remove(name);
+        }
+        
+        // Add keys corresponding to new edge name
+        List<Edge> edgeList = new ArrayList(this.getEdges());
+        
+        for (Edge e : edgeList)
+        {
+            if (!this.edges.containsKey(e.getName()))
+            {
+                this.edges.put(e.getName(), e);
+            }
+        }
+        
+        // Delete old invalid keys
+        Iterator<Map.Entry<String, Edge>> it = this.edges.entrySet().iterator();
+        while (it.hasNext())
+        {
+            Map.Entry<String,Edge> entry = it.next();
+            
+            if (!entry.getKey().equals(entry.getValue().getName()))
+            {
+                it.remove();
+            }
         }
         
         this.refreshUI();

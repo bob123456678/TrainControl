@@ -36,6 +36,7 @@ final public class GraphViewer extends javax.swing.JFrame {
     TrainControlUI parent;
     SwingViewer swingViewer;
     View swingView;
+    Graph mainGraph;
     
     final class RightClickMenu extends JPopupMenu
     {
@@ -126,38 +127,43 @@ final public class GraphViewer extends javax.swing.JFrame {
                 addSeparator();
             }
 
-            // Rename option applicable to all nodes
-            menuItem = new JMenuItem("Rename " + nodeName);
-            menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the new station name.",
-                        nodeName);
-
-                    if (dialogResult != null && !"".equals(dialogResult))
+            // Can only rename nodes that are connected to something until we re-write the UI refresh logic
+            if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
+            {
+                // Rename option applicable to all nodes
+                menuItem = new JMenuItem("Rename " + nodeName);
+                menuItem.addActionListener(event -> 
                     {
-                        try
-                        {
-                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "This station name is already in use.  Pick another.");
-                            }
-                            else
-                            {
-                                parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
-                                parent.repaintAutoLocList();
-                            }
+                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                            "Enter the new station name.",
+                            nodeName);
 
-                        }
-                        catch (Exception e)
+                        if (dialogResult != null && !"".equals(dialogResult))
                         {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Error renaming node.");
+                            try
+                            {
+                                if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
+                                {
+                                    JOptionPane.showMessageDialog((Component) swingView,
+                                        "This station name is already in use.  Pick another.");
+                                }
+                                else
+                                {
+                                    parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
+                                    parent.repaintAutoLocList();
+                                }
+
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Error renaming node.");
+                            }
                         }
                     }
-                }
-            );  
+                );  
+            }
                 
             add(menuItem);
             
@@ -193,6 +199,63 @@ final public class GraphViewer extends javax.swing.JFrame {
         }
     }
     
+    final class RightClickMenuNew extends JPopupMenu
+    {
+        JMenuItem menuItem;
+
+        public RightClickMenuNew(TrainControlUI ui, int x, int y)
+        {       
+            
+            //addSeparator();
+
+            menuItem = new JMenuItem("Create New Point");
+            menuItem.addActionListener(event -> 
+            {
+                String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                    "Enter the new point name.",
+                    "");
+
+                if (dialogResult != null && !"".equals(dialogResult))
+                {
+                    try
+                    {
+                        if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "This point name is already in use.  Pick another.");
+                        }
+                        else
+                        {
+                            parent.getModel().getAutoLayout().createPoint(dialogResult, false, null);
+                            
+                            Point p = parent.getModel().getAutoLayout().getPoint(dialogResult);
+                                                        
+                            p.setX(x);
+                            p.setY(y);
+
+                            mainGraph.addNode(p.getUniqueId());
+                            mainGraph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
+                            mainGraph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
+                            mainGraph.getNode(p.getUniqueId()).setAttribute("weight", 3);
+                            mainGraph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
+                            mainGraph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
+                            
+                            parent.getModel().getAutoLayout().refreshUI();
+                            parent.repaintAutoLocList();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "Error adding node.");
+                    }
+                }
+            });  
+            
+            add(menuItem);
+        }
+    }
+    
     /**
      * Creates new form GraphViewer
      * @param graph
@@ -206,6 +269,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         // Initialize viewer   
         swingViewer = new SwingViewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
         swingView = swingViewer.addDefaultView(false);
+        mainGraph = graph;
         
         // swingViewer.getDefaultView().enableMouseOptions();
 
@@ -298,7 +362,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             && !parent.getModel().getAutoLayout().isRunning())
                     {
                         GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
-                        
+
                         if (element != null)
                         {
                             Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
@@ -309,7 +373,14 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                                 menu.show(evt.getComponent(), evt.getX(), evt.getY());  
                             }
-                        }      
+                        }  
+                        // Show menu to add new nodes
+                        /*else
+                        {
+                            RightClickMenuNew menu = new RightClickMenuNew(parent, 0, 0);
+                            
+                            menu.show(evt.getComponent(), evt.getX(), evt.getY());  
+                        }*/
                     }
                 //}    
             }
