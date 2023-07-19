@@ -148,6 +148,7 @@ Requires JDK 1.8+ and the following libraries:
     - Added right-click option to rename graph nodes
     - Added right-click option to change a station node to a terminus station
     - Added option to toggle the main TrainControl window being always on top
+    - Added options to add/delete nodes and edges to/from the graph
     - Fixed bug where terminus station status was not exported in generated autonomy JSON
 
 * v1.8.10 [7/17/23]
