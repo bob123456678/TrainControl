@@ -5,17 +5,23 @@
  */
 package gui;
 
+import automation.Edge;
 import automation.Point;
 import java.awt.Component;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.algorithm.Toolkit;
@@ -180,6 +186,79 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
             }
             
+            addSeparator();
+            
+            menuItem = new JMenuItem("Connect to... ");
+            menuItem.addActionListener(event -> 
+                {
+                    // Get all point names excep tthis one
+                    Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
+                    List<String> pointNames = new LinkedList<>();
+                    
+                    for (Point p2 : points)
+                    {
+                        pointNames.add(p2.getName());
+                    }
+                    
+                    Collections.sort(pointNames);
+                    
+                    // Remove self and all existing neighbors
+                    pointNames.remove(nodeName);
+                    
+                    for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                    {
+                        pointNames.remove(e2.getEnd().getName());
+                    }
+                        
+                    if (!pointNames.isEmpty())
+                    {
+                        String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                                "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
+                                "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
+                                pointNames.toArray(), // Array of choices
+                                pointNames.get(0));
+
+                        if (dialogResult != null && !"".equals(dialogResult))
+                        {
+                            try
+                            {
+                                if (parent.getModel().getAutoLayout().getPoint(dialogResult) == null)
+                                {
+                                    JOptionPane.showMessageDialog((Component) swingView,
+                                        "This point name does not exist.");
+                                }
+                                else
+                                {
+                                    // Add the edge
+                                    parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult, (ViewListener control1, Edge currentEdge) -> 
+                                        {
+                                            currentEdge.executeConfigCommands(control1);
+                                        });
+
+                                    Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
+
+                                    ui.addEdge(e, mainGraph);
+                                    parent.repaintAutoLocList();
+                                    parent.getModel().getAutoLayout().refreshUI();
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Error adding edge.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "No other points in graph.  Add more points.");
+                    }
+                }
+            ); 
+            
+            add(menuItem);
+            
             if (p.isOccupied() && p.isDestination())
             {
                 addSeparator();
@@ -195,7 +274,42 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
             }
             
-            /*
+            // Delete edges
+            List<Edge> neighbors =  parent.getModel().getAutoLayout().getNeighbors(p);
+            if (!neighbors.isEmpty())
+            {                    
+                addSeparator();
+
+                for (Edge e : neighbors)
+                {    
+                    menuItem = new JMenuItem("Delete Edge to " + e.getEnd());
+                    menuItem.addActionListener(event -> 
+                    {
+                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, 
+                                "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
+                                "Edge Deletion", JOptionPane.YES_NO_OPTION);
+                        
+                        if(dialogResult == JOptionPane.YES_OPTION)
+                        {
+                            try 
+                            {
+                                parent.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
+                                mainGraph.removeEdge(e.getUniqueId());
+                                parent.getModel().getAutoLayout().refreshUI();
+                                parent.repaintAutoLocList();
+                            } 
+                            catch (Exception ex)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView, ex.getMessage());
+                            }
+                        } 
+                   }); 
+                    
+                   add(menuItem);
+                }
+            }
+            
+            // Delete point
             addSeparator();
 
             menuItem = new JMenuItem("Delete Point");
@@ -218,8 +332,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                     }
                 } 
             });    
-            add(menuItem);
-            */
+            
+            add(menuItem);    
         }
     }
     
@@ -273,8 +387,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                             "Error adding node.");
                     }
                 }
-            });  
-            
+            }); 
+             
             add(menuItem);
         }
     }
@@ -294,7 +408,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         swingView = swingViewer.addDefaultView(false);
         mainGraph = graph;
         
-        // swingViewer.getDefaultView().enableMouseOptions();
+        swingViewer.getDefaultView().enableMouseOptions();
 
         if (autoLayout)
         {
@@ -385,7 +499,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             && !parent.getModel().getAutoLayout().isRunning())
                     {
                         GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
-
+                        
                         if (element != null)
                         {
                             Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
@@ -397,13 +511,14 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 menu.show(evt.getComponent(), evt.getX(), evt.getY());  
                             }
                         }  
-                        // Show menu to add new nodes
-                        /*else
+                        else
                         {
+                            // Right click on edges does not current work, so all edge related options will be on the point right click menu
+                            // Todo insert at cursor
                             RightClickMenuNew menu = new RightClickMenuNew(parent, 0, 0);
-                            
+
                             menu.show(evt.getComponent(), evt.getX(), evt.getY());  
-                        }*/
+                        }
                     }
                 //}    
             }

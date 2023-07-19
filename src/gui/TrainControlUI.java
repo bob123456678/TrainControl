@@ -7252,6 +7252,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Adds an edge to the graph
+     * @param e
+     * @param graph 
+     */
+    synchronized public void addEdge(Edge e, Graph graph)
+    {
+        graph.addEdge(e.getUniqueId(), graph.getNode(e.getStart().getUniqueId()), graph.getNode(e.getEnd().getUniqueId()), true);
+        // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
+        // graph.getEdge(e.getUniqueId()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );    
+        graph.getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+    }
+    
+    /**
      * Refreshes the text of a point
      * @param p
      * @param graph 
@@ -7347,10 +7360,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             for (Edge e : this.model.getAutoLayout().getEdges())
             {
-                graph.addEdge(e.getUniqueId(), graph.getNode(e.getStart().getUniqueId()), graph.getNode(e.getEnd().getUniqueId()), true);
-                //graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
-                //graph.getEdge(e.getUniqueId()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );    
-                graph.getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+                addEdge(e, graph);
             }
             
             // Callback fires at the beginning and end of each path

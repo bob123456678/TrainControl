@@ -193,6 +193,15 @@ public class Edge
     }
     
     /**
+     * Removes an edge from the lock edge list
+     * @param e
+     */
+    public void removeLockEdge(Edge e)
+    {
+        this.lockEdges.remove(e);
+    }
+    
+    /**
      * Gets the name of an edge based on two points
      * @param start
      * @param end 

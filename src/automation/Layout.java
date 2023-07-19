@@ -592,6 +592,12 @@ public class Layout
         
         // Remove from db
         this.edges.remove(e.getName());
+        
+        // Remove from lock edge lists
+        for (Edge e2 : this.getEdges())
+        {
+            e2.removeLockEdge(e);
+        }
     }
    
     /**
