@@ -1758,6 +1758,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autonomyJSON = new javax.swing.JTextArea();
         jLabel6 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
+        loadBlank = new javax.swing.JLabel();
+        jSeparator3 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
@@ -4405,6 +4407,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        loadBlank.setForeground(new java.awt.Color(0, 0, 115));
+        loadBlank.setText("Load Blank Graph");
+        loadBlank.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        loadBlank.setFocusable(false);
+        loadBlank.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                loadBlankdocumentationClicked(evt);
+            }
+        });
+
+        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
         javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
         autonomyPanel.setLayout(autonomyPanelLayout);
         autonomyPanelLayout.setHorizontalGroup(
@@ -4412,12 +4426,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 688, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2)
                     .addGroup(autonomyPanelLayout.createSequentialGroup()
                         .addComponent(jLabel6)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGap(0, 499, Short.MAX_VALUE)
+                        .addComponent(loadBlank)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel9)))
                 .addContainerGap())
         );
@@ -4425,11 +4443,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel9)
+                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel9)
+                        .addComponent(loadBlank))
+                    .addComponent(jSeparator3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 363, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 407, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -7242,6 +7264,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
     }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
 
+    private void loadBlankdocumentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_loadBlankdocumentationClicked
+        int dialogResult = JOptionPane.showConfirmDialog(this, 
+                "Are you sure you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges.",
+                 "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if(dialogResult == JOptionPane.OK_OPTION)
+        {
+            this.autonomyJSON.setText(
+                "{\n" +
+                "    \"points\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"edges\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"minDelay\": 3,\n" +
+                "    \"maxDelay\": 10,\n" +
+                "    \"defaultLocSpeed\": 35,\n" +
+                "    \"preArrivalSpeedReduction\": 0.5,\n" +
+                "    \"turnOffFunctionsOnArrival\": true\n" +
+                "}"
+            );
+            
+            this.validateButtonActionPerformed(null);
+        }
+    }//GEN-LAST:event_loadBlankdocumentationClicked
+
     /**
      * Disables the start autonomy button
      */
@@ -7314,7 +7362,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         boolean setPoints = true;
         for (Point p : this.model.getAutoLayout().getPoints())
         {
-            if (!p.coordinatesSet())
+            if (!p.coordinatesSet() || (p.getX() == 0 && p.getY() == 0))
             {
                 this.model.log(p.getName() + " has no coordinate info - enabling auto graph layout.");
                 setPoints = false;
@@ -7899,9 +7947,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JSeparator jSeparator3;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
+    private javax.swing.JLabel loadBlank;
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;

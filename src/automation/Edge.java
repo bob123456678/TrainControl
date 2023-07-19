@@ -79,6 +79,57 @@ public class Edge
     }
     
     /**
+     * Clears all config commands
+     */
+    public void clearAllConfigCommands()
+    {
+        this.configCommands.clear();
+    }
+    
+    /**
+     * Validates that a command is valid.  Creates accessories in DB if needed.
+     * @param accessory
+     * @param action
+     * @param control
+     * @throws Exception 
+     */
+    public void validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
+    {
+        if (null == accessory || null == action)
+        {
+            throw new Exception("Missing/invalid command.");
+        }
+        
+        if (null == control.getAccessoryByName(accessory))
+        {
+            if (accessory.contains("Signal "))
+            {
+                control.newSignal(accessory.replace("Signal ", ""), Integer.parseInt(accessory.replace("Signal ", "")), false);
+                control.log("Auto layout warning: created " + accessory);
+            }
+            else if (accessory.contains("Switch "))
+            {
+                control.newSwitch(accessory.replace("Switch ", ""), Integer.parseInt(accessory.replace("Switch ", "")), false);
+                control.log("Auto layout warning: created " + accessory);                       
+            }
+            else
+            {
+                throw new Exception("Auto layout error: unrecognized accessory type " + accessory + ". Must be Signal or Switch.");
+            }
+        }
+        
+        if (null == control.getAccessoryByName(accessory))
+        {
+            throw new Exception("Accessory " + accessory + " does not exist in the layout");
+        }
+        
+        if (!"turn".equals(action) && !"straight".equals(action) && !"red".equals(action) && !"green".equals(action))
+        {
+            throw new Exception("Command " + action + " must be one of turn, straight, red, or green.");
+        }
+    }
+    
+    /**
      * Executes config commands as defined in configCommands
      * @param control1 
      */
@@ -199,6 +250,14 @@ public class Edge
     public void removeLockEdge(Edge e)
     {
         this.lockEdges.remove(e);
+    }
+    
+    /**
+     * Removes all edges from the lock edge list
+     */
+    public void clearLockEdges()
+    {
+        this.lockEdges.clear();
     }
     
     /**

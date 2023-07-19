@@ -1446,6 +1446,7 @@ public final class CS2File
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
+                                // TODO - use Edge.validateConfigCommand
                                 control.log("Auto layout warning: accessory " + accessory + " does not exist in CS2 layout");
                                 
                                 if (accessory.contains("Signal "))
@@ -1570,11 +1571,11 @@ public final class CS2File
             }
         });*/
 
-        if (locomotives.isEmpty())
+        /*if (locomotives.isEmpty())
         {
             control.log("Auto layout error: No locomotives placed.");
             layout.invalidate();
-        }
+        }*/
         
         layout.setLocomotivesToRun(locomotives);
                     

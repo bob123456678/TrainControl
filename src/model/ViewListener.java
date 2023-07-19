@@ -56,4 +56,6 @@ public interface ViewListener
     public void parseAuto(String s);
     public Layout getAutoLayout();
     public boolean isDebug();
+    MarklinAccessory newSignal(String name, int address, boolean state);
+    MarklinAccessory newSwitch(String name, int address, boolean state);
 }
