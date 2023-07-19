@@ -10,6 +10,8 @@ import java.awt.Component;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.EnumSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -127,43 +129,38 @@ final public class GraphViewer extends javax.swing.JFrame {
                 addSeparator();
             }
 
-            // Can only rename nodes that are connected to something until we re-write the UI refresh logic
-            if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
-            {
-                // Rename option applicable to all nodes
-                menuItem = new JMenuItem("Rename " + nodeName);
-                menuItem.addActionListener(event -> 
+            // Rename option applicable to all nodes
+            menuItem = new JMenuItem("Rename " + nodeName);
+            menuItem.addActionListener(event -> 
+                {
+                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                        "Enter the new station name.",
+                        nodeName);
+
+                    if (dialogResult != null && !"".equals(dialogResult))
                     {
-                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                            "Enter the new station name.",
-                            nodeName);
-
-                        if (dialogResult != null && !"".equals(dialogResult))
+                        try
                         {
-                            try
+                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
                             {
-                                if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
-                                {
-                                    JOptionPane.showMessageDialog((Component) swingView,
-                                        "This station name is already in use.  Pick another.");
-                                }
-                                else
-                                {
-                                    parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
-                                    parent.repaintAutoLocList();
-                                }
-
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
                                 JOptionPane.showMessageDialog((Component) swingView,
-                                    "Error renaming node.");
+                                    "This station name is already in use.  Pick another.");
+                            }
+                            else
+                            {
+                                parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
+                                parent.repaintAutoLocList();
+                                ui.updatePoint(p, mainGraph);
                             }
                         }
+                        catch (Exception e)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "Error renaming node.");
+                        }
                     }
-                );  
-            }
+                }
+            );  
                 
             add(menuItem);
             
@@ -174,7 +171,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                     try
                     { 
                         p.setTerminus(!p.isTerminus());
-                        parent.getModel().getAutoLayout().refreshUI();
+                        // parent.getModel().getAutoLayout().refreshUI();
+                        ui.updatePoint(p, mainGraph);
                         parent.repaintAutoLocList(); 
                     } catch (Exception ex) {}
                 });
@@ -196,6 +194,32 @@ final public class GraphViewer extends javax.swing.JFrame {
                 menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
                 add(menuItem);
             }
+            
+            /*
+            addSeparator();
+
+            menuItem = new JMenuItem("Delete Point");
+            menuItem.addActionListener(event -> 
+            {
+                int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, 
+                        "This will entirely remove " + nodeName + " from the graph.  Proceed?", 
+                        "Point Deletion", JOptionPane.YES_NO_OPTION);
+                if(dialogResult == JOptionPane.YES_OPTION)
+                {
+                    try 
+                    {
+                        parent.getModel().getAutoLayout().deletePoint(p.getName());
+                        mainGraph.removeNode(p.getUniqueId());
+                        parent.repaintAutoLocList();
+                    } 
+                    catch (Exception e)
+                    {
+                       JOptionPane.showMessageDialog((Component) swingView, e.getMessage());
+                    }
+                } 
+            });    
+            add(menuItem);
+            */
         }
     }
     
@@ -237,9 +261,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                             mainGraph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
                             mainGraph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
                             mainGraph.getNode(p.getUniqueId()).setAttribute("weight", 3);
-                            mainGraph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
-                            mainGraph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
                             
+                            ui.updatePoint(p, mainGraph);                            
                             parent.getModel().getAutoLayout().refreshUI();
                             parent.repaintAutoLocList();
                         }

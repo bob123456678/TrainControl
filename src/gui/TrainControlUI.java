@@ -7252,6 +7252,42 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Refreshes the text of a point
+     * @param p
+     * @param graph 
+     */
+    synchronized public void updatePoint(Point p, Graph graph)
+    {
+        if (p.isOccupied() && p.getCurrentLocomotive() != null)
+        {
+            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+            graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
+        }
+        else
+        {
+            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
+            graph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
+        }
+
+        // Different styles for stations and non-stations
+        if (p.isDestination())
+        {
+            if (p.isTerminus())
+            {
+                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
+            }
+            else
+            {
+                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");
+            }
+        }
+        else
+        {
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
+        }
+    }
+    
+    /**
      * Renders a graph visualization of the automated layout
      */
     synchronized private void renderAutoLayoutGraph()
@@ -7306,33 +7342,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     graph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
                 }
                 
-                if (p.isOccupied() && p.getCurrentLocomotive() != null)
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
-                }
-                else
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
-                }
-                
-                // Different styles for stations and non-stations
-                if (p.isDestination())
-                {
-                    if (p.isTerminus())
-                    {
-                        graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
-                    }
-                    else
-                    {
-                        graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");
-                    }
-                }
-                else
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
-                }
+                updatePoint(p, graph);
             }
 
             for (Edge e : this.model.getAutoLayout().getEdges())
@@ -7389,16 +7399,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         // Update point labels
                         for (Point p : Arrays.asList(e.getStart(), e.getEnd()))    
                         {
-                            if (p.isOccupied() && p.getCurrentLocomotive() != null)
-                            {
-                                graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
-                                graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
-                            }
-                            else
-                            {
-                                graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
-                                graph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
-                            }
+                            updatePoint(p, graph);
                                                         
                             // Point reached and route is active
                             if (locked)
@@ -7411,23 +7412,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 {
                                     graph.getNode(p.getUniqueId()).setAttribute("ui.class", "active");
                                 }
-                            }
-                            
-                            // Different styles for stations and non-stations
-                            if (p.isDestination())
-                            {
-                                if (p.isTerminus())
-                                {
-                                    graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
-                                }
-                                else
-                                {
-                                    graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");
-                                }
-                            }
-                            else
-                            {
-                                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
                             }
                         }    
                     }
