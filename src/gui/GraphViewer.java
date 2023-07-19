@@ -133,8 +133,23 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
 
                 addSeparator();
-            }
+                
+                if (p.isOccupied())
+                {
+                    menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Node");
+                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList();});    
+                    add(menuItem);
+                    
+                    addSeparator();
 
+                    menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
+                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
+                    add(menuItem);
+                    
+                    addSeparator();
+                }
+            }
+            
             // Rename option applicable to all nodes
             menuItem = new JMenuItem("Rename " + nodeName);
             menuItem.addActionListener(event -> 
@@ -186,6 +201,63 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
             }
             
+            if (!p.isDestination() || !p.isOccupied())
+            {
+                menuItem = new JMenuItem("Set as " + (p.isDestination() ? "Non-station" : "Station"));
+                menuItem.addActionListener(event -> { 
+                    try
+                    { 
+                        p.setDestination(!p.isDestination());
+                        // parent.getModel().getAutoLayout().refreshUI();
+                        ui.updatePoint(p, mainGraph);
+                        parent.repaintAutoLocList(); 
+                    } catch (Exception ex) { JOptionPane.showMessageDialog((Component) swingView,
+                                    ex.toString()
+                    ); }
+                });
+
+                add(menuItem);
+            }
+                
+            menuItem = new JMenuItem("Set s88 (" + (p.hasS88() ? p.getS88() : "None") + ")");
+            menuItem.addActionListener(event -> 
+                {
+                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                        "Enter the s88 address for " + nodeName + ":",
+                        p.getS88());
+
+                    if (dialogResult != null)
+                    {
+                        try
+                        {
+                            Integer value;
+                            if (dialogResult.equals(""))
+                            {
+                                value = null;
+                            }
+                            else
+                            {
+                                value = Integer.parseInt(dialogResult);
+                            }
+                            
+                            p.setS88(value);
+                            
+                            ui.updatePoint(p, mainGraph);
+
+                            parent.repaintAutoLocList();
+                        }
+                        catch (Exception e)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "Invalid value (must be a non-negative integer, or blank to disable)");
+                        }
+                    }
+                }
+            );     
+
+            add(menuItem);
+            
+            // Add edge
             addSeparator();
             
             menuItem = new JMenuItem("Connect to... ");
@@ -252,28 +324,13 @@ final public class GraphViewer extends javax.swing.JFrame {
                     else
                     {
                         JOptionPane.showMessageDialog((Component) swingView,
-                            "No other points in graph.  Add more points.");
+                            "No other points to connect to.  Add more points to the graph.");
                     }
                 }
             ); 
             
             add(menuItem);
-            
-            if (p.isOccupied() && p.isDestination())
-            {
-                addSeparator();
-
-                menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Node");
-                menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList();});    
-                add(menuItem);
-
-                addSeparator();
-
-                menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
-                menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
-                add(menuItem);
-            }
-            
+                        
             // Delete edges
             List<Edge> neighbors =  parent.getModel().getAutoLayout().getNeighbors(p);
             if (!neighbors.isEmpty())
@@ -463,10 +520,16 @@ final public class GraphViewer extends javax.swing.JFrame {
                         
                         Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(position.x).intValue());
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(Toolkit.nodePosition(node)[0]).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(new Double(Toolkit.nodePosition(node)[1]).intValue());
+
+                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(Toolkit.nodePosition(node)[0]).intValue() + "," + (maxYY - new Double(Toolkit.nodePosition(node)[1]).intValue()));
                         
-                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
+                        // Old method - ensured no negative numbers, but not always accurate when exporting
+                        //parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(position.x).intValue());
+                        //parent.getModel().getAutoLayout().getPointById(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                        
+                        //parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
                     }
                 }
             }

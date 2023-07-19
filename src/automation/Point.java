@@ -11,9 +11,9 @@ import org.json.JSONObject;
 public class Point
 {
     private Locomotive currentLoc;
-    private final boolean isDestination;
+    private boolean isDestination;
     private String name;
-    private final String s88;
+    private String s88;
     private boolean isTerminus;
     private Integer x;
     private Integer y;
@@ -47,6 +47,40 @@ public class Point
     public String getUniqueId()
     {
         return Integer.toString(uniqueId);
+    }
+    
+    /**
+     * Sets an S88 value for this point
+     * @param value 
+     */
+    public void setS88(Integer value)
+    {
+        if (value != null)
+        {
+            this.s88 = Integer.toString(Math.abs(value));
+        }
+        else
+        {
+            this.s88 = null;
+        }
+    }
+    
+    /**
+     * Changes the state of this station
+     * @param state
+     * @throws Exception 
+     */
+    public void setDestination(boolean state) throws Exception
+    {
+        if (state && !hasS88())
+        {
+            throw new Exception("Stations must have an S88 sensor.");
+        }
+        
+        this.isDestination = state;
+        
+        // Reset terminus status
+        if (!this.isDestination) this.isTerminus = false;
     }
     
     /**
