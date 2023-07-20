@@ -892,6 +892,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state
      * @return 
      */
+    @Override
     public final MarklinAccessory newSignal(String name, int address, boolean state)
     {
         return newAccessory("Signal " + name, address, Accessory.accessoryType.SIGNAL, state);
@@ -904,6 +905,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state
      * @return 
      */
+    @Override
     public final MarklinAccessory newSwitch(String name, int address, boolean state)
     {
         return newAccessory("Switch " + name, address, Accessory.accessoryType.SWITCH, state);

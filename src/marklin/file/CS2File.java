@@ -1451,12 +1451,16 @@ public final class CS2File
                                 
                                 if (accessory.contains("Signal "))
                                 {
-                                    control.newSignal(accessory.replace("Signal ", ""), Integer.parseInt(accessory.replace("Signal ", "")), false);
+                                    Integer address = Integer.valueOf(accessory.replace("Signal ", ""));
+                                    
+                                    control.newSignal(address.toString(), address, false);
                                     control.log("Auto layout warning: created " + accessory);
                                 }
                                 else if (accessory.contains("Switch "))
-                                {
-                                    control.newSwitch(accessory.replace("Switch ", ""), Integer.parseInt(accessory.replace("Switch ", "")), false);
+                                {   
+                                    Integer address = Integer.valueOf(accessory.replace("Switch ", ""));
+
+                                    control.newSwitch(address.toString(), address, false);
                                     control.log("Auto layout warning: created " + accessory);                       
                                 }
                                 else
@@ -1479,13 +1483,13 @@ public final class CS2File
 
                             if (!"turn".equals(action) && !"straight".equals(action) &&! "green".equals(action) && !"red".equals(action))
                             {
-                                control.log("Auto layout error: Error in edge " + start + "-" + end + " action: " + command.toString());
+                                control.log("Auto layout error: Error in edge " + start + "->" + end + " action: " + command.toString());
                                 layout.invalidate();
                             }
                         }
                         else
                         {
-                            control.log("Auto layout error: Edge command missing state " + start + "-" + end + " action: " + command.toString());
+                            control.log("Auto layout error: Edge command missing state " + start + "->" + end + " action: " + command.toString());
                             layout.invalidate();
                         }
                     });

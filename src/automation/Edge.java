@@ -104,23 +104,37 @@ public class Edge
         {
             if (accessory.contains("Signal "))
             {
-                control.newSignal(accessory.replace("Signal ", ""), Integer.parseInt(accessory.replace("Signal ", "")), false);
+                Integer address = Integer.valueOf(accessory.replace("Signal ", "").trim());
+                
+                if (control.getAccessoryByName("Switch " + address) != null)
+                {
+                    throw new Exception("Command " + accessory + " conflicts with switch with the same address.");
+                }
+                
+                control.newSignal(address.toString(), address, false);
                 control.log("Auto layout warning: created " + accessory);
             }
             else if (accessory.contains("Switch "))
             {
-                control.newSwitch(accessory.replace("Switch ", ""), Integer.parseInt(accessory.replace("Switch ", "")), false);
+                Integer address = Integer.valueOf(accessory.replace("Switch ", "").trim());
+                
+                if (control.getAccessoryByName("Signal " + address) != null)
+                {
+                    throw new Exception("Command " + accessory + " conflicts with signal with the same address.");
+                }
+
+                control.newSwitch(address.toString(), address, false);
                 control.log("Auto layout warning: created " + accessory);                       
             }
             else
             {
-                throw new Exception("Auto layout error: unrecognized accessory type " + accessory + ". Must be Signal or Switch.");
+                throw new Exception("Auto layout error: unrecognized accessory type \"" + accessory + "\". Must be Signal or Switch, e.g. \"Signal 1\".");
             }
         }
         
         if (null == control.getAccessoryByName(accessory))
         {
-            throw new Exception("Accessory " + accessory + " does not exist in the layout");
+            throw new Exception("Accessory " + accessory + " does not exist in the layout or cannot be added");
         }
         
         if (!"turn".equals(action) && !"straight".equals(action) && !"red".equals(action) && !"green".equals(action))
@@ -268,7 +282,7 @@ public class Edge
      */
     public static String getEdgeName(Point start, Point end)
     {
-        return start.getName() + "_" + end.getName(); 
+        return start.getName() + " -> " + end.getName(); 
     }
     
     /**

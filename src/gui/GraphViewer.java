@@ -349,11 +349,21 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                         Collections.sort(edgeNames);
 
-                        String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                        String dialogResult;
+                        
+                        // Only prompt if there are multiple outgoing edges
+                        if (edgeNames.size() > 1)
+                        {
+                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
                                 "Which edge do you want to edit?",
                                 "Edit Edge", JOptionPane.QUESTION_MESSAGE, null, 
                                 edgeNames.toArray(), // Array of choices
                                 edgeNames.get(0));
+                        }
+                        else
+                        {
+                            dialogResult = edgeNames.get(0);
+                        }
 
                         if (dialogResult != null && !"".equals(dialogResult))
                         {

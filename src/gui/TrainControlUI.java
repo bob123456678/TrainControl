@@ -7389,7 +7389,28 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         try
         {
             graph.setAttribute("ui.stylesheet", "url('" + resource.toURI() +"')");
-                                    
+            
+            // Add dummy points to make dragging new nodes make more sense
+            if (this.model.getAutoLayout().getPoints().size() < 4)
+            {
+                graph.addNode("a");
+                graph.getNode("a").setAttribute( "ui.class",  "invis" );
+                graph.getNode("a").setAttribute( "x", 0 );
+                graph.getNode("a").setAttribute( "y", 0 );
+                graph.addNode("b");
+                graph.getNode("b").setAttribute( "ui.class",  "invis" );
+                graph.getNode("b").setAttribute( "x", 200 );
+                graph.getNode("b").setAttribute( "y", 0 );
+                graph.addNode("c");
+                graph.getNode("c").setAttribute( "ui.class",  "invis" );
+                graph.getNode("c").setAttribute( "x", 0 );
+                graph.getNode("c").setAttribute( "y", 200 );
+                graph.addNode("d");
+                graph.getNode("d").setAttribute( "ui.class",  "invis" );
+                graph.getNode("d").setAttribute( "x", 200 );
+                graph.getNode("d").setAttribute( "y", 200 );
+            }
+
             for (Point p : this.model.getAutoLayout().getPoints())
             {
                 graph.addNode(p.getUniqueId());

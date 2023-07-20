@@ -74,7 +74,7 @@ public class Point
     {
         if (state && !hasS88())
         {
-            throw new Exception("Stations must have an S88 sensor.");
+            throw new Exception("Stations must have an s88 sensor.  Set the s88 address first.");
         }
         
         this.isDestination = state;
