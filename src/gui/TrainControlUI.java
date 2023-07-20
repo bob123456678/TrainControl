@@ -548,6 +548,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (this.autosave.isSelected() && null != this.model.getAutoLayout() && this.model.getAutoLayout().isValid())
         {
+            if (this.model.getAutoLayout().isRunning())
+            {
+                this.model.getAutoLayout().stopLocomotives();
+                JOptionPane.showMessageDialog(this, 
+                        "Auto-save warning: some locomotives were still running autonomously and will now be stopped.  "
+                        + "\n\nTo avoid corrupting the JSON state, please wait until the graph shows no more green, then click OK.");
+            }
+                
             try
             {
                 this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
