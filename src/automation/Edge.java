@@ -66,7 +66,7 @@ public class Edge
      */
     public void addConfigCommand(String acc, String state)
     {
-        this.configCommands.put(acc, state);
+        this.configCommands.put(acc.trim(), state.trim());
     }
     
     /**
@@ -216,7 +216,7 @@ public class Edge
     @Override
     public String toString()
     {
-        return "Edge: " + getName();
+        return getName();
     }
     
     @Override

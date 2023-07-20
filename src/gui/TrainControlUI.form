@@ -3614,7 +3614,8 @@
                                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="1" attributes="0">
-                                      <EmptySpace min="0" pref="499" max="32767" attributes="0"/>
+                                      <Component id="autosave" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace pref="281" max="32767" attributes="0"/>
                                       <Component id="loadBlank" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                       <Component id="jSeparator3" min="-2" max="-2" attributes="0"/>
@@ -3634,13 +3635,14 @@
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="jLabel9" alignment="3" min="-2" max="-2" attributes="0"/>
                                       <Component id="loadBlank" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="autosave" alignment="3" min="-2" max="-2" attributes="0"/>
                                   </Group>
                                   <Component id="jSeparator3" max="32767" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
                               <EmptySpace min="-2" max="-2" attributes="0"/>
-                              <Component id="jScrollPane2" pref="407" max="32767" attributes="0"/>
+                              <Component id="jScrollPane2" pref="403" max="32767" attributes="0"/>
                               <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -3709,6 +3711,15 @@
                       <Properties>
                         <Property name="orientation" type="int" value="1"/>
                       </Properties>
+                    </Component>
+                    <Component class="javax.swing.JCheckBox" name="autosave">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Auto-save graph state on exit"/>
+                        <Property name="focusable" type="boolean" value="false"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="autosaveActionPerformed"/>
+                      </Events>
                     </Component>
                   </SubComponents>
                 </Container>

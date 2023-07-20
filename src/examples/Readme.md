@@ -189,6 +189,8 @@ This functionality is essential when your layout includes crossings, since these
 From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
 The following example JSON corresponds to the above code/layout and edge locking.
 
+To make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.
+
 Note that `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
 The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks.
 

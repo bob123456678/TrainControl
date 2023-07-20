@@ -185,7 +185,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 
             // Edit sensor
             
-            menuItem = new JMenuItem("Edit s88 (" + (p.hasS88() ? p.getS88() : "none") + ")");
+            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
             menuItem.addActionListener(event -> 
                 {
                     String dialogResult = JOptionPane.showInputDialog((Component) swingView, 

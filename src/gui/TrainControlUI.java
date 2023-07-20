@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,6 +79,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String SLIDER_SETTING_PREF = "SliderSetting";
     public static String ROUTE_SORT_PREF = "RouteSorting";
     public static String ONTOP_SETTING_PREF = "OnTop";
+    public static String AUTOSAVE_SETTING_PREF = "AutoSave";
 
     // Constants
     // Width of locomotive images
@@ -439,7 +442,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
-        
+        this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
+       
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
 
         // Set selected route sort radio button
@@ -540,6 +544,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.model.log("Could not save UI state. " 
                 + iOException.getMessage());
+        }
+        
+        if (this.autosave.isSelected() && null != this.model.getAutoLayout() && this.model.getAutoLayout().isValid())
+        {
+            try
+            {
+                this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
+            }
+            catch (Exception ex)
+            {
+                this.model.log("Failed to save auto layout JSON.");
+            }
         }
         
         if (!this.autonomyJSON.getText().trim().equals(""))
@@ -1760,6 +1776,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel9 = new javax.swing.JLabel();
         loadBlank = new javax.swing.JLabel();
         jSeparator3 = new javax.swing.JSeparator();
+        autosave = new javax.swing.JCheckBox();
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
@@ -4419,6 +4436,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
+        autosave.setText("Auto-save graph state on exit");
+        autosave.setFocusable(false);
+        autosave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                autosaveActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
         autonomyPanel.setLayout(autonomyPanelLayout);
         autonomyPanelLayout.setHorizontalGroup(
@@ -4431,7 +4456,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(jLabel6)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
-                        .addGap(0, 499, Short.MAX_VALUE)
+                        .addComponent(autosave)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 281, Short.MAX_VALUE)
                         .addComponent(loadBlank)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4446,12 +4472,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel9)
-                        .addComponent(loadBlank))
+                        .addComponent(loadBlank)
+                        .addComponent(autosave))
                     .addComponent(jSeparator3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 407, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 403, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -7290,6 +7317,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_loadBlankdocumentationClicked
 
+    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
+        this.prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
+    }//GEN-LAST:event_autosaveActionPerformed
+
     /**
      * Disables the start autonomy button
      */
@@ -7901,6 +7932,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel autoPanel;
     private javax.swing.JTextArea autonomyJSON;
     private javax.swing.JPanel autonomyPanel;
+    private javax.swing.JCheckBox autosave;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JButton checkDuplicates;

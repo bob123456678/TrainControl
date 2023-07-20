@@ -142,16 +142,21 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.8.11 [Beta]
+* v1.9.0 [Beta]
     - Points and edges are now sorted alphabetically in generated autonomy JSON
     - 0 train lengths will be excluded from generated autonomy JSON
-    - Added right-click option to rename graph nodes
-    - Added right-click option to change a station node to a terminus station
-    - Added option to toggle the main TrainControl window being always on top
-    - Added options to add/delete nodes and edges to/from the graph
-    - Added interface to edit lock edges and commands for any edge
-    - Added button to load empty JSON to enable building a graph from scratch
-    - Improved coordinate accuracy in exported JSON after nodes are moved around
+    - Added button to load empty JSON to enable building an autonomy graph from scratch
+    - Made it possible to create / fully edit autonomy graphs via right-click menus in the graph UI
+        - Added option to rename graph nodes (changes propagate to edges)
+        - Added option to change a station node to a terminus station
+        - Added option to toggle station status
+        - Added option to set s88 address
+        - Added options to add/delete nodes and edges to/from the graph
+        - Added interface to edit lock edges and commands for any edge
+    - Added checkbox to toggle the main TrainControl window being always on top
+    - Added checkbox to auto-save autonomy graph state on exit (applies only if autonomous operation was activated)
+    - Improved coordinate accuracy in exported JSON after nodes are manually moved
+    - Improved parsing (error handling) of edge configuration commands
     - Fixed bug where terminus station status was not exported in generated autonomy JSON
 
 * v1.8.10 [7/17/23]

@@ -1447,7 +1447,7 @@ public final class CS2File
                             if (null == control.getAccessoryByName(accessory))
                             {
                                 // TODO - use Edge.validateConfigCommand
-                                control.log("Auto layout warning: accessory " + accessory + " does not exist in CS2 layout");
+                                control.log("Auto layout warning: accessory \"" + accessory + "\" does not exist in CS2 layout");
                                 
                                 if (accessory.contains("Signal "))
                                 {
@@ -1468,7 +1468,7 @@ public final class CS2File
                                     control.log("Auto layout error: unrecognized accessory type");
                                     layout.invalidate();
                                 }
-                            }   
+                            }
                         }
                         else
                         {
