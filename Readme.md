@@ -142,7 +142,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.9.0 [7/20/23]
+* v1.9.0 [7/20/23] (New feature: full UI for editing autonomy graphs)
     - Added button to load empty JSON to enable building an autonomy graph from scratch
     - Made it possible to create / fully edit autonomy graphs via right-click menus in the graph UI
         - Added option to rename graph nodes (changes propagate to edges)
