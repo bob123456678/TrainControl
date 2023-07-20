@@ -142,9 +142,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.9.0 [Beta]
-    - Points and edges are now sorted alphabetically in generated autonomy JSON
-    - 0 train lengths will be excluded from generated autonomy JSON
+* v1.9.0 [7/20/23]
     - Added button to load empty JSON to enable building an autonomy graph from scratch
     - Made it possible to create / fully edit autonomy graphs via right-click menus in the graph UI
         - Added option to rename graph nodes (changes propagate to edges)
@@ -157,6 +155,8 @@ Requires JDK 1.8+ and the following libraries:
     - Added checkbox to auto-save autonomy graph state on exit (applies only if autonomous operation was activated)
     - Improved coordinate accuracy in exported JSON after nodes are manually moved
     - Improved parsing (error handling) of edge configuration commands
+    - Points and edges are now sorted alphabetically in the generated autonomy JSON
+    - 0 (defualt) train lengths will be excluded from generated autonomy JSON keys, for brevity
     - Fixed bug where terminus station status was not exported in generated autonomy JSON
 
 * v1.8.10 [7/17/23]
