@@ -552,19 +552,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                this.model.getAutoLayout().stopLocomotives();
-                JOptionPane.showMessageDialog(this, 
-                        "Auto-save warning: some locomotives were still running autonomously and will now be stopped.  "
-                        + "\n\nTo avoid corrupting the JSON state, please wait until the trains stop and the graph shows no more green, then click OK.");
+                this.model.log("Autonomy still running: skipping JSON auto-save.");
             }
-                
-            try
+            else
             {
-                this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
-            }
-            catch (Exception ex)
-            {
-                this.model.log("Failed to save auto layout JSON.");
+                try
+                {
+                    this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
+                    this.model.log("Auto-saved autonomy state.");
+                }
+                catch (Exception ex)
+                {
+                    this.model.log("Failed to save auto layout JSON.");
+                }
             }
         }
         
@@ -6157,6 +6157,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
+        // Auto-save confirmation
+        if (this.autosave.isSelected() && null != this.model.getAutoLayout() 
+                && this.model.getAutoLayout().isValid()
+                && !this.model.getAutoLayout().getPoints().isEmpty())
+        {
+            if (this.model.getAutoLayout().isRunning())
+            {
+                this.model.getAutoLayout().stopLocomotives();
+                int dialogResult = JOptionPane.showConfirmDialog(
+                        this, "Autonomy logic is still running.  "
+                                + "State will not be auto-saved unless all trains are gracefully stopped.  Are you use you want to quit?"
+                                , "Confirm Exit", JOptionPane.YES_NO_OPTION);
+                
+                if(dialogResult == JOptionPane.NO_OPTION) return;
+            }
+        }
+        
         model.saveState();
         this.saveState();
         //model.stop();
@@ -7163,6 +7180,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
+        if (!this.model.getPowerState())
+        {
+            JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+            return;
+        }
+        
         for (String routeName : this.model.getRouteList())
         {
             MarklinRoute r = this.model.getRoute(routeName);
@@ -7604,7 +7627,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
         {
-            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout()));
+            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout(), this.model));
         }
 
         // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.

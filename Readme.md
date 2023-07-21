@@ -69,6 +69,8 @@ The graph UI will show you which routes are active, which edges are locked, and 
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * (From v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
+* (From v1.8.0) Semi-autonomously operate trains simply by specifying the destination station (when graph model is enabled)
+* (From v1.9.0) Full UI for editing autonmy graph models
 
 **Requirements:**
 
@@ -141,6 +143,10 @@ Requires JDK 1.8+ and the following libraries:
 
 
 ## Changelog
+
+* v1.9.1 [7/21/23]
+    - Autonomous operation can no longer be started if the track power is off (to avoid switch/signal state inconsistencies)
+    - On exit, autonomy state auto-save will no longer be attempted if any trains are running.  A confirmation dialog has been added.
 
 * v1.9.0 [7/20/23] (New feature: full UI for editing autonomy graphs)
     - Added button to load empty JSON to enable building an autonomy graph from scratch

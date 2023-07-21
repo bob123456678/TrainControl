@@ -14,6 +14,7 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import model.ViewListener;
 
 /**
  *
@@ -24,15 +25,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
     private final Layout layout;
+    private ViewListener control;
     
     /**
      * Creates new form AutoLocomotiveStatus
      * @param loc
      * @param layout
+     * @param control
      */
-    public AutoLocomotiveStatus(Locomotive loc, Layout layout) {
+    public AutoLocomotiveStatus(Locomotive loc, Layout layout, ViewListener control) {
         this.layout = layout;
         this.locomotive = loc;
+        this.control = control;
         initComponents();
         
         this.locName.setText(locomotive.getName());
@@ -197,6 +201,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                         
             if (!layout.isAutoRunning() && !this.paths.isEmpty())
             {
+                if (!this.control.getPowerState())
+                {
+                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                    return;
+                }
+                
                 new Thread( () -> {
                     boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed());
                     

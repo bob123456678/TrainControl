@@ -40,7 +40,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.9.0";
+    public static final String VERSION = "1.9.1";
     
     //// Settings
     
@@ -1665,6 +1665,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (!model.getNetworkCommState())
         {
             ui.getPrefs().remove(TrainControlUI.IP_PREF);
+        }
+        
+        // Make the model think that the power is on
+        if (simulate)
+        {
+            model.powerState = true;
         }
         
         return model;
