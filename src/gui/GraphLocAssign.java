@@ -33,11 +33,20 @@ public class GraphLocAssign extends javax.swing.JPanel {
         if (newOnly)
         {
             locs = new LinkedList<>(parent.getModel().getLocList());
-            locs.removeAll(parent.getModel().getAutoLayout().getLocomotivesToRun());
+            
+            for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
+            {
+                locs.remove(l.getName());
+            }
         }
         else
         {
-            locs = new LinkedList<>(parent.getModel().getAutoLayout().getLocomotivesToRun());
+            locs = new LinkedList<>();
+            
+            for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
+            {
+                locs.add(l.getName());
+            }
         }
         
         Collections.sort(locs);
@@ -151,7 +160,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             return null;
         }
         
-        return new Integer((String) this.departureFunc.getSelectedItem());
+        return Integer.valueOf((String) this.departureFunc.getSelectedItem());
     }
     
     public Integer getArrivalFunc()
@@ -161,7 +170,7 @@ public class GraphLocAssign extends javax.swing.JPanel {
             return null;
         }
         
-        return new Integer((String) this.arrivalFunc.getSelectedItem());
+        return Integer.valueOf((String) this.arrivalFunc.getSelectedItem());
     }
     
     public String getLoc()

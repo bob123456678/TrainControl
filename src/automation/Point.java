@@ -196,6 +196,10 @@ public class Point
         return maxTrainLength;
     }
 
+    /**
+     * Sets the maximum train length allowed at this point
+     * @param maxTrainLength 
+     */
     public void setMaxTrainLength(Integer maxTrainLength)
     {
         assert maxTrainLength >= 0;

@@ -145,7 +145,10 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.9.2 [Beta]
-    - Manual changes to S88 state via UI will now dynamically update possible autonomy routes
+    - Manual changes to S88 state via UI will now dynamically update shown route options
+    - Made path strings in log output more concise
+    - Fixed potential issues if a locomotive was renamed during autonomous operation 
+    - Fixed potential race condition related to possible paths shown in log output
 
 * v1.9.1 [7/21/23]
     - Autonomous operation can no longer be started if the track power is off (to avoid switch/signal state inconsistencies)

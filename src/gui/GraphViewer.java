@@ -266,7 +266,7 @@ final public class GraphViewer extends javax.swing.JFrame {
             menuItem = new JMenuItem("Connect to Point...");
             menuItem.addActionListener(event -> 
                 {
-                    // Get all point names excep tthis one
+                    // Get all point names except this one
                     Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
                     List<String> pointNames = new LinkedList<>();
                     

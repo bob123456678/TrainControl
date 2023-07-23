@@ -1581,7 +1581,14 @@ public final class CS2File
             layout.invalidate();
         }*/
         
-        layout.setLocomotivesToRun(locomotives);
+        List<Locomotive> locsToRun = new LinkedList<>();
+        
+        for (String s : locomotives)
+        {
+            locsToRun.add(control.getLocByName(s));
+        }
+        
+        layout.setLocomotivesToRun(locsToRun);
                     
         return layout;
     }

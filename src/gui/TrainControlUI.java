@@ -6915,7 +6915,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
             }
             
-            if (newRoute.size() > 0)
+            if (!newRoute.isEmpty())
             {    
                 // Editing a route
                 if (!"".equals(origName))
@@ -7522,7 +7522,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     
                     if (l != null)
                     {
-                        milestones = this.model.getAutoLayout().getReachedMilestones(l.getName());
+                        milestones = this.model.getAutoLayout().getReachedMilestones(l);
                     }
                     
                     // Update edge colors and labels
@@ -7605,27 +7605,31 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void repaintAutoLocList()
     {
-        // Display locomotive status and possible paths
-        this.autoLocPanel.removeAll();
-
-        // Number of columns in the grid
-        int gridCols = 3;
-
-        autoLocPanel.setLayout(new java.awt.GridLayout(
-                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
-                gridCols, // cols
-                5, // padding
-                5)
-        );
-
-        for (String loc : this.model.getAutoLayout().getLocomotivesToRun())
+        if (null != this.model.getAutoLayout() 
+                && this.model.getAutoLayout().isValid())
         {
-            this.autoLocPanel.add(new AutoLocomotiveStatus(this.model.getLocByName(loc), this.model.getAutoLayout(), this.model));
-        }
+            // Display locomotive status and possible paths
+            this.autoLocPanel.removeAll();
 
-        // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
-        this.autoLocPanel.repaint(1000);
-        this.locCommandPanels.repaint(1000);
+            // Number of columns in the grid
+            int gridCols = 3;
+
+            autoLocPanel.setLayout(new java.awt.GridLayout(
+                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                    gridCols, // cols
+                    5, // padding
+                    5)
+            );
+
+            for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+            {
+                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model.getAutoLayout(), this.model));
+            }
+
+            // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
+            this.autoLocPanel.repaint(1000);
+            this.locCommandPanels.repaint(1000);
+        }
     }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer

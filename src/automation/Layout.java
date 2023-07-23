@@ -62,9 +62,9 @@ public class Layout
     private boolean preConfigure;
     
     // List of all / active locomotives
-    private final Set<String> locomotivesToRun;
-    private final Map<String, List<Edge>> activeLocomotives;
-    private final Map<String, List<Point>> locomotiveMilestones;
+    private final Set<Locomotive> locomotivesToRun;
+    private final Map<Locomotive, List<Edge>> activeLocomotives;
+    private final Map<Locomotive, List<Point>> locomotiveMilestones;
     
     // Additional configuration
     private int minDelay;
@@ -124,7 +124,7 @@ public class Layout
      * Sets the list of locomotives that will be run
      * @param locs 
      */
-    public void setLocomotivesToRun(List<String> locs)
+    public void setLocomotivesToRun(List<Locomotive> locs)
     {
         this.locomotivesToRun.clear();
         this.locomotivesToRun.addAll(locs);
@@ -134,16 +134,16 @@ public class Layout
      * Gets the locomotives that will be run
      * @return  
      */
-    public Set<String> getLocomotivesToRun()
+    public Set<Locomotive> getLocomotivesToRun()
     {
         return this.locomotivesToRun;
     }
-    
+       
     /**
      * Gets locomotives currently running
      * @return  
      */
-    public Map<String, List<Edge>> getActiveLocomotives()
+    public Map<Locomotive, List<Edge>> getActiveLocomotives()
     {
         return this.activeLocomotives;
     }
@@ -153,7 +153,7 @@ public class Layout
      * @param loc
      * @return  
      */
-    public List<Point> getReachedMilestones(String loc)
+    public List<Point> getReachedMilestones(Locomotive loc)
     {
         return this.locomotiveMilestones.get(loc);
     }
@@ -216,7 +216,7 @@ public class Layout
             
             try 
             {
-                runLocomotive(control.getLocByName(loc), control.getLocByName(loc).getPreferredSpeed());
+                runLocomotive(loc, loc.getPreferredSpeed());
             } 
             catch (Exception ex)
             {
@@ -276,6 +276,7 @@ public class Layout
     /**
      * Change how much locomotives are slowed one edge prior to arrival
      * @param preArrivalSpeedReduction 
+     * @throws java.lang.Exception 
      */
     public void setPreArrivalSpeedReduction(double preArrivalSpeedReduction) throws Exception
     {
@@ -448,14 +449,14 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + path.toString() + " contains an intermediate terminus station");
+                    control.log("Path " + this.pathToString(path) + " contains an intermediate terminus station");
                 }
                 return false;
             }
             
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
-                control.log("Path " + path.toString() + " expects feedback " + e.getEnd().getS88() + " to be clear");
+                control.log("Path " + this.pathToString(path) + " expects feedback " + e.getEnd().getS88() + " to be clear");
                 return false;
             }
             
@@ -464,7 +465,7 @@ public class Layout
             {
                 if (e2.isOccupied(loc))
                 {
-                    control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + path.toString());
+                    control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + this.pathToString(path));
                     return false;
                 }
             } 
@@ -475,7 +476,7 @@ public class Layout
         {
             if (control.isDebug())
             {
-                control.log("Path " + path.toString() + " disallowed because " + loc.getName() + " is not reversible");
+                control.log("Path " + this.pathToString(path) + " disallowed because " + loc.getName() + " is not reversible");
             }
             
             return false;
@@ -494,7 +495,7 @@ public class Layout
         // Invalid state means there were conflicting accessory commands, so this path would not work as intended
         if (!this.configIsValid)
         {
-            this.control.log("Path " + path + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
+            this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
             return false;
         }
         
@@ -784,7 +785,7 @@ public class Layout
                     // Path is not within the list of disallowed paths - return it
                     if (excludePaths == null || !excludePaths.contains(path))
                     {                                  
-                        //this.control.log("Path: " + path.toString());
+                        //this.control.log("Path: " + this.pathToString(path));
                         return path;
                     }
                     // Path is disallowed - continue and get another one
@@ -870,51 +871,54 @@ public class Layout
      */
     public List<Edge> pickPath(Locomotive loc)
     {
-        List<Point> ends = new LinkedList<>(this.points.values());
-        Collections.shuffle(ends);
-        
-        for (Point start : this.points.values())
+        synchronized (this.activeLocomotives)
         {
-            if (loc.equals(start.getCurrentLocomotive()))
+            List<Point> ends = new LinkedList<>(this.points.values());
+            Collections.shuffle(ends);
+
+            for (Point start : this.points.values())
             {
-                for (Point end : ends)
+                if (loc.equals(start.getCurrentLocomotive()))
                 {
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                    for (Point end : ends)
                     {
-                        try 
+                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
                         {
-                            // If the first shortest path is invalid, check all alternatives                            
-                            List<Edge> path;
-                            List<List<Edge>> seenPaths = new LinkedList<>();
-                            
-                            do 
+                            try 
                             {
-                                path = this.bfs(start, end, seenPaths);
+                                // If the first shortest path is invalid, check all alternatives                            
+                                List<Edge> path;
+                                List<List<Edge>> seenPaths = new LinkedList<>();
 
-                                if (path != null && this.isPathClear(path, loc))
+                                do 
                                 {
-                                    return path;
-                                }
-                                else if (path != null)
-                                {
-                                    // Get another path other than the one we just saw
-                                    seenPaths.add(path);
-                                }
-                                
-                            } while (path != null);
+                                    path = this.bfs(start, end, seenPaths);
+
+                                    if (path != null && this.isPathClear(path, loc))
+                                    {
+                                        return path;
+                                    }
+                                    else if (path != null)
+                                    {
+                                        // Get another path other than the one we just saw
+                                        seenPaths.add(path);
+                                    }
+
+                                } while (path != null);
+                            }
+                            catch (Exception e)
+                            {
+
+                            }      
                         }
-                        catch (Exception e)
-                        {
-
-                        }      
                     }
+
+                    break;
                 }
-                
-                break;
             }
+
+            this.control.log(loc.getName() + " has no free paths at the moment");
         }
-        
-        this.control.log(loc.getName() + " has no free paths at the moment");
         
         try
         {
@@ -922,7 +926,7 @@ public class Layout
         } 
         catch (InterruptedException ex)
         {
-            
+
         }
         
         return null;
@@ -937,66 +941,69 @@ public class Layout
     public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
         List<List<Edge>> output = new LinkedList<>();
-        
-        // If the locomotive is currently running, it has no possible paths
-        if (!this.activeLocomotives.containsKey(loc.toString()))
-        {     
-            List<Point> ends = new LinkedList<>(this.points.values());
-            //Collections.shuffle(ends);
 
-            for (Point start : this.points.values())
-            {
-                if (loc.equals(start.getCurrentLocomotive()))
+        synchronized (this.activeLocomotives)
+        {
+            // If the locomotive is currently running, it has no possible paths
+            if (!this.activeLocomotives.containsKey(loc))
+            {     
+                List<Point> ends = new LinkedList<>(this.points.values());
+                //Collections.shuffle(ends);
+
+                for (Point start : this.points.values())
                 {
-                    for (Point end : ends)
+                    if (loc.equals(start.getCurrentLocomotive()))
                     {
-                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                        for (Point end : ends)
                         {
-                            try 
+                            if (!end.equals(start) && !end.isOccupied() && end.isDestination())
                             {
-                                List<Edge> path;
-                                List<List<Edge>> seenPaths = new LinkedList<>();
-
-                                // If the first shortest path is invalid, check all alternatives                            
-                                do 
+                                try 
                                 {
-                                    path = this.bfs(start, end, seenPaths);
+                                    List<Edge> path;
+                                    List<List<Edge>> seenPaths = new LinkedList<>();
 
-                                    if (path != null && this.isPathClear(path, loc))
+                                    // If the first shortest path is invalid, check all alternatives                            
+                                    do 
                                     {
-                                        boolean unique = true;
-                                        
-                                        // Only return unique starts and ends
-                                        if (uniqueDest)
+                                        path = this.bfs(start, end, seenPaths);
+
+                                        if (path != null && this.isPathClear(path, loc))
                                         {
-                                            for (List<Edge> e : output)
+                                            boolean unique = true;
+
+                                            // Only return unique starts and ends
+                                            if (uniqueDest)
                                             {
-                                                if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
+                                                for (List<Edge> e : output)
                                                 {
-                                                    unique = false;
-                                                    break;
+                                                    if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
+                                                    {
+                                                        unique = false;
+                                                        break;
+                                                    }
                                                 }
                                             }
-                                        }
-                                        
-                                        if (unique)
-                                        {
-                                            output.add(path);
-                                        }
-                                    }
-                                    
-                                    if (path != null)
-                                    {
-                                        // Get another path other than the one we just saw
-                                        seenPaths.add(path);
-                                    }
-                                    
-                                } while (path != null);
-                            }
-                            catch (Exception e)
-                            {
 
-                            }      
+                                            if (unique)
+                                            {
+                                                output.add(path);
+                                            }
+                                        }
+
+                                        if (path != null)
+                                        {
+                                            // Get another path other than the one we just saw
+                                            seenPaths.add(path);
+                                        }
+
+                                    } while (path != null);
+                                }
+                                catch (Exception e)
+                                {
+
+                                }      
+                            }
                         }
                     }
                 }
@@ -1047,9 +1054,9 @@ public class Layout
         {
             synchronized (this.activeLocomotives)
             {
-                this.activeLocomotives.put(loc.getName(), path);
-                this.locomotiveMilestones.put(loc.getName(), new LinkedList<>());
-                this.locomotiveMilestones.get(loc.getName()).add(start);
+                this.activeLocomotives.put(loc, path);
+                this.locomotiveMilestones.put(loc, new LinkedList<>());
+                this.locomotiveMilestones.get(loc).add(start);
             }   
             
             // Fire callbacks
@@ -1061,7 +1068,7 @@ public class Layout
                 }
             }
             
-            this.control.log("Executing path " + path.toString() + " for " + loc.getName());
+            this.control.log("Executing path " + this.pathToString(path) + " for " + loc.getName());
         }
         
         // Check to see if the layout class has been re-created since this run
@@ -1122,7 +1129,7 @@ public class Layout
             
             this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());   
             
-            this.locomotiveMilestones.get(loc.getName()).add(current);                  
+            this.locomotiveMilestones.get(loc).add(current);                  
             
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
@@ -1150,8 +1157,8 @@ public class Layout
         
         synchronized (this.activeLocomotives)
         {
-            this.activeLocomotives.remove(loc.getName());
-            this.locomotiveMilestones.remove(loc.getName());
+            this.activeLocomotives.remove(loc);
+            this.locomotiveMilestones.remove(loc);
         }
         
         // Fire callbacks
@@ -1163,7 +1170,7 @@ public class Layout
             }
         }
 
-        this.control.log("Locomotive " + loc.getName() + " finished its path: " + path.toString());   
+        this.control.log("Locomotive " + loc.getName() + " finished its path: " + this.pathToString(path));   
         
         return true;
     }
@@ -1190,9 +1197,9 @@ public class Layout
             Locomotive l = this.control.getLocByName(locomotive);
             
             // Add the locomotive to our list if needed
-            if (!this.locomotivesToRun.contains(l.getName()))
+            if (!this.locomotivesToRun.contains(l))
             {
-                this.locomotivesToRun.add(l.getName());
+                this.locomotivesToRun.add(l);
             }
             
             // Can only place loc on a station
@@ -1229,7 +1236,7 @@ public class Layout
         {
             if (purge && this.getPoint(targetPoint).getCurrentLocomotive() != null)
             {
-                this.locomotivesToRun.remove(this.getPoint(targetPoint).getCurrentLocomotive().getName());
+                this.locomotivesToRun.remove(this.getPoint(targetPoint).getCurrentLocomotive());
             }
             
             // Set new location
@@ -1351,6 +1358,30 @@ public class Layout
     public void setTurnOffFunctionsOnArrival(boolean turnOffFunctionsOnArrival)
     {
         this.turnOffFunctionsOnArrival = turnOffFunctionsOnArrival;
+    }
+    
+    /**
+     * Returns a concise string representing a path
+     * @param path
+     * @return 
+     */
+    public String pathToString(List<Edge> path)
+    {
+        List<String> pieces = new ArrayList<>();
+        
+        for (int i = 0; i < path.size(); i++)
+        {
+            if (i == 0)
+            {
+                pieces.add (path.get(i).getStart().getName());
+            }
+            else
+            {
+                pieces.add (path.get(i).getEnd().getName());
+            }
+        }
+        
+        return "[" + String.join(" -> ", pieces) + "]";
     }
     
     /**

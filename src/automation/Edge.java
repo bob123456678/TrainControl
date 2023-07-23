@@ -61,6 +61,7 @@ public class Edge
     
     /**
      * Adds a new config command
+     * Excepts a call to validateConfigCommand beforehand
      * @param acc
      * @param state 
      */

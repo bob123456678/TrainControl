@@ -63,11 +63,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             this.locDest.setForeground(new Color(0, 0, 115));
 
             // Locomotive is running - show the path and hide the list
-            if (layout.getActiveLocomotives().containsKey(locomotive.getName()))
+            if (layout.getActiveLocomotives().containsKey(locomotive))
             {
-                List<Point> milestones = layout.getReachedMilestones(locomotive.getName());
+                List<Point> milestones = layout.getReachedMilestones(locomotive);
                 
-                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive.getName())) + " [" + milestones.get(milestones.size() - 1).getName() + "]"  );
+                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)) + " [" + milestones.get(milestones.size() - 1).getName() + "]"  );
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
             }
