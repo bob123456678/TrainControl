@@ -73,7 +73,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
                                 parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
-                                parent.repaintAutoLocList();
+                                parent.repaintAutoLocList(false);
                             }
                         }
                     );    
@@ -97,7 +97,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
                             parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
-                            parent.repaintAutoLocList();
+                            parent.repaintAutoLocList(false);
                         }
                     }
                 ); 
@@ -109,11 +109,11 @@ final public class GraphViewer extends javax.swing.JFrame {
                 if (p.isOccupied())
                 {
                     menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Node");
-                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList();});    
+                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList(false);});    
                     add(menuItem);
                     
                     menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
-                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(); });    
+                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(false); });    
                     add(menuItem);
                     
                     addSeparator();
@@ -135,7 +135,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             {
                                 int newLength = Math.abs(Integer.parseInt(dialogResult));
                                 p.setMaxTrainLength(newLength);
-                                parent.repaintAutoLocList();
+                                parent.repaintAutoLocList(false);
                             }
                             catch (Exception e)
                             {
@@ -155,7 +155,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         p.setTerminus(!p.isTerminus());
                         // parent.getModel().getAutoLayout().refreshUI();
                         ui.updatePoint(p, mainGraph);
-                        parent.repaintAutoLocList(); 
+                        parent.repaintAutoLocList(false); 
                     } catch (Exception ex) {}
                 });
                        
@@ -171,7 +171,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         p.setDestination(!p.isDestination());
                         // parent.getModel().getAutoLayout().refreshUI();
                         ui.updatePoint(p, mainGraph);
-                        parent.repaintAutoLocList(); 
+                        parent.repaintAutoLocList(false); 
                     } 
                     catch (Exception ex) 
                     { 
@@ -212,7 +212,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             
                             ui.updatePoint(p, mainGraph);
 
-                            parent.repaintAutoLocList();
+                            parent.repaintAutoLocList(false);
                         }
                         catch (Exception e)
                         {
@@ -245,7 +245,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             else
                             {
                                 parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
-                                parent.repaintAutoLocList();
+                                parent.repaintAutoLocList(false);
                                 ui.updatePoint(p, mainGraph);
                             }
                         }
@@ -313,7 +313,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                     Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
 
                                     ui.addEdge(e, mainGraph);
-                                    parent.repaintAutoLocList();
+                                    parent.repaintAutoLocList(false);
                                     parent.getModel().getAutoLayout().refreshUI();
                                 }
                             }
@@ -386,7 +386,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                         edit.applyLockEdges();
                                     }
        
-                                    parent.repaintAutoLocList();
+                                    parent.repaintAutoLocList(false);
                                     parent.getModel().getAutoLayout().refreshUI();
                                 }
                             }
@@ -425,7 +425,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 parent.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
                                 mainGraph.removeEdge(e.getUniqueId());
                                 parent.getModel().getAutoLayout().refreshUI();
-                                parent.repaintAutoLocList();
+                                parent.repaintAutoLocList(false);
                             } 
                             catch (Exception ex)
                             {
@@ -453,7 +453,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                     {
                         parent.getModel().getAutoLayout().deletePoint(p.getName());
                         mainGraph.removeNode(p.getUniqueId());
-                        parent.repaintAutoLocList();
+                        parent.repaintAutoLocList(false);
                     } 
                     catch (Exception e)
                     {
@@ -507,7 +507,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             
                             ui.updatePoint(p, mainGraph);                            
                             parent.getModel().getAutoLayout().refreshUI();
-                            parent.repaintAutoLocList();
+                            parent.repaintAutoLocList(false);
                         }
                     }
                     catch (Exception e)

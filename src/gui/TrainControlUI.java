@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -109,7 +112,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
     private LayoutGrid trainGrid;
     private ExecutorService LayoutGridRenderer = Executors.newFixedThreadPool(1);
-
+    private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
+    private List<Future<?>> autonomyFutures = new LinkedList<>();
+    
     // The keyboard being displayed
     private int keyboardNumber = 1;
     
@@ -7495,11 +7500,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 synchronized(graph)
                 {  
                     // Update locomotive panel
-                    for (Object o : this.autoLocPanel.getComponents())
-                    {
-                        AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                        status.updateState(null);
-                    }
+                    this.repaintAutoLocListLite();
                 
                     for (Edge e : edges)
                     {                        
@@ -7592,7 +7593,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 return null;                
             });
             
-            this.repaintAutoLocList();
+            this.repaintAutoLocList(false);
         } 
         catch (URISyntaxException ex)
         {
@@ -7600,36 +7601,82 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }        
     }
     
-    /**
-     * Repaints the auto locomotive list based on auto layout state
-     */
-    public void repaintAutoLocList()
+    synchronized public void repaintAutoLocList(boolean external)
     {
         if (null != this.model.getAutoLayout() 
                 && this.model.getAutoLayout().isValid())
         {
-            // Display locomotive status and possible paths
-            this.autoLocPanel.removeAll();
-
-            // Number of columns in the grid
-            int gridCols = 3;
-
-            autoLocPanel.setLayout(new java.awt.GridLayout(
-                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
-                    gridCols, // cols
-                    5, // padding
-                    5)
-            );
-
-            for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+            // If called from another UI component, no need to refresh if there are no trains or if autonomy is on
+            if (external)
             {
-                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model.getAutoLayout(), this.model));
-            }
+                if (this.model.getAutoLayout().getPoints().isEmpty()) return;
+                if (this.model.getAutoLayout().isAutoRunning() && !this.model.getAutoLayout().getActiveLocomotives().isEmpty()) return;
+                
+                // Prevet concurrent calls
+                for (Future<?> f : this.autonomyFutures)
+                {
+                    if (!f.isDone()) 
+                    {
+                        // this.model.log("Auto UI refresh in progress");
+                        return;
+                    }
+                }
 
-            // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
-            this.autoLocPanel.repaint(1000);
-            this.locCommandPanels.repaint(1000);
+                // this.model.log("Refreshing auto UI");
+                this.autonomyFutures.clear();
+
+                this.autonomyFutures.add(
+                    this.AutonomyRenderer.submit(new Thread(() -> 
+                    {
+                        this.repaintAutoLocListLite();
+                    }))
+                );
+            }
+            else
+            {
+                this.repaintAutoLocListFull();
+            }
         }
+    }
+    
+    /**
+     * Repaints the auto locomotive list paths only
+     */
+    synchronized private void repaintAutoLocListLite()
+    { 
+        for (Object o : this.autoLocPanel.getComponents())
+        {
+            AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
+            status.updateState(null);
+        };
+    }
+    
+    /**
+     * Fully repaints the auto locomotive list based on auto layout state
+     */
+    synchronized private void repaintAutoLocListFull()
+    { 
+        // Display locomotive status and possible paths
+        this.autoLocPanel.removeAll();
+
+        // Number of columns in the grid
+        int gridCols = 3;
+
+        autoLocPanel.setLayout(new java.awt.GridLayout(
+                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                gridCols, // cols
+                5, // padding
+                5)
+        );
+
+        for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+        {
+            this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model.getAutoLayout(), this.model));
+        }
+
+        // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
+        this.autoLocPanel.repaint(1000);
+        this.locCommandPanels.repaint(1000);
     }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer

@@ -28,14 +28,14 @@ public final class LayoutLabel extends JLabel
     private final Container parent;
     private String imageName;
     private final int size;
-    private final TrainControlUI ui;
+    private final TrainControlUI tcUI;
     
-    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI ui)
+    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI tcUI)
     {
         this.component = c;
         this.size = size;
         this.parent = parent;
-        this.ui = ui;
+        this.tcUI = tcUI;
         
         this.setSize(size, size);
         // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
@@ -62,7 +62,7 @@ public final class LayoutLabel extends JLabel
                            component.execSwitching();
                            
                            // So that possible routes get dynamically updated
-                           ui.repaintAutoLocList();
+                           tcUI.repaintAutoLocList(true);
                         }  
                     }); 
                 }
@@ -153,6 +153,11 @@ public final class LayoutLabel extends JLabel
                 {
                     this.repaint();
                     this.parent.repaint(); 
+                    
+                    if (this.component.isFeedback())
+                    {
+                        tcUI.repaintAutoLocList(true);
+                    }
                 }
             }
         }).start();

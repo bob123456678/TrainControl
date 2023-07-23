@@ -413,14 +413,6 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
-        // Check train length
-        if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
-        {
-            control.log("Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
-            
-            return false;
-        }
-        
         for (Edge e : path)
         {
             if (e.isOccupied(loc))
@@ -469,6 +461,14 @@ public class Layout
                     return false;
                 }
             } 
+        }
+        
+        // Check train length
+        if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
+        {
+            control.log("Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
+            
+            return false;
         }
         
         // Only reversible locomotives can go to a terminus
