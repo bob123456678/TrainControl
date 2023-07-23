@@ -1,16 +1,12 @@
 package gui;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 
@@ -31,8 +27,9 @@ public class LayoutGrid
      * @param parent panel to contain the layout
      * @param master container with the panel
      * @param popup is this layout being rendered in a separate window?
+     * @param ui
      */
-    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup)
+    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {  
         // Calculate boundaries
         int offsetX = layout.getMinx();
@@ -78,7 +75,7 @@ public class LayoutGrid
             {
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                 
-                grid[x][y] = new LayoutLabel(c, master, size);
+                grid[x][y] = new LayoutLabel(c, master, size, ui);
                 
                 if (c != null && c.isText())
                 {

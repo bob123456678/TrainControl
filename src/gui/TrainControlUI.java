@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,7 +44,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
@@ -57,16 +54,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
-import marklin.MarklinLayoutComponent;
 import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 import model.View;
 import model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
-import org.graphstream.ui.swing_viewer.SwingViewer;
-import org.graphstream.ui.swing_viewer.ViewPanel;
-import org.graphstream.ui.view.Viewer;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -8083,7 +8076,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
                     InnerLayoutPanel, 
                     KeyboardTab, 
-                    false
+                    false,
+                    this
             );
             InnerLayoutPanel.setVisible(true);
 

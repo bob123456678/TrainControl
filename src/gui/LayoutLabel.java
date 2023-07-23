@@ -28,12 +28,14 @@ public final class LayoutLabel extends JLabel
     private final Container parent;
     private String imageName;
     private final int size;
+    private final TrainControlUI ui;
     
-    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size)
+    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI ui)
     {
         this.component = c;
         this.size = size;
         this.parent = parent;
+        this.ui = ui;
         
         this.setSize(size, size);
         // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
@@ -50,14 +52,31 @@ public final class LayoutLabel extends JLabel
                     || this.component.isUncoupler() || this.component.isFeedback()
                     || this.component.isRoute())
             {
-                this.addMouseListener(new MouseAdapter()  
-                {  
-                    @Override
-                    public void mouseClicked(MouseEvent e)  
+                if (this.component.isFeedback())
+                {
+                    this.addMouseListener(new MouseAdapter()  
                     {  
-                       component.execSwitching();
-                    }  
-                }); 
+                        @Override
+                        public void mouseClicked(MouseEvent e)  
+                        {  
+                           component.execSwitching();
+                           
+                           // So that possible routes get dynamically updated
+                           ui.repaintAutoLocList();
+                        }  
+                    }); 
+                }
+                else
+                {
+                    this.addMouseListener(new MouseAdapter()  
+                    {  
+                        @Override
+                        public void mouseClicked(MouseEvent e)  
+                        {  
+                           component.execSwitching();
+                        }  
+                    });    
+                }
             }
         }
     }

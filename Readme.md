@@ -144,6 +144,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.9.2 [Beta]
+    - Manual changes to S88 state via UI will now dynamically update possible autonomy routes
+
 * v1.9.1 [7/21/23]
     - Autonomous operation can no longer be started if the track power is off (to avoid switch/signal state inconsistencies)
     - On exit, autonomy state auto-save will no longer be attempted if any trains are running.  A confirmation dialog has been added.

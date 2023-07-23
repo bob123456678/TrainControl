@@ -44,7 +44,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         LayoutGrid grid = new LayoutGrid(this.layout, size,
                 this.ExtLayoutPanel, 
                 this,
-                true);
+                true, parent);
         
         this.setAlwaysOnTop(true);
                 
