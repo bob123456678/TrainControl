@@ -70,7 +70,7 @@ The graph UI will show you which routes are active, which edges are locked, and 
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * (From v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
 * (From v1.8.0) Semi-autonomously operate trains simply by specifying the destination station (when graph model is enabled)
-* (From v1.9.0) Full UI for editing autonmy graph models
+* (From v1.9.0) Full UI for editing autonomy graph models
 
 **Requirements:**
 
