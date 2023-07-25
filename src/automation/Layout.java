@@ -39,7 +39,7 @@ public class Layout
     public static final int ROUTE_FIND_SLEEP = 5000;
     
     // ms to wait between configuration commands
-    public static final int CONFIGURE_SLEEP = 200;
+    public static final int CONFIGURE_SLEEP = 150;
     
     // Set to false to disable locomotives
     private volatile boolean running = false;
@@ -212,7 +212,7 @@ public class Layout
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
         {
-            control.log("Starting autonomous operation of locomotive " + loc);
+            control.log("Starting autonomous operation of locomotive " + loc.getName());
             
             try 
             {
@@ -220,7 +220,7 @@ public class Layout
             } 
             catch (Exception ex)
             {
-               control.log("Auto layout error: Failed to run locomotive " + loc);
+               control.log("Auto layout error: Failed to run locomotive " + loc.getName());
                this.invalidate();
                this.stopLocomotives();
             }
@@ -533,7 +533,7 @@ public class Layout
 
             if (!this.preConfigure)
             {
-                control.log("Auto layout: Configuring " + acc.getName() + ":" + state.toString().toLowerCase());
+                control.log("Auto layout: Configuring " + acc.getName() + " " + state.toString().toLowerCase());
                 
                 if (state == TURN || state == RED)
                 {   
@@ -546,7 +546,7 @@ public class Layout
                 else
                 {
                     // This should never happen
-                    control.log("Invalid configuration command: " + name + " " + state);
+                    control.log("Invalid configuration command: " + name + " " + state.toString());
                 }
                 
                 // Sleep between commands

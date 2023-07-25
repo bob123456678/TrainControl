@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -442,8 +440,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
        
-        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
-
         // Set selected route sort radio button
         this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(this.prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -816,7 +812,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         selector.init();
 
         // Show window        
-        this.setVisible(true);        
+        this.setVisible(true);   
+        
+        // Don't do this until the end, otherwise keyboard events may not register properly
+        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
     }
     
     public LocomotiveSelector getLocSelector()
@@ -4478,9 +4477,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(loadBlank)
                     .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel9)
-                        .addComponent(loadBlank)
                         .addComponent(autosave))
                     .addComponent(jSeparator3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)

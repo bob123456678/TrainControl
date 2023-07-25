@@ -3,11 +3,13 @@ package automation;
 import base.Accessory;
 import base.Locomotive;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import model.ViewListener;
 import org.json.JSONArray;
@@ -23,7 +25,7 @@ public class Edge
     private boolean occupied;
     private final Point start;
     private final Point end;
-    private final Map<String, String> configCommands;
+    private final Map<String, Accessory.accessorySetting> configCommands;
     
     // A lambda function with accessory commands needed to connect this edge
     private final BiConsumer<ViewListener, Edge> configureFunc;
@@ -54,7 +56,7 @@ public class Edge
      * Returns all the config commands set for this edge
      * @return 
      */
-    public Map<String, String> getConfigCommands()
+    public Map<String, Accessory.accessorySetting> getConfigCommands()
     {
         return this.configCommands;
     }
@@ -65,9 +67,9 @@ public class Edge
      * @param acc
      * @param state 
      */
-    public void addConfigCommand(String acc, String state)
+    public void addConfigCommand(String acc, Accessory.accessorySetting state)
     {
-        this.configCommands.put(acc.trim(), state.trim());
+        this.configCommands.put(acc.trim(), state);
     }
     
     /**
@@ -88,13 +90,14 @@ public class Edge
     }
     
     /**
-     * Validates that a command is valid.  Creates accessories in DB if needed.
+     * Validates that a command is valid.Creates accessories in DB if needed.
      * @param accessory
      * @param action
      * @param control
+     * @return 
      * @throws Exception 
      */
-    public void validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
+    public Accessory.accessorySetting validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
     {
         if (null == accessory || null == action)
         {
@@ -138,44 +141,26 @@ public class Edge
             throw new Exception("Accessory " + accessory + " does not exist in the layout or cannot be added");
         }
         
-        if (!"turn".equals(action) && !"straight".equals(action) && !"red".equals(action) && !"green".equals(action))
+        Accessory.accessorySetting output = Accessory.stringToAccessorySetting(action);
+        
+        if (null == output)
         {
-            throw new Exception("Command " + action + " must be one of turn, straight, red, or green.");
+            throw new Exception("Command " + action + " must be one of: " + Arrays.toString(Accessory.accessorySetting.values()).toLowerCase());
         }
+        
+        return output;
     }
     
     /**
      * Executes config commands as defined in configCommands
+     * Should be placed in lambda function in Layout.createEdge
      * @param control1 
      */
     public void executeConfigCommands(ViewListener control1)
     {
         for (String acc : this.getConfigCommands().keySet())
-        {
-            String action = this.getConfigCommands().get(acc);
-
-            if ("turn".equals(action))
-            {
-                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.TURN);
-            } 
-            else if ("red".equals(action))
-            {
-                // == turn
-                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.RED);
-            }
-            else if ("straight".equals(action))
-            {
-                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.STRAIGHT);
-            } 
-            else if ("green".equals(action))
-            {
-                // == straight
-                control1.getAutoLayout().configure(acc, Accessory.accessorySetting.GREEN);
-            } 
-            else
-            {
-                control1.log("Error: Unrecognized config command " + acc + ":" + action);
-            }
+        { 
+            control1.getAutoLayout().configure(acc, this.getConfigCommands().get(acc));  
         }
     }
     
@@ -183,11 +168,15 @@ public class Edge
      * Executes the configuration function
      * @param control 
      */
-    public void configure(ViewListener control)
+    synchronized public void configure(ViewListener control)
     {
-        if (configureFunc != null)
+        if (this.configureFunc != null)
         {
             this.configureFunc.accept(control, this);
+        }
+        else
+        {
+            control.log("Warning: Edge " + getName() + " has no configuration function set.");
         }
     }
     
@@ -413,11 +402,11 @@ public class Edge
             lockEdgeList.add(lockEdge);
         }
         
-        for (String accName : this.configCommands.keySet())
+        for (Entry<String, Accessory.accessorySetting> acc : this.configCommands.entrySet())
         {
             JSONObject command = new JSONObject();
-            command.put("acc", accName);
-            command.put("state", this.configCommands.get(accName));
+            command.put("acc", acc.getKey());
+            command.put("state", acc.getValue().toString().toLowerCase());
             commandList.add(command);
         }
         

@@ -2,6 +2,7 @@ package marklin.file;
 
 import automation.Edge;
 import automation.Layout;
+import base.Accessory;
 import base.Locomotive;
 import java.io.*;
 import java.net.*;
@@ -285,7 +286,7 @@ public final class CS2File
             }
             else
             {
-                if (array.size() > 0 && item != null)
+                if (!array.isEmpty() && item != null)
                 {
                     String current = "";
                     if (item.containsKey(lastKey))
@@ -1493,14 +1494,15 @@ public final class CS2File
                             layout.invalidate();
                         }
                     });
-                    
-                    // Create generic lambda; commands will be set directly on the edge (below)
-                    commandCallback = (ViewListener control1, Edge currentEdge) -> 
-                    {
-                        currentEdge.executeConfigCommands(control1);
-                    };
                 }
 
+                // Set on all edges in case they are edited later
+                // Create generic lambda; commands will be set directly on the edge (below)
+                commandCallback = (ViewListener control1, Edge currentEdge) -> 
+                {
+                    currentEdge.executeConfigCommands(control1);
+                };
+                
                 Edge e = layout.createEdge(start, end, commandCallback); 
                 
                 // Store the raw config commands so that we can reference them later
@@ -1513,7 +1515,7 @@ public final class CS2File
                         String action = command.getString("state");
                         String acc = command.getString("acc");
 
-                        e.addConfigCommand(acc, action);
+                        e.addConfigCommand(acc, Accessory.stringToAccessorySetting(action));
                     });                    
                 }                
             } 

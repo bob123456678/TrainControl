@@ -198,6 +198,27 @@ abstract public class Accessory
         return this.type;
     }
     
+    /**
+     * Converts a string (if valid) to an accessorySetting
+     * @param setting
+     * @return 
+     */
+    public static Accessory.accessorySetting stringToAccessorySetting(String setting)
+    {
+        if (setting != null)
+        {
+            for (Accessory.accessorySetting a : Accessory.accessorySetting.values())
+            {
+                if (setting.toLowerCase().equals(a.toString().toLowerCase()))
+                {
+                    return a;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
     @Override
     public String toString()
     {

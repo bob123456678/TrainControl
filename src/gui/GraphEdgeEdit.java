@@ -6,17 +6,12 @@
 package gui;
 
 import automation.Edge;
-import automation.Layout;
-import automation.Point;
-import base.Locomotive;
-import java.util.Arrays;
-import java.util.Collection;
+import base.Accessory;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 
 /**
@@ -81,12 +76,10 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         // Populate command list
         String config = "";
 
-        for (Entry<String, String> command : e.getConfigCommands().entrySet())
+        for (Entry<String, Accessory.accessorySetting> command : e.getConfigCommands().entrySet())
         {
-            config += command.getKey() + "," + command.getValue() + "\n";
+            config += command.getKey() + "," + command.getValue().toString().toLowerCase() + "\n";
         }
-
-        // TODO - add validate config command to Edge
         
         this.configCommands.setText(config.trim());
     }
@@ -108,6 +101,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
     
     /**
      * Applies configuration commands as specified in the UI
+     * @throws java.lang.Exception
      */
     public void validateAndApplyConfigCommands() throws Exception
     {
@@ -137,7 +131,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
                 String command = s.split(",")[0].trim();
                 String setting = s.split(",")[1].trim();
                 
-                e.addConfigCommand(command, setting);     
+                e.addConfigCommand(command, Accessory.stringToAccessorySetting(setting));     
             }
         }   
     }
