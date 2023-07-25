@@ -7214,6 +7214,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
         }
+        else if (!this.model.getAutoLayout().isValid())
+        {
+            JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
+        }
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed

@@ -146,6 +146,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.9.4 [Beta]
     - Added validation of Signals/Switches with duplicate addresses to autonomy JSON parser
+    - Synchronizing with the CS2 will now invalidate the auto layout state as a precaution and require a reload
 
 * v1.9.3 [7/24/23]
     - Fixed bug where edges without any commands would not execute config commands after the first time they were edited in the UI

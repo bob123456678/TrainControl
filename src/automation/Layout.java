@@ -517,6 +517,13 @@ public class Layout
         {
             control.log("Accessory does not exist: " + name + " " + state);
             this.configIsValid = false;
+            
+            if (!this.preConfigure)
+            {
+                this.invalidate();
+                control.log("Invalidating auto layout state");
+            }
+            
             return;
         }
         
@@ -1030,7 +1037,14 @@ public class Layout
      * @return  
      */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed)
-    {        
+    {    
+        // Sanity check
+        if (!this.isValid())
+        {
+            this.control.log("Auto path: Configuration is invalid and must be reloaded.");
+            return false;
+        }
+        
         if (path.isEmpty())
         {
             this.control.log("Path is empty");

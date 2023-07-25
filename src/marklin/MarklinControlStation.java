@@ -381,6 +381,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.log("Starting Central Station database sync...");
 
         int num = 0;
+        
+        // Sanity check - in case accessories changed, etc.
+        if (this.autoLayout != null)
+        {
+            this.autoLayout.invalidate();
+        }
                 
         // Fetch Central Station databases
         try
@@ -555,7 +561,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.rebuildLocIdCache();
-        
+                
         this.log("Sync complete.");
         
         return num;
