@@ -1397,6 +1397,12 @@ public class Layout
             if (i == 0)
             {
                 pieces.add (path.get(i).getStart().getName());
+                
+                // Single edge only - include end
+                if (path.size() == 1)
+                {
+                    pieces.add (path.get(i).getEnd().getName());
+                }
             }
             else
             {
