@@ -212,7 +212,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                     
                     if (!success)
                     {
-                        JOptionPane.showMessageDialog(this, "Route could not be executed - likely occupied. Check log.");
+                        JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
                     }
                 }).start();
             }
