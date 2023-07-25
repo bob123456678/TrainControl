@@ -123,7 +123,7 @@ public class MarklinAccessory extends Accessory
                      (this.isSignal() ? 
                         (this.isSwitched() ? "red" : "green")
                         :
-                        (this.isSwitched() ? "sw" : "str")
+                        (this.isSwitched() ? "turn" : "straight")
                         )
                     );
             }

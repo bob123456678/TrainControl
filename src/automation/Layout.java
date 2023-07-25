@@ -533,6 +533,8 @@ public class Layout
 
             if (!this.preConfigure)
             {
+                control.log("Auto layout: Configuring " + acc.getName() + ":" + state.toString().toLowerCase());
+                
                 if (state == TURN || state == RED)
                 {   
                     acc.turn();
@@ -546,6 +548,13 @@ public class Layout
                     // This should never happen
                     control.log("Invalid configuration command: " + name + " " + state);
                 }
+                
+                // Sleep between commands
+                try 
+                {
+                    Thread.sleep(CONFIGURE_SLEEP);
+                } 
+                catch (Exception e) { }     
             }
         }
     }

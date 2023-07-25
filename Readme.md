@@ -144,6 +144,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.9.3 [Beta]
+    - Added 200ms interval between autonomy config commands for better stability
+    - Improved accessory event logging
+
 * v1.9.2 [7/23/23]
     - Manual changes to S88 state via the UI will now dynamically update the displayed autonomous path options
     - S88 events from the Central Station for sensors visible in the layout UI will now dynamically update the displayed autonomous path options 

@@ -172,6 +172,10 @@ public class Edge
                 // == straight
                 control1.getAutoLayout().configure(acc, Accessory.accessorySetting.GREEN);
             } 
+            else
+            {
+                control1.log("Error: Unrecognized config command " + acc + ":" + action);
+            }
         }
     }
     
