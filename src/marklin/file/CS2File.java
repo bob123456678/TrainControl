@@ -1454,6 +1454,12 @@ public final class CS2File
                                 {
                                     Integer address = Integer.valueOf(accessory.replace("Signal ", ""));
                                     
+                                    if (control.getAccessoryByName("Switch " + address) != null)
+                                    {
+                                        control.log("Auto layout error: " + accessory + " conflicts with switch with the same address.");
+                                        layout.invalidate();
+                                    }
+                                    
                                     control.newSignal(address.toString(), address, false);
                                     control.log("Auto layout warning: created " + accessory);
                                 }
@@ -1461,6 +1467,12 @@ public final class CS2File
                                 {   
                                     Integer address = Integer.valueOf(accessory.replace("Switch ", ""));
 
+                                    if (control.getAccessoryByName("Signal " + address) != null)
+                                    {
+                                        control.log("Auto layout error: " + accessory + " conflicts with signal with the same address.");
+                                        layout.invalidate();
+                                    }
+                                    
                                     control.newSwitch(address.toString(), address, false);
                                     control.log("Auto layout warning: created " + accessory);                       
                                 }
@@ -1482,9 +1494,9 @@ public final class CS2File
                         {            
                             String action = command.getString("state");
 
-                            if (!"turn".equals(action) && !"straight".equals(action) &&! "green".equals(action) && !"red".equals(action))
+                            if (null == Accessory.stringToAccessorySetting(action))
                             {
-                                control.log("Auto layout error: Error in edge " + start + "->" + end + " action: " + command.toString());
+                                control.log("Auto layout error: Invalid action in edge " + start + "->" + end + " (" + command.toString() + ")");
                                 layout.invalidate();
                             }
                         }

@@ -144,6 +144,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.9.4 [Beta]
+    - Added strict validation of Signals/Switches with duplicate addresses to autonomy JSON parser
+
 * v1.9.3 [7/24/23]
     - Fixed bug where edges without any commands would not execute config commands after the first time they were edited in the UI
     - Fixed bug where keyboard events would not be registered when the "always on top" checkbox was unchecked at startup
