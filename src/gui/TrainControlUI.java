@@ -7651,7 +7651,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
             status.updateState(null);
-        };
+        }
     }
     
     /**
