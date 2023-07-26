@@ -212,7 +212,7 @@ You can also manually specify where each locomotive should go through the "Locom
 
 Note that a path with conflicting accessory commands will never be chosen.
 
-If `atomicPaths` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  This may make operation more fun/fast-paced, at the risk of potential collisions when trains are too long.  Lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
+If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  This may make operation more fun/fast-paced, at the risk of potential collisions when trains are too long.  Lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
 ```
 {
@@ -221,7 +221,7 @@ If `atomicPaths` is set to `false`, edges will be unlocked as the active train p
     "defaultLocSpeed" : 35,
     "preArrivalSpeedReduction" : 0.5,
     "turnOffFunctionsOnArrival": true,
-    "atomicPaths": true,
+    "atomicRoutes": true,
     "points": [
         {
             "name": "Station 1",
