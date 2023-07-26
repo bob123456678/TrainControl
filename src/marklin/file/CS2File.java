@@ -1456,8 +1456,8 @@ public final class CS2File
                                     
                                     if (control.getAccessoryByName("Switch " + address) != null)
                                     {
-                                        control.log("Auto layout error: " + accessory + " conflicts with switch with the same address.");
-                                        layout.invalidate();
+                                        control.log("Auto layout warning: " + accessory + " conflicts with switch with the same address.");
+                                        //layout.invalidate();
                                     }
                                     
                                     control.newSignal(address.toString(), address, false);
@@ -1469,8 +1469,8 @@ public final class CS2File
 
                                     if (control.getAccessoryByName("Signal " + address) != null)
                                     {
-                                        control.log("Auto layout error: " + accessory + " conflicts with signal with the same address.");
-                                        layout.invalidate();
+                                        control.log("Auto layout warning: " + accessory + " conflicts with signal with the same address.");
+                                        //layout.invalidate();
                                     }
                                     
                                     control.newSwitch(address.toString(), address, false);

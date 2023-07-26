@@ -482,15 +482,19 @@ public class Layout
             return false;
         }
         
-        // Preview the configuration
-        this.resetConfigHistory();
-        
-        for (Edge e : path)
+        // Preview the configuration        
+        synchronized (this)
         {
+            this.resetConfigHistory();
             this.preConfigure = true;
-            e.configure(control);
+            
+            for (Edge e : path)
+            {
+                e.configure(control);
+            }
+            
             this.preConfigure = false;
-        }    
+        }
         
         // Invalid state means there were conflicting accessory commands, so this path would not work as intended
         if (!this.configIsValid)
@@ -508,7 +512,7 @@ public class Layout
      * @param name - the name of the accessory (Switch 1, Signal 2, etc.) as used in control.getAccessoryByName
      * @param state - one of turn, straight, red, green
      */
-    public void configure(String name, Accessory.accessorySetting state)
+    synchronized public void configure(String name, Accessory.accessorySetting state)
     {
         // Sanity check
         MarklinAccessory acc = control.getAccessoryByName(name);

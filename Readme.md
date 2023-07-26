@@ -144,7 +144,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.9.4 [Beta]
+* v1.9.4 [7/25/23]
+    - Fixed race condition where multiple locomotives starting at the same time could lead to some switches not being set correctly
     - Added validation of Signals/Switches with duplicate addresses to autonomy JSON parser
     - Synchronizing with the CS2 will now invalidate the auto layout state as a precaution and require a reload
 
