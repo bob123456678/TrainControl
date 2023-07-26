@@ -1083,9 +1083,9 @@ public class Layout
         {
             synchronized (this.activeLocomotives)
             {
-                this.activeLocomotives.put(loc, path);
                 this.locomotiveMilestones.put(loc, new LinkedList<>());
                 this.locomotiveMilestones.get(loc).add(start);
+                this.activeLocomotives.put(loc, path);
             }   
             
             // Fire callbacks
@@ -1158,7 +1158,10 @@ public class Layout
             
             this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());   
             
-            this.locomotiveMilestones.get(loc).add(current);                  
+            synchronized (this.activeLocomotives)
+            {
+                this.locomotiveMilestones.get(loc).add(current);                  
+            }
             
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
