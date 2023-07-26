@@ -144,6 +144,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.9.5 [Beta]
+    - Added verbose logging of auto layout locomotive speed changes
+    - Log messages related to occupied/invalid paths will now only be shown in debug mode (pass `debug` after IP address)
+    - Added `atomicPaths` setting in JSON (default of `true` = same behavior as v1.9.4 and earlier).  When set to `false`, edges will be unlocked as trains pass them, instead of at the end of a path, for a more dynamic operating experience.  In this mode, care should be taken to ensure collisions are not possible, i.e. by separating s88 sensors by the maximum expeted train lenths, and by setting lock edges for any tracks that cross over.
+
 * v1.9.4 [7/25/23]
     - Fixed race condition where multiple locomotives starting at the same time could lead to some switches not being set correctly
         - Java API for setting configuration commands on an edge has been revised: callback lambdas no longer required or supported.

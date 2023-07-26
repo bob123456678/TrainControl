@@ -291,7 +291,7 @@ public class Edge
     /**
      * Same as setUnoccupied, but should only be called on edges in the lockEdges list (to prevent infinite recursion) 
      */
-    protected void setLockedEdgeUnoccupied()
+    synchronized public void setLockedEdgeUnoccupied()
     {
         occupied = false;
     }

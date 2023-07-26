@@ -1108,6 +1108,26 @@ public final class CS2File
             }    
         }
         
+        if (o.has("atomicRoutes"))
+        {
+            try
+            {
+                layout.setAtomicRoutes(o.getBoolean("atomicRoutes"));
+                
+                if (!o.getBoolean("atomicRoutes"))
+                {
+                    control.log("Auto layout: disabled atomic routes.  Edges will be unlocked as trains pass them instead of at the end of the route.");
+                }
+
+            }
+            catch (Exception e)
+            {
+                control.log("Auto layout error: invalid value for atomicRoutes (must be true or false)");
+                layout.invalidate();
+                return layout;
+            }    
+        }
+        
         if (points == null || edges == null)
         {
             control.log("Auto layout error: missing keys (points, edges)");
