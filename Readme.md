@@ -146,11 +146,13 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.9.4 [7/25/23]
     - Fixed race condition where multiple locomotives starting at the same time could lead to some switches not being set correctly
+        - Java API for setting configuration commands on an edge has been revised: callback lambdas no longer required or supported.
+        - Added support for method chaining when programmatically defining Points and Edges
     - Added validation of Signals/Switches with duplicate addresses to autonomy JSON parser
     - Synchronizing with the CS2 will now invalidate the auto layout state as a precaution and require a reload
 
 * v1.9.3 [7/24/23]
-    - Fixed bug where edges without any commands would not execute config commands after the first time they were edited in the UI
+    - Fixed bug where existing edges without any commands would not execute config commands after the first time they were edited in the UI
     - Fixed bug where keyboard events would not be registered when the "always on top" checkbox was unchecked at startup
     - Added 150ms interval between autonomy config commands for better stability
     - Improved accessory event logging

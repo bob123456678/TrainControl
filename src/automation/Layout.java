@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import marklin.MarklinAccessory;
 import model.ViewListener;
 import org.json.JSONObject;
@@ -59,7 +58,6 @@ public class Layout
     private final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
     private boolean configIsValid;
     private List<String> invalidConfigs;
-    private boolean preConfigure;
     
     // List of all / active locomotives
     private final Set<Locomotive> locomotivesToRun;
@@ -348,18 +346,17 @@ public class Layout
      * Requires points to be added first
      * @param startPoint name of the starting point
      * @param endPoint name of the ending point
-     * @param configureFunc optional, a lambda that configures all accessories needed to connect the two points
      * @return 
      * @throws java.lang.Exception 
      */
-    public Edge createEdge(String startPoint, String endPoint, BiConsumer<ViewListener, Edge> configureFunc) throws Exception
+    public Edge createEdge(String startPoint, String endPoint) throws Exception
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
             throw new Exception("Start or end point does not exist");
         }
         
-        Edge newEdge = new Edge(this.points.get(startPoint), this.points.get(endPoint), configureFunc);
+        Edge newEdge = new Edge(this.points.get(startPoint), this.points.get(endPoint));
         
         if (this.edges.containsKey(newEdge.getName()))
         {
@@ -486,66 +483,71 @@ public class Layout
         synchronized (this)
         {
             this.resetConfigHistory();
-            this.preConfigure = true;
             
             for (Edge e : path)
             {
-                e.configure(control);
+                this.configureEdge(e, true);
             }
             
-            this.preConfigure = false;
-        }
-        
-        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
-        if (!this.configIsValid)
-        {
-            this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
-            return false;
+            // Invalid state means there were conflicting accessory commands, so this path would not work as intended
+            if (!this.configIsValid)
+            {
+                this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
+                return false;
+            }
         }
         
         return true;
     }
-    
+        
     /**
      * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
-     * @param name - the name of the accessory (Switch 1, Signal 2, etc.) as used in control.getAccessoryByName
+     * @param e - the edge
      * @param state - one of turn, straight, red, green
+     * @param preConfigure - true to simulate and validate sequence of commands, false to execute commands
      */
-    synchronized public void configure(String name, Accessory.accessorySetting state)
+    private void configureEdge(Edge e, boolean preConfigure)
     {
-        // Sanity check
-        MarklinAccessory acc = control.getAccessoryByName(name);
+        for (String name : e.getConfigCommands().keySet())
+        { 
+            Accessory.accessorySetting state = e.getConfigCommands().get(name);  
         
-        if (acc == null)
-        {
-            control.log("Accessory does not exist: " + name + " " + state);
-            this.configIsValid = false;
-            
-            if (!this.preConfigure)
-            {
-                this.invalidate();
-                control.log("Invalidating auto layout state");
-            }
-            
-            return;
-        }
-        
-        // An opposite configuration was already issued - invalidate!
-        if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
-        {
-            //this.control.log("Conflicting command " + acc.getName() + " " + state);
-            this.invalidConfigs.add(acc.getName() + " " + state);
-            this.configIsValid = false;
-        }
-        else
-        {
-            this.configHistory.put(acc, state);
+            // Sanity check
+            MarklinAccessory acc = control.getAccessoryByName(name);
 
-            if (!this.preConfigure)
+            if (acc == null)
+            {
+                control.log("Accessory does not exist: " + name + " " + state);
+                this.configIsValid = false;
+
+                if (!preConfigure)
+                {
+                    this.invalidate();
+                    control.log("Invalidating auto layout state");
+                }
+
+                return;
+            }
+
+            if (preConfigure)
+            {
+                // An opposite configuration was already issued - invalidate!
+                if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
+                {
+                    //this.control.log("Conflicting command " + acc.getName() + " " + state);
+                    this.invalidConfigs.add(acc.getName() + " " + state);
+                    this.configIsValid = false;
+                }
+                else
+                {
+                    this.configHistory.put(acc, state);
+                }
+            }
+            else
             {
                 control.log("Auto layout: Configuring " + acc.getName() + " " + state.toString().toLowerCase());
-                
+
                 if (state == TURN || state == RED)
                 {   
                     acc.turn();
@@ -559,13 +561,13 @@ public class Layout
                     // This should never happen
                     control.log("Invalid configuration command: " + name + " " + state.toString());
                 }
-                
+
                 // Sleep between commands
                 try 
                 {
                     Thread.sleep(CONFIGURE_SLEEP);
                 } 
-                catch (Exception e) { }     
+                catch (Exception ex) { }        
             }
         }
     }
@@ -726,7 +728,7 @@ public class Layout
         {
             e.setOccupied();
             e.getEnd().setLocomotive(loc);
-            e.configure(control);
+            this.configureEdge(e, false);
             loc.delay(CONFIGURE_SLEEP);
         }
         

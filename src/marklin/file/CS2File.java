@@ -1507,15 +1507,8 @@ public final class CS2File
                         }
                     });
                 }
-
-                // Set on all edges in case they are edited later
-                // Create generic lambda; commands will be set directly on the edge (below)
-                commandCallback = (ViewListener control1, Edge currentEdge) -> 
-                {
-                    currentEdge.executeConfigCommands(control1);
-                };
                 
-                Edge e = layout.createEdge(start, end, commandCallback); 
+                Edge e = layout.createEdge(start, end); 
                 
                 // Store the raw config commands so that we can reference them later
                 if (edge.has("commands") && !edge.isNull("commands"))

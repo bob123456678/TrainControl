@@ -236,7 +236,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             newSignal(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
                         }
 
-                        this.log("Adding " + this.accDB.getById(targetAddress));
+                        this.log("Adding " + this.accDB.getById(targetAddress).getName());
                     }
                     else
                     {            

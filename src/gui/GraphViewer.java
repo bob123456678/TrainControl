@@ -305,10 +305,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 else
                                 {
                                     // Add the edge
-                                    parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult, (ViewListener control1, Edge currentEdge) -> 
-                                        {
-                                            currentEdge.executeConfigCommands(control1);
-                                        });
+                                    parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult);
 
                                     Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
 

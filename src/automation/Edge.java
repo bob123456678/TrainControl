@@ -10,7 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 import model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,9 +26,6 @@ public class Edge
     private final Point end;
     private final Map<String, Accessory.accessorySetting> configCommands;
     
-    // A lambda function with accessory commands needed to connect this edge
-    private final BiConsumer<ViewListener, Edge> configureFunc;
-    
     // A list of edges that should be locked whenever this edge is locked
     // This is useful if the layout contains crossings that cannot otherwise be modeled as a graph edge
     private final List<Edge> lockEdges;
@@ -41,12 +37,10 @@ public class Edge
      *                      (i.e., set switches and signals correctly to 
      *                       ensure the train can reach its destination)
      */
-    public Edge(Point start, Point end, BiConsumer<ViewListener, Edge> configureFunc)
+    public Edge(Point start, Point end)
     {
         this.start = start;
         this.end = end;
-        // this.name = getEdgeName(start, end);
-        this.configureFunc = configureFunc;
         this.occupied = false;
         this.lockEdges = new LinkedList<>();
         this.configCommands = new HashMap<>();
@@ -67,18 +61,22 @@ public class Edge
      * @param acc
      * @param state 
      */
-    public void addConfigCommand(String acc, Accessory.accessorySetting state)
+    public Edge addConfigCommand(String acc, Accessory.accessorySetting state)
     {
         this.configCommands.put(acc.trim(), state);
+        
+        return this;
     }
     
     /**
      * Clears config commands
      * @param acc 
      */
-    public void clearConfigCommand(String acc)
+    public Edge clearConfigCommand(String acc)
     {
         this.configCommands.remove(acc);
+        
+        return this;
     }
     
     /**
@@ -150,36 +148,7 @@ public class Edge
         
         return output;
     }
-    
-    /**
-     * Executes config commands as defined in configCommands
-     * Should be placed in lambda function in Layout.createEdge
-     * @param control1 
-     */
-    public void executeConfigCommands(ViewListener control1)
-    {
-        for (String acc : this.getConfigCommands().keySet())
-        { 
-            control1.getAutoLayout().configure(acc, this.getConfigCommands().get(acc));  
-        }
-    }
-    
-    /**
-     * Executes the configuration function
-     * @param control 
-     */
-    synchronized public void configure(ViewListener control)
-    {
-        if (this.configureFunc != null)
-        {
-            this.configureFunc.accept(control, this);
-        }
-        else
-        {
-            control.log("Warning: Edge " + getName() + " has no configuration function set.");
-        }
-    }
-    
+        
     /**
      * Returns the name of the same edge going in the opposite direction
      * @return 
@@ -246,26 +215,32 @@ public class Edge
      * Add an edge to the list of edges which must always be locked whenever this edge is locked
      * @param e
      */
-    public void addLockEdge(Edge e)
+    public Edge addLockEdge(Edge e)
     {
         this.lockEdges.add(e);
+        
+        return this;
     }
     
     /**
      * Removes an edge from the lock edge list
      * @param e
      */
-    public void removeLockEdge(Edge e)
+    public Edge removeLockEdge(Edge e)
     {
         this.lockEdges.remove(e);
+        
+        return this;
     }
     
     /**
      * Removes all edges from the lock edge list
      */
-    public void clearLockEdges()
+    public Edge clearLockEdges()
     {
         this.lockEdges.clear();
+        
+        return this;
     }
     
     /**

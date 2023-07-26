@@ -52,8 +52,9 @@ public class Point
     /**
      * Sets an S88 value for this point
      * @param value 
+     * @return  
      */
-    public void setS88(Integer value)
+    public Point setS88(Integer value)
     {
         if (value != null)
         {
@@ -63,14 +64,17 @@ public class Point
         {
             this.s88 = null;
         }
+        
+        return this;
     }
     
     /**
      * Changes the state of this station
      * @param state
+     * @return 
      * @throws Exception 
      */
-    public void setDestination(boolean state) throws Exception
+    public Point setDestination(boolean state) throws Exception
     {
         if (state && !hasS88())
         {
@@ -81,14 +85,17 @@ public class Point
         
         // Reset terminus status
         if (!this.isDestination) this.isTerminus = false;
+        
+        return this;
     }
     
     /**
      * A terminus station will require the departing train to change direction
      * @param state
+     * @return 
      * @throws Exception 
      */
-    public void setTerminus(boolean state) throws Exception
+    public Point setTerminus(boolean state) throws Exception
     {
         if (!isDestination)
         {
@@ -98,6 +105,8 @@ public class Point
         {
             this.isTerminus = state;
         }
+        
+        return this;
     }
     
     public boolean isTerminus()
@@ -145,9 +154,11 @@ public class Point
         return this.currentLoc;
     }
     
-    synchronized public void setLocomotive(Locomotive l)
+    synchronized public Point setLocomotive(Locomotive l)
     {
         this.currentLoc = l;
+        
+        return this;
     }
     
     public String getS88()
@@ -199,12 +210,15 @@ public class Point
     /**
      * Sets the maximum train length allowed at this point
      * @param maxTrainLength 
+     * @return  
      */
-    public void setMaxTrainLength(Integer maxTrainLength)
+    public Point setMaxTrainLength(Integer maxTrainLength)
     {
         assert maxTrainLength >= 0;
         
         this.maxTrainLength = maxTrainLength;
+        
+        return this;
     }
     
     /**
@@ -239,7 +253,7 @@ public class Point
         
         if (this.hasS88())
         {
-            jsonObj.put("s88", new Integer(this.s88));
+            jsonObj.put("s88", Integer.valueOf(this.s88));
         }
         
         if (this.isDestination && this.maxTrainLength > 0)
