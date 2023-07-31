@@ -504,7 +504,11 @@ public class Layout
             // Invalid state means there were conflicting accessory commands, so this path would not work as intended
             if (!this.configIsValid)
             {
-                this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
+                if (this.control.isDebug())
+                {
+                    this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
+                }
+                
                 return false;
             }
         }
@@ -751,23 +755,34 @@ public class Layout
      * Marks all the edges in a path as unoccupied, 
      * unlocking it so that other trains may pass
      * @param path
+     * @param loc
      */
-    synchronized public void unlockPath(List<Edge> path)
+    synchronized public void unlockPath(List<Edge> path, Locomotive loc)
     {
         for (int i = 0; i < path.size(); i++)
         {
             Edge e = path.get(i);
             
-            if (i == 0)
-            {
-                e.getStart().setLocomotive(null);
+            if (i == 0 && (loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive()) 
+                || i < path.size() - 1 && (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
+                || this.atomicRoutes
+            )
+            {            
+                if (i == 0)
+                {
+                    e.getStart().setLocomotive(null);
+                }
+
+                e.setUnoccupied();
+
+                if (i < path.size() - 1)
+                {
+                    e.getEnd().setLocomotive(null);
+                }
             }
-            
-            e.setUnoccupied();
-            
-            if (i < path.size() - 1)
+            else
             {
-                e.getEnd().setLocomotive(null);
+                this.control.log("Skipping unlock for " + e.getName() + " due to new active locomotive");
             }
         }
     }
@@ -1216,7 +1231,7 @@ public class Layout
 
         synchronized (this.activeLocomotives)
         {
-            this.unlockPath(path);
+            this.unlockPath(path, loc);
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
