@@ -1448,8 +1448,6 @@ public final class CS2File
             JSONObject edge = (JSONObject) edg; 
             try 
             {
-                BiConsumer<ViewListener, Edge> commandCallback = null;
-
                 String start = edge.getString("start");
                 String end = edge.getString("end");
 
