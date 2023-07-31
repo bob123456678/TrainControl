@@ -763,6 +763,7 @@ public class Layout
         {
             Edge e = path.get(i);
             
+            // With atomicRoutes disabled, we skip unlocking if a different locomotive now occupies the edge
             if (i == 0 && (loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive()) 
                 || i < path.size() - 1 && (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
                 || this.atomicRoutes
