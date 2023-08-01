@@ -1548,7 +1548,10 @@ public final class CS2File
                     {
                         e.setLength(edge.getInt("length"));   
 
-                        control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                        if (edge.getInt("length") > 0)
+                        {
+                            control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                        }
                     }
                     else
                     {
