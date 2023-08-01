@@ -763,12 +763,7 @@ public class Layout
         {
             Edge e = path.get(i);
             
-            // With atomicRoutes disabled, we skip unlocking if a different locomotive now occupies the edge
-            if (i == 0 && (loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive()) 
-                || i < path.size() - 1 && (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
-                || i == path.size() - 1
-                || this.atomicRoutes
-            )
+            if (this.atomicRoutes)
             {            
                 if (i == 0)
                 {
@@ -782,9 +777,34 @@ public class Layout
                     e.getEnd().setLocomotive(null);
                 }
             }
+            // With atomicRoutes disabled, we skip unlocking if a different locomotive now occupies the edge
             else
             {
-                this.control.log("Auto layout: skipping unlock for " + e.getName() + " due to new active locomotive set via non-atomic paths");
+                if (
+                    (loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive())
+                        &&
+                    (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
+                )
+                {
+                    e.setUnoccupied();
+                }
+                else
+                {
+                    if (this.control.isDebug())
+                    {
+                        this.control.log("Auto layout: skipping unlock for " + e.getName() + " due to new active locomotive set via non-atomic paths");
+                    }
+                }
+                
+                if (i == 0 && loc.equals(e.getStart().getCurrentLocomotive()))
+                {
+                    e.getStart().setLocomotive(null);
+                }
+
+                if (i < path.size() - 1 && loc.equals(e.getEnd().getCurrentLocomotive()))
+                {
+                    e.getEnd().setLocomotive(null);
+                }
             }
         }
     }
