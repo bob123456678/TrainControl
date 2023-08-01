@@ -1314,12 +1314,11 @@ public class Layout
         
         synchronized (this.activeLocomotives)
         {
-            // We want to track what is not unlocked (only applies when atomicRoutes == false) to correctly update the UI
             this.unlockPath(path, loc);
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
-        
+                    
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
             {
