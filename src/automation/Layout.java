@@ -756,9 +756,12 @@ public class Layout
      * unlocking it so that other trains may pass
      * @param path
      * @param loc
+     * @return list of edges that were not unlocked during dynamic routes
      */
-    synchronized public void unlockPath(List<Edge> path, Locomotive loc)
+    synchronized public List<Edge> unlockPath(List<Edge> path, Locomotive loc)
     {
+        List<Edge> output = new LinkedList<>();
+        
         for (int i = 0; i < path.size(); i++)
         {
             Edge e = path.get(i);
@@ -790,6 +793,8 @@ public class Layout
                 }
                 else
                 {
+                    output.add(e);
+                    
                     if (this.control.isDebug())
                     {
                         this.control.log("Auto layout: skipping unlock for " + e.getName() + " due to new active locomotive set via non-atomic paths");
@@ -807,6 +812,8 @@ public class Layout
                 }
             }
         }
+        
+        return output;
     }
         
     /**
@@ -1250,10 +1257,12 @@ public class Layout
             loc.switchDirection();
             this.control.log("Locomotive " + loc.getName() + " reached terminus. Reversing");   
         }
-
+        
+        List<Edge> notUnlocked;
         synchronized (this.activeLocomotives)
         {
-            this.unlockPath(path, loc);
+            // We want to track what is not unlocked (only applies when atomicRoutes == false) to correctly update the UI
+            notUnlocked = this.unlockPath(path, loc);
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
@@ -1264,7 +1273,22 @@ public class Layout
         {
             if (callback != null)
             {
-                callback.apply(path, loc, false);
+                synchronized (this.activeLocomotives)
+                {
+                    callback.apply(path, loc, false);
+                
+                    // This should only fire when atomicRoutes is false (otherwise notUnlocked will be empty)
+                    // Repaint other routes
+                    for (Edge e3 : notUnlocked)
+                    {
+                        if (e3.getStart().getCurrentLocomotive() != null 
+                                && this.activeLocomotives.containsKey(e3.getStart().getCurrentLocomotive()))
+                        {
+                            Locomotive otherLoc = e3.getStart().getCurrentLocomotive();
+                            callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                        }
+                    }                    
+                }
             }
         }
 
