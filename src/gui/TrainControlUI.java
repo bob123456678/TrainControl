@@ -7498,8 +7498,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             // Callback fires at the beginning and end of each path
-            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> {
-                
+            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> 
+            {    
                 synchronized(graph)
                 {  
                     // Update locomotive panel
@@ -7512,12 +7512,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             // Grey out locked-lock edges
                             if (locked)
                             {
-                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class",  "locked" );
+                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class", "locked");
                             }
                             // Reset unlocked lock edges
                             else
                             {
-                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class",  "inactive" );
+                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class", "inactive");
                             }
                         }
                     }
@@ -7533,8 +7533,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     for (Edge e : edges)
                     {
                         // Make active edges red
-                        graph.getEdge(e.getUniqueId()).setAttribute("ui.class", locked ? "active" : "inactive" );
-                        // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", locked ? l.getName() : "" );
+                        graph.getEdge(e.getUniqueId()).setAttribute("ui.class", locked ? "active" : "inactive");
+                        // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", locked ? l.getName() : "");
 
                         // Update point labels
                         for (Point p : Arrays.asList(e.getStart(), e.getEnd()))    
@@ -7562,7 +7562,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         for (int i = 1; i < milestones.size(); i++)
                         {
                             graph.getEdge(Edge.getEdgeUniqueId(milestones.get(i - 1), milestones.get(i)))
-                                .setAttribute("ui.class", "completed" );
+                                .setAttribute("ui.class", "completed");
                         }
                     }
                     
