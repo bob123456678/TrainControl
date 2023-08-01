@@ -63,6 +63,15 @@ edge {
     size: 3px;
     arrow-size: 20px, 7px;
     z-index: 0;
+    
+    text-alignment: along;
+    text-style: bold; 
+    text-color: #FFF;
+    text-background-mode: rounded-box;
+    text-background-color: #000; 
+    text-padding: 2px; 
+    text-offset: 0px, 0px;
+    text-size: 14;
 }
 
 edge.locked {

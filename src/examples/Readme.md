@@ -212,7 +212,11 @@ You can also manually specify where each locomotive should go through the "Locom
 
 Note that a path with conflicting accessory commands will never be chosen.
 
-If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  This may make operation more fun/fast-paced, at the risk of potential collisions when trains are too long.  Lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
+From v1.9.5, if `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
+This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
+To ensure that potential collisions are avoided, each edge must be configured with a length.  
+Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality.
+Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
 ```
 {
@@ -266,6 +270,7 @@ If `atomicRoutes` is set to `false`, edges will be unlocked as the active train 
        {
             "start": "Station 2",
             "end": "Main Track",
+            "length" : 0,
             "commands" : [
                 {
                     "acc" : "Signal 2",
@@ -282,6 +287,7 @@ If `atomicRoutes` is set to `false`, edges will be unlocked as the active train 
         {
             "start": "Station 1",
             "end": "Main Track",
+            "length" : 0,
             "commands" : [
                 {
                     "acc" : "Signal 1",
@@ -298,10 +304,12 @@ If `atomicRoutes` is set to `false`, edges will be unlocked as the active train 
         {
             "start": "Main Track",
             "end": "Pre Arrival",
+            "length" : 0
         },
         {
             "start": "Pre Arrival",
             "end": "Station 1",
+            "length" : 0,
             "commands" : [
                 {
                     "acc" : "Signal 1",
@@ -316,6 +324,7 @@ If `atomicRoutes` is set to `false`, edges will be unlocked as the active train 
         {
             "start": "Pre Arrival",
             "end": "Station 2",
+            "length" : 0,
             "commands" : [
                 {
                     "acc" : "Signal 2",

@@ -409,7 +409,8 @@ public class Edge
         
         jsonObj.put("start", this.start.getName());
         jsonObj.put("end", this.end.getName());
-        
+        jsonObj.put("length", this.getLength());
+
         if (!commandList.isEmpty())
         {
             jsonObj.put("commands", new JSONArray(commandList));

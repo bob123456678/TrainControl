@@ -7365,6 +7365,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Updates the shown length of an edge
+     * @param e
+     * @param graph 
+     */
+    public void updateEdgeLength(Edge e, Graph graph)
+    {
+        if (e.getLength() > 0)
+        {
+            graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getLength());
+        }
+        else
+        {
+            graph.getEdge(e.getUniqueId()).removeAttribute("ui.label");
+        }
+    }
+    
+    /**
      * Adds an edge to the graph
      * @param e
      * @param graph 
@@ -7375,6 +7392,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
         // graph.getEdge(e.getUniqueId()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );    
         graph.getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+        
+        updateEdgeLength(e, graph);
     }
     
     /**

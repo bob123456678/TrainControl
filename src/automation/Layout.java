@@ -1184,6 +1184,10 @@ public class Layout
         
         loc.setSpeed(speed);
         this.control.log("Auto layout: started " + loc.getName());
+        
+        // When !this.atomicRoutes: track edges to unlock based on length of train
+        List<Integer> toUnlock = new LinkedList<>();
+        Integer lengthTraversed = 0;
 
         for (int i = 0; i < path.size(); i++)
         {
@@ -1202,17 +1206,36 @@ public class Layout
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
                 
-                if (!this.atomicRoutes)
+                if (!this.atomicRoutes && currentLayoutVersion == Layout.layoutVersion)
                 {
                     if (i > 0)
-                    {                
-                        path.get(i - 1).setLockedEdgeUnoccupied();
-                        path.get(i - 1).getStart().setLocomotive(null);
-                        path.get(i - 1).getEnd().setLocomotive(null);
+                    {       
+                        lengthTraversed += path.get(i - 1).getLength();
+                        toUnlock.add(i - 1);
                         
-                        if (control.isDebug())
+                        if (lengthTraversed >= loc.getTrainLength() || lengthTraversed == 0)
                         {
-                            control.log("Unlocking traversed edge: " + path.get(i - 1).getName());
+                            for (int index : toUnlock)
+                            {
+                                path.get(index).setLockedEdgeUnoccupied();
+                                path.get(index).getStart().setLocomotive(null);
+                                path.get(index).getEnd().setLocomotive(null);
+                                
+                                if (control.isDebug())
+                                {
+                                    control.log("Unlocking traversed edge: " + path.get(index).getName());
+                                }
+                            }
+                            
+                            toUnlock.clear();
+                            lengthTraversed = 0;
+                        }
+                        else
+                        {
+                            if (control.isDebug())
+                            {
+                                control.log("Not yet unlocking traversed edge due to train length " + loc.getTrainLength() + " > " + lengthTraversed + ": " + path.get(i - 1).getName());
+                            }
                         }
                     }
                 }

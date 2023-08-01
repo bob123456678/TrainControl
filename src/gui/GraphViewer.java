@@ -381,6 +381,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                     {
                                         edit.validateAndApplyConfigCommands();
                                         edit.applyLockEdges();
+                                        parent.updateEdgeLength(parent.getModel().getAutoLayout().getEdge(dialogResult), mainGraph);
                                     }
        
                                     parent.repaintAutoLocList(false);

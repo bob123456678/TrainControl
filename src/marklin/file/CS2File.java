@@ -1540,7 +1540,26 @@ public final class CS2File
 
                         e.addConfigCommand(acc, Accessory.stringToAccessorySetting(action));
                     });                    
-                }                
+                }            
+                
+                if (edge.has("length"))
+                {
+                    if (edge.get("length") instanceof Integer && edge.getInt("length") >= 0)
+                    {
+                        e.setLength(edge.getInt("length"));   
+
+                        control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: " + e.getName() + " has invalid length value");
+                        layout.invalidate();  
+                    }
+                }
+                else
+                {
+                    e.setLength(0);
+                }
             } 
             catch (Exception ex)
             {

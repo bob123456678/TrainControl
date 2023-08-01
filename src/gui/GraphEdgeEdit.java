@@ -81,11 +81,20 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
             config += command.getKey() + "," + command.getValue().toString().toLowerCase() + "\n";
         }
         
+        if (e.getLength() < this.edgeLength.getItemCount())
+        {
+            this.edgeLength.setSelectedIndex(e.getLength());
+        }
+        else
+        {
+            this.edgeLength.setSelectedIndex(this.edgeLength.getItemCount() - 1);
+        } 
+        
         this.configCommands.setText(config.trim());
     }
     
     /**
-     * Applies the lock edge selections from the UI
+     * Applies the lock edge selections and length from the UI
      */
     public void applyLockEdges()
     {
@@ -97,6 +106,8 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         {
             e.addLockEdge(parent.getModel().getAutoLayout().getEdge(edge));
         }
+        
+        e.setLength(this.edgeLength.getSelectedIndex());
     }
     
     /**
@@ -116,7 +127,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
                 
                 e.validateConfigCommand(command, setting, parent.getModel());
             }
-            else
+            else if (s.trim().length() > 0)
             {
                 throw new Exception("Command " + s + " must be comma-separated. Example: Signal 1,turn");
             }
@@ -152,12 +163,14 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         configCommands = new javax.swing.JTextArea();
         jScrollPane1 = new javax.swing.JScrollPane();
         lockEdges = new javax.swing.JList<>();
+        departureFuncLabel1 = new javax.swing.JLabel();
+        edgeLength = new javax.swing.JComboBox<>();
 
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Signal/Switch Commands");
 
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
-        departureFuncLabel.setText("Lock Edges");
+        departureFuncLabel.setText("Edge Length");
 
         configCommands.setColumns(10);
         configCommands.setRows(5);
@@ -170,21 +183,31 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(lockEdges);
 
+        departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
+        departureFuncLabel1.setText("Lock Edges");
+
+        edgeLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
+        edgeLength.setFocusable(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(departureFuncLabel)
+                        .addGap(32, 32, 32)
+                        .addComponent(edgeLength, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addComponent(arrivalFuncLabel)
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 271, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(departureFuncLabel)
-                        .addGap(0, 197, Short.MAX_VALUE))
-                    .addComponent(jScrollPane1))
+                        .addComponent(departureFuncLabel1)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -193,11 +216,16 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(arrivalFuncLabel)
-                    .addComponent(departureFuncLabel))
+                    .addComponent(departureFuncLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane2)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 391, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 391, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(departureFuncLabel)
+                            .addComponent(edgeLength, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jScrollPane1))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -207,6 +235,8 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
     private javax.swing.JLabel arrivalFuncLabel;
     private javax.swing.JTextArea configCommands;
     private javax.swing.JLabel departureFuncLabel;
+    private javax.swing.JLabel departureFuncLabel1;
+    private javax.swing.JComboBox<String> edgeLength;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JList<String> lockEdges;
