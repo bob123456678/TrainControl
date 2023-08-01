@@ -7388,26 +7388,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
             graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
-            
-            // This fixes the node color with non-atomic routes
-            /*if (!this.model.getAutoLayout().isAtomicRoutes())
-            {
-                List<Point> milestones = null;
-
-                if (p.getCurrentLocomotive() != null)
-                {
-                    milestones = this.model.getAutoLayout().getReachedMilestones(p.getCurrentLocomotive());
-                }
-                
-                if (milestones != null && milestones.contains(p))
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "completed");
-                }
-                else if (model.getAutoLayout().getActiveLocomotives().containsKey(p.getCurrentLocomotive()))
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "active");
-                }
-            }*/
         }
         else
         {
