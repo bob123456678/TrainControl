@@ -20,22 +20,19 @@ import org.json.JSONObject;
  */
 public class Edge
 {
-    // private final String name;
     private boolean occupied;
     private final Point start;
     private final Point end;
     private final Map<String, Accessory.accessorySetting> configCommands;
-    
+    private int length = 0;
+
     // A list of edges that should be locked whenever this edge is locked
     // This is useful if the layout contains crossings that cannot otherwise be modeled as a graph edge
     private final List<Edge> lockEdges;
-    
+        
     /**
      * @param start
      * @param end
-     * @param configureFunc lambda which will configure the edge 
-     *                      (i.e., set switches and signals correctly to 
-     *                       ensure the train can reach its destination)
      */
     public Edge(Point start, Point end)
     {
@@ -60,6 +57,7 @@ public class Edge
      * Excepts a call to validateConfigCommand beforehand
      * @param acc
      * @param state 
+     * @return  
      */
     public Edge addConfigCommand(String acc, Accessory.accessorySetting state)
     {
@@ -71,6 +69,7 @@ public class Edge
     /**
      * Clears config commands
      * @param acc 
+     * @return  
      */
     public Edge clearConfigCommand(String acc)
     {
@@ -214,6 +213,7 @@ public class Edge
     /**
      * Add an edge to the list of edges which must always be locked whenever this edge is locked
      * @param e
+     * @return 
      */
     public Edge addLockEdge(Edge e)
     {
@@ -225,6 +225,7 @@ public class Edge
     /**
      * Removes an edge from the lock edge list
      * @param e
+     * @return 
      */
     public Edge removeLockEdge(Edge e)
     {
@@ -235,12 +236,33 @@ public class Edge
     
     /**
      * Removes all edges from the lock edge list
+     * @return 
      */
     public Edge clearLockEdges()
     {
         this.lockEdges.clear();
         
         return this;
+    }
+    
+    /**
+     * Returns the edge length
+     * @return 
+     */
+    public int getLength()
+    {
+        return length;
+    }
+
+    /**
+     * Sets the length of the edge.  Used in path validity calculation
+     * @param length 
+     */
+    public void setLength(int length)
+    {
+        assert length >= 0;
+        
+        this.length = length;
     }
     
     /**

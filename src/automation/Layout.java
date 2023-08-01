@@ -490,7 +490,7 @@ public class Layout
             
             return false;
         }
-        
+                
         // Preview the configuration        
         synchronized (this)
         {
@@ -516,6 +516,23 @@ public class Layout
         return true;
     }
         
+    /**
+     * Returns the length of the given path
+     * @param path
+     * @return 
+     */
+    public int getPathLegnth(List<Edge> path)
+    {
+        int pathLength = 0;
+        
+        for (Edge e : path)
+        {
+            pathLength += e.getLength();
+        }
+        
+        return pathLength;
+    }
+    
     /**
      * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
@@ -900,8 +917,8 @@ public class Layout
             throw new Exception("Invalid speed specified");
         }
         
-        new Thread( () -> {
-            
+        new Thread( () ->
+        {    
             while(running)
             {
                 try 
@@ -917,6 +934,7 @@ public class Layout
                 }
                 catch (InterruptedException ex)
                 {
+                    
                 }
             }
             
