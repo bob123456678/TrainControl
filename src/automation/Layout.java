@@ -1142,14 +1142,14 @@ public class Layout
                 this.locomotiveMilestones.put(loc, new LinkedList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.activeLocomotives.put(loc, path);
-            }   
             
-            // Fire callbacks
-            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
-            {
-                if (callback != null)
+                // Fire callbacks
+                for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {
-                    callback.apply(path, loc, true);
+                    if (callback != null)
+                    {
+                        callback.apply(path, loc, true);
+                    }
                 }
             }
             
@@ -1234,14 +1234,27 @@ public class Layout
             synchronized (this.activeLocomotives)
             {
                 this.locomotiveMilestones.get(loc).add(current);                  
-            }
             
-            // Fire callbacks
-            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
-            {
-                if (callback != null)
+                // Fire callbacks
+                for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {
-                    callback.apply(path, loc, true);
+                    if (callback != null)
+                    {
+                        callback.apply(path, loc, true);
+                        
+                        // Repaint other routes in non-atomic route mode
+                        if (!this.atomicRoutes)
+                        {
+                            for (Locomotive otherLoc : this.getActiveLocomotives().keySet())
+                            {
+                                // Our loc is still active, so skip repainting it
+                                if (!otherLoc.equals(loc))
+                                {
+                                    callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                                }
+                            }
+                        }     
+                    }
                 }
             }
         }
@@ -1258,33 +1271,26 @@ public class Layout
             this.control.log("Locomotive " + loc.getName() + " reached terminus. Reversing");   
         }
         
-        List<Edge> notUnlocked;
         synchronized (this.activeLocomotives)
         {
             // We want to track what is not unlocked (only applies when atomicRoutes == false) to correctly update the UI
-            notUnlocked = this.unlockPath(path, loc);
+            this.unlockPath(path, loc);
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
-        }
         
-        // Fire callbacks
-        for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
-        {
-            if (callback != null)
+            // Fire callbacks
+            for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
             {
-                synchronized (this.activeLocomotives)
+                if (callback != null)
                 {
                     callback.apply(path, loc, false);
                 
-                    // This should only fire when atomicRoutes is false (otherwise notUnlocked will be empty)
-                    // Repaint other routes
-                    for (Edge e3 : notUnlocked)
+                    // Repaint other routes in non-atomic route mode
+                    if (!this.atomicRoutes)
                     {
-                        if (e3.getStart().getCurrentLocomotive() != null 
-                                && this.activeLocomotives.containsKey(e3.getStart().getCurrentLocomotive()))
+                        for (Locomotive otherLoc : this.getActiveLocomotives().keySet())
                         {
-                            Locomotive otherLoc = e3.getStart().getCurrentLocomotive();
                             callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
                         }
                     }                    
