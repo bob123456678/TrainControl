@@ -7343,7 +7343,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 "    \"maxDelay\": 10,\n" +
                 "    \"defaultLocSpeed\": 35,\n" +
                 "    \"preArrivalSpeedReduction\": 0.5,\n" +
-                "    \"turnOffFunctionsOnArrival\": true\n" +
+                "    \"turnOffFunctionsOnArrival\": true,\n" +
+                "    \"atomicRoutes\": true\n" +
                 "}"
             );
             
