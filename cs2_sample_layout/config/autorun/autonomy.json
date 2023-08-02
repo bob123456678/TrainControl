@@ -71,7 +71,7 @@
         },
         {
             "name": "BottomMainPost",
-            "station": true,
+            "station": false,
             "s88": 2013,
             "x": 1033,
             "y": 115
