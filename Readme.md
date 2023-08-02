@@ -144,7 +144,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.9.5 [Beta]
+* v1.9.5 [8/2/23]
     - Added verbose logging of auto layout locomotive speed changes
     - Log messages related to occupied/invalid paths will now only be shown in debug mode (pass `debug` after IP address)
     - Added `atomicRoutes` setting in JSON (default of `true` yields same behavior as v1.9.4 and earlier).  When set to `false`, edges will be unlocked as trains pass them, instead of at the end of a path, for a more dynamic operating experience.  
