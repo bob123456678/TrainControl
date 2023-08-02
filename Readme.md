@@ -147,9 +147,9 @@ Requires JDK 1.8+ and the following libraries:
 * v1.9.5 [Beta]
     - Added verbose logging of auto layout locomotive speed changes
     - Log messages related to occupied/invalid paths will now only be shown in debug mode (pass `debug` after IP address)
-    - Added `atomicRoutes` setting in JSON (default of `true` = same behavior as v1.9.4 and earlier).  When set to `false`, edges will be unlocked as trains pass them, instead of at the end of a path, for a more dynamic operating experience.  
-    - Added edge length setting to JSON and UI.  To avoid collisions when `atomicRoutes` is `false`, length values should be set for all edges and used alongside trains lengths.
-    - Fixed bug where edges without commands could not be edited
+    - Added `atomicRoutes` setting in JSON (default of `true` yields same behavior as v1.9.4 and earlier).  When set to `false`, edges will be unlocked as trains pass them, instead of at the end of a path, for a more dynamic operating experience.  
+    - Added edge length setting to JSON and UI.  To avoid collisions when `atomicRoutes` is `false`, length values should be set for all edges and trains.
+    - Fixed bug where edges without commands could not be edited in the UI
 
 * v1.9.4 [7/25/23]
     - Fixed race condition where multiple locomotives starting at the same time could lead to some switches not being set correctly

@@ -57,6 +57,7 @@ public abstract class Locomotive
     
     // Length of the train corresponding to ths locomotive
     protected Integer trainLength;
+    protected Integer numPaths;
  
     /**
      * Constructor with name and all functions off
@@ -77,6 +78,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
+        this.numPaths = 0;
     }
     
     /**
@@ -196,6 +198,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
+        this.numPaths = 0;
     }
     
     /**
@@ -264,6 +267,7 @@ public abstract class Locomotive
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
         this.trainLength = trainLength;
+        this.numPaths = 0;
     }
 
     /* Internal functionality */
@@ -813,6 +817,16 @@ public abstract class Locomotive
     public void setReversible(boolean reversible)
     {
         this.reversible = reversible;
+    }
+    
+    public Integer getNumPaths()
+    {
+        return this.numPaths;
+    }
+    
+    public void incrementNumPaths()
+    {
+        this.numPaths += 1;
     }
     
     public Integer getTrainLength()

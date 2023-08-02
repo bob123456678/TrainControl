@@ -1108,6 +1108,20 @@ public final class CS2File
             }    
         }
         
+        // Debug/dev only setting
+        if (o.has("simulate"))
+        {
+            if (control.isDebug())
+            {
+                control.log("Auto layout WARNING: Auto layout development / simulation mode enabled. Trains will not run.");
+                Layout.SIMULATE = true;
+            }   
+            else
+            {
+                control.log("Auto layout warning: Simulation mode can only be enabled when debug mode is active.");
+            }
+        }
+        
         if (o.has("atomicRoutes"))
         {
             try

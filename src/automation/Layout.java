@@ -34,6 +34,9 @@ public class Layout
     public static final String CB_ROUTE_START = "routeStart";
     public static final String CB_PRE_ARRIVAL = "preArrival";
     
+    // If set to true, paths will automatically execute.  Only useful for debugging / testing during development.
+    public static Boolean SIMULATE = false;
+    
     // ms to wait if no paths exist 
     public static final int ROUTE_FIND_SLEEP = 5000;
     
@@ -417,7 +420,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Edge is occupied: " + e.getName());
+                    // control.log("Edge is occupied: " + e.getName());
                 }
                 
                 return false;
@@ -428,7 +431,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Edge is occupied: " + e.getOppositeName());
+                    // control.log("Edge is occupied: " + e.getOppositeName());
                 }
                 
                 return false;
@@ -801,8 +804,9 @@ public class Layout
             else
             {
                 if (
-                    (loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive())
-                        &&
+                    // Edges may be out of sequence, so it's OK if another locomotive now occupies the start
+                    //(loc.equals(e.getStart().getCurrentLocomotive()) || null == e.getStart().getCurrentLocomotive())
+                       // &&
                     (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
                 )
                 {
@@ -818,7 +822,7 @@ public class Layout
                     }
                 }
                 
-                if (i == 0 && loc.equals(e.getStart().getCurrentLocomotive()))
+                if ((i == 0 || i != path.size() - 1) && loc.equals(e.getStart().getCurrentLocomotive()))
                 {
                     e.getStart().setLocomotive(null);
                 }
@@ -930,7 +934,7 @@ public class Layout
                         this.executePath(path, loc, speed);
                     }
                     
-                    Thread.sleep(1000);
+                    Thread.sleep(this.getMinDelay() * 1000);
                 }
                 catch (InterruptedException ex)
                 {
@@ -1146,7 +1150,12 @@ public class Layout
             return false;
         }
         
-        boolean result = configureAndLockPath(path, loc);
+        boolean result;
+        
+        synchronized (this.activeLocomotives)
+        {
+            result = configureAndLockPath(path, loc);
+        }
         
         if (!result)
         {
@@ -1182,8 +1191,11 @@ public class Layout
             loc.getCallback(CB_ROUTE_START).accept(loc);
         }
         
-        loc.setSpeed(speed);
-        this.control.log("Auto layout: started " + loc.getName());
+        if (!SIMULATE)
+        {
+            loc.setSpeed(speed);
+            this.control.log("Auto layout: started " + loc.getName());
+        }
         
         // When !this.atomicRoutes: track edges to unlock based on length of train
         List<Integer> toUnlock = new LinkedList<>();
@@ -1198,9 +1210,19 @@ public class Layout
                 // Intermediate points - wait for feedback to be triggered and to clear
                 if (current.hasS88())
                 {
-                    loc.waitForOccupiedFeedback(current.getS88());
-                }
-                
+                    if (SIMULATE)
+                    {
+                        try
+                        {
+                            Thread.sleep((long) (this.getMinDelay() * 1000 * Math.random()));
+                        } 
+                        catch (InterruptedException ex) { }
+                    }
+                    else
+                    {
+                        loc.waitForOccupiedFeedback(current.getS88());
+                    }
+                }                
                 // We can also clear this edges dynamically 
                 // This can be useful, but extra care needs to be taken if any paths cross over
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
@@ -1217,9 +1239,12 @@ public class Layout
                         {
                             for (int index : toUnlock)
                             {
-                                path.get(index).setLockedEdgeUnoccupied();
-                                path.get(index).getStart().setLocomotive(null);
-                                path.get(index).getEnd().setLocomotive(null);
+                                synchronized (this.activeLocomotives)
+                                {
+                                    path.get(index).setLockedEdgeUnoccupied();
+                                    path.get(index).getStart().setLocomotive(null);
+                                    // path.get(index).getEnd().setLocomotive(null); // not necessary as this unlocks the second edge early
+                                }
                                 
                                 if (control.isDebug())
                                 {
@@ -1246,16 +1271,35 @@ public class Layout
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
-                    this.control.log("Auto layout: pre-arrival for " + loc.getName());
-
+                    if (!SIMULATE)
+                    {  
+                        loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
+                        this.control.log("Auto layout: pre-arrival for " + loc.getName());
+                    }
+                    
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
                         loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
                     }
+                    
+                    if (SIMULATE)
+                    {
+                        try
+                        {
+                            Thread.sleep((long) (this.getMinDelay() * 1000 * Math.random()));
+                        } 
+                        catch (InterruptedException ex) { }
+                    }
+                    else
+                    {
+                        loc.waitForOccupiedFeedback(current.getS88());
 
-                    loc.waitForOccupiedFeedback(current.getS88()).setSpeed(0);
-                    this.control.log("Auto layout: stopping " + loc.getName());
+                        if (!SIMULATE)
+                        {
+                            loc.setSpeed(0);
+                            this.control.log("Auto layout: stopping " + loc.getName());
+                        }
+                    }
                 }
             }  
             
@@ -1339,6 +1383,9 @@ public class Layout
         }
 
         this.control.log("Locomotive " + loc.getName() + " finished its path: " + this.pathToString(path));   
+        
+        // Track number of completed paths
+        loc.incrementNumPaths();
         
         return true;
     }
@@ -1616,6 +1663,11 @@ public class Layout
         jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
+        
+        if (SIMULATE)
+        {
+            jsonObj.put("simulate", true);
+        }
 
         return jsonObj.toString(4);
     }
