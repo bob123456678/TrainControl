@@ -43,6 +43,11 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
     
+    // Locomotives that have not run for at least this many seconds will be prioritized
+    public static final int INACTIVE_LOC_THRESHOLD = 120;
+    // Maximum number of seconds another locomotive should yield for to the inactive locomotive
+    public static final int YIELD_SLEEP = 30;
+
     // Set to false to disable locomotives
     private volatile boolean running = false;
     
@@ -909,6 +914,37 @@ public class Layout
     }
     
     /**
+     * Checks if any locomotive has been inactive longer than the threshold time, and returns the locomotive with the oldest timestamp
+     * @param threshold seconds
+     * @param currentLoc the current locomotive
+     * @return 
+     */
+    public Locomotive checkForSlowerLoc(int threshold, Locomotive currentLoc)
+    {
+        // Calculate locomotive that has been inactive the longest
+        Locomotive minLoc = null;
+        
+        for (Locomotive l : this.locomotivesToRun)
+        {
+            if (minLoc == null || l.getLastPathTime() < minLoc.getLastPathTime())
+            {
+                minLoc = l;
+            }
+        }
+        
+        if (minLoc != null && !currentLoc.equals(minLoc) && (currentLoc.getLastPathTime() - minLoc.getLastPathTime()) > threshold * 1000
+                && !this.getPossiblePaths(minLoc, true).isEmpty())
+        {
+            int waited = (int) ((currentLoc.getLastPathTime() - minLoc.getLastPathTime()) / 1000);
+            
+            this.control.log(currentLoc.getName() + " yielding as " + minLoc.getName() + " has not run for " + waited + " seconds");
+            return minLoc;
+        }
+        
+        return null;
+    }
+    
+    /**
      * Continuously looks for a valid path for the given locomotive, and executes the path when found
      * @param loc
      * @param speed how fast the locomotive should travel, 1-100
@@ -933,8 +969,19 @@ public class Layout
                     {
                         this.executePath(path, loc, speed);
                     }
-                    
+                     
                     Thread.sleep(this.getMinDelay() * 1000);
+
+                    // If another locomotive is falling behind, attempt to yield to it
+                    if (this.isAutoRunning() && INACTIVE_LOC_THRESHOLD > 0)
+                    {
+                        Locomotive yieldLoc = this.checkForSlowerLoc(INACTIVE_LOC_THRESHOLD, loc);
+
+                        if (yieldLoc != null)
+                        {
+                            yieldLoc.waitForSpeedAtOrAbove(1, YIELD_SLEEP);
+                        }
+                    }                   
                 }
                 catch (InterruptedException ex)
                 {

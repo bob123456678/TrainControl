@@ -1130,7 +1130,7 @@ public final class CS2File
                 
                 if (!o.getBoolean("atomicRoutes"))
                 {
-                    control.log("Auto layout: disabled atomic routes.  Edges will be unlocked as trains pass them instead of at the end of the route.");
+                    control.log("Auto layout notice: disabled atomic routes.  Edges will be unlocked as trains pass them instead of at the end of the route.");
                 }
 
             }
@@ -1285,7 +1285,7 @@ public final class CS2File
                     ex.printStackTrace();
                 }
                 
-                control.log("Auto layout error: Point error " + point.toString() + " check for duplicates or empty name");
+                control.log("Auto layout error: Point error for " + point.toString() + " (" + ex.getMessage() + ")");
                 layout.invalidate();
                 return;
             }
@@ -1564,7 +1564,10 @@ public final class CS2File
 
                         if (edge.getInt("length") > 0)
                         {
-                            control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                            if (control.isDebug())
+                            {
+                                control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                            }
                         }
                     }
                     else

@@ -144,6 +144,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.9.6 [Beta]
+    - Improved error messages for JSON point validation
+    - In autonomous operation, locomotives inactive for longer than 2 minutes will now be prioritized
+
 * v1.9.5 [8/2/23]
     - Added verbose logging of auto layout locomotive speed changes
     - Log messages related to occupied/invalid paths will now only be shown in debug mode (pass `debug` after IP address)

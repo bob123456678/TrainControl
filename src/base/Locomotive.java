@@ -57,7 +57,10 @@ public abstract class Locomotive
     
     // Length of the train corresponding to ths locomotive
     protected Integer trainLength;
-    protected Integer numPaths;
+    
+    // Number of completed paths, and last time
+    protected Integer numPaths = 0;
+    protected long lastPathTime = System.currentTimeMillis();
  
     /**
      * Constructor with name and all functions off
@@ -78,7 +81,6 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.numPaths = 0;
     }
     
     /**
@@ -198,7 +200,6 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.numPaths = 0;
     }
     
     /**
@@ -267,7 +268,6 @@ public abstract class Locomotive
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
         this.trainLength = trainLength;
-        this.numPaths = 0;
     }
 
     /* Internal functionality */
@@ -393,6 +393,26 @@ public abstract class Locomotive
         {
             this.delay(Locomotive.POLL_INTERVAL);
         }    
+        
+        return this;
+    }
+    
+    /**
+     * Blocks until this locomotive meets or exceeds the threshold speed
+     * @param threshold
+     * @param maxWait maximum number of seconds to wait (0 to disable)
+     * @return 
+     */
+    public Locomotive waitForSpeedAtOrAbove(int threshold, int maxWait)
+    {
+        long start = System.currentTimeMillis();
+        
+        while (this.getSpeed() < threshold)
+        {
+            this.delay(Locomotive.POLL_INTERVAL);   
+            
+            if (maxWait > 0 && System.currentTimeMillis() - start > maxWait * 1000) break;
+        }
         
         return this;
     }
@@ -827,6 +847,12 @@ public abstract class Locomotive
     public void incrementNumPaths()
     {
         this.numPaths += 1;
+        this.lastPathTime = System.currentTimeMillis();
+    }
+    
+    public long getLastPathTime()
+    {
+        return this.lastPathTime;
     }
     
     public Integer getTrainLength()
