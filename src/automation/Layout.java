@@ -1294,10 +1294,11 @@ public class Layout
                     if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
                     {
                         this.control.log("Auto layout: intermediate reversing for " + loc.getName());
-                        int currentSpeed = loc.getSpeed();
-                        loc.setSpeed(0);
-                        loc.switchDirection();
-                        loc.setSpeed(currentSpeed);   
+                        loc.setSpeed(0)
+                            .switchDirection()
+                            .waitForSpeedBelow(1, YIELD_SLEEP)
+                            .setSpeed(speed)
+                            .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
                     }
                 }          
                 

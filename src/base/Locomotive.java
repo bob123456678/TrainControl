@@ -418,6 +418,26 @@ public abstract class Locomotive
     }
     
     /**
+     * Blocks until this locomotive is below the threshold speed
+     * @param threshold
+     * @param maxWait maximum number of seconds to wait (0 to disable)
+     * @return 
+     */
+    public Locomotive waitForSpeedBelow(int threshold, int maxWait)
+    {
+        long start = System.currentTimeMillis();
+        
+        while (this.getSpeed() >= threshold)
+        {
+            this.delay(Locomotive.POLL_INTERVAL);   
+            
+            if (maxWait > 0 && System.currentTimeMillis() - start > maxWait * 1000) break;
+        }
+        
+        return this;
+    }
+    
+    /**
      * Blocks until a certain feedback value is set
      * If feedback is undefined, blocks until it is set
      * @param name
