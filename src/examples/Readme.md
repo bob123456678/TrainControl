@@ -357,6 +357,7 @@ Point colors:
 Point shapes:
 * Circle - regular station
 * Square - terminus station
+* Cross - reversing station (never chosen in autonomous operation, will reverse a train for shunting when the path is manually chosen)
 * Diamond - not a station
 
 ![Sample layout](../../assets/graph2.png?raw=true)
@@ -374,6 +375,12 @@ also specify `"terminus" : "true"`.  For the corresponding point/locomotive, set
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
 If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
+
+# Reversing stations
+
+As of v1.9.6, reversing stations are available.  These will never be chosen in autonomous operation, rather only semi-autonomous operation where you pick the route for the locomotive to follow.
+
+Reversing stations are intended for shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.
 
 # Advanced layouts
 

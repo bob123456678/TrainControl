@@ -1261,14 +1261,14 @@ public final class CS2File
                 {
                     if (point.get("terminus") instanceof Boolean)
                     {
-                        if (point.getBoolean("station") && point.getBoolean("terminus"))    
+                        try
                         {
-                            layout.getPoint(point.getString("name")).setTerminus(true);
-                        }
-                        else if (point.getBoolean("terminus"))
+                            layout.getPoint(point.getString("name")).setTerminus(point.getBoolean("terminus"));
+                        } 
+                        catch (Exception e)
                         {
-                            control.log("Auto layout error: only stations can be a terminus " + point.toString());
-                            layout.invalidate();
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
                         }
                     }
                     else
@@ -1276,7 +1276,28 @@ public final class CS2File
                         control.log("Auto layout error: invalid value for terminus " + point.toString());
                         layout.invalidate();
                     }
-                }                
+                }  
+                
+                if (point.has("reversing"))
+                {
+                    if (point.get("reversing") instanceof Boolean)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setReversing(point.getBoolean("reversing"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for reversing " + point.toString());
+                        layout.invalidate();
+                    }
+                }    
             } 
             catch (Exception ex)
             {

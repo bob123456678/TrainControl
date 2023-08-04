@@ -7422,6 +7422,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
             }
+            else if (p.isReversing())
+            {
+                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: cross; size: 20px;");
+            }
             else
             {
                 graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");

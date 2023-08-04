@@ -15,6 +15,7 @@ public class Point
     private String name;
     private String s88;
     private boolean isTerminus;
+    private boolean isReversing;
     private Integer x;
     private Integer y;
     private Integer maxTrainLength = 0;
@@ -30,7 +31,8 @@ public class Point
         this.s88 = s88;
         this.currentLoc = null;
         this.isTerminus = false;
-        
+        this.isReversing = false;
+
         if (isDestination && !hasS88())
         {
             throw new Exception("Destination point must have S88");
@@ -85,6 +87,7 @@ public class Point
         
         // Reset terminus status
         if (!this.isDestination) this.isTerminus = false;
+        if (!this.isDestination) this.isReversing = false;
         
         return this;
     }
@@ -101,12 +104,45 @@ public class Point
         {
             throw new Exception("Only destination points can be a terminus");
         }
+        else if (isReversing)
+        {
+            throw new Exception("Revresing stations cannot be set as terminus");
+        }
         else
         {
             this.isTerminus = state;
         }
         
         return this;
+    }
+    
+    /**
+     * A reversing station will require the departing train to change direction, as part of shunting operations
+     * @param state
+     * @return 
+     * @throws Exception 
+     */
+    public Point setReversing(boolean state) throws Exception
+    {
+        if (!isDestination)
+        {
+            throw new Exception("Only destination points can be a reversing station");
+        }
+        else if (isTerminus)
+        {
+            throw new Exception("Terminus stations cannot be set as reversing");
+        }
+        else
+        {
+            this.isReversing = state;
+        }
+        
+        return this;
+    }
+    
+    public boolean isReversing()
+    {
+        return isReversing;
     }
     
     public boolean isTerminus()
@@ -276,6 +312,11 @@ public class Point
         if (this.isTerminus)
         {
             jsonObj.put("terminus", this.isTerminus);
+        }
+        
+        if (this.isReversing)
+        {
+            jsonObj.put("reversing", this.isReversing);
         }
         
         if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)

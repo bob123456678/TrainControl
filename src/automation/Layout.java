@@ -452,6 +452,16 @@ public class Layout
                 return false;
             }
             
+            // Intermediate reversing stations not allowed in auto running
+            if (this.isAutoRunning() && e.getStart().isReversing() && !e.getStart().equals(path.get(0).getStart()))
+            {
+                if (control.isDebug())
+                {
+                    control.log("Path " + this.pathToString(path) + " contains an intermediate reversing station");
+                }
+                return false;
+            }
+            
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
                 if (control.isDebug())
@@ -483,6 +493,16 @@ public class Layout
             if (control.isDebug())
             {
                 control.log("Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
+            }
+            
+            return false;
+        }
+        
+        if (path.get(path.size() - 1).getEnd().isReversing() && this.isAutoRunning())
+        {
+            if (control.isDebug())
+            {
+                control.log("Path " + this.pathToString(path) + " disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
             }
             
             return false;
@@ -1028,7 +1048,7 @@ public class Layout
                 if (loc.equals(start.getCurrentLocomotive()))
                 {
                     for (Point end : ends)
-                    {
+                    {                        
                         if (!end.equals(start) && !end.isOccupied() && end.isDestination())
                         {
                             try 
@@ -1269,12 +1289,22 @@ public class Layout
                     {
                         loc.waitForOccupiedFeedback(current.getS88());
                     }
-                }                
+                    
+                    // Reverse the locomotive if this is a reversing station
+                    if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
+                    {
+                        this.control.log("Auto layout: intermediate reversing for " + loc.getName());
+                        int currentSpeed = loc.getSpeed();
+                        loc.setSpeed(0);
+                        loc.switchDirection();
+                        loc.setSpeed(currentSpeed);   
+                    }
+                }          
+                
                 // We can also clear this edges dynamically 
                 // This can be useful, but extra care needs to be taken if any paths cross over
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
-                
                 if (!this.atomicRoutes && currentLayoutVersion == Layout.layoutVersion)
                 {
                     if (i > 0)
@@ -1397,12 +1427,12 @@ public class Layout
         }
         
         // Reverse at terminus station
-        if (path.get(path.size() - 1).getEnd().isTerminus())
+        if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
         {
             loc.switchDirection();
-            this.control.log("Locomotive " + loc.getName() + " reached terminus. Reversing");   
+            this.control.log("Locomotive " + loc.getName() + " reached terminus or reversing station. Reversing");   
         }
-        
+
         synchronized (this.activeLocomotives)
         {
             this.unlockPath(path, loc);

@@ -160,6 +160,24 @@ final public class GraphViewer extends javax.swing.JFrame {
                 });
                        
                 add(menuItem);
+                
+                menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " station");
+                menuItem.addActionListener(event -> { 
+                    try
+                    { 
+                        p.setReversing(!p.isReversing());
+                        // parent.getModel().getAutoLayout().refreshUI();
+                        ui.updatePoint(p, mainGraph);
+                        parent.repaintAutoLocList(false); 
+                    } 
+                    catch (Exception ex) 
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                                        ex.getMessage()); 
+                    }
+                });
+                       
+                add(menuItem);
             }
             
             if (!p.isDestination() || !p.isOccupied())
