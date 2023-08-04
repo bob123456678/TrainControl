@@ -380,7 +380,7 @@ If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` corres
 
 As of v1.9.6, reversing stations are available.  These will never be chosen in autonomous operation, rather only semi-autonomous operation where you pick the route for the locomotive to follow.
 
-Reversing stations are intended for shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.
+Reversing stations are intended for parking/shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.  The train will automatically be reversed at each reversing station it reaches.
 
 # Advanced layouts
 
