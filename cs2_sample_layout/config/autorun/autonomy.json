@@ -11,6 +11,10 @@
             "name": "BottomInner",
             "station": true,
             "s88": 1011,
+            "loc": "EU46-520",
+            "locReversible": false,
+            "locSpeed": 35,
+            "locArrivalFunc": 3,
             "x": 567,
             "y": 182
         },
@@ -45,12 +49,6 @@
             "name": "BottomMainB",
             "station": true,
             "s88": 10,
-            "loc": "SU 45-118",
-            "locReversible": false,
-            "locSpeed": 50,
-            "locTrainLength": 4,
-            "locArrivalFunc": 12,
-            "locDepartureFunc": 9,
             "x": 955,
             "y": 5
         },
@@ -80,6 +78,12 @@
             "name": "BottomSecondary",
             "station": true,
             "s88": 1009,
+            "loc": "SU 45-118",
+            "locReversible": false,
+            "locSpeed": 50,
+            "locTrainLength": 4,
+            "locArrivalFunc": 12,
+            "locDepartureFunc": 9,
             "x": 561,
             "y": 126
         },
@@ -180,12 +184,6 @@
             "station": true,
             "s88": 1022,
             "maxTrainLength": 3,
-            "loc": "EN57-925",
-            "locReversible": true,
-            "locSpeed": 70,
-            "locTrainLength": 3,
-            "locArrivalFunc": 2,
-            "locDepartureFunc": 15,
             "x": 401,
             "y": 406
         },
@@ -215,10 +213,12 @@
             "name": "TopMainR2",
             "station": true,
             "s88": 1023,
-            "loc": "EU46-520",
-            "locReversible": false,
-            "locSpeed": 35,
-            "locArrivalFunc": 3,
+            "loc": "EN57-925",
+            "locReversible": true,
+            "locSpeed": 70,
+            "locTrainLength": 3,
+            "locArrivalFunc": 2,
+            "locDepartureFunc": 15,
             "x": 297,
             "y": 418
         },
@@ -249,7 +249,7 @@
             "station": false,
             "s88": 2012,
             "reversing": true,
-            "x": 595,
+            "x": 598,
             "y": 460
         },
         {
@@ -1011,6 +1011,11 @@
                 "start": "TopParkReversing",
                 "end": "TopMainR0Park"
             }]
+        },
+        {
+            "start": "TopMainR0Park",
+            "end": "TopMainPost",
+            "length": 0
         },
         {
             "start": "TopMainR1",
