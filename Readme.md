@@ -145,9 +145,9 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.9.6 [Beta]
-    - Improved error messages for JSON point validation
-    - Added reversing station as a possible station type.  These stations are used for shunting and will reverse arriving trains when a path is manually chosen, and will never be chosen in autonomous operation.
+    - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains when a path is manually triggered, and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
+    - Improved error messages for JSON point validation
 
 * v1.9.5 [8/2/23]
     - Added verbose logging of auto layout locomotive speed changes
