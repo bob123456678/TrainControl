@@ -18,12 +18,12 @@
             "name": "BottomInnerOtherside",
             "station": true,
             "s88": 2011,
-            "loc": "EN57-925",
-            "locReversible": true,
-            "locSpeed": 56,
-            "locTrainLength": 3,
+            "loc": "EU07-123",
+            "locReversible": false,
+            "locSpeed": 44,
+            "locTrainLength": 4,
             "locArrivalFunc": 2,
-            "locDepartureFunc": 15,
+            "locDepartureFunc": 10,
             "x": 612,
             "y": 298
         },
@@ -31,12 +31,6 @@
             "name": "BottomMainA",
             "station": true,
             "s88": 9,
-            "loc": "EU07-123",
-            "locReversible": false,
-            "locSpeed": 44,
-            "locTrainLength": 4,
-            "locArrivalFunc": 2,
-            "locDepartureFunc": 10,
             "x": 836,
             "y": 51
         },
@@ -51,6 +45,12 @@
             "name": "BottomMainB",
             "station": true,
             "s88": 10,
+            "loc": "SU 45-118",
+            "locReversible": false,
+            "locSpeed": 50,
+            "locTrainLength": 4,
+            "locArrivalFunc": 12,
+            "locDepartureFunc": 9,
             "x": 955,
             "y": 5
         },
@@ -80,12 +80,6 @@
             "name": "BottomSecondary",
             "station": true,
             "s88": 1009,
-            "loc": "SU 45-118",
-            "locReversible": false,
-            "locSpeed": 58,
-            "locTrainLength": 4,
-            "locArrivalFunc": 12,
-            "locDepartureFunc": 9,
             "x": 561,
             "y": 126
         },
@@ -174,10 +168,28 @@
             "y": 377
         },
         {
+            "name": "TopMainR0Park",
+            "station": true,
+            "s88": 1010,
+            "loc": "EU46-520",
+            "locReversible": false,
+            "locSpeed": 35,
+            "reversing": true,
+            "locArrivalFunc": 3,
+            "x": 595,
+            "y": 421
+        },
+        {
             "name": "TopMainR1",
             "station": true,
             "s88": 1022,
             "maxTrainLength": 3,
+            "loc": "EN57-925",
+            "locReversible": true,
+            "locSpeed": 70,
+            "locTrainLength": 3,
+            "locArrivalFunc": 2,
+            "locDepartureFunc": 15,
             "x": 401,
             "y": 406
         },
@@ -233,14 +245,17 @@
             "y": 557
         },
         {
+            "name": "TopParkReversing",
+            "station": true,
+            "s88": 2012,
+            "reversing": true,
+            "x": 595,
+            "y": 460
+        },
+        {
             "name": "Tunnel",
             "station": true,
             "s88": 1032,
-            "loc": "BR232-275",
-            "locReversible": false,
-            "locSpeed": 41,
-            "locTrainLength": 3,
-            "locArrivalFunc": 3,
             "x": 350,
             "y": 35
         },
@@ -941,6 +956,11 @@
             }]
         },
         {
+            "start": "TopMainPost",
+            "end": "TopParkReversing",
+            "length": 0
+        },
+        {
             "start": "TopMainPostReverse",
             "end": "TopMainR0",
             "length": 0,
@@ -962,10 +982,16 @@
                     "state": "turn"
                 }
             ],
-            "lockedges": [{
-                "start": "TopMainPost",
-                "end": "RampDown"
-            }]
+            "lockedges": [
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "TopParkReversing",
+                    "end": "TopMainR0Park"
+                }
+            ]
         },
         {
             "start": "TopMainR0",
@@ -980,7 +1006,11 @@
                     "acc": "Signal 63",
                     "state": "red"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "TopParkReversing",
+                "end": "TopMainR0Park"
+            }]
         },
         {
             "start": "TopMainR1",
@@ -1070,6 +1100,33 @@
             "lockedges": [{
                 "start": "TopMainR2Pre",
                 "end": "TopMainR2"
+            }]
+        },
+        {
+            "start": "TopParkReversing",
+            "end": "TopMainR0Park",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 75",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 18",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "TopMainPostReverse",
+                "end": "TopMainR0"
             }]
         },
         {
@@ -1182,5 +1239,6 @@
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
     "turnOffFunctionsOnArrival": true,
-    "atomicRoutes": false
+    "atomicRoutes": false,
+    "maxLocInactiveSeconds": 120
 }
