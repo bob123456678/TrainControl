@@ -19,6 +19,7 @@ import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 import model.ViewListener;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -1078,22 +1079,45 @@ public final class CS2File
         Integer maxDelay;
         Integer defaultLocSpeed;
         
-        // Validate basic data
+        // Validate basic required data
         try
         {
             points = o.getJSONArray("points");
             edges = o.getJSONArray("edges");
-            minDelay  = Math.abs(o.getInt("minDelay"));
-            maxDelay  = Math.abs(o.getInt("maxDelay"));
-            defaultLocSpeed  = Math.abs(o.getInt("defaultLocSpeed"));
+            minDelay  = o.getInt("minDelay");
+            maxDelay  = o.getInt("maxDelay");
+            defaultLocSpeed  = o.getInt("defaultLocSpeed");
         }
-        catch (Exception e)
+        catch (JSONException e)
         {
             control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
             layout.invalidate();
             return layout;
         }
         
+        if (points == null || edges == null)
+        {
+            control.log("Auto layout error: missing keys (points, edges)");
+            layout.invalidate();
+            return layout;        
+        }
+                
+        // Save values in layout class
+        try
+        {
+            layout.setDefaultLocSpeed(defaultLocSpeed);
+            layout.setMaxDelay(maxDelay);
+            layout.setMinDelay(minDelay);
+            layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout error: " + e.getMessage());
+            layout.invalidate();
+            return layout;   
+        }
+        
+        // Optional values
         if (o.has("preArrivalSpeedReduction"))
         {
             try
@@ -1160,34 +1184,7 @@ public final class CS2File
                 return layout;
             }    
         }
-        
-        if (points == null || edges == null)
-        {
-            control.log("Auto layout error: missing keys (points, edges)");
-            layout.invalidate();
-            return layout;        
-        }
-        
-        if (minDelay >= maxDelay)
-        {
-            control.log("Auto layout error: minDelay must be less than maxDelay");
-            layout.invalidate();
-            return layout;        
-        }
-        
-        if (defaultLocSpeed <= 0 || defaultLocSpeed > 100)
-        {
-            control.log("Auto layout error: defaultLocSpeed must be between 1 and 100");
-            layout.invalidate();
-            return layout;        
-        }
-        
-        // Save values in layout class
-        layout.setDefaultLocSpeed(defaultLocSpeed);
-        layout.setMaxDelay(maxDelay);
-        layout.setMinDelay(minDelay);
-        layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
-   
+           
         // Add points
         points.forEach(pnt -> { 
             JSONObject point = (JSONObject) pnt; 

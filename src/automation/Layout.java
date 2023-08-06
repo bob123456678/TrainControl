@@ -1617,8 +1617,13 @@ public class Layout
         return minDelay;
     }
 
-    public void setMinDelay(int minDelay)
+    public void setMinDelay(int minDelay) throws Exception
     {
+        if (minDelay > this.maxDelay || minDelay < 0)
+        {
+            throw new Exception("minDelay must be positive and less than or equal to maxDelay");      
+        }
+        
         this.minDelay = minDelay;
     }
 
@@ -1627,8 +1632,13 @@ public class Layout
         return maxDelay;
     }
 
-    public void setMaxDelay(int maxDelay)
+    public void setMaxDelay(int maxDelay) throws Exception
     {
+        if (maxDelay < this.minDelay || maxDelay < 0)
+        {
+            throw new Exception("maxDelay must be positive and greater than or equal to to minDelay");      
+        }
+        
         this.maxDelay = maxDelay;
     }
 
@@ -1637,8 +1647,13 @@ public class Layout
         return defaultLocSpeed;
     }
 
-    public void setDefaultLocSpeed(int defaultLocSpeed)
+    public void setDefaultLocSpeed(int defaultLocSpeed) throws Exception
     {
+        if (defaultLocSpeed <= 0 || defaultLocSpeed > 100)
+        {
+            throw new Exception("defaultLocSpeed must be between 1 and 100");
+        }
+        
         this.defaultLocSpeed = defaultLocSpeed;
     }
 
