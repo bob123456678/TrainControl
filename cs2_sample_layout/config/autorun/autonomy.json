@@ -171,11 +171,7 @@
             "name": "TopMainR0Park",
             "station": true,
             "s88": 1010,
-            "loc": "EU46-520",
-            "locReversible": false,
-            "locSpeed": 35,
             "reversing": true,
-            "locArrivalFunc": 3,
             "x": 595,
             "y": 421
         },
@@ -219,6 +215,10 @@
             "name": "TopMainR2",
             "station": true,
             "s88": 1023,
+            "loc": "EU46-520",
+            "locReversible": false,
+            "locSpeed": 35,
+            "locArrivalFunc": 3,
             "x": 297,
             "y": 418
         },
@@ -246,7 +246,7 @@
         },
         {
             "name": "TopParkReversing",
-            "station": true,
+            "station": false,
             "s88": 2012,
             "reversing": true,
             "x": 595,
