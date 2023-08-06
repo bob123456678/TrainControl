@@ -451,12 +451,12 @@ public class Layout
                 return false;
             }
             
-            // Intermediate reversing stations not allowed in auto running
-            if (this.isAutoRunning() && e.getStart().isReversing() && !e.getStart().equals(path.get(0).getStart()))
+            // Starting or intermediate reversing stations not allowed in auto running
+            if (this.isAutoRunning() && e.getStart().isReversing())
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " contains an intermediate reversing station");
+                    control.log("Path " + this.pathToString(path) + " contains a starting or intermediate reversing station");
                 }
                 return false;
             }
