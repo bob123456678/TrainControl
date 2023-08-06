@@ -456,8 +456,20 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " contains a starting or intermediate reversing station");
+                    control.log("Path " + this.pathToString(path) + " contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
                 }
+                
+                return false;
+            }
+            
+            // Starting point is not a station - do not pick it in fully autonomous mode
+            if (this.isAutoRunning() && !e.getStart().isDestination() && e.getStart().equals(path.get(0).getStart()))
+            {
+                if (control.isDebug())
+                {
+                    control.log("Path " + this.pathToString(path) + " starts with a non-station, which cannot be chosen in autonomous operation");
+                }
+                
                 return false;
             }
             
@@ -1298,6 +1310,7 @@ public class Layout
                         loc.setSpeed(0)
                             .switchDirection()
                             .waitForSpeedBelow(1, YIELD_SLEEP)
+                            .delay(1000) // Pause for a more realistic appearance
                             .setSpeed(speed)
                             .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
                     }

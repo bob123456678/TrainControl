@@ -147,7 +147,10 @@ Requires JDK 1.8+ and the following libraries:
 * v1.9.6 [Beta]
     - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains when a path is manually triggered, and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
+    - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically
     - Improved error messages for JSON point validation
+    - Improved reliability of saved function presets for certain decoders
+    - Newly added pre-arrival functions set via the UI will now fire without the need to re-parse the autonomy JSON 
 
 * v1.9.5 [8/2/23]
     - Added verbose logging of auto layout locomotive speed changes

@@ -287,16 +287,26 @@ public class Point
             jsonObj.put("s88", Integer.valueOf(this.s88));
         }
         
-        if (this.isDestination && this.maxTrainLength > 0)
+        if (this.isDestination || this.maxTrainLength > 0)
         {
             jsonObj.put("maxTrainLength", this.maxTrainLength);
         }
         
-        if (this.currentLoc != null && this.isDestination)
+        if (this.currentLoc != null)
         {
             jsonObj.put("loc", this.currentLoc.getName());
             jsonObj.put("locReversible", this.currentLoc.isReversible());
             jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
+            
+            if (this.currentLoc.getArrivalFunc() != null)
+            {
+                jsonObj.put("locArrivalFunc", this.currentLoc.getArrivalFunc());
+            }
+        
+            if (this.currentLoc.getDepartureFunc() != null)
+            {
+                jsonObj.put("locDepartureFunc", this.currentLoc.getDepartureFunc());
+            }
             
             if (this.currentLoc.getTrainLength() > 0)
             {
@@ -312,16 +322,6 @@ public class Point
         if (this.isReversing)
         {
             jsonObj.put("reversing", this.isReversing);
-        }
-        
-        if (this.currentLoc != null && this.currentLoc.getArrivalFunc() != null)
-        {
-            jsonObj.put("locArrivalFunc", this.currentLoc.getArrivalFunc());
-        }
-        
-        if (this.currentLoc != null && this.currentLoc.getDepartureFunc() != null)
-        {
-            jsonObj.put("locDepartureFunc", this.currentLoc.getDepartureFunc());
         }
         
         if (this.coordinatesSet())

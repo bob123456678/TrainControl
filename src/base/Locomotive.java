@@ -150,7 +150,7 @@ public abstract class Locomotive
         {
             for (int i = 0; i < preferredFunctions.length && i < this.functionTypes.length; i++)
             { 
-                this.setF(i, this.preferredFunctions[i]);
+                this.setF(i, this.preferredFunctions[i]).delay(POLL_INTERVAL);
             }
         }
         
@@ -167,7 +167,7 @@ public abstract class Locomotive
         {
             if (this.getF(i))
             {
-                this.setF(i, false);
+                this.setF(i, false).delay(POLL_INTERVAL);
             }
         }
         

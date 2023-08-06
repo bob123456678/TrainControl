@@ -167,27 +167,26 @@ final public class GraphViewer extends javax.swing.JFrame {
                 add(menuItem);
             }
             
-            if (!p.isDestination() || !p.isOccupied())
-            {
-                menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
-                menuItem.addActionListener(event -> { 
-                    try
-                    { 
-                        p.setDestination(!p.isDestination());
-                        // parent.getModel().getAutoLayout().refreshUI();
-                        ui.updatePoint(p, mainGraph);
-                        parent.repaintAutoLocList(false); 
-                    } 
-                    catch (Exception ex) 
-                    { 
-                        JOptionPane.showMessageDialog((Component) swingView,
-                                    ex.getMessage()); 
-                    }
-                });
+            // Allow changes because locomotive on non-stations will by design not run
+            //if (!p.isDestination() || !p.isOccupied())
+            menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
+            menuItem.addActionListener(event -> { 
+                try
+                { 
+                    p.setDestination(!p.isDestination());
+                    // parent.getModel().getAutoLayout().refreshUI();
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(false); 
+                } 
+                catch (Exception ex) 
+                { 
+                    JOptionPane.showMessageDialog((Component) swingView,
+                                ex.getMessage()); 
+                }
+            });
 
-                add(menuItem);
-            }
-            
+            add(menuItem);
+               
             menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " point");
             menuItem.addActionListener(event -> { 
                 try

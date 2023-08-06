@@ -11,13 +11,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import marklin.MarklinControlStation;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
 import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
-import model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1240,32 +1238,29 @@ public final class CS2File
             try 
             {
                 layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
-                
-                if (point.getBoolean("station"))
+                     
+                if (point.has("maxTrainLength"))
                 {
-                    if (point.has("maxTrainLength"))
-                    {
-                        if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
-                        { 
-                            layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
-                            
-                            if (point.getInt("maxTrainLength") > 0)
-                            {
-                                control.log("Set max train length of " + point.getInt("maxTrainLength") + " for " + point.getString("name"));
-                            }
-                        }
-                        else
+                    if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
+                    { 
+                        layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
+
+                        if (point.getInt("maxTrainLength") > 0)
                         {
-                            control.log("Auto layout error: " + point.getString("name") + " has invalid maxTrainLength value");
-                            layout.invalidate();  
+                            control.log("Set max train length of " + point.getInt("maxTrainLength") + " for " + point.getString("name"));
                         }
                     }
                     else
                     {
-                        layout.getPoint(point.getString("name")).setMaxTrainLength(0);
-                    }   
+                        control.log("Auto layout error: " + point.getString("name") + " has invalid maxTrainLength value");
+                        layout.invalidate();  
+                    }
                 }
-                
+                else
+                {
+                    layout.getPoint(point.getString("name")).setMaxTrainLength(0);
+                }   
+     
                 // Set optional coordinates
                 if (x != null && y != null)
                 {
@@ -1379,104 +1374,108 @@ public final class CS2File
                     
                     if (point.getBoolean("station") != true)
                     {
-                        control.log("Auto layout error: " + loc + " placed on a non-station");
+                        control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
+                        // layout.invalidate();
+                    }
+                        
+                    // Place the locomotive
+                    layout.getPoint(point.getString("name")).setLocomotive(l);
+
+                    // Reset if none present
+                    l.setDepartureFunc(null);
+
+                    // Set start and end callbacks
+                    if (point.has("locSpeed") && point.get("locSpeed") != null)
+                    {
+                        try
+                        {
+                            if (point.getInt("locSpeed") > 0 && point.getInt("locSpeed") <= 100)
+                            {
+                                l.setPreferredSpeed(point.getInt("locSpeed"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            control.log("Auto layout error: Error in locSpeed value for " + point.getString("name"));
+                            layout.invalidate();
+                        }
+                    }
+
+                    // Set start and end callbacks
+                    if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
+                    {
+                        try
+                        {
+                            l.setDepartureFunc(point.getInt("locDepartureFunc"));
+                        }
+                        catch (Exception ex)
+                        {
+                            control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
+                            layout.invalidate();
+                        }
+                    }
+
+                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
+                    {
+                        lc.applyPreferredFunctions().delay(minDelay, maxDelay);
+
+                        if (lc.hasDepartureFunc())
+                        {
+                            lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
+                        }
+                    });
+
+                    // Optionally disable the arrival functions
+                    if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
+                    {
+                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                    }
+                    else
+                    {
+                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
+                    }
+
+                    // Reset if none present
+                    l.setArrivalFunc(null);
+
+                    if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
+                    {
+                        try
+                        {
+                            l.setArrivalFunc(point.getInt("locArrivalFunc"));
+
+                            // Always set callback in case of future edits
+                            l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> 
+                            {
+                                if (lc.hasArrivalFunc())
+                                {
+                                    lc.toggleF(lc.getArrivalFunc());
+                                }
+                            }); 
+                        }
+                        catch (Exception ex)
+                        {
+                            control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
+                            layout.invalidate();
+                        }
+                    }
+
+                    if (l.getPreferredSpeed() == 0)
+                    {
+                        l.setPreferredSpeed(defaultLocSpeed);
+                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
+                    }
+
+                    if (locomotives.contains(loc))
+                    {
+                        control.log("Auto layout error: dupliate locomotive " + loc);
                         layout.invalidate();
                     }
                     else
-                    {                    
-                        layout.getPoint(point.getString("name")).setLocomotive(l);
-                        
-                        // Reset if none present
-                        l.setDepartureFunc(null);
-                        
-                        // Set start and end callbacks
-                        if (point.has("locSpeed") && point.get("locSpeed") != null)
-                        {
-                            try
-                            {
-                                if (point.getInt("locSpeed") > 0 && point.getInt("locSpeed") <= 100)
-                                {
-                                    l.setPreferredSpeed(point.getInt("locSpeed"));
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                control.log("Auto layout error: Error in locSpeed value for " + point.getString("name"));
-                                layout.invalidate();
-                            }
-                        }
-                        
-                        // Set start and end callbacks
-                        if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
-                        {
-                            try
-                            {
-                                l.setDepartureFunc(point.getInt("locDepartureFunc"));
-                            }
-                            catch (Exception ex)
-                            {
-                                control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
-                                layout.invalidate();
-                            }
-                        }
-
-                        l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
-                        {
-                            lc.applyPreferredFunctions().delay(minDelay, maxDelay);
-                        
-                            if (lc.hasDepartureFunc())
-                            {
-                                lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
-                            }
-                        });
-                        
-                        // Optionally disable the arrival functions
-                        if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
-                        {
-                            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
-                        }
-                        else
-                        {
-                            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
-                        }
-
-                        // Reset if none present
-                        l.setArrivalFunc(null);
-                        
-                        if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
-                        {
-                            try
-                            {
-                                l.setArrivalFunc(point.getInt("locArrivalFunc"));
-                                
-                                if (l.hasArrivalFunc())
-                                {
-                                    l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> {lc.toggleF(lc.getArrivalFunc());});
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
-                                layout.invalidate();
-                            }
-                        }
-
-                        if (l.getPreferredSpeed() == 0)
-                        {
-                            l.setPreferredSpeed(defaultLocSpeed);
-                            control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
-                        }
-
-                        if (locomotives.contains(loc))
-                        {
-                            control.log("Auto layout error: dupliate locomotive " + loc);
-                            layout.invalidate();
-                        }
-                        else
-                        {
-                            locomotives.add(loc);
-                        }
+                    {
+                        locomotives.add(loc);
                     }
+                    
                 }
                 else
                 {
