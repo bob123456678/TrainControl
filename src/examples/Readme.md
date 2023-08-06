@@ -218,6 +218,8 @@ To ensure that potential collisions are avoided, each edge must be configured wi
 Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality.
 Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
+From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
+
 ```
 {
     "minDelay" : 1,
@@ -226,6 +228,7 @@ Note that lock edges, which should be used for any overlapping/crossing tracks, 
     "preArrivalSpeedReduction" : 0.5,
     "turnOffFunctionsOnArrival": true,
     "atomicRoutes": true,
+    "maxLocInactiveSeconds" : 120,
     "points": [
         {
             "name": "Station 1",

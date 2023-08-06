@@ -1108,6 +1108,25 @@ public final class CS2File
             }    
         }
         
+        if (o.has("maxLocInactiveSeconds"))
+        {
+            try
+            {
+                layout.setMaxLocInactiveSeconds(o.getInt("maxLocInactiveSeconds"));
+                
+                if (o.getInt("maxLocInactiveSeconds") > 0)
+                {
+                     control.log("Auto layout: trains will yield to other trains inactive longer than " + o.getInt("maxLocInactiveSeconds") + " seconds");
+                }
+            }
+            catch (Exception e)
+            {
+                control.log("Auto layout error: invalid value for maxLocInactiveSeconds (must not be negative)");
+                layout.invalidate();
+                return layout;
+            }    
+        }
+        
         // Debug/dev only setting
         if (o.has("simulate"))
         {

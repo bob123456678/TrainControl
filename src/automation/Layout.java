@@ -43,8 +43,6 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
     
-    // Locomotives that have not run for at least this many seconds will be prioritized
-    public static final int INACTIVE_LOC_THRESHOLD = 120;
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SLEEP = 30;
 
@@ -78,6 +76,7 @@ public class Layout
     private int defaultLocSpeed;
     private boolean turnOffFunctionsOnArrival;
     private double preArrivalSpeedReduction = 0.5;
+    private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
 
     // Track the layout version so we know whether an orphan instance of this class is stale
@@ -957,7 +956,7 @@ public class Layout
         {
             int waited = (int) ((currentLoc.getLastPathTime() - minLoc.getLastPathTime()) / 1000);
             
-            this.control.log(currentLoc.getName() + " yielding as " + minLoc.getName() + " has not run for " + waited + " seconds");
+            this.control.log(currentLoc.getName() + " yielding for up to " + YIELD_SLEEP + " seconds as " + minLoc.getName() + " has not run for " + waited + " seconds");
             return minLoc;
         }
         
@@ -993,9 +992,9 @@ public class Layout
                     Thread.sleep(this.getMinDelay() * 1000);
 
                     // If another locomotive is falling behind, attempt to yield to it
-                    if (this.isAutoRunning() && INACTIVE_LOC_THRESHOLD > 0)
+                    if (this.isAutoRunning() && this.maxLocInactiveSeconds > 0)
                     {
-                        Locomotive yieldLoc = this.checkForSlowerLoc(INACTIVE_LOC_THRESHOLD, loc);
+                        Locomotive yieldLoc = this.checkForSlowerLoc(this.maxLocInactiveSeconds, loc);
 
                         if (yieldLoc != null)
                         {
@@ -1663,6 +1662,16 @@ public class Layout
         this.atomicRoutes = atomicRoutes;
     }
     
+    public void setMaxLocInactiveSeconds(int sec) throws Exception
+    {
+        if (sec < 0)
+        {
+            throw new Exception("maxLocInactiveSeconds may not be a negatibve value");
+        }
+        
+        this.maxLocInactiveSeconds = sec;
+    }
+    
     /**
      * Returns a concise string representing a path
      * @param path
@@ -1741,6 +1750,7 @@ public class Layout
         jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
+        jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         
         if (SIMULATE)
         {
