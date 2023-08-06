@@ -87,7 +87,6 @@ public class Point
         
         // Reset terminus status
         if (!this.isDestination) this.isTerminus = false;
-        if (!this.isDestination) this.isReversing = false;
         
         return this;
     }
@@ -102,11 +101,11 @@ public class Point
     {
         if (!isDestination)
         {
-            throw new Exception("Only destination points can be a terminus");
+            throw new Exception("Only destination points (stations) can be a terminus");
         }
         else if (isReversing)
         {
-            throw new Exception("Revresing stations cannot be set as terminus");
+            throw new Exception("Reversing points cannot be set as terminus");
         }
         else
         {
@@ -124,11 +123,7 @@ public class Point
      */
     public Point setReversing(boolean state) throws Exception
     {
-        if (!isDestination)
-        {
-            throw new Exception("Only destination points can be a reversing station");
-        }
-        else if (isTerminus)
+        if (isTerminus)
         {
             throw new Exception("Terminus stations cannot be set as reversing");
         }

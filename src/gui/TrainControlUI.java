@@ -7433,7 +7433,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
+            if (p.isReversing())
+            {
+                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: cross; size: 15px;");
+            }
+            else
+            {
+                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
+            }
         }
     }
     
@@ -8127,7 +8134,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     Map<String, Integer> layoutSizes = Stream.of(new String[][] {
         { "Small", "30" }, 
         { "Large", "60" }, 
-      }).collect(Collectors.toMap(data -> data[0], data -> Integer.parseInt(data[1])));
+      }).collect(Collectors.toMap(data -> data[0], data -> Integer.valueOf(data[1])));
     
     public void repaintPathLabel()
     {
@@ -8160,6 +8167,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             InnerLayoutPanel.setVisible(true);
 
             // Important!
+            InnerLayoutPanel.repaint();
             this.KeyboardTab.repaint();
         }));
     }
