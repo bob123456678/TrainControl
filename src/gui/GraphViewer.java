@@ -19,7 +19,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
-import model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.algorithm.Toolkit;
@@ -148,6 +147,92 @@ final public class GraphViewer extends javax.swing.JFrame {
             
                 add(menuItem);
                 
+                // Edit Priority
+                if (p.isDestination())
+                {    
+                    menuItem = new JMenuItem("Edit station priority (" + (p.getPriority() != 0 ? (p.getPriority() > 0 ? "+" : "") + p.getPriority() : "default") + ")");
+                    menuItem.addActionListener(event -> 
+                        {
+                            String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                                "Enter the priority for " + nodeName + " (negative is lower, positive is higher):",
+                                p.getPriority());
+
+                            if (dialogResult != null)
+                            {
+                                dialogResult = dialogResult.trim();
+
+                                try
+                                {
+                                    Integer value;
+                                    if (dialogResult.equals(""))
+                                    {
+                                        value = null;
+                                    }
+                                    else
+                                    {
+                                        value = Integer.valueOf(dialogResult);
+                                    }
+
+                                    p.setPriority(value);
+
+                                    ui.updatePoint(p, mainGraph);
+
+                                    parent.repaintAutoLocList(false);
+                                }
+                                catch (Exception e)
+                                {
+                                    JOptionPane.showMessageDialog((Component) swingView,
+                                        "Invalid value (must be an integer, or 0 for default)");
+                                }
+                            }
+                        }
+                    );     
+
+                    add(menuItem);
+                }
+                
+                // Edit sensor
+                menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
+                menuItem.addActionListener(event -> 
+                    {
+                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                            "Enter the s88 sensor address for " + nodeName + ":",
+                            p.getS88());
+
+                        if (dialogResult != null)
+                        {
+                            dialogResult = dialogResult.trim();
+
+                            try
+                            {
+                                Integer value;
+                                if (dialogResult.equals(""))
+                                {
+                                    value = null;
+                                }
+                                else
+                                {
+                                    value = Integer.valueOf(dialogResult);
+                                }
+
+                                p.setS88(value);
+
+                                ui.updatePoint(p, mainGraph);
+
+                                parent.repaintAutoLocList(false);
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Invalid value (must be a non-negative integer, or blank to disable)");
+                            }
+                        }
+                    }
+                );     
+
+                add(menuItem);
+                addSeparator();
+                
                 menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
                 menuItem.addActionListener(event -> { 
                     try
@@ -204,49 +289,7 @@ final public class GraphViewer extends javax.swing.JFrame {
             });
 
             add(menuItem);
-                
-            // Edit sensor
-            
-            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
-            menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the s88 sensor address for " + nodeName + ":",
-                        p.getS88());
-
-                    if (dialogResult != null)
-                    {
-                        dialogResult = dialogResult.trim();
                         
-                        try
-                        {
-                            Integer value;
-                            if (dialogResult.equals(""))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                value = Integer.parseInt(dialogResult);
-                            }
-                            
-                            p.setS88(value);
-                            
-                            ui.updatePoint(p, mainGraph);
-
-                            parent.repaintAutoLocList(false);
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Invalid value (must be a non-negative integer, or blank to disable)");
-                        }
-                    }
-                }
-            );     
-
-            add(menuItem);
-            
             // Rename option applicable to all nodes
             menuItem = new JMenuItem("Rename " + nodeName);
             menuItem.addActionListener(event -> 

@@ -1045,10 +1045,25 @@ public class Layout
         {
             List<Point> ends = new LinkedList<>(this.points.values());
             Collections.shuffle(ends);
-
+                            
+            // Now sort by priority
+            Collections.sort(ends, (Point p1, Point p2) ->
+            {
+                // Random order if equivalent
+                if (p1.getPriority() == p2.getPriority())
+                {
+                    return 0;
+                }
+                
+                // Points with higher priority will come first
+                return p2.getPriority() < p1.getPriority() ? -1 : 1;
+            });
+                                    
             for (Point start : this.points.values())
             {
-                if (loc.equals(start.getCurrentLocomotive()))
+                if (loc.equals(start.getCurrentLocomotive()) 
+                        && !start.isReversing() && start.isDestination() // not needed from a logic perspective, but will speed things up
+                )
                 {
                     for (Point end : ends)
                     {                        

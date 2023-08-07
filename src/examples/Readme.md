@@ -197,12 +197,10 @@ The actual value is randomly chosen in this range, and this replaces the need fo
 TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.  
 However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the functions on arrival.
 
+From v1.10.0, all locomotive configuration is nested within the `loc` array for better semantics and readability, so variables are no longer prefixed by "loc".
+
 Unless the `speed` is specified, each locomotive's preferred speed will be used (as set in the UI).  If neither are set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
-
-From v1.8.10, you can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
-This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
-A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
 
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
@@ -211,14 +209,6 @@ Locomotives will then continue running per the specified layout until stopped vi
 You can also manually specify where each locomotive should go through the "Locomotive Commands" tab.  The list of available paths is automatically calculated based on the graph state and S88 feedback. 
 
 Note that a path with conflicting accessory commands will never be chosen. 
-
-From v1.9.5, if `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
-This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
-To ensure that potential collisions are avoided, each edge must be configured with a length.  
-Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
-Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
-
-From v1.10.0, all locomotive configuration is nested within the `loc` array for better semantics and readability and no longer prefixed by "loc".
 
 ```
 {
@@ -243,6 +233,7 @@ From v1.10.0, all locomotive configuration is nested within the `loc` array for 
                 "trainLength" : 3,
             },
             "maxTrainLength": 4,
+            "priority": 1,
             "x" : 1521,
             "y" : 291
         },
@@ -396,6 +387,18 @@ If you want to designate a parking space without reversing functionality, simply
 # Advanced layouts
 
 This graph model can be used to automate layouts with complex designs and tons of switches.  
+
+From v1.8.10, you can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
+This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
+A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
+
+From v1.9.5, if `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
+This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
+To ensure that potential collisions are avoided, each edge must be configured with a length.  
+Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
+Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
+
+From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
 A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../cs2_sample_layout/config/)
 

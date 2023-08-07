@@ -19,6 +19,7 @@ public class Point
     private Integer x;
     private Integer y;
     private Integer maxTrainLength = 0;
+    private Integer priority = 0;
     private Integer uniqueId;
     
     // Unique ID for any new node
@@ -68,6 +69,27 @@ public class Point
         }
         
         return this;
+    }
+    
+    /**
+     * Sets the point's priority
+     * @param value 
+     * @return  
+     */
+    public Point setPriority(Integer value)
+    {
+        this.priority = value;
+        
+        return this;
+    }
+    
+    /**
+     * Returns the point's priority
+     * @return 
+     */
+    public int getPriority()
+    {
+        return this.priority;
     }
     
     /**
@@ -292,6 +314,21 @@ public class Point
             jsonObj.put("maxTrainLength", this.maxTrainLength);
         }
         
+        if (this.isTerminus)
+        {
+            jsonObj.put("terminus", this.isTerminus);
+        }
+                
+        if (this.isReversing)
+        {
+            jsonObj.put("reversing", this.isReversing);
+        }
+        
+        if (this.priority != 0)
+        {
+            jsonObj.put("priority", this.priority);
+        }
+        
         if (this.currentLoc != null)
         {
             JSONObject locObj = new JSONObject();
@@ -322,17 +359,7 @@ public class Point
             
             jsonObj.put("loc", locObj);
         }
-        
-        if (this.isTerminus)
-        {
-            jsonObj.put("terminus", this.isTerminus);
-        }
-        
-        if (this.isReversing)
-        {
-            jsonObj.put("reversing", this.isReversing);
-        }
-        
+                
         if (this.coordinatesSet())
         {
             jsonObj.put("x", this.getX());

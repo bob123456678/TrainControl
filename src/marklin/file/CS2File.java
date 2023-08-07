@@ -1312,6 +1312,27 @@ public final class CS2File
                         layout.invalidate();
                     }
                 }    
+                
+                if (point.has("priority"))
+                {
+                    if (point.get("priority") instanceof Integer)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setPriority(point.getInt("priority"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for priority " + point.toString());
+                        layout.invalidate();
+                    }
+                } 
             } 
             catch (Exception ex)
             {
