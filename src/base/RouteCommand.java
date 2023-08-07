@@ -161,7 +161,7 @@ public class RouteCommand implements java.io.Serializable
             return false;
         }
          
-        // typecast o to Complex so that we can compare data members
+        // typecast o to RouteCommand so that we can compare data members
         RouteCommand rc = (RouteCommand) o;
         
         return this.type == rc.getType() && this.commandConfig.equals(rc.getCommandConfig());
