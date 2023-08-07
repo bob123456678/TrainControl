@@ -145,11 +145,12 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.10.0 [8/6/23] (New feature: reversing points for one-click parking)
-    - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains when a path is manually triggered, and will never be chosen in autonomous operation.
+    - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains.  They can be traversed only through a manually triggered path and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
-    - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically.  This allows the use of such points as designated parking spaces if they are not reversing stations.
+    - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically.  This allows the use of such points as designated parking spots even if they are not reversing stations.
         - Stations can now be converted to non-stations in the UI even when they are occupied
         - JSON with locomotives on non-stations will now be considered valid
+    - Added a `priority` setting for stations in JSON and the UI.  In autonomous operation, free stations with a higher priority will always be chosen over ones with lower priority.
     - Improved locomotive semantics via a `loc` object within `points` in the autonomy JSON.  Old keys will now be ignored with a warning.
     - Improved error messages for JSON point validation
     - Improved reliability of saved function presets for certain decoders
