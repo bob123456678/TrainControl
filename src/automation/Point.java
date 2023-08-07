@@ -294,24 +294,33 @@ public class Point
         
         if (this.currentLoc != null)
         {
-            jsonObj.put("loc", this.currentLoc.getName());
-            jsonObj.put("locReversible", this.currentLoc.isReversible());
-            jsonObj.put("locSpeed", this.currentLoc.getPreferredSpeed());
+            JSONObject locObj = new JSONObject();
+            
+            map = locObj.getClass().getDeclaredField("map");
+            map.setAccessible(true);
+            map.set(locObj, new LinkedHashMap<>());
+            map.setAccessible(false);
+            
+            locObj.put("name", this.currentLoc.getName());
+            locObj.put("reversible", this.currentLoc.isReversible());
+            locObj.put("speed", this.currentLoc.getPreferredSpeed());
             
             if (this.currentLoc.getArrivalFunc() != null)
             {
-                jsonObj.put("locArrivalFunc", this.currentLoc.getArrivalFunc());
+                locObj.put("arrivalFunc", this.currentLoc.getArrivalFunc());
             }
         
             if (this.currentLoc.getDepartureFunc() != null)
             {
-                jsonObj.put("locDepartureFunc", this.currentLoc.getDepartureFunc());
+                locObj.put("departureFunc", this.currentLoc.getDepartureFunc());
             }
             
             if (this.currentLoc.getTrainLength() > 0)
             {
-                jsonObj.put("locTrainLength", this.currentLoc.getTrainLength());
+                locObj.put("trainLength", this.currentLoc.getTrainLength());
             }
+            
+            jsonObj.put("loc", locObj);
         }
         
         if (this.isTerminus)

@@ -144,13 +144,16 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.9.6 [Beta]
+* v1.10.0 [8/6/23] (New feature: reversing points for one-click parking)
     - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains when a path is manually triggered, and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
-    - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically
+    - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically.  This allows the use of such points as designated parking spaces if they are not reversing stations.
+        - Stations can now be converted to non-stations in the UI even when they are occupied
+        - JSON with locomotives on non-stations will now be considered valid
+    - Improved locomotive semantics via a `loc` object within `points` in the autonomy JSON.  Old keys will now be ignored with a warning.
     - Improved error messages for JSON point validation
     - Improved reliability of saved function presets for certain decoders
-    - Newly added pre-arrival functions set via the UI will now fire without the need to re-parse the autonomy JSON 
+    - Fixed minor bug: Newly added pre-arrival functions set via the UI will now fire without the need to reload the autonomy JSON 
 
 * v1.9.5 [8/2/23]
     - Added verbose logging of auto layout locomotive speed changes
@@ -166,13 +169,13 @@ Requires JDK 1.8+ and the following libraries:
     - Added validation of Signals/Switches with duplicate addresses to autonomy JSON parser
     - Synchronizing with the CS2 will now invalidate the auto layout state as a precaution and require a reload
 
-* v1.9.3 [7/24/23]
+* v1.9.3 [7/24/23] (Beta)
     - Fixed bug where existing edges without any commands would not execute config commands after the first time they were edited in the UI
     - Fixed bug where keyboard events would not be registered when the "always on top" checkbox was unchecked at startup
     - Added 150ms interval between autonomy config commands for better stability
     - Improved accessory event logging
 
-* v1.9.2 [7/23/23]
+* v1.9.2 [7/23/23] (Beta)
     - Manual changes to S88 state via the UI will now dynamically update the displayed autonomous path options
     - S88 events from the Central Station for sensors visible in the layout UI will now dynamically update the displayed autonomous path options 
     - Made path strings in log output more concise

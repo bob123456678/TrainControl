@@ -11,6 +11,7 @@
             "name": "BottomInner",
             "station": true,
             "s88": 1011,
+            "maxTrainLength": 0,
             "x": 567,
             "y": 182
         },
@@ -18,12 +19,15 @@
             "name": "BottomInnerOtherside",
             "station": true,
             "s88": 2011,
-            "loc": "EU07-123",
-            "locReversible": false,
-            "locSpeed": 44,
-            "locTrainLength": 4,
-            "locArrivalFunc": 2,
-            "locDepartureFunc": 10,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "EU07-123",
+                "reversible": false,
+                "speed": 44,
+                "arrivalFunc": 2,
+                "departureFunc": 10,
+                "trainLength": 4
+            },
             "x": 612,
             "y": 298
         },
@@ -31,6 +35,7 @@
             "name": "BottomMainA",
             "station": true,
             "s88": 9,
+            "maxTrainLength": 0,
             "x": 836,
             "y": 51
         },
@@ -45,12 +50,7 @@
             "name": "BottomMainB",
             "station": true,
             "s88": 10,
-            "loc": "SU 45-118",
-            "locReversible": false,
-            "locSpeed": 50,
-            "locTrainLength": 4,
-            "locArrivalFunc": 12,
-            "locDepartureFunc": 9,
+            "maxTrainLength": 0,
             "x": 955,
             "y": 5
         },
@@ -65,6 +65,7 @@
             "name": "BottomMainC",
             "station": true,
             "s88": 4,
+            "maxTrainLength": 0,
             "terminus": true,
             "x": 285,
             "y": 0
@@ -80,12 +81,7 @@
             "name": "BottomSecondary",
             "station": true,
             "s88": 1009,
-            "loc": "MCK ME",
-            "locReversible": false,
-            "locSpeed": 51,
-            "locTrainLength": 3,
-            "locArrivalFunc": 12,
-            "locDepartureFunc": 17,
+            "maxTrainLength": 0,
             "x": 561,
             "y": 126
         },
@@ -99,6 +95,7 @@
             "name": "ParkingBack",
             "station": true,
             "s88": 2005,
+            "maxTrainLength": 0,
             "x": 864,
             "y": 292
         },
@@ -120,6 +117,7 @@
             "name": "ParkingFront",
             "station": true,
             "s88": 5,
+            "maxTrainLength": 0,
             "x": 973,
             "y": 233
         },
@@ -169,6 +167,7 @@
             "name": "TopMainR0",
             "station": true,
             "s88": 1010,
+            "maxTrainLength": 0,
             "terminus": true,
             "x": 590,
             "y": 377
@@ -177,11 +176,14 @@
             "name": "TopMainR0Park",
             "station": true,
             "s88": 1010,
-            "loc": "EU46-520",
-            "locReversible": false,
-            "locSpeed": 35,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "EU46-520",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3
+            },
             "reversing": true,
-            "locArrivalFunc": 3,
             "x": 595,
             "y": 421
         },
@@ -190,6 +192,14 @@
             "station": true,
             "s88": 1022,
             "maxTrainLength": 3,
+            "loc": {
+                "name": "MCK ME",
+                "reversible": false,
+                "speed": 51,
+                "arrivalFunc": 12,
+                "departureFunc": 17,
+                "trainLength": 3
+            },
             "x": 401,
             "y": 406
         },
@@ -219,6 +229,7 @@
             "name": "TopMainR2",
             "station": true,
             "s88": 1023,
+            "maxTrainLength": 0,
             "x": 297,
             "y": 418
         },
@@ -256,6 +267,15 @@
             "name": "Tunnel",
             "station": true,
             "s88": 1032,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "SU 45-118",
+                "reversible": false,
+                "speed": 50,
+                "arrivalFunc": 12,
+                "departureFunc": 9,
+                "trainLength": 4
+            },
             "x": 350,
             "y": 35
         },

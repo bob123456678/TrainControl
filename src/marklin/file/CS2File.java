@@ -319,7 +319,10 @@ public final class CS2File
                 {
                     String[] parts = s.substring(2).split("=");
                     
-                    item.put(parts[0], parts[1]);
+                    if (item != null)
+                    {
+                        item.put(parts[0], parts[1]);
+                    }
                 }   
                 else if (s.matches("^ \\.[a-z]+$"))
                 {
@@ -412,17 +415,17 @@ public final class CS2File
                             
                             if ("magnetartikel".equals(kv[0]))
                             {
-                                id = new Integer(kv[1].trim());
+                                id = Integer.valueOf(kv[1].trim());
                             }
                             
                             if ("stellung".equals(kv[0]))
                             {
-                                setting = new Integer(kv[1].trim());
+                                setting = Integer.valueOf(kv[1].trim());
                             }
                             
                             if ("sekunde".equals(kv[0]))
                             {
-                                delay = new Float(kv[1]).intValue() * 1000;
+                                delay = Float.valueOf(kv[1]).intValue() * 1000;
                             }
                                
                             // Condition S88s
@@ -485,7 +488,7 @@ public final class CS2File
                     }
                 }
                                 
-                if (r.getRoute().size() > 0)
+                if (!r.getRoute().isEmpty())
                 {
                     out.add(r);
                 }
@@ -625,7 +628,7 @@ public final class CS2File
 
                 out.add(newLoc);
             }
-            catch (Exception e)
+            catch (NumberFormatException | JSONException e)
             {
                 if (this.control != null)
                 {
@@ -908,7 +911,7 @@ public final class CS2File
 
                     if (m.get("id") != null)
                     {
-                        coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
                     }
                     else
                     {
@@ -940,7 +943,7 @@ public final class CS2File
                     
                     if (m.get("id") != null)
                     {
-                        coord = Integer.parseInt(m.get("id").replace("0x", ""), 16);
+                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
                     }
 
                     Integer x = coord % 256;
@@ -967,7 +970,7 @@ public final class CS2File
                     
                     try
                     {
-                        rawAddress = Integer.parseInt(m.get("artikel"));
+                        rawAddress = Integer.valueOf(m.get("artikel"));
                     }
                     catch (NumberFormatException e)
                     {
@@ -990,12 +993,12 @@ public final class CS2File
                                         
                     if (m.get("drehung") != null)
                     {
-                        orient = Integer.parseInt(m.get("drehung")); 
+                        orient = Integer.valueOf(m.get("drehung")); 
                     }
                    
                     if (m.get("zustand") != null)
                     {
-                        state = Integer.parseInt(m.get("zustand"));
+                        state = Integer.valueOf(m.get("zustand"));
                     }
                     
                     // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
@@ -1062,7 +1065,7 @@ public final class CS2File
         {
             o = new JSONObject(config);
         }
-        catch (Exception e)
+        catch (JSONException e)
         {
             control.log("Auto layout error: JSON parsing error");
             layout.invalidate();
@@ -1175,7 +1178,7 @@ public final class CS2File
                 }
 
             }
-            catch (Exception e)
+            catch (JSONException e)
             {
                 control.log("Auto layout error: invalid value for atomicRoutes (must be true or false)");
                 layout.invalidate();
@@ -1325,170 +1328,179 @@ public final class CS2File
             // Set the locomotive
             if (point.has("loc") && !point.isNull("loc"))
             {
-                String loc = point.getString("loc");
-                
-                if (control.getLocByName(loc) != null)
+                if (point.get("loc") instanceof JSONObject)
                 {
-                    Locomotive l = control.getLocByName(loc);
+                    JSONObject locInfo = point.getJSONObject("loc");
                     
-                    if (point.has("locTrainLength"))
+                    if (locInfo.has("name") && locInfo.get("name") instanceof String)
                     {
-                        if (point.get("locTrainLength") instanceof Integer && point.getInt("locTrainLength") >= 0)
+                        String loc = locInfo.getString("name");
+
+                        if (control.getLocByName(loc) != null)
                         {
-                            l.setTrainLength(point.getInt("locTrainLength"));   
-                            
-                            control.log("Set train length of " + point.getInt("locTrainLength") + " for " + loc);
-                        }
-                        else
-                        {
-                            control.log("Auto layout error: " + loc + " has invalid locTrainLength value");
-                            layout.invalidate();  
-                        }
-                    }
-                    else
-                    {
-                        l.setTrainLength(0);   
-                    }
-                    
-                    if (point.has("locReversible"))
-                    {
-                        if (point.get("locReversible") instanceof Boolean)
-                        {
-                            l.setReversible(point.getBoolean("locReversible"));   
-                            
-                            if (point.getBoolean("locReversible"))
+                            Locomotive l = control.getLocByName(loc);
+
+                            if (locInfo.has("trainLength"))
                             {
-                                control.log("Flagged as reversible: " + loc);
-                            }
-                        }
-                        else
-                        {
-                            control.log("Auto layout error: " + loc + " has invalid locReversible value");
-                            layout.invalidate();  
-                        }
-                    }
-                    else
-                    {
-                        l.setReversible(false);   
-                    }
-                    
-                    if (point.getBoolean("station") != true)
-                    {
-                        control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
-                        // layout.invalidate();
-                    }
-                        
-                    // Place the locomotive
-                    layout.getPoint(point.getString("name")).setLocomotive(l);
-
-                    // Reset if none present
-                    l.setDepartureFunc(null);
-
-                    // Set start and end callbacks
-                    if (point.has("locSpeed") && point.get("locSpeed") != null)
-                    {
-                        try
-                        {
-                            if (point.getInt("locSpeed") > 0 && point.getInt("locSpeed") <= 100)
-                            {
-                                l.setPreferredSpeed(point.getInt("locSpeed"));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            control.log("Auto layout error: Error in locSpeed value for " + point.getString("name"));
-                            layout.invalidate();
-                        }
-                    }
-
-                    // Set start and end callbacks
-                    if (point.has("locDepartureFunc") && point.get("locDepartureFunc") != null)
-                    {
-                        try
-                        {
-                            l.setDepartureFunc(point.getInt("locDepartureFunc"));
-                        }
-                        catch (Exception ex)
-                        {
-                            control.log("Auto layout error: Error in locDepartureFunc value for " + point.getString("name"));
-                            layout.invalidate();
-                        }
-                    }
-
-                    l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
-                    {
-                        lc.applyPreferredFunctions().delay(minDelay, maxDelay);
-
-                        if (lc.hasDepartureFunc())
-                        {
-                            lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
-                        }
-                    });
-
-                    // Optionally disable the arrival functions
-                    if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
-                    {
-                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
-                    }
-                    else
-                    {
-                        l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
-                    }
-
-                    // Reset if none present
-                    l.setArrivalFunc(null);
-
-                    if (point.has("locArrivalFunc") && point.get("locArrivalFunc") != null)
-                    {
-                        try
-                        {
-                            l.setArrivalFunc(point.getInt("locArrivalFunc"));
-
-                            // Always set callback in case of future edits
-                            l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> 
-                            {
-                                if (lc.hasArrivalFunc())
+                                if (locInfo.get("trainLength") instanceof Integer && locInfo.getInt("trainLength") >= 0)
                                 {
-                                    lc.toggleF(lc.getArrivalFunc());
+                                    l.setTrainLength(locInfo.getInt("trainLength"));   
+
+                                    control.log("Set train length of " + locInfo.getInt("trainLength") + " for " + loc);
                                 }
-                            }); 
+                                else
+                                {
+                                    control.log("Auto layout error: " + loc + " has invalid trainLength value");
+                                    layout.invalidate();  
+                                }
+                            }
+                            else
+                            {
+                                l.setTrainLength(0);   
+                            }
+
+                            if (locInfo.has("reversible"))
+                            {
+                                if (locInfo.get("reversible") instanceof Boolean)
+                                {
+                                    l.setReversible(locInfo.getBoolean("reversible"));   
+
+                                    if (locInfo.getBoolean("reversible"))
+                                    {
+                                        control.log("Flagged as reversible: " + loc);
+                                    }
+                                }
+                                else
+                                {
+                                    control.log("Auto layout error: " + loc + " has invalid reversible value");
+                                    layout.invalidate();  
+                                }
+                            }
+                            else
+                            {
+                                l.setReversible(false);   
+                            }
+
+                            // Only throw a warning if this is not a station
+                            if (point.getBoolean("station") != true)
+                            {
+                                control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
+                            }
+
+                            // Place the locomotive
+                            layout.getPoint(point.getString("name")).setLocomotive(l);
+
+                            // Reset if none present
+                            l.setDepartureFunc(null);
+
+                            // Set start and end callbacks
+                            if (locInfo.has("speed") && locInfo.get("speed") != null)
+                            {
+                                try
+                                {
+                                    if (locInfo.getInt("speed") > 0 && locInfo.getInt("speed") <= 100)
+                                    {
+                                        l.setPreferredSpeed(locInfo.getInt("speed"));
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    control.log("Auto layout error: Error in speed value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            // Set start and end callbacks
+                            if (locInfo.has("departureFunc") && locInfo.get("departureFunc") != null)
+                            {
+                                try
+                                {
+                                    l.setDepartureFunc(locInfo.getInt("departureFunc"));
+                                }
+                                catch (JSONException ex)
+                                {
+                                    control.log("Auto layout error: Error in departureFunc value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
+                            {
+                                lc.applyPreferredFunctions().delay(minDelay, maxDelay);
+
+                                if (lc.hasDepartureFunc())
+                                {
+                                    lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
+                                }
+                            });
+
+                            // Optionally disable the arrival functions
+                            if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
+                            {
+                                l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+                            }
+                            else
+                            {
+                                l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
+                            }
+
+                            // Reset if none present
+                            l.setArrivalFunc(null);
+
+                            if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)
+                            {
+                                try
+                                {
+                                    l.setArrivalFunc(locInfo.getInt("arrivalFunc"));
+
+                                    // Always set callback in case of future edits
+                                    l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> 
+                                    {
+                                        if (lc.hasArrivalFunc())
+                                        {
+                                            lc.toggleF(lc.getArrivalFunc());
+                                        }
+                                    }); 
+                                }
+                                catch (JSONException ex)
+                                {
+                                    control.log("Auto layout error: Error in arrivalFunc value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            if (l.getPreferredSpeed() == 0)
+                            {
+                                l.setPreferredSpeed(defaultLocSpeed);
+                                control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
+                            }
+
+                            if (locomotives.contains(loc))
+                            {
+                                control.log("Auto layout error: dupliate locomotive " + loc);
+                                layout.invalidate();
+                            }
+                            else
+                            {
+                                locomotives.add(loc);
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            control.log("Auto layout error: Error in locArrivalFunc value for " + point.getString("name"));
+                            control.log("Auto layout error: Locomotive " + loc + " does not exist");
                             layout.invalidate();
                         }
                     }
-
-                    if (l.getPreferredSpeed() == 0)
+                    else
                     {
-                        l.setPreferredSpeed(defaultLocSpeed);
-                        control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
-                    }
-
-                    if (locomotives.contains(loc))
-                    {
-                        control.log("Auto layout error: dupliate locomotive " + loc);
+                        control.log("Auto layout error: Locomotive configuration array at " + point.getString("name") + " missing name");
                         layout.invalidate();
                     }
-                    else
-                    {
-                        locomotives.add(loc);
-                    }
-                    
                 }
                 else
                 {
-                    control.log("Auto layout error: Locomotive " + loc + " does not exist");
-                    layout.invalidate();
-                }
-            }    
-            else
-            {
-                if (point.has("locArrivalFunc") || point.has("locDepartureFunc") || point.has("locSpeed") || point.has("locReversible"))
-                {
-                    control.log("Auto layout warning: loc configuration specified without locomotive on " + point);
-                }
+                    this.control.log("Auto layout warning: ignoring invalid value for loc \"" + point.get("loc").toString() + "\" (must be a JSON object)");
+                } 
             }
         });
 
@@ -1652,7 +1664,7 @@ public final class CS2File
                     });
                 }
             } 
-            catch (Exception ex)
+            catch (JSONException ex)
             {
                 control.log("Auto layout error: Lock edge error - " + edge.toString());
                 layout.invalidate();

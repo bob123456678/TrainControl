@@ -7289,29 +7289,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
         
-        JTextArea textArea = new JTextArea();
-        textArea.setColumns(50);
-        textArea.setRows(30);
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-        
-        try
+        new Thread(() -> 
         {
-            textArea.setText(this.getModel().getAutoLayout().toJSON());
-            JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);     
-        }
-        catch (Exception e)
-        {
-            if (this.getModel().isDebug())
+            JTextArea textArea = new JTextArea();
+            textArea.setColumns(50);
+            textArea.setRows(30);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+
+            try
             {
-                e.printStackTrace();
+                textArea.setText(this.getModel().getAutoLayout().toJSON());
+                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);     
             }
-            
-            this.log("JSON error: " + e.getMessage());
-            
-            JOptionPane.showMessageDialog(this, "Failed to geenrate JSON.  Check log for details.");
-        }
+            catch (Exception e)
+            {
+                if (this.getModel().isDebug())
+                {
+                    e.printStackTrace();
+                }
+
+                this.log("JSON error: " + e.getMessage());
+
+                JOptionPane.showMessageDialog(this, "Failed to generate JSON.  Check log for details.");
+            }
+        }).start();
     }//GEN-LAST:event_exportJSONActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
@@ -7344,7 +7347,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 "    \"defaultLocSpeed\": 35,\n" +
                 "    \"preArrivalSpeedReduction\": 0.5,\n" +
                 "    \"turnOffFunctionsOnArrival\": true,\n" +
-                "    \"atomicRoutes\": true\n" +
+                "    \"atomicRoutes\": true,\n" +
+                "    \"maxLocInactiveSeconds\": 120\n" +
                 "}"
             );
             
