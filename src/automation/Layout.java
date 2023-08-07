@@ -1420,16 +1420,16 @@ public class Layout
             }
         }
         
-        if (loc.hasCallback(CB_ROUTE_END))
-        {
-            loc.getCallback(CB_ROUTE_END).accept(loc);
-        }
-        
         // Reverse at terminus station
         if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
         {
-            loc.switchDirection();
-            this.control.log("Locomotive " + loc.getName() + " reached terminus or reversing station. Reversing");   
+            this.control.log("Auto layout: Locomotive " + loc.getName() + " reached terminus or final reversing station. Reversing");   
+            loc.switchDirection().delay(1000); // pause to avoid network issues
+        }
+        
+        if (loc.hasCallback(CB_ROUTE_END))
+        {
+            loc.getCallback(CB_ROUTE_END).accept(loc);
         }
 
         synchronized (this.activeLocomotives)
