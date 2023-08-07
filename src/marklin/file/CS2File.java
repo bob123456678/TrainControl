@@ -438,12 +438,12 @@ public final class CS2File
                                     s88Status = 1;
                                 }
                                 
-                                conditionS88 = new Integer(kv[1].trim());
+                                conditionS88 = Integer.valueOf(kv[1].trim());
                             }
                             
                             if ("hi".equals(kv[0]))
                             {                                
-                                s88Status = new Integer(kv[1].trim());
+                                s88Status = Integer.valueOf(kv[1].trim());
                             }
                         }
                         
@@ -1403,7 +1403,7 @@ public final class CS2File
                                         l.setPreferredSpeed(locInfo.getInt("speed"));
                                     }
                                 }
-                                catch (Exception ex)
+                                catch (JSONException ex)
                                 {
                                     control.log("Auto layout error: Error in speed value for " + locInfo.getString("name"));
                                     layout.invalidate();

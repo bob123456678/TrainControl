@@ -992,34 +992,26 @@ public class Layout
         {    
             while(running)
             {
-                try 
+                List<Edge> path = this.pickPath(loc);
+
+                if (path != null)
                 {
-                    List<Edge> path = this.pickPath(loc);
-                    
-                    if (path != null)
+                    this.executePath(path, loc, speed);
+                }
+
+                loc.delay(this.getMinDelay() * 1000);
+
+                // If another locomotive is falling behind, attempt to yield to it
+                if (this.isAutoRunning() && this.maxLocInactiveSeconds > 0)
+                {
+                    Locomotive yieldLoc = this.checkForSlowerLoc(this.maxLocInactiveSeconds, loc);
+
+                    if (yieldLoc != null)
                     {
-                        this.executePath(path, loc, speed);
+                        yieldLoc.waitForSpeedAtOrAbove(1, YIELD_SLEEP);
                     }
-                     
-                    Thread.sleep(this.getMinDelay() * 1000);
-
-                    // If another locomotive is falling behind, attempt to yield to it
-                    if (this.isAutoRunning() && this.maxLocInactiveSeconds > 0)
-                    {
-                        Locomotive yieldLoc = this.checkForSlowerLoc(this.maxLocInactiveSeconds, loc);
-
-                        if (yieldLoc != null)
-                        {
-                            yieldLoc.waitForSpeedAtOrAbove(1, YIELD_SLEEP);
-                        }
-                    }                   
-                }
-                catch (InterruptedException ex)
-                {
-                    
-                }
+                }                   
             }
-            
         }).start();
     }
     
@@ -1292,11 +1284,7 @@ public class Layout
                 {
                     if (SIMULATE)
                     {
-                        try
-                        {
-                            Thread.sleep((long) (this.getMinDelay() * 1000 * Math.random()));
-                        } 
-                        catch (InterruptedException ex) { }
+                        loc.delay((long) (this.getMinDelay() * 1000 * Math.random()));
                     }
                     else
                     {
@@ -1376,11 +1364,7 @@ public class Layout
                     
                     if (SIMULATE)
                     {
-                        try
-                        {
-                            Thread.sleep((long) (this.getMinDelay() * 1000 * Math.random()));
-                        } 
-                        catch (InterruptedException ex) { }
+                        loc.delay((long) (this.getMinDelay() * 1000 * Math.random()));
                     }
                     else
                     {
