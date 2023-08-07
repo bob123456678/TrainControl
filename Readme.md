@@ -144,7 +144,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.0 [8/6/23] (New feature: reversing points for one-click parking)
+* v1.10.0 [8/6/23] (New feature: reversing points for one-click parking & station priority)
     - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains.  They can be traversed only through a manually triggered path and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
     - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically.  This allows the use of such points as designated parking spots even if they are not reversing stations.
