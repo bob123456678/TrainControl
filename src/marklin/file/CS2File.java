@@ -1498,7 +1498,7 @@ public final class CS2File
 
                             if (locomotives.contains(loc))
                             {
-                                control.log("Auto layout error: dupliate locomotive " + loc);
+                                control.log("Auto layout error: duplicate locomotive " + loc + " at " + point.getString("name"));
                                 layout.invalidate();
                             }
                             else

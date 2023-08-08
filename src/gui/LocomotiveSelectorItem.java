@@ -5,6 +5,7 @@
  */
 package gui;
 
+import java.io.IOException;
 import marklin.MarklinLocomotive;
 
 /**
@@ -14,7 +15,7 @@ import marklin.MarklinLocomotive;
 public class LocomotiveSelectorItem extends javax.swing.JPanel {
     
     private MarklinLocomotive loc;
-    private TrainControlUI ui;
+    private TrainControlUI tcui;
     
     /**
      * Creates new form LocomotiveSelectorItem
@@ -25,20 +26,20 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
         initComponents();
         
         this.loc = loc;
-        this.ui = ui;
+        this.tcui = ui;
                 
         this.LocLabel.setText(loc.getName());
         
-        if (ui.LOAD_IMAGES && loc.getImageURL() != null)
+        if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null)
         {
             try 
             {
                 locIcon.setIcon(new javax.swing.ImageIcon(
-                    ui.getLocImage(loc.getImageURL(), 135)
+                    tcui.getLocImage(loc.getImageURL(), 135)
                 ));      
                 locIcon.setText("");
             }
-            catch (Exception e)
+            catch (IOException e)
             {
                 locIcon.setIcon(null);
             }
@@ -114,11 +115,11 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
-        ui.mapLocToCurrentButton(loc.getName());
+        tcui.mapLocToCurrentButton(loc.getName());
         
-        if (ui.getLocSelector().doCloseWindow())
+        if (tcui.getLocSelector().doCloseWindow())
         {
-            ui.getLocSelector().setVisible(false);
+            tcui.getLocSelector().setVisible(false);
         }
         
     }//GEN-LAST:event_formMouseReleased

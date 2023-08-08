@@ -25,7 +25,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
     private final Layout layout;
-    private ViewListener control;
+    private final ViewListener control;
     
     /**
      * Creates new form AutoLocomotiveStatus
@@ -61,13 +61,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
             this.locDest.setForeground(new Color(0, 0, 115));
+            
+            this.locStation.setVisible(false);
 
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive))
             {
                 List<Point> milestones = layout.getReachedMilestones(locomotive);
                 
-                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)) + " [" + milestones.get(milestones.size() - 1).getName() + "]"  );
+                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)));
+                
+                this.locStation.setText("@" + milestones.get(milestones.size() - 1).getName());
+                this.locStation.setVisible(true);
+                
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
             }
@@ -76,7 +82,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             {
                 if (layout.getLocomotiveLocation(locomotive) != null)
                 {
-                    this.locDest.setText("No active path. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
+                    this.locDest.setText("No active path.");
+                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setVisible(true);
                 }
                 else
                 {
@@ -91,10 +99,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText("Double-click a path to execute");
+                    
+                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setVisible(true);
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {
-                    this.locDest.setText("No available paths. [" + layout.getLocomotiveLocation(locomotive).getName() + "]");
+                    this.locDest.setText("No available paths.");
+                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setVisible(true);
                 }
                 else
                 {
@@ -126,6 +139,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         locDest = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         locAvailPaths = new javax.swing.JList<>();
+        locStation = new javax.swing.JLabel();
 
         setBackground(new java.awt.Color(238, 238, 238));
         setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
@@ -163,6 +177,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(locAvailPaths);
 
+        locStation.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        locStation.setForeground(new java.awt.Color(0, 0, 115));
+        locStation.setText("jLabel2");
+        locStation.setFocusable(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -170,12 +189,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(locName)
-                            .addComponent(locDest))
-                        .addGap(0, 150, Short.MAX_VALUE)))
+                            .addComponent(locDest)
+                            .addComponent(locStation))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -184,9 +204,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 .addContainerGap()
                 .addComponent(locName)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(locStation)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -252,5 +274,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     private javax.swing.JList<String> locAvailPaths;
     private javax.swing.JLabel locDest;
     private javax.swing.JLabel locName;
+    private javax.swing.JLabel locStation;
     // End of variables declaration//GEN-END:variables
 }

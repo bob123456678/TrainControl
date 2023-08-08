@@ -188,7 +188,10 @@ public class Layout
      */
     public boolean isRunning()
     {
-        return this.running || !this.getActiveLocomotives().isEmpty();
+        synchronized (this.activeLocomotives)
+        {
+            return this.running || !this.getActiveLocomotives().isEmpty();
+        }
     }
     
     /**
@@ -197,7 +200,10 @@ public class Layout
      */
     public boolean isAutoRunning()
     {
-        return this.running;
+        synchronized (this.activeLocomotives)
+        {
+            return this.running;
+        }
     }
     
     /**
@@ -205,7 +211,10 @@ public class Layout
      */
     public void stopLocomotives()
     {
-        this.running = false;
+        synchronized (this.activeLocomotives)
+        {
+            this.running = false;
+        }
     }
     
     /**
@@ -213,7 +222,10 @@ public class Layout
      */
     public void runLocomotives()
     {
-        this.running = true;
+        synchronized (this.activeLocomotives)
+        {
+            this.running = true;
+        }
         
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
@@ -446,7 +458,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " contains an intermediate terminus station");
+                    control.log("\t" + "Path " + this.pathToString(path) + " contains an intermediate terminus station");
                 }
                 return false;
             }
@@ -456,7 +468,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
+                    control.log("\t" + "Path " + this.pathToString(path) + " contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
                 }
                 
                 return false;
@@ -467,7 +479,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " starts with a non-station, which cannot be chosen in autonomous operation");
+                    control.log("\t" + "Path " + this.pathToString(path) + " starts with a non-station, which cannot be chosen in autonomous operation");
                 }
                 
                 return false;
@@ -477,7 +489,7 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    control.log("Path " + this.pathToString(path) + " expects feedback " + e.getEnd().getS88() + " to be clear");
+                    control.log("\t" + "Path " + this.pathToString(path) + " expects feedback " + e.getEnd().getS88() + " to be clear");
                 }
                 
                 return false;
@@ -490,7 +502,7 @@ public class Layout
                 {
                     if (control.isDebug())
                     {
-                        control.log(loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + this.pathToString(path));
+                        control.log("\t" + loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + this.pathToString(path));
                     }
                     
                     return false;
@@ -503,7 +515,7 @@ public class Layout
         {
             if (control.isDebug())
             {
-                control.log("Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
+                control.log("\t" + "Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
             }
             
             return false;
@@ -513,7 +525,7 @@ public class Layout
         {
             if (control.isDebug())
             {
-                control.log("Path " + this.pathToString(path) + " disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
+                control.log("\t" + "Path " + this.pathToString(path) + " disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
             }
             
             return false;
@@ -524,7 +536,7 @@ public class Layout
         {
             if (control.isDebug())
             {
-                control.log("Path " + this.pathToString(path) + " disallowed because " + loc.getName() + " is not reversible");
+                control.log("\t" + "Path " + this.pathToString(path) + " disallowed because " + loc.getName() + " is not reversible");
             }
             
             return false;
@@ -545,7 +557,7 @@ public class Layout
             {
                 if (this.control.isDebug())
                 {
-                    this.control.log("Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
+                    this.control.log("\t" + "Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
                 }
                 
                 return false;
@@ -1492,7 +1504,7 @@ public class Layout
     {
         boolean result = false;
         
-        if (this.running || !this.getActiveLocomotives().isEmpty())
+        if (this.isRunning())
         {                
             this.control.log("Cannot edit auto layout while running.");
             return result;
@@ -1737,7 +1749,7 @@ public class Layout
      * @throws java.lang.IllegalAccessException 
      * @throws java.lang.NoSuchFieldException 
      */
-    public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    synchronized public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {        
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();

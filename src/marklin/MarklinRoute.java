@@ -195,16 +195,16 @@ public class MarklinRoute extends Route
 
                 for (RouteCommand rc : this.route)
                 {
-                    int id = rc.getAddress();
+                    int idd = rc.getAddress();
                     boolean state = rc.getSetting();
                     
-                    this.network.setAccessoryState(id, state);
+                    this.network.setAccessoryState(idd, state);
 
                     try
                     {
                         if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
                         {
-                            this.network.log("Delay for accessory " + id + " is " + rc.getDelay());
+                            this.network.log("Delay for accessory " + idd + " is " + rc.getDelay());
                             Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
                         }
                         else
@@ -336,7 +336,7 @@ public class MarklinRoute extends Route
      */
     public final boolean hasConditionS88()
     {
-        return this.conditionS88s.size() > 0;
+        return !this.conditionS88s.isEmpty();
     }
     
     /**

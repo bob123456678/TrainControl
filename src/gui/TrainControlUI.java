@@ -3345,7 +3345,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 538, Short.MAX_VALUE)
+                .addComponent(LayoutArea)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4767,7 +4767,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(TurnOnLightsButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(TurnOffFnButton)
-                .addContainerGap(41, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jPanel12.setBackground(new java.awt.Color(245, 245, 245));
@@ -4858,9 +4858,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(EditExistingLocLabel3)
-                .addGap(2, 2, 2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(75, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -6161,7 +6161,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                this.model.getAutoLayout().stopLocomotives();
+                gracefulStopActionPerformed(null);
                 int dialogResult = JOptionPane.showConfirmDialog(
                         this, "Autonomy logic is still running.  "
                                 + "State will not be auto-saved unless all trains are gracefully stopped.  Are you use you want to quit?"
@@ -6450,18 +6450,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_SyncButtonActionPerformed
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
-        int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all mappings?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
-        if(dialogResult == JOptionPane.YES_OPTION)
-        {
-            this.activeLoc = null;
-
-            for (JButton key : this.currentLocMapping().keySet())
+        
+        new Thread(() -> {
+            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all mappings?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
+            if(dialogResult == JOptionPane.YES_OPTION)
             {
-                this.currentLocMapping().put(key, null);
+                this.activeLoc = null;
+
+                for (JButton key : this.currentLocMapping().keySet())
+                {
+                    this.currentLocMapping().put(key, null);
+                }
+                repaintMappings();
+                repaintLoc();
             }
-            repaintMappings();
-            repaintLoc();
-        }
+        }).start();
     }//GEN-LAST:event_clearButtonActionPerformed
 
     public void renameLocomotive (String s)
@@ -7177,47 +7180,50 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
-        if (!this.model.getPowerState())
+        new Thread(() -> 
         {
-            JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
-            return;
-        }
-        
-        for (String routeName : this.model.getRouteList())
-        {
-            MarklinRoute r = this.model.getRoute(routeName);
-
-            if (r.isEnabled())
+            if (!this.model.getPowerState())
             {
-                this.model.log(r.toString());
-                JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
                 return;
             }
-        }
-        
-        if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
-            return;
-        }
-        
-        if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
-        {
-            new Thread( () -> {
-                this.model.getAutoLayout().runLocomotives();
-            }).start();
 
-            this.startAutonomy.setEnabled(false);
-            this.gracefulStop.setEnabled(true);
-        }
-        else if (this.model.getAutoLayout().isRunning())
-        {
-            JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
-        }
-        else if (!this.model.getAutoLayout().isValid())
-        {
-            JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
-        }
+            for (String routeName : this.model.getRouteList())
+            {
+                MarklinRoute r = this.model.getRoute(routeName);
+
+                if (r.isEnabled())
+                {
+                    this.model.log(r.toString());
+                    JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                    return;
+                }
+            }
+
+            if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
+            {
+                JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
+                return;
+            }
+
+            if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
+            {
+                new Thread( () -> {
+                    this.model.getAutoLayout().runLocomotives();
+                }).start();
+
+                this.startAutonomy.setEnabled(false);
+                this.gracefulStop.setEnabled(true);
+            }
+            else if (this.model.getAutoLayout().isRunning())
+            {
+                JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
+            }
+            else if (!this.model.getAutoLayout().isValid())
+            {
+                JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
+            }
+        }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
@@ -7318,9 +7324,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_exportJSONActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
-        this.getModel().getAutoLayout().stopLocomotives();
+        
         this.gracefulStop.setEnabled(false);
         this.startAutonomy.setEnabled(true);
+        
+        new Thread(() -> {
+            this.getModel().getAutoLayout().stopLocomotives();
+
+        }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
     private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
