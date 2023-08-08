@@ -147,7 +147,8 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.10.1 [Beta]
     - Improved the display of each locomotive's current station in the autonomy tab
-    - Removed several UI actions from the main thread
+    - The "validate JSON" button will now ask for confirmation in case the graph state has been edited
+    - Optimized UI performance (removed several UI actions from the main thread)
     - Fixed bug where the "start autonomous operation" button would remain greyed out after cancelling closing the main window
 
 * v1.10.0 [8/6/23] (New feature: reversing points for one-click parking & station priority)

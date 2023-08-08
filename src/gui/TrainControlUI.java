@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -463,7 +465,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            
+            this.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
         }
         
         // Right-clicks on the route list
@@ -1288,7 +1290,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             locIcon.setText("");
                             locIcon.setVisible(true);
                         }
-                        catch (Exception e)
+                        catch (IOException e)
                         {
                             locIcon.setIcon(null);
                             locIcon.setVisible(false);
@@ -3212,7 +3214,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(PrimaryControls)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(73, Short.MAX_VALUE))
+                .addContainerGap(66, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -3348,7 +3350,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 474, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -3455,7 +3457,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jScrollPane5)
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addComponent(jLabel2)
-                        .addGap(0, 503, Short.MAX_VALUE))
+                        .addGap(0, 451, Short.MAX_VALUE))
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addComponent(AddRouteButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -4392,6 +4394,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
         startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         startAutonomy.setText("Start Autonomous Operation");
         startAutonomy.setEnabled(false);
@@ -4467,7 +4470,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
                         .addComponent(autosave)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 325, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 273, Short.MAX_VALUE)
                         .addComponent(loadBlank)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4488,7 +4491,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -4529,6 +4532,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
         gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         gracefulStop.setText("Graceful Stop");
         gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
@@ -4863,7 +4867,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(75, Short.MAX_VALUE))
+                .addContainerGap(11, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -4881,14 +4885,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 798, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 746, Short.MAX_VALUE)
                 .addContainerGap())
         );
         logPanelLayout.setVerticalGroup(
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 509, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7272,6 +7276,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         new Thread( () -> {
             
+            // If valid, confirm before we overwrite
+            if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid() 
+                    && !this.model.getAutoLayout().getPoints().isEmpty())
+            {
+                try 
+                {
+                    if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
+                    {
+                        int dialogResult = JOptionPane.showConfirmDialog(
+                                this, "UI graph state has changed.  Reloading the JSON will reset any changes.  Proceed?"
+                                , "Confirm Reset", JOptionPane.YES_NO_OPTION);
+                        
+                        if(dialogResult == JOptionPane.NO_OPTION) return;
+                    }
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+            
             this.model.parseAuto(this.autonomyJSON.getText());
 
             if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
@@ -7418,8 +7443,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void greyOutAutonomy()
     {
-        this.startAutonomy.setEnabled(false);
-        AltEmergencyStopActionPerformed(null);
+        // Execute graceful stop instead
+        if (this.gracefulStop.isEnabled())
+        {
+            gracefulStopActionPerformed(null);
+        }
+        
+        //this.startAutonomy.setEnabled(false);
+        //AltEmergencyStopActionPerformed(null);
     }
     
     /**
