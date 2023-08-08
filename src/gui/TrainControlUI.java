@@ -861,8 +861,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void showLocSelector()
     {
-        this.selector.setVisible(true);
-        this.selector.updateScrollArea();    
+        new Thread(()->
+        { 
+            this.selector.setVisible(true);
+            this.selector.updateScrollArea();    
+        }).start();
     }
     
     /**
@@ -6268,7 +6271,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
                 if(dialogResult == JOptionPane.YES_OPTION)
                 {
-                    executeRoute(route.toString());
+                    new Thread(() -> 
+                    {
+                        executeRoute(route.toString());
+                    }).start();
                 }
             }   
         }
@@ -6368,52 +6374,58 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_ManageLocPanelMouseClicked
 
     private void CS3OpenBrowserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CS3OpenBrowserActionPerformed
-        String url = this.model.getCS3AppUrl();
+        new Thread(()->
+        { 
+            String url = this.model.getCS3AppUrl();
 
-        if(Desktop.isDesktopSupported())
-        {
-            Desktop desktop = Desktop.getDesktop();
-
-            try
+            if(Desktop.isDesktopSupported())
             {
-                desktop.browse(new URI(url));
-            }
-            catch (IOException | URISyntaxException e) {}
-        }
-        else
-        {
-            Runtime runtime = Runtime.getRuntime();
+                Desktop desktop = Desktop.getDesktop();
 
-            try
-            {
-                runtime.exec("xdg-open " + url);
+                try
+                {
+                    desktop.browse(new URI(url));
+                }
+                catch (IOException | URISyntaxException e) {}
             }
-            catch (IOException e) {}
-        }
+            else
+            {
+                Runtime runtime = Runtime.getRuntime();
+
+                try
+                {
+                    runtime.exec("xdg-open " + url);
+                }
+                catch (IOException e) {}
+            }
+        }).start();
     }//GEN-LAST:event_CS3OpenBrowserActionPerformed
 
     private void OverrideCS2DataPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OverrideCS2DataPathActionPerformed
-        JFileChooser fc = new JFileChooser();
-        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        int i = fc.showOpenDialog(this);
-        if (i == JFileChooser.APPROVE_OPTION)
-        {
-            File f = fc.getSelectedFile();
-            String filepath = f.getPath();
+        new Thread(()->
+        { 
+            JFileChooser fc = new JFileChooser();
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int i = fc.showOpenDialog(this);
+            if (i == JFileChooser.APPROVE_OPTION)
+            {
+                File f = fc.getSelectedFile();
+                String filepath = f.getPath();
 
-            this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
-        }
+                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+            }
 
-        this.model.syncWithCS2();
-        this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
-        this.repaintLayout();
+            this.model.syncWithCS2();
+            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+            this.repaintLayout();
 
-        // Show the layout tab if it wasn't already visible
-        if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
-        {
-            this.KeyboardTab.add(this.layoutPanel, 1);
-            this.KeyboardTab.setTitleAt(1, "Layout");
-        }
+            // Show the layout tab if it wasn't already visible
+            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+            {
+                this.KeyboardTab.add(this.layoutPanel, 1);
+                this.KeyboardTab.setTitleAt(1, "Layout");
+            }
+        }).start();
     }//GEN-LAST:event_OverrideCS2DataPathActionPerformed
 
     private void TurnOnLightsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOnLightsButtonActionPerformed
@@ -6741,122 +6753,124 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
         // TODO - make this generic
+        new Thread(()->
+        { 
+            String locName = this.LocNameInput.getText();
 
-        String locName = this.LocNameInput.getText();
+            if (locName == null)
+            {
+                return;
+            }
 
-        if (locName == null)
-        {
-            return;
-        }
+            if (locName.trim().length() == 0)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a locomotive name");
+                return;
+            }
 
-        if (locName.trim().length() == 0)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a locomotive name");
-            return;
-        }
+            if (locName.length() >= 30)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a locomotive name under 30 characters");
+                return;
+            }
 
-        if (locName.length() >= 30)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a locomotive name under 30 characters");
-            return;
-        }
+            if (this.model.getLocByName(locName) != null)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "A locomotive by this name already exists.");
+                return;
+            }
 
-        if (this.model.getLocByName(locName) != null)
-        {
-            JOptionPane.showMessageDialog(this,
-                "A locomotive by this name already exists.");
-            return;
-        }
+            marklin.MarklinLocomotive.decoderType type;
 
-        marklin.MarklinLocomotive.decoderType type;
-
-        if (this.LocTypeMFX.isSelected())
-        {
-            type = marklin.MarklinLocomotive.decoderType.MFX;
-        }
-        else if (this.LocTypeDCC.isSelected())
-        {
-            type = marklin.MarklinLocomotive.decoderType.DCC;
-        }
-        else
-        {
-            type = marklin.MarklinLocomotive.decoderType.MM2;
-        }
-
-        int locAddress;
-
-        try
-        {
             if (this.LocTypeMFX.isSelected())
             {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                type = marklin.MarklinLocomotive.decoderType.MFX;
+            }
+            else if (this.LocTypeDCC.isSelected())
+            {
+                type = marklin.MarklinLocomotive.decoderType.DCC;
             }
             else
             {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText());
+                type = marklin.MarklinLocomotive.decoderType.MM2;
             }
-        }
-        catch (Exception e)
-        {
+
+            int locAddress;
+
+            try
+            {
+                if (this.LocTypeMFX.isSelected())
+                {
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                }
+                else
+                {
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
+                }
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a numerical address");
+                return;
+            }
+
+            if (type == marklin.MarklinLocomotive.decoderType.MM2)
+            {
+                if (locAddress > marklin.MarklinLocomotive.MM2_MAX_ADDR)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        "MM2 address out of range");
+                    return;
+                }
+            }
+
+            if (type == marklin.MarklinLocomotive.decoderType.MM2)
+            {
+                if (locAddress > marklin.MarklinLocomotive.DCC_MAX_ADDR)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        "DCC address out of range");
+                    return;
+                }
+            }
+
+            if (type == marklin.MarklinLocomotive.decoderType.MFX)
+            {
+                if (locAddress > marklin.MarklinLocomotive.MFX_MAX_ADDR)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        "MFX address out of range");
+                    return;
+                }
+            }
+
+            if (type == marklin.MarklinLocomotive.decoderType.MFX)
+            {
+                this.model.newMFXLocomotive(locName, locAddress);
+            }
+            else if (type == marklin.MarklinLocomotive.decoderType.DCC)
+            {
+                this.model.newDCCLocomotive(locName, locAddress);
+            }
+            else
+            {
+                this.model.newMM2Locomotive(locName, locAddress);
+            }
+
+            // Add list of locomotives to dropdown
+            this.selector.refreshLocSelectorList();
+
+            // Rest form
             JOptionPane.showMessageDialog(this,
-                "Please enter a numerical address");
-            return;
-        }
+                "Locomotive added successfully");
 
-        if (type == marklin.MarklinLocomotive.decoderType.MM2)
-        {
-            if (locAddress > marklin.MarklinLocomotive.MM2_MAX_ADDR)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "MM2 address out of range");
-                return;
-            }
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MM2)
-        {
-            if (locAddress > marklin.MarklinLocomotive.DCC_MAX_ADDR)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "DCC address out of range");
-                return;
-            }
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MFX)
-        {
-            if (locAddress > marklin.MarklinLocomotive.MFX_MAX_ADDR)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "MFX address out of range");
-                return;
-            }
-        }
-
-        if (type == marklin.MarklinLocomotive.decoderType.MFX)
-        {
-            this.model.newMFXLocomotive(locName, locAddress);
-        }
-        else if (type == marklin.MarklinLocomotive.decoderType.DCC)
-        {
-            this.model.newDCCLocomotive(locName, locAddress);
-        }
-        else
-        {
-            this.model.newMM2Locomotive(locName, locAddress);
-        }
-
-        // Add list of locomotives to dropdown
-        this.selector.refreshLocSelectorList();
-
-        // Rest form
-        JOptionPane.showMessageDialog(this,
-            "Locomotive added successfully");
-
-        this.LocAddressInput.setText("");
-        this.LocNameInput.setText("");
+            this.LocAddressInput.setText("");
+            this.LocNameInput.setText("");
+        }).start();
     }//GEN-LAST:event_AddLocButtonActionPerformed
 
     /**
@@ -6961,48 +6975,54 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
-        
-        String proposedName = "Route %s";
-        int i = 1;
-                
-        while (this.model.getRoute(String.format(proposedName, i)) != null)
-        {
-            i++;
-        }
-                
-        RouteEditor edit = new RouteEditor(String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "");
 
-        int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if(dialogResult == JOptionPane.OK_OPTION)
-        {
-            RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                  edit.getExecutionAuto().isSelected(),
-                edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                edit.getConditionS88s().getText()
-            );
-        }
-    }//GEN-LAST:event_AddRouteButtonActionPerformed
- 
-    public void editRoute(MouseEvent evt)
-    {
-        Object route = getRouteAtCursor(evt);
+        new Thread(()->
+        {            
+            String proposedName = "Route %s";
+            int i = 1;
 
-        if (route != null)
-        {          
-            MarklinRoute currentRoute = this.model.getRoute(route.toString());
-            
-            RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                currentRoute.getConditionS88String());
-            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            while (this.model.getRoute(String.format(proposedName, i)) != null)
+            {
+                i++;
+            }
+
+            RouteEditor edit = new RouteEditor(String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "");
+
+            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if(dialogResult == JOptionPane.OK_OPTION)
             {
-                RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                    edit.getExecutionAuto().isSelected(),
+                RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
+                      edit.getExecutionAuto().isSelected(),
                     edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
                     edit.getConditionS88s().getText()
                 );
             }
-        }
+        }).start();
+    }//GEN-LAST:event_AddRouteButtonActionPerformed
+ 
+    public void editRoute(MouseEvent evt)
+    {
+        new Thread(()->
+        {  
+            Object route = getRouteAtCursor(evt);
+
+            if (route != null)
+            {          
+                MarklinRoute currentRoute = this.model.getRoute(route.toString());
+
+                RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
+                    currentRoute.getConditionS88String());
+                int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                if(dialogResult == JOptionPane.OK_OPTION)
+                {
+                    RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
+                        edit.getExecutionAuto().isSelected(),
+                        edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+                        edit.getConditionS88s().getText()
+                    );
+                }
+            }
+        }).start();
     }
     
     public Object getRouteAtCursor(MouseEvent evt)
@@ -7020,25 +7040,75 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void duplicateRoute(MouseEvent evt)
     {
-        Object route = getRouteAtCursor(evt);
+        new Thread(()->
+        {  
+            Object route = getRouteAtCursor(evt);
 
-        if (route != null)
-        {
-            MarklinRoute currentRoute = this.model.getRoute(route.toString());
-            
-            if (currentRoute != null)
+            if (route != null)
             {
-                String proposedName = currentRoute.getName() + " (Copy %s)";
-                
-                int i = 1;
-                
-                while (this.model.getRoute(String.format(proposedName, i)) != null)
+                MarklinRoute currentRoute = this.model.getRoute(route.toString());
+
+                if (currentRoute != null)
                 {
-                    i++;
+                    String proposedName = currentRoute.getName() + " (Copy %s)";
+
+                    int i = 1;
+
+                    while (this.model.getRoute(String.format(proposedName, i)) != null)
+                    {
+                        i++;
+                    }
+
+                    this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
+                            currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s()); 
+
+                    refreshRouteList();
+
+                    // Ensure route changes are synced
+                    this.model.syncWithCS2();
+                    this.repaintLayout();
                 }
-                
-                this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                        currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s()); 
+            }  
+        }).start();
+    }
+        
+    private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
+        new Thread(()->
+        {  
+            this.prefs.putBoolean(ROUTE_SORT_PREF, true);
+            this.refreshRouteList();
+        }).start();
+    }//GEN-LAST:event_sortByNameActionPerformed
+
+    private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
+        new Thread(()->
+        {  
+            this.prefs.putBoolean(ROUTE_SORT_PREF, false);
+            this.refreshRouteList();
+        }).start();
+    }//GEN-LAST:event_sortByIDActionPerformed
+
+    private void BulkEnableOrDisable(boolean enable)
+    {
+        new Thread(()->
+        { 
+            String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.", "*");
+
+            if (!"".equals(searchString))
+            {
+                for (String routeName : this.model.getRouteList())
+                {
+                    MarklinRoute r = this.model.getRoute(routeName);
+
+                    if (r.hasS88() || r.isEnabled())
+                    {
+                        if (r.getName().contains(searchString) || "*".equals(searchString))
+                        {
+                             this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
+                                        r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
+                        }
+                    }
+                }
 
                 refreshRouteList();
 
@@ -7046,45 +7116,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.syncWithCS2();
                 this.repaintLayout();
             }
-        }  
-    }
-        
-    private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
-        this.prefs.putBoolean(ROUTE_SORT_PREF, true);
-        this.refreshRouteList();
-    }//GEN-LAST:event_sortByNameActionPerformed
-
-    private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
-        this.prefs.putBoolean(ROUTE_SORT_PREF, false);
-        this.refreshRouteList();
-    }//GEN-LAST:event_sortByIDActionPerformed
-
-    private void BulkEnableOrDisable(boolean enable)
-    {
-        String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.", "*");
-        
-        if (!"".equals(searchString))
-        {
-            for (String routeName : this.model.getRouteList())
-            {
-                MarklinRoute r = this.model.getRoute(routeName);
-                
-                if (r.hasS88() || r.isEnabled())
-                {
-                    if (r.getName().contains(searchString) || "*".equals(searchString))
-                    {
-                         this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                    r.getS88(), r.getTriggerType(), enable, r.getConditionS88s());
-                    }
-                }
-            }
-            
-            refreshRouteList();
-
-            // Ensure route changes are synced
-            this.model.syncWithCS2();
-            this.repaintLayout();
-        }
+        }).start();
     }
     
     public void enableOrDisableRoute(String routeName, boolean enable)
@@ -7111,71 +7143,81 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
- 
-        BulkEnableOrDisable(true);
+
+        new Thread(()->
+        {
+            BulkEnableOrDisable(true);
+        }).start();
     }//GEN-LAST:event_BulkEnableActionPerformed
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
-        BulkEnableOrDisable(false);
+        
+        new Thread(()->
+        {
+            BulkEnableOrDisable(false);
+        }).start();
     }//GEN-LAST:event_BulkDisableActionPerformed
 
     private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
         
-        int locAddress;
+        new Thread(()->
+        { 
+            int locAddress;
 
-        try
-        {
-            if (this.LocTypeMFX.isSelected())
+            try
             {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                if (this.LocTypeMFX.isSelected())
+                {
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                }
+                else
+                {
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
+                }
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a numerical address");
+                return;
+            }
+
+            Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
+            String message;
+
+            if (locs.containsKey(locAddress))
+            {   
+                message = "Locomotive address is already in use.  See log for details.";
             }
             else
             {
-                locAddress = Integer.parseInt(this.LocAddressInput.getText());
+                message = "Address is not in use.  See log for details.";
             }
-        }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a numerical address");
-            return;
-        }
-        
-        Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
-        String message;
-        
-        if (locs.containsKey(locAddress))
-        {   
-            message = "Locomotive address is already in use.  See log for details.";
-        }
-        else
-        {
-            message = "Address is not in use.  See log for details.";
-        }
-        
-        if (locs.size() > 0)
-        {
-            List<Integer> sortedLocs = new ArrayList(locs.keySet());
-            Collections.sort(sortedLocs, Collections.reverseOrder());
-            
-            for (Integer addr : sortedLocs)
-            {
-                for (MarklinLocomotive l : locs.get(addr))
-                {
-                    this.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
-                }
-                
-                this.log("---- Address " + addr + " ----");
-            }   
 
-            this.log("Duplicate locomotive address report:");
-        }
-        else
-        {
-            this.log("There are no duplicate locomotive addresses in the database.");
-        }
-        
-        JOptionPane.showMessageDialog(this, message);
+            if (!locs.isEmpty())
+            {
+                List<Integer> sortedLocs = new ArrayList(locs.keySet());
+                Collections.sort(sortedLocs, Collections.reverseOrder());
+
+                for (Integer addr : sortedLocs)
+                {
+                    for (MarklinLocomotive l : locs.get(addr))
+                    {
+                        this.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                    }
+
+                    this.log("---- Address " + addr + " ----");
+                }   
+
+                this.log("Duplicate locomotive address report:");
+            }
+            else
+            {
+                this.log("There are no duplicate locomotive addresses in the database.");
+            }
+
+            JOptionPane.showMessageDialog(this, message);
+        }).start();
     }//GEN-LAST:event_checkDuplicatesActionPerformed
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed

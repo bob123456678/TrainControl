@@ -74,24 +74,27 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         }).start();
     }
     
-    private void filterLocList()
+    synchronized private void filterLocList()
     {
-        String filter = this.LocFilterBox.getText().toLowerCase();
+        new Thread(()->
+        { 
+            String filter = this.LocFilterBox.getText().toLowerCase();
         
-        for (Component b : this.MainLocList.getComponents())
-        {
-            LocomotiveSelectorItem bb = (LocomotiveSelectorItem) b;
-            if ("".equals(filter) || bb.getText().toLowerCase().contains(filter))
+            for (Component b : this.MainLocList.getComponents())
             {
-                b.setVisible(true);
+                LocomotiveSelectorItem bb = (LocomotiveSelectorItem) b;
+                if ("".equals(filter) || bb.getText().toLowerCase().contains(filter))
+                {
+                    b.setVisible(true);
+                }
+                else
+                {
+                    b.setVisible(false);
+                }
             }
-            else
-            {
-                b.setVisible(false);
-            }
-        }
-        
-        updateScrollArea();
+
+            updateScrollArea();
+        }).start();
     }
     
     /**
