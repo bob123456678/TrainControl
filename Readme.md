@@ -145,7 +145,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.1 [Beta]
+* v1.10.1 [8/8/23]
     - Improved the display of each locomotive's current station in the autonomy tab
     - The "validate JSON" button will now ask for confirmation in case the graph state has been edited
     - Optimized UI performance (removed several UI actions from the main thread)
