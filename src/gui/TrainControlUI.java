@@ -785,10 +785,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.KeyboardTab.remove(this.layoutPanel);
             repaintPathLabel();
         }
-        else
-        {
-            repaintLayout();
-        }
         
         // Hide routes if no routes
         if (this.model.getRouteList().isEmpty())
@@ -818,6 +814,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Don't do this until the end, otherwise keyboard events may not register properly
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        
+        // Render layout now that the UI is visible
+        if (!this.model.getLayoutList().isEmpty())
+        {
+            repaintLayout();
+        }
     }
     
     public LocomotiveSelector getLocSelector()
