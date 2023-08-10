@@ -6460,11 +6460,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_TurnOffFnButtonActionPerformed
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
-        Integer r = this.model.syncWithCS2();
-        refreshRouteList();
-        this.selector.refreshLocSelectorList();
+        
+        new Thread(() -> {
+            Integer r = this.model.syncWithCS2();
+            refreshRouteList();
+            this.selector.refreshLocSelectorList();
 
-        JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
+            JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
+        }).start();
     }//GEN-LAST:event_SyncButtonActionPerformed
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
