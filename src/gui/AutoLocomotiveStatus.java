@@ -14,6 +14,7 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import marklin.MarklinRoute;
 import model.ViewListener;
 
 /**
@@ -227,6 +228,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
                     return;
+                }
+                
+                // Ensure there are no automatic routes
+                for (String routeName : this.control.getRouteList())
+                {
+                    MarklinRoute r = this.control.getRoute(routeName);
+
+                    if (r.isEnabled())
+                    {
+                        this.control.log(r.toString());
+                        JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                        return;
+                    }
                 }
                 
                 new Thread( () -> {

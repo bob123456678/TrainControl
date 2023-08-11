@@ -1152,17 +1152,18 @@ public final class CS2File
             }    
         }
         
+        Layout.SIMULATE = false;
         // Debug/dev only setting
         if (o.has("simulate"))
         {
-            if (control.isDebug())
+            if (control.isDebug() && !control.getNetworkCommState())
             {
                 control.log("Auto layout WARNING: Auto layout development / simulation mode enabled. Trains will not run.");
                 Layout.SIMULATE = true;
             }   
             else
             {
-                control.log("Auto layout warning: Simulation mode can only be enabled when debug mode is active.");
+                control.log("Auto layout warning: Simulation mode can only be enabled when debug mode is active and CS2 is not connected.");
             }
         }
         

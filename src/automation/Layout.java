@@ -188,10 +188,7 @@ public class Layout
      */
     public boolean isRunning()
     {
-        synchronized (this.activeLocomotives)
-        {
-            return this.running || !this.getActiveLocomotives().isEmpty();
-        }
+        return this.running || !this.getActiveLocomotives().isEmpty();
     }
     
     /**
@@ -200,10 +197,7 @@ public class Layout
      */
     public boolean isAutoRunning()
     {
-        synchronized (this.activeLocomotives)
-        {
-            return this.running;
-        }
+        return this.running;
     }
     
     /**

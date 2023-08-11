@@ -145,7 +145,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.1 [8/8/23]
+* v1.10.2 [8/11/23]
+    - Fixed deadlock issue from v1.10.1
+    - Fixed stability issue: semi-automatic operation is no longer possible when routes are enabled
+    - Fixed bug where disabling auto layout simulation/debug mode required restarting the application. 
+    - Auto layout simulation/debug mode can now only be enabled when no CS2 is connected.
+
+* v1.10.1 [Beta]
     - Improved the display of each locomotive's current station in the autonomy tab
     - The "validate JSON" button will now ask for confirmation in case the graph state has been edited
     - Optimized UI performance (removed several UI actions from the main thread)
