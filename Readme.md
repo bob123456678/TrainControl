@@ -153,13 +153,13 @@ Requires JDK 1.8+ and the following libraries:
         - Feedback events are now simulated directly
         - Simulation can now only be enabled when no CS2 is connected
 
-* v1.10.1 [Beta]
+* v1.10.1 (Beta)
     - Improved the display of each locomotive's current station in the autonomy tab
     - The "validate JSON" button will now ask for confirmation in case the graph state has been edited
     - Optimized UI performance (removed several UI actions from the main thread)
     - Fixed bug where the "start autonomous operation" button would remain greyed out after closing the graph window
 
-* v1.10.0 [Beta] (New feature: reversing points for one-click parking & station priority)
+* v1.10.0 (Beta) (New feature: reversing points for one-click parking & station priority)
     - Added `reversing` as a possible point type.  These points or stations are used for shunting and will reverse arriving trains.  They can be traversed only through a manually triggered path and will never be chosen in autonomous operation.
     - In autonomous operation, locomotives inactive for longer than `maxLocInactiveSeconds` seconds will now be prioritized (set to 0 to disable)
     - In autonomous operation, locomotives placed on non-stations via the UI will no longer be started automatically.  This allows the use of such points as designated parking spots even if they are not reversing stations.
@@ -171,7 +171,7 @@ Requires JDK 1.8+ and the following libraries:
     - Improved reliability of saved function presets for certain decoders
     - Fixed minor bug: Newly added pre-arrival functions set via the UI will now fire without the need to reload the autonomy JSON 
 
-* v1.9.5 [Beta]
+* v1.9.5 (Beta)
     - Added verbose logging of auto layout locomotive speed changes
     - Log messages related to occupied/invalid paths will now only be shown in debug mode (pass `debug` after IP address)
     - Added `atomicRoutes` setting in JSON (default of `true` yields same behavior as v1.9.4 and earlier).  When set to `false`, edges will be unlocked as trains pass them, instead of at the end of a path, for a more dynamic operating experience.  
