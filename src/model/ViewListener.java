@@ -45,6 +45,7 @@ public interface ViewListener
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);
     public boolean getFeedbackState(String name);
+    public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
     public String getCS3AppUrl();
     public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s);

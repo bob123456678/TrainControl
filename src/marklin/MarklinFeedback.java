@@ -28,7 +28,7 @@ public class MarklinFeedback extends Feedback
     { 
         super(Integer.toString(id));
         
-        this.network=network;
+        this.network = network;
         this.UID = id;
         this.tiles = new HashSet<>();
 
@@ -94,6 +94,11 @@ public class MarklinFeedback extends Feedback
     public void setState(boolean val)
     {
         this._setState(val);
+        
+        if (this.network.isDebug())
+        {
+            this.network.log("Feedback " + name + " manually to " + (val ? "Set" : "Not set"));
+        }
         
         this.updateTiles();
     }

@@ -59,12 +59,7 @@ public class Layout
     
     // Custom callbacks before/after path execution
     protected Map<String, TriFunction<List<Edge>, Locomotive, Boolean, Void>> callbacks;
-    
-    // Used to check if accessories within a route conflict with each other
-    private final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
-    private boolean configIsValid;
-    private List<String> invalidConfigs;
-    
+        
     // List of all / active locomotives
     private final Set<Locomotive> locomotivesToRun;
     private final Map<Locomotive, List<Edge>> activeLocomotives;
@@ -109,23 +104,12 @@ public class Layout
         this.adjacency = new HashMap<>();    
         this.locomotivesToRun = new HashSet<>();
         this.callbacks = new HashMap<>();
-        this.configHistory = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
         
         Layout.layoutVersion += 1;
     }
-    
-    /**
-     * Resets the current config history
-     */
-    public void resetConfigHistory()
-    {
-        this.configHistory.clear();
-        this.configIsValid = true;
-        this.invalidConfigs = new LinkedList<>();
-    }
-        
+            
     /**
      * Sets the list of locomotives that will be run
      * @param locs 
@@ -205,10 +189,7 @@ public class Layout
      */
     public void stopLocomotives()
     {
-        synchronized (this.activeLocomotives)
-        {
-            this.running = false;
-        }
+        this.running = false;
     }
     
     /**
@@ -536,28 +517,24 @@ public class Layout
             return false;
         }
                 
-        // Preview the configuration        
-        synchronized (this)
+        // Preview the configuration                  
+        EdgeConfigurationState validity = new EdgeConfigurationState();
+        for (Edge e : path)
         {
-            this.resetConfigHistory();
-            
-            for (Edge e : path)
-            {
-                this.configureEdge(e, true);
-            }
-            
-            // Invalid state means there were conflicting accessory commands, so this path would not work as intended
-            if (!this.configIsValid)
-            {
-                if (this.control.isDebug())
-                {
-                    this.control.log("\t" + "Path " + this.pathToString(path) + " has conflicting commands - skipping (" + this.invalidConfigs.toString() + ")");
-                }
-                
-                return false;
-            }
+            this.configureEdge(e, validity);
         }
-        
+
+        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
+        if (!validity.configIsValid)
+        {
+            if (this.control.isDebug())
+            {
+                this.control.log("\t" + "Path " + this.pathToString(path) + " has conflicting commands - skipping (" + validity.invalidConfigs.toString() + ")");
+            }
+
+            return false;
+        }
+              
         return true;
     }
         
@@ -578,14 +555,25 @@ public class Layout
         return pathLength;
     }
     
+    private class EdgeConfigurationState {         
+        public boolean configIsValid;
+        public final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
+        public final List<String> invalidConfigs;
+
+        public EdgeConfigurationState() {         
+            this.configIsValid = true;
+            this.configHistory = new HashMap<>();
+            this.invalidConfigs = new LinkedList<>();
+         }
+     }
+    
     /**
      * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
      * @param e - the edge
-     * @param state - one of turn, straight, red, green
-     * @param preConfigure - true to simulate and validate sequence of commands, false to execute commands
+     * @param preConfigure - when set, simulate sequence of commands and record validity status
      */
-    private void configureEdge(Edge e, boolean preConfigure)
+    private void configureEdge(Edge e, EdgeConfigurationState preConfigure)
     {
         for (String name : e.getConfigCommands().keySet())
         { 
@@ -597,29 +585,28 @@ public class Layout
             if (acc == null)
             {
                 control.log("Accessory does not exist: " + name + " " + state);
-                this.configIsValid = false;
 
-                if (!preConfigure)
+                if (preConfigure == null)
                 {
                     this.invalidate();
                     control.log("Invalidating auto layout state");
                 }
-
+                
                 return;
             }
 
-            if (preConfigure)
-            {
+            if (preConfigure != null)
+            {   
                 // An opposite configuration was already issued - invalidate!
-                if (this.configHistory.containsKey(acc) && !this.configHistory.get(acc).equals(state))
+                if (preConfigure.configHistory.containsKey(acc) && !preConfigure.configHistory.get(acc).equals(state))
                 {
                     //this.control.log("Conflicting command " + acc.getName() + " " + state);
-                    this.invalidConfigs.add(acc.getName() + " " + state);
-                    this.configIsValid = false;
+                    preConfigure.invalidConfigs.add(acc.getName() + " " + state);
+                    preConfigure.configIsValid = false;
                 }
                 else
                 {
-                    this.configHistory.put(acc, state);
+                    preConfigure.configHistory.put(acc, state);
                 }
             }
             else
@@ -806,7 +793,7 @@ public class Layout
         {
             e.setOccupied();
             e.getEnd().setLocomotive(loc);
-            this.configureEdge(e, false);
+            this.configureEdge(e, null);
             loc.delay(CONFIGURE_SLEEP);
         }
         
@@ -1047,70 +1034,67 @@ public class Layout
      */
     public List<Edge> pickPath(Locomotive loc)
     {
-        synchronized (this.activeLocomotives)
+        List<Point> ends = new LinkedList<>(this.points.values());
+        Collections.shuffle(ends);
+
+        // Now sort by priority
+        Collections.sort(ends, (Point p1, Point p2) ->
         {
-            List<Point> ends = new LinkedList<>(this.points.values());
-            Collections.shuffle(ends);
-                            
-            // Now sort by priority
-            Collections.sort(ends, (Point p1, Point p2) ->
+            // Random order if equivalent
+            if (p1.getPriority() == p2.getPriority())
             {
-                // Random order if equivalent
-                if (p1.getPriority() == p2.getPriority())
-                {
-                    return 0;
-                }
-                
-                // Points with higher priority will come first
-                return p2.getPriority() < p1.getPriority() ? -1 : 1;
-            });
-                                    
-            for (Point start : this.points.values())
-            {
-                if (loc.equals(start.getCurrentLocomotive()) 
-                        && !start.isReversing() && start.isDestination() // not needed from a logic perspective, but will speed things up
-                )
-                {
-                    for (Point end : ends)
-                    {                        
-                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
-                        {
-                            try 
-                            {
-                                // If the first shortest path is invalid, check all alternatives                            
-                                List<Edge> path;
-                                List<List<Edge>> seenPaths = new LinkedList<>();
-
-                                do 
-                                {
-                                    path = this.bfs(start, end, seenPaths);
-
-                                    if (path != null && this.isPathClear(path, loc))
-                                    {
-                                        return path;
-                                    }
-                                    else if (path != null)
-                                    {
-                                        // Get another path other than the one we just saw
-                                        seenPaths.add(path);
-                                    }
-
-                                } while (path != null);
-                            }
-                            catch (Exception e)
-                            {
-
-                            }      
-                        }
-                    }
-
-                    break;
-                }
+                return 0;
             }
 
-            this.control.log(loc.getName() + " has no free paths at the moment");
+            // Points with higher priority will come first
+            return p2.getPriority() < p1.getPriority() ? -1 : 1;
+        });
+
+        for (Point start : this.points.values())
+        {
+            if (loc.equals(start.getCurrentLocomotive()) 
+                    && !start.isReversing() && start.isDestination() // not needed from a logic perspective, but will speed things up
+            )
+            {
+                for (Point end : ends)
+                {                        
+                    if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                    {
+                        try 
+                        {
+                            // If the first shortest path is invalid, check all alternatives                            
+                            List<Edge> path;
+                            List<List<Edge>> seenPaths = new LinkedList<>();
+
+                            do 
+                            {
+                                path = this.bfs(start, end, seenPaths);
+
+                                if (path != null && this.isPathClear(path, loc))
+                                {
+                                    return path;
+                                }
+                                else if (path != null)
+                                {
+                                    // Get another path other than the one we just saw
+                                    seenPaths.add(path);
+                                }
+
+                            } while (path != null);
+                        }
+                        catch (Exception e)
+                        {
+
+                        }      
+                    }
+                }
+
+                break;
+            }
         }
-        
+
+        this.control.log(loc.getName() + " has no free paths at the moment");
+          
         try
         {
             Thread.sleep(Layout.ROUTE_FIND_SLEEP);
@@ -1129,76 +1113,73 @@ public class Layout
      * @param uniqueDest - do we want to return multiple possible paths for the same start and end?
      * @return  
      */
-    public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
+    synchronized public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
         List<List<Edge>> output = new LinkedList<>();
+ 
+        // If the locomotive is currently running, it has no possible paths
+        if (!this.activeLocomotives.containsKey(loc))
+        {     
+            List<Point> ends = new LinkedList<>(this.points.values());
+            //Collections.shuffle(ends);
 
-        synchronized (this.activeLocomotives)
-        {
-            // If the locomotive is currently running, it has no possible paths
-            if (!this.activeLocomotives.containsKey(loc))
-            {     
-                List<Point> ends = new LinkedList<>(this.points.values());
-                //Collections.shuffle(ends);
-
-                for (Point start : this.points.values())
+            for (Point start : this.points.values())
+            {
+                if (loc.equals(start.getCurrentLocomotive()))
                 {
-                    if (loc.equals(start.getCurrentLocomotive()))
+                    for (Point end : ends)
                     {
-                        for (Point end : ends)
+                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
                         {
-                            if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                            try 
                             {
-                                try 
+                                List<Edge> path;
+                                List<List<Edge>> seenPaths = new LinkedList<>();
+
+                                // If the first shortest path is invalid, check all alternatives                            
+                                do 
                                 {
-                                    List<Edge> path;
-                                    List<List<Edge>> seenPaths = new LinkedList<>();
+                                    path = this.bfs(start, end, seenPaths);
 
-                                    // If the first shortest path is invalid, check all alternatives                            
-                                    do 
+                                    if (path != null && this.isPathClear(path, loc))
                                     {
-                                        path = this.bfs(start, end, seenPaths);
+                                        boolean unique = true;
 
-                                        if (path != null && this.isPathClear(path, loc))
+                                        // Only return unique starts and ends
+                                        if (uniqueDest)
                                         {
-                                            boolean unique = true;
-
-                                            // Only return unique starts and ends
-                                            if (uniqueDest)
+                                            for (List<Edge> e : output)
                                             {
-                                                for (List<Edge> e : output)
+                                                if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
                                                 {
-                                                    if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
-                                                    {
-                                                        unique = false;
-                                                        break;
-                                                    }
+                                                    unique = false;
+                                                    break;
                                                 }
                                             }
-
-                                            if (unique)
-                                            {
-                                                output.add(path);
-                                            }
                                         }
 
-                                        if (path != null)
+                                        if (unique)
                                         {
-                                            // Get another path other than the one we just saw
-                                            seenPaths.add(path);
+                                            output.add(path);
                                         }
+                                    }
 
-                                    } while (path != null);
-                                }
-                                catch (Exception e)
-                                {
+                                    if (path != null)
+                                    {
+                                        // Get another path other than the one we just saw
+                                        seenPaths.add(path);
+                                    }
 
-                                }      
+                                } while (path != null);
                             }
+                            catch (Exception e)
+                            {
+
+                            }      
                         }
-                        
-                        break;
                     }
+
+                    break;
                 }
             }
         }
@@ -1218,7 +1199,7 @@ public class Layout
         // Sanity check
         if (!this.isValid())
         {
-            this.control.log("Auto path: Configuration is invalid and must be reloaded.");
+            this.control.log("Auto layout: Configuration is invalid and must be reloaded.");
             return false;
         }
         
@@ -1245,11 +1226,8 @@ public class Layout
         
         boolean result;
         
-        synchronized (this.activeLocomotives)
-        {
-            result = configureAndLockPath(path, loc);
-        }
-        
+        result = configureAndLockPath(path, loc);
+                
         if (!result)
         {
             this.control.log("Error: path is occupied");
@@ -1272,7 +1250,7 @@ public class Layout
                     }
                 }
             }
-            
+             
             this.control.log("Executing path " + this.pathToString(path) + " for " + loc.getName());
         }
         
@@ -1284,11 +1262,8 @@ public class Layout
             loc.getCallback(CB_ROUTE_START).accept(loc);
         }
         
-        if (!SIMULATE)
-        {
-            loc.setSpeed(speed);
-            this.control.log("Auto layout: started " + loc.getName());
-        }
+        loc.setSpeed(speed);
+        this.control.log("Auto layout: started " + loc.getName());
         
         // When !this.atomicRoutes: track edges to unlock based on length of train
         List<Integer> toUnlock = new LinkedList<>();
@@ -1305,11 +1280,19 @@ public class Layout
                 {
                     if (SIMULATE)
                     {
-                        loc.delay((long) (this.getMinDelay() * 1000 * Math.random()));
+                        loc.delay(this.getMinDelay(), this.getMaxDelay());
+                        this.control.setFeedbackState(current.getS88(), true);
                     }
-                    else
-                    {
-                        loc.waitForOccupiedFeedback(current.getS88());
+                    
+                    loc.waitForOccupiedFeedback(current.getS88());    
+                    
+                    if (SIMULATE)
+                    {            
+                        new Thread( () -> 
+                        {
+                            loc.delay(this.getMinDelay(), this.getMaxDelay());
+                            this.control.setFeedbackState(current.getS88(), false);
+                        }).start();
                     }
                     
                     // Reverse the locomotive if this is a reversing station
@@ -1372,12 +1355,9 @@ public class Layout
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    if (!SIMULATE)
-                    {  
-                        loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
-                        this.control.log("Auto layout: pre-arrival for " + loc.getName());
-                    }
-                    
+                    loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
+                    this.control.log("Auto layout: pre-arrival for " + loc.getName());
+                                    
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
                         loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
@@ -1385,18 +1365,23 @@ public class Layout
                     
                     if (SIMULATE)
                     {
-                        loc.delay((long) (this.getMinDelay() * 1000 * Math.random()));
+                        loc.delay(this.getMinDelay(), this.getMaxDelay());
+                        this.control.setFeedbackState(current.getS88(), true);
                     }
-                    else
-                    {
-                        loc.waitForOccupiedFeedback(current.getS88());
-
-                        if (!SIMULATE)
+                    
+                    loc.waitForOccupiedFeedback(current.getS88());    
+                    
+                    if (SIMULATE)
+                    {            
+                        new Thread( () -> 
                         {
-                            loc.setSpeed(0);
-                            this.control.log("Auto layout: stopping " + loc.getName());
-                        }
+                            loc.delay(this.getMinDelay(), this.getMaxDelay());
+                            this.control.setFeedbackState(current.getS88(), false);
+                        }).start();
                     }
+
+                    loc.setSpeed(0);
+                    this.control.log("Auto layout: stopping " + loc.getName());
                 }
             }  
             
@@ -1415,15 +1400,15 @@ public class Layout
             
             synchronized (this.activeLocomotives)
             {
-                this.locomotiveMilestones.get(loc).add(current);                  
-            
+                this.locomotiveMilestones.get(loc).add(current); 
+               
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {
                     if (callback != null)
                     {
                         callback.apply(path, loc, true);
-                        
+
                         // Repaint other routes in non-atomic route mode
                         if (!this.atomicRoutes)
                         {
@@ -1437,7 +1422,7 @@ public class Layout
                             }
                         }     
                     }
-                }
+                }   
             }
         }
         
@@ -1459,14 +1444,14 @@ public class Layout
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
-                    
+                                  
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
             {
                 if (callback != null)
                 {
                     callback.apply(path, loc, false);
-                
+
                     // Repaint other routes in non-atomic route mode
                     if (!this.atomicRoutes)
                     {
@@ -1478,7 +1463,7 @@ public class Layout
                 }
             }
         }
-
+        
         this.control.log("Locomotive " + loc.getName() + " finished its path: " + this.pathToString(path));   
         
         // Track number of completed paths

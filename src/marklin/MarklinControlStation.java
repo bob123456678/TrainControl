@@ -5,6 +5,7 @@ import base.Accessory;
 import base.RemoteDeviceCollection;
 import base.RouteCommand;
 import gui.TrainControlUI;
+import java.awt.HeadlessException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -821,7 +822,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         Map<Integer, Boolean> conditionS88s)
     {
         int newId = 1;
-        if (this.routeDB.getItemIds().size() > 0)
+        if (!this.routeDB.getItemIds().isEmpty())
         {
             newId = Collections.max(this.routeDB.getItemIds()) + 1;
         }
@@ -932,7 +933,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final MarklinFeedback newFeedback(int id, CS2Message message)
     {
-        MarklinFeedback newFb = new MarklinFeedback(this,id,message);
+        MarklinFeedback newFb = new MarklinFeedback(this, id, message);
                 
         this.feedbackDB.add(newFb, newFb.getName(), newFb.getUID());
         
@@ -965,6 +966,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return fb.isSet();
         }
            
+        return false;
+    }
+    
+    /**
+     * Sets feedback state for simulation purposes
+     * @param name (the feedback module number)
+     * @param state
+     * @return 
+     */
+    @Override
+    public final boolean setFeedbackState(String name, boolean state) 
+    {
+        MarklinFeedback fb = this.feedbackDB.getByName(name);
+        
+        if (null != fb)
+        {
+            fb.setState(state);
+                        
+            return true;
+        }
+        
         return false;
     }
     
@@ -1012,7 +1034,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // to the network, however, so remove this check when offline
             if (locs != null)
             {
-                if (locs.size() > 0 && message.getResponse())
+                if (!locs.isEmpty() && message.getResponse())
                 {
                     for (String l : locs)
                     {
@@ -1576,6 +1598,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Returns whether debug mode is enabled
      * @return 
      */
+    @Override
     public boolean isDebug()
     {
         return MarklinControlStation.debug;
@@ -1645,7 +1668,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         break;
                     }
                 }
-                catch (Exception e)
+                catch (HeadlessException e)
                 {
                     System.out.println("Invalid IP Specified");
                 }

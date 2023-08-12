@@ -7402,7 +7402,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         new Thread(() -> {
             this.getModel().getAutoLayout().stopLocomotives();
-
         }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
