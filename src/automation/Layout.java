@@ -93,6 +93,23 @@ public class Layout
     }
     
     /**
+     * Used to preview conflicting edge configuration
+     */
+    private class EdgeConfigurationState
+    {         
+        public boolean configIsValid;
+        public final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
+        public final List<String> invalidConfigs;
+
+        public EdgeConfigurationState()
+        {         
+            this.configIsValid = true;
+            this.configHistory = new HashMap<>();
+            this.invalidConfigs = new LinkedList<>();
+        }
+    }
+    
+    /**
      * Initialize the layout model 
      * @param control Reference to the CS2 controller
      */
@@ -554,19 +571,7 @@ public class Layout
         
         return pathLength;
     }
-    
-    private class EdgeConfigurationState {         
-        public boolean configIsValid;
-        public final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
-        public final List<String> invalidConfigs;
-
-        public EdgeConfigurationState() {         
-            this.configIsValid = true;
-            this.configHistory = new HashMap<>();
-            this.invalidConfigs = new LinkedList<>();
-         }
-     }
-    
+      
     /**
      * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
