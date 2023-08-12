@@ -185,13 +185,13 @@ Requires JDK 1.8+ and the following libraries:
     - Added validation of Signals/Switches with duplicate addresses to autonomy JSON parser
     - Synchronizing with the CS2 will now invalidate the auto layout state as a precaution and require a reload
 
-* v1.9.3 [7/24/23] (Beta)
+* v1.9.3 (Beta)
     - Fixed bug where existing edges without any commands would not execute config commands after the first time they were edited in the UI
     - Fixed bug where keyboard events would not be registered when the "always on top" checkbox was unchecked at startup
     - Added 150ms interval between autonomy config commands for better stability
     - Improved accessory event logging
 
-* v1.9.2 [7/23/23] (Beta)
+* v1.9.2 (Beta)
     - Manual changes to S88 state via the UI will now dynamically update the displayed autonomous path options
     - S88 events from the Central Station for sensors visible in the layout UI will now dynamically update the displayed autonomous path options 
     - Made path strings in log output more concise
