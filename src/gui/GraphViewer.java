@@ -136,7 +136,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 p.setMaxTrainLength(newLength);
                                 parent.repaintAutoLocList(false);
                             }
-                            catch (Exception e)
+                            catch (NumberFormatException e)
                             {
                                 JOptionPane.showMessageDialog((Component) swingView,
                                     "Invalid value (must be a positive integer, or 0 to disable)");
@@ -179,7 +179,7 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                                     parent.repaintAutoLocList(false);
                                 }
-                                catch (Exception e)
+                                catch (NumberFormatException e)
                                 {
                                     JOptionPane.showMessageDialog((Component) swingView,
                                         "Invalid value (must be an integer, or 0 for default)");
@@ -221,7 +221,7 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                                 parent.repaintAutoLocList(false);
                             }
-                            catch (Exception e)
+                            catch (NumberFormatException e)
                             {
                                 JOptionPane.showMessageDialog((Component) swingView,
                                     "Invalid value (must be a non-negative integer, or blank to disable)");
@@ -633,9 +633,9 @@ final public class GraphViewer extends javax.swing.JFrame {
                         Node node = (Node) o;
                         Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         
-                        if (new Double(position.y).intValue() > maxY)
+                        if (Double.valueOf(position.y).intValue() > maxY)
                         {
-                            maxY = new Double(position.y).intValue();
+                            maxY = Double.valueOf(position.y).intValue();
                         }
                     }
                     
@@ -655,10 +655,10 @@ final public class GraphViewer extends javax.swing.JFrame {
                         
                         // Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(Toolkit.nodePosition(node)[0]).intValue());
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(new Double(Toolkit.nodePosition(node)[1]).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(Double.valueOf(Toolkit.nodePosition(node)[0]).intValue());
+                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
 
-                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(Toolkit.nodePosition(node)[0]).intValue() + "," + (maxYY - new Double(Toolkit.nodePosition(node)[1]).intValue()));
+                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (maxYY - Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
                         
                         // Old method - ensured no negative numbers, but not always accurate when exporting
                         //parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(position.x).intValue());
@@ -725,17 +725,17 @@ final public class GraphViewer extends javax.swing.JFrame {
         // Set custom key listener
         swingView.setShortcutManager(new DefaultShortcutManager() {
 
-            private View view;
+            private View viewui;
 
             @Override
             public void init(GraphicGraph graph, View view) {
-                this.view = view;
+                this.viewui = view;
                 view.addListener("Key", this);
             }
 
             @Override
             public void release() {
-                view.removeListener("Key", this);
+                viewui.removeListener("Key", this);
             }
             
             @Override
@@ -749,21 +749,21 @@ final public class GraphViewer extends javax.swing.JFrame {
                     for (Object o : swingViewer.getGraphicGraph().nodes().toArray())
                     {
                         Node node = (Node) o;
-                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        Point3 position = viewui.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
                         
-                        if (new Double(position.y).intValue() > maxY)
+                        if (Double.valueOf(position.y).intValue() > maxY)
                         {
-                            maxY = new Double(position.y).intValue();
+                            maxY = Double.valueOf(position.y).intValue();
                         }
                     }
                     
                     final int maxYY = maxY;
                 
                     swingViewer.getGraphicGraph().nodes().forEach((node) -> {
-                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
-                        parent.getModel().log(node.getId() + "\n \"x\" : " + new Double(position.x).intValue() + ",\n \"y\" : " + (maxYY - new Double(position.y).intValue()) + "\n");
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(new Double(position.x).intValue());
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - new Double(position.y).intValue());
+                        Point3 position = viewui.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
+                        parent.getModel().log(node.getId() + "\n \"x\" : " + Double.valueOf(position.x).intValue() + ",\n \"y\" : " + (maxYY - Double.valueOf(position.y).intValue()) + "\n");
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(Double.valueOf(position.x).intValue());
+                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - Double.valueOf(position.y).intValue());
                     });  
                 }
                 
