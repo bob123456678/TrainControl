@@ -121,7 +121,7 @@ public class Point
      */
     public Point setTerminus(boolean state) throws Exception
     {
-        if (!isDestination)
+        if (!isDestination && state)
         {
             throw new Exception("Only destination points (stations) can be a terminus");
         }

@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -82,6 +80,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 240;
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
+    // Minimum between possible route repainting in semi-autonmous mode
+    public static final Integer REPAINT_ROUTE_INTERVAL = 100;
 
     // Load images
     public static final boolean LOAD_IMAGES = true;
@@ -7754,6 +7754,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.autonomyFutures.add(
                     this.AutonomyRenderer.submit(new Thread(() -> 
                     {
+                        try 
+                        {
+                            Thread.sleep(REPAINT_ROUTE_INTERVAL);
+                        } catch (InterruptedException ex) { }
+                        
                         this.repaintAutoLocListLite();
                     }))
                 );
