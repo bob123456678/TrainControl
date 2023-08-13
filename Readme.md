@@ -146,7 +146,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.10.3 [Beta]
-    - The recalculations of possible routes in semi-autonomous operation is now throttled to improve performance
+    - The recalculation of possible routes in semi-autonomous operation is now throttled to improve performance
     - Fixed bug where non-station points with `"terminus" = false` in the JSON would erroneously be flagged as invalid
 
 * v1.10.2 [8/11/23]
