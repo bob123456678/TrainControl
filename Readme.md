@@ -149,6 +149,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.4 [In development]
+    - Improved clarity of path error log output in debug mode
+
 * v1.10.3 [8/14/23]
     - The recalculation of possible routes in semi-autonomous operation is now throttled to improve performance
     - Minor UI enhancements

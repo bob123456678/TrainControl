@@ -418,6 +418,19 @@ public class Layout
 
         return neighbors;
     }
+    
+    /**
+     * Writes a log message that the specified path is impossible
+     * @param loc
+     * @param path 
+     */
+    private void logPathError(Locomotive loc, List<Edge> path, String message)
+    {
+        if (control.isDebug())
+        {
+            this.control.log("\t " + loc.getName() + " path invalid: " + message + " " + this.pathToString(path));
+        }
+    }
 
     /**
      * Checks if the provided path is unoccupied
@@ -431,10 +444,7 @@ public class Layout
         {
             if (e.isOccupied(loc))
             {
-                if (control.isDebug())
-                {
-                    // control.log("Edge is occupied: " + e.getName());
-                }
+                logPathError(loc, path, "Edge is occupied: " + e.getName());
                 
                 return false;
             }
@@ -442,31 +452,23 @@ public class Layout
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
-                if (control.isDebug())
-                {
-                    // control.log("Edge is occupied: " + e.getOppositeName());
-                }
-                
+                logPathError(loc, path, "Edge is occupied: " + e.getOppositeName());
+                              
                 return false;
             }
             
             // Terminus stations may only be at the end of a path
             if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
             {
-                if (control.isDebug())
-                {
-                    control.log("\t" + "Path " + this.pathToString(path) + " contains an intermediate terminus station");
-                }
+                logPathError(loc, path, "Contains an intermediate terminus station");
+                
                 return false;
             }
             
             // Starting or intermediate reversing stations not allowed in auto running
             if (this.isAutoRunning() && e.getStart().isReversing())
             {
-                if (control.isDebug())
-                {
-                    control.log("\t" + "Path " + this.pathToString(path) + " contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
-                }
+                logPathError(loc, path, "Contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
                 
                 return false;
             }
@@ -474,21 +476,15 @@ public class Layout
             // Starting point is not a station - do not pick it in fully autonomous mode
             if (this.isAutoRunning() && !e.getStart().isDestination() && e.getStart().equals(path.get(0).getStart()))
             {
-                if (control.isDebug())
-                {
-                    control.log("\t" + "Path " + this.pathToString(path) + " starts with a non-station, which cannot be chosen in autonomous operation");
-                }
+                logPathError(loc, path, "Starts with a non-station, which cannot be chosen in autonomous operation");
                 
                 return false;
             }
             
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
-                if (control.isDebug())
-                {
-                    control.log("\t" + "Path " + this.pathToString(path) + " expects feedback " + e.getEnd().getS88() + " to be clear");
-                }
-                
+                logPathError(loc, path, "Expects feedback " + e.getEnd().getS88() + " to be clear");
+                             
                 return false;
             }
             
@@ -497,10 +493,7 @@ public class Layout
             {
                 if (e2.isOccupied(loc))
                 {
-                    if (control.isDebug())
-                    {
-                        control.log("\t" + loc.getName() + " can't proceed. Lock edge " + e2.getName() + " occupied for " + this.pathToString(path));
-                    }
+                    logPathError(loc, path, "Lock edge " + e2.getName() + " occupied");
                     
                     return false;
                 }
@@ -510,20 +503,14 @@ public class Layout
         // Check train length
         if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
         {
-            if (control.isDebug())
-            {
-                control.log("\t" + "Locomotive " + loc.getName() +  " trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
-            }
+            logPathError(loc, path, "trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
             
             return false;
         }
         
         if (path.get(path.size() - 1).getEnd().isReversing() && this.isAutoRunning())
         {
-            if (control.isDebug())
-            {
-                control.log("\t" + "Path " + this.pathToString(path) + " disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
-            }
+            logPathError(loc, path, "Disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
             
             return false;
         }
@@ -531,10 +518,7 @@ public class Layout
         // Only reversible locomotives can go to a terminus
         if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
-            if (control.isDebug())
-            {
-                control.log("\t" + "Path " + this.pathToString(path) + " disallowed because " + loc.getName() + " is not reversible");
-            }
+            logPathError(loc, path, "Disallowed because " + loc.getName() + " is not reversible");
             
             return false;
         }
@@ -549,11 +533,8 @@ public class Layout
         // Invalid state means there were conflicting accessory commands, so this path would not work as intended
         if (!validity.configIsValid)
         {
-            if (this.control.isDebug())
-            {
-                this.control.log("\t" + "Path " + this.pathToString(path) + " has conflicting commands - skipping (" + validity.invalidConfigs.toString() + ")");
-            }
-
+            logPathError(loc, path, "Has conflicting commands (" + validity.invalidConfigs.toString() + ")");
+            
             return false;
         }
               

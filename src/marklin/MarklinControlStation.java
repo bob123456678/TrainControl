@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +42,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.10.3";
+    public static final String VERSION = "1.10.4";
     
     //// Settings
     
@@ -1171,7 +1172,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.view.log(message);    
             }
             
-            System.out.println(new Timestamp(System.currentTimeMillis())+ " " + message);
+            System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()) + " " + message);
             this.lastMessage = message;
         }
     }
