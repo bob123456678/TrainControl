@@ -125,7 +125,7 @@ public class Point
         {
             throw new Exception("Only destination points (stations) can be a terminus");
         }
-        else if (isReversing)
+        else if (isReversing && state)
         {
             throw new Exception("Reversing points cannot be set as terminus");
         }
@@ -145,7 +145,7 @@ public class Point
      */
     public Point setReversing(boolean state) throws Exception
     {
-        if (isTerminus)
+        if (isTerminus && state)
         {
             throw new Exception("Terminus stations cannot be set as reversing");
         }
