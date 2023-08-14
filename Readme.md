@@ -149,10 +149,10 @@ Requires JDK 1.8+ and the following libraries:
     - The recalculation of possible routes in semi-autonomous operation is now throttled to improve performance
     - Minor UI enhancements
         - The locomotive name field is now automatically focused (for easier filtering) when assigning a locomotive
-        - Sped up scrolling when more than 6 locomotives are on the graph
-        - Fixed intermittent issue where the layout tab would be blank at application start
+        - Sped up scrolling of the autonomy tab when more than 6 locomotives are on the graph
+        - Fixed intermittent issue where the layout diagram would be blank at application start
     - Fixed bug where non-station points with `"terminus" = false` in the JSON would erroneously be flagged as invalid
-    - Fixed bug where edges with nonexistent points would not show a clear validation error
+    - Fixed bug where edges with nonexistent points in the JSON would not show a clear validation error
     - Fixed bug where points with incoming edges could be deleted in the UI, which would result in orphan edges/invalid JSON
 
 * v1.10.2 [8/11/23]
