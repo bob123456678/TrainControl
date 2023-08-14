@@ -1,6 +1,6 @@
 # Marklin Central Station 2/3 Train Control
 
-This cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix digital layout.
+This cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix / DCC digital layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout and many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
