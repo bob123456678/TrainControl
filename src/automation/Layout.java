@@ -318,7 +318,12 @@ public class Layout
      */
     public Edge getEdge(String startPointName, String endPointName)
     {
-        return this.edges.get(Edge.getEdgeName(this.getPoint(startPointName), this.getPoint(endPointName)));
+        Point start = this.getPoint(startPointName);
+        Point end = this.getPoint(endPointName);
+        
+        if (start == null || end == null) return null;
+        
+        return this.edges.get(Edge.getEdgeName(start, end));
     }
         
     /**
@@ -659,6 +664,14 @@ public class Layout
         if (!this.getNeighbors(p).isEmpty())
         {
             throw new Exception("Point " + name + " is connected to other points.  Delete edges first.");
+        }
+        
+        for (Edge e : this.getEdges())
+        {
+            if (e.getStart().equals(p) || e.getEnd().equals(p))
+            {
+                throw new Exception("Point " + name + " has incoming edges.  Delete edges first.");
+            }
         }
         
         // Remove from db

@@ -2,6 +2,7 @@ package automation;
 import base.Locomotive;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import org.json.JSONObject;
 
 /**
@@ -176,6 +177,14 @@ public class Point
         }
         
         return this.name.equals(((Point) other).getName());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 59 * hash + Objects.hashCode(this.name);
+        return hash;
     }
     
     /**

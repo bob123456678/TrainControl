@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -190,6 +191,14 @@ public class Edge
         }
         
         return this.getName().equals(((Edge) other).getName());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.getName());
+        return hash;
     }
     
     /**

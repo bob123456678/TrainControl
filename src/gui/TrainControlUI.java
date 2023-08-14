@@ -7787,27 +7787,33 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     synchronized private void repaintAutoLocListFull()
     { 
-        // Display locomotive status and possible paths
-        this.autoLocPanel.removeAll();
-
-        // Number of columns in the grid
-        int gridCols = 3;
-
-        autoLocPanel.setLayout(new java.awt.GridLayout(
-                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
-                gridCols, // cols
-                5, // padding
-                5)
-        );
-
-        for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model.getAutoLayout(), this.model));
-        }
+            // Display locomotive status and possible paths
+            this.autoLocPanel.removeAll();
 
-        // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
-        this.autoLocPanel.repaint(1000);
-        this.locCommandPanels.repaint(1000);
+            // Number of columns in the grid
+            int gridCols = 3;
+
+            autoLocPanel.setLayout(new java.awt.GridLayout(
+                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                    gridCols, // cols
+                    5, // padding
+                    5)
+            );
+                        
+            for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+            {
+                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model));
+            }
+            
+            // Speed up scrolling
+            jScrollPane4.getVerticalScrollBar().setUnitIncrement(16);
+
+            // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
+            this.autoLocPanel.repaint();
+            this.locCommandPanels.repaint();
+        }));
     }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer
@@ -8251,22 +8257,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {    
         repaintPathLabel();
         
-        this.KeyboardTab.repaint();
-        
-        this.LayoutGridRenderer.submit(new Thread(() -> {
-            //InnerLayoutPanel.setVisible(false);
-            this.trainGrid = new LayoutGrid(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
-                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
-                    InnerLayoutPanel, 
-                    KeyboardTab, 
-                    false,
-                    this
-            );
-            InnerLayoutPanel.setVisible(true);
+        this.LayoutGridRenderer.submit(new Thread(() -> 
+        { 
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                this.KeyboardTab.repaint();
 
-            // Important!
-            this.KeyboardTab.repaint();
+                //InnerLayoutPanel.setVisible(false);
+                this.trainGrid = new LayoutGrid(
+                        this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
+                        this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
+                        InnerLayoutPanel, 
+                        KeyboardTab, 
+                        false,
+                        this
+                );
+                InnerLayoutPanel.setVisible(true);
+
+                // Important!
+                this.KeyboardTab.repaint();
+            }));
         }));
     }
 }

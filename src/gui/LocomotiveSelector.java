@@ -50,11 +50,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         pack();
         
         refreshLocSelectorList();
+        
+        this.LocFilterBox.requestFocus();
     }
 
     public synchronized void refreshLocSelectorList()
     {
-        new Thread(() -> {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
 
             this.MainLocList.removeAll();
 
@@ -69,15 +71,14 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             }
 
             this.LocFilterBox.setText("");
-            filterLocList();
-            
-        }).start();
+            filterLocList();     
+        }));
     }
     
     synchronized private void filterLocList()
     {
-        new Thread(()->
-        { 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
+
             String filter = this.LocFilterBox.getText().toLowerCase();
         
             for (Component b : this.MainLocList.getComponents())
@@ -94,7 +95,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             }
 
             updateScrollArea();
-        }).start();
+        }));
     }
     
     /**
@@ -287,13 +288,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
     private void SyncWithCSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncWithCSActionPerformed
 
-        new Thread(() -> {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
             Integer r = this.model.syncWithCS2();
             this.refreshLocSelectorList();
 
             JOptionPane.showMessageDialog(this, "Sync complete.  Items added: " + r.toString());
-        }).start();
-
+        }));
     }//GEN-LAST:event_SyncWithCSActionPerformed
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown

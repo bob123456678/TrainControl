@@ -1653,7 +1653,7 @@ public final class CS2File
             } 
             catch (Exception ex)
             {
-                control.log("Auto layout error: Invalid edge " + edge.toString());
+                control.log("Auto layout error: Invalid edge " + edge.toString() + " (" + ex.getMessage() + ")");
                 layout.invalidate();
             }
         });
@@ -1666,7 +1666,7 @@ public final class CS2File
             { 
                 String start = edge.getString("start");
                 String end = edge.getString("end");  
-
+                
                 if (layout.getEdge(start, end) != null && edge.has("lockedges"))
                 {
                     edge.getJSONArray("lockedges").forEach(lckedg -> {

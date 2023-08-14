@@ -2,6 +2,7 @@ package marklin;
 
 import base.Locomotive;
 import base.RemoteDevice;
+import java.util.Objects;
 import marklin.udp.CS2Message;
 import util.Conversion;
 
@@ -554,5 +555,30 @@ public class MarklinLocomotive extends Locomotive
             "UID: " + Conversion.intToHex(this.UID) + "\n" +
             "Address: " + Conversion.intToHex(this.address) + "\n" +
             "Type: " + (this.type == decoderType.MFX ? "MFX" : (this.type == decoderType.DCC ? "DCC" : "MM2"));                
+    }
+    
+    @Override
+    public boolean equals(Object other)
+    {
+        if (!(other instanceof MarklinLocomotive))
+        {
+            return false;
+        }
+
+        return this.getName().equals(((MarklinLocomotive) other).getName()) &&
+            this.address == ((MarklinLocomotive) other).address &&
+            this.type == ((MarklinLocomotive) other).type;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+
+        hash = 73 * hash + this.address;
+        hash = 73 * hash + Objects.hashCode(this.type);
+        hash = 73 * hash + Objects.hashCode(this.getName());
+
+        return hash;
     }
 }

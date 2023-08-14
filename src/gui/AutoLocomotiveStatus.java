@@ -31,11 +31,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     /**
      * Creates new form AutoLocomotiveStatus
      * @param loc
-     * @param layout
      * @param control
      */
-    public AutoLocomotiveStatus(Locomotive loc, Layout layout, ViewListener control) {
-        this.layout = layout;
+    public AutoLocomotiveStatus(Locomotive loc, ViewListener control) {
+        this.layout = control.getAutoLayout();
         this.locomotive = loc;
         this.control = control;
         initComponents();
