@@ -12,7 +12,7 @@
             "station": true,
             "s88": 1011,
             "maxTrainLength": 0,
-            "priority": -2,
+            "priority": -3,
             "x": 567,
             "y": 182
         },
@@ -20,8 +20,16 @@
             "name": "BottomInnerOtherside",
             "station": true,
             "s88": 2011,
-            "maxTrainLength": 0,
-            "priority": -1,
+            "maxTrainLength": 3,
+            "priority": -2,
+            "loc": {
+                "name": "ET21-442",
+                "reversible": false,
+                "speed": 62,
+                "arrivalFunc": 2,
+                "departureFunc": 16,
+                "trainLength": 4
+            },
             "x": 612,
             "y": 298
         },
@@ -30,6 +38,14 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "ET 22 951",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 14,
+                "departureFunc": 3,
+                "trainLength": 3
+            },
             "x": 836,
             "y": 51
         },
@@ -45,14 +61,6 @@
             "station": true,
             "s88": 10,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "SU 45-118",
-                "reversible": false,
-                "speed": 50,
-                "arrivalFunc": 12,
-                "departureFunc": 9,
-                "trainLength": 4
-            },
             "x": 955,
             "y": 5
         },
@@ -86,12 +94,12 @@
             "s88": 1009,
             "maxTrainLength": 0,
             "loc": {
-                "name": "EU07-123",
+                "name": "EP08-009",
                 "reversible": false,
-                "speed": 44,
-                "arrivalFunc": 2,
+                "speed": 74,
+                "arrivalFunc": 4,
                 "departureFunc": 10,
-                "trainLength": 4
+                "trainLength": 3
             },
             "x": 561,
             "y": 126
@@ -190,13 +198,6 @@
             "s88": 1010,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EU46-520",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 15
-            },
             "x": 600,
             "y": 425
         },
@@ -205,7 +206,7 @@
             "station": true,
             "s88": 1022,
             "maxTrainLength": 3,
-            "priority": 1,
+            "priority": 2,
             "x": 401,
             "y": 406
         },
@@ -221,8 +222,17 @@
             "station": true,
             "s88": 1015,
             "maxTrainLength": 4,
-            "x": 484,
-            "y": 576
+            "priority": -2,
+            "loc": {
+                "name": "SU 45-118",
+                "reversible": false,
+                "speed": 50,
+                "arrivalFunc": 12,
+                "departureFunc": 9,
+                "trainLength": 4
+            },
+            "x": 479,
+            "y": 562
         },
         {
             "name": "TopMainR1Pre",
@@ -237,6 +247,14 @@
             "s88": 1023,
             "maxTrainLength": 0,
             "priority": 1,
+            "loc": {
+                "name": "EU07-123",
+                "reversible": false,
+                "speed": 44,
+                "arrivalFunc": 2,
+                "departureFunc": 10,
+                "trainLength": 4
+            },
             "x": 297,
             "y": 418
         },
@@ -252,14 +270,7 @@
             "station": true,
             "s88": 1016,
             "maxTrainLength": 4,
-            "loc": {
-                "name": "MCK ME",
-                "reversible": false,
-                "speed": 51,
-                "arrivalFunc": 12,
-                "departureFunc": 17,
-                "trainLength": 3
-            },
+            "priority": -1,
             "x": 476,
             "y": 620
         },
@@ -284,11 +295,6 @@
             "s88": 1024,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "ICE TD DSB",
-                "reversible": false,
-                "speed": 35
-            },
             "x": 689,
             "y": 563
         },
@@ -298,12 +304,6 @@
             "s88": 1017,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EB 3203 DSB",
-                "reversible": true,
-                "speed": 35,
-                "arrivalFunc": 3
-            },
             "x": 581,
             "y": 532
         },
@@ -312,7 +312,7 @@
             "station": true,
             "s88": 1032,
             "maxTrainLength": 0,
-            "priority": -1,
+            "priority": -2,
             "x": 350,
             "y": 35
         },
