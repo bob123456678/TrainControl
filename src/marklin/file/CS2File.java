@@ -1446,25 +1446,8 @@ public final class CS2File
                                 }
                             }
 
-                            l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
-                            {
-                                lc.applyPreferredFunctions().delay(minDelay, maxDelay);
-
-                                if (lc.hasDepartureFunc())
-                                {
-                                    lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
-                                }
-                            });
-
-                            // Optionally disable the arrival functions
-                            if (o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"))
-                            {
-                                l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
-                            }
-                            else
-                            {
-                                l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
-                            }
+                            // Fires functions on departure and arrival
+                            layout.applyDefaultLocCallbacks(l);
 
                             // Reset if none present
                             l.setArrivalFunc(null);
@@ -1474,15 +1457,6 @@ public final class CS2File
                                 try
                                 {
                                     l.setArrivalFunc(locInfo.getInt("arrivalFunc"));
-
-                                    // Always set callback in case of future edits
-                                    l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> 
-                                    {
-                                        if (lc.hasArrivalFunc())
-                                        {
-                                            lc.toggleF(lc.getArrivalFunc());
-                                        }
-                                    }); 
                                 }
                                 catch (JSONException ex)
                                 {

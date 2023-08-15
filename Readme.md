@@ -151,6 +151,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.10.4 [In development]
     - Improved clarity of path error log output in debug mode
+    - Fixed issue where locomotives added to the graph via the UI would not fire departure/arrival functions until after JSON reload
 
 * v1.10.3 [8/14/23]
     - The recalculation of possible routes in semi-autonomous operation is now throttled to improve performance

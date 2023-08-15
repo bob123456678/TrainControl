@@ -1722,6 +1722,43 @@ public class Layout
     }
     
     /**
+     * Applies a default set of callbacks for the given locomotive.  
+     * Will turn on preset functions on departure and disable them on arrival
+     * @param l 
+     */
+    public void applyDefaultLocCallbacks(Locomotive l)
+    {
+        l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
+        {
+            lc.applyPreferredFunctions().delay(minDelay, maxDelay);
+
+            if (lc.hasDepartureFunc())
+            {
+                lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
+            }
+        });
+        
+        // Always set callback in case of future edits
+        l.setCallback(Layout.CB_PRE_ARRIVAL, (lc) -> 
+        {
+            if (lc.hasArrivalFunc())
+            {
+                lc.toggleF(lc.getArrivalFunc());
+            }
+        }); 
+
+        // Optionally disable the arrival functions
+        if (this.turnOffFunctionsOnArrival)
+        {
+            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
+        }
+        else
+        {
+            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
+        }
+    }
+    
+    /**
      * Returns the layout configuration as a JSON string
      * @return 
      * @throws java.lang.IllegalAccessException 

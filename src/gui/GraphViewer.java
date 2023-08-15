@@ -72,6 +72,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
                                 parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
+                                parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(edit.getLoc()));
+                                
                                 parent.repaintAutoLocList(false);
                             }
                         }
@@ -96,6 +98,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                             parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
                             parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
 
+                            parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(edit.getLoc()));
+                            
                             parent.repaintAutoLocList(false);
                         }
                     }
