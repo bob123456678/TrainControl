@@ -7538,9 +7538,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     /**
      * Highlights lock edges on the graph for easier editing
+     * @param current
      * @param lockedEdges 
      */
-    public void highlightLockedEdges(List<Edge> lockedEdges)
+    public void highlightLockedEdges(Edge current, List<Edge> lockedEdges)
     {
         for (Edge e : this.model.getAutoLayout().getEdges())
         {                        
@@ -7551,7 +7552,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Reset unlocked lock edges
             else
             {
-                this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+                if (current != null && e.equals(current))
+                {
+                    this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "completed");
+                }
+                else
+                {
+                    this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+                }
             }
         }
     }

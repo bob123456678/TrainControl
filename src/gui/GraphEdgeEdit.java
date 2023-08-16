@@ -113,7 +113,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         e.setLength(this.edgeLength.getSelectedIndex());
         
         // Reset highlighed lock edges
-        this.parent.highlightLockedEdges(null);
+        this.parent.highlightLockedEdges(null, null);
     }
     
     /**
@@ -257,7 +257,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
             selectedLockEdges.add(parent.getModel().getAutoLayout().getEdge(edge));
         }
         
-        this.parent.highlightLockedEdges(selectedLockEdges);
+        this.parent.highlightLockedEdges(e, selectedLockEdges);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
