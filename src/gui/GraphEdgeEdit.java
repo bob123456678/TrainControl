@@ -91,6 +91,9 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         } 
         
         this.configCommands.setText(config.trim());
+        
+        // Preview lock edges on the graph
+        this.updateUILockedEdges();
     }
     
     /**
@@ -108,6 +111,9 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         }
         
         e.setLength(this.edgeLength.getSelectedIndex());
+        
+        // Reset highlighed lock edges
+        this.parent.highlightLockedEdges(null);
     }
     
     /**
@@ -181,6 +187,11 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
             public int getSize() { return strings.length; }
             public String getElementAt(int i) { return strings[i]; }
         });
+        lockEdges.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lockEdgesMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(lockEdges);
 
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
@@ -230,6 +241,24 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void lockEdgesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lockEdgesMouseClicked
+        this.updateUILockedEdges();
+    }//GEN-LAST:event_lockEdgesMouseClicked
+
+    /**
+     * Updates the lock edges shown on the graph for easier editing
+     */
+    private void updateUILockedEdges()
+    {
+        List<Edge> selectedLockEdges = new LinkedList<>();
+        
+        for (String edge : this.lockEdges.getSelectedValuesList())
+        {
+            selectedLockEdges.add(parent.getModel().getAutoLayout().getEdge(edge));
+        }
+        
+        this.parent.highlightLockedEdges(selectedLockEdges);
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel arrivalFuncLabel;

@@ -7537,6 +7537,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Highlights lock edges on the graph for easier editing
+     * @param lockedEdges 
+     */
+    public void highlightLockedEdges(List<Edge> lockedEdges)
+    {
+        for (Edge e : this.model.getAutoLayout().getEdges())
+        {                        
+            if (lockedEdges != null && lockedEdges.contains(e))
+            {
+                this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "lockedpreview");
+            }
+            // Reset unlocked lock edges
+            else
+            {
+                this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
+            }
+        }
+    }
+    
+    /**
      * Renders a graph visualization of the automated layout
      */
     synchronized private void renderAutoLayoutGraph()

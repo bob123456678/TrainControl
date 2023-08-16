@@ -38,10 +38,15 @@ import org.graphstream.ui.view.util.InteractiveElement;
  */
 final public class GraphViewer extends javax.swing.JFrame {
     
-    TrainControlUI parent;
-    SwingViewer swingViewer;
-    View swingView;
-    Graph mainGraph;
+    private TrainControlUI parent;
+    private SwingViewer swingViewer;
+    private final View swingView;
+    private final Graph mainGraph;
+
+    public Graph getMainGraph()
+    {
+        return mainGraph;
+    }
     
     final class RightClickMenu extends JPopupMenu
     {

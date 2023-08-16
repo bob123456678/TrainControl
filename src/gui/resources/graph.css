@@ -78,6 +78,10 @@ edge.locked {
     fill-color: rgb(238,238,238);
 }
 
+edge.lockedpreview {
+    fill-color: rgb(255,102,0);
+}
+
 edge.inactive {
     fill-color: rgb(0,0,0);
 }

@@ -149,7 +149,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.4 [In development]
+* v1.10.4 [8/16/23]
+    - Lock edges are now highlighted when editing the graph in the UI
     - Improved clarity of path error log output in debug mode
     - Fixed issue where locomotives added to the graph via the UI would not fire departure/arrival functions until after JSON reload
 
