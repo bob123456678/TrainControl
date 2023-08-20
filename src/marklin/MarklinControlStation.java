@@ -52,7 +52,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private boolean debug = false;
     
     // Do we print out packets
-    public static boolean DEBUG_LOG_NETWORK = false;
+    public static boolean DEBUG_LOG_NETWORK = true;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
