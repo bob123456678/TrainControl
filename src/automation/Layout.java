@@ -35,7 +35,7 @@ public class Layout
     public static final String CB_PRE_ARRIVAL = "preArrival";
     
     // If set to true, paths will automatically execute.  Only useful for debugging / testing during development.
-    public static Boolean SIMULATE = false;
+    private boolean simulate = false;
     
     // ms to wait if no paths exist 
     public static final int ROUTE_FIND_SLEEP = 5000;
@@ -181,6 +181,50 @@ public class Layout
     public boolean isValid()
     {
         return this.isValid;
+    }
+    
+    /**
+     * Enables/disables simulation mode 
+     * @param simulate
+     * @throws Exception 
+     */
+    public void setSimulate(boolean simulate) throws Exception
+    {
+        if (this.isRunning())
+        {
+            throw new Exception("Simulation mode can only be changed when no trains are running");
+        }
+        
+        if ((!control.isDebug() || control.getNetworkCommState()) && simulate)
+        {
+            throw new Exception("Simulation can only be enabled in debug mode and when not connected to a Central Station.  Debug mode is enabled by passing a second argument via the command line.");
+        }
+
+        this.simulate = simulate;
+        
+        if (simulate)
+        {
+            control.log("Auto layout WARNING: Auto layout development / simulation mode enabled.  Trains will not run.");
+        }
+    }
+
+    public double getPreArrivalSpeedReduction()
+    {
+        return preArrivalSpeedReduction;
+    }
+
+    public int getMaxLocInactiveSeconds()
+    {
+        return maxLocInactiveSeconds;
+    }
+
+    /**
+     * Returns whether simulation mode is enabled
+     * @return 
+     */
+    public boolean isSimulate()
+    {
+        return this.simulate;
     }
     
     /**
@@ -623,7 +667,7 @@ public class Layout
                 {
                     Thread.sleep(CONFIGURE_SLEEP);
                 } 
-                catch (Exception ex) { }        
+                catch (InterruptedException ex) { }        
             }
         }
     }
@@ -1277,7 +1321,7 @@ public class Layout
                 // Intermediate points - wait for feedback to be triggered and to clear
                 if (current.hasS88())
                 {
-                    if (SIMULATE)
+                    if (this.simulate)
                     {
                         loc.delay(this.getMinDelay(), this.getMaxDelay());
                         this.control.setFeedbackState(current.getS88(), true);
@@ -1285,7 +1329,7 @@ public class Layout
                     
                     loc.waitForOccupiedFeedback(current.getS88());    
                     
-                    if (SIMULATE)
+                    if (this.simulate)
                     {            
                         new Thread( () -> 
                         {
@@ -1362,7 +1406,7 @@ public class Layout
                         loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
                     }
                     
-                    if (SIMULATE)
+                    if (this.simulate)
                     {
                         loc.delay(this.getMinDelay(), this.getMaxDelay());
                         this.control.setFeedbackState(current.getS88(), true);
@@ -1370,7 +1414,7 @@ public class Layout
                     
                     loc.waitForOccupiedFeedback(current.getS88());    
                     
-                    if (SIMULATE)
+                    if (this.simulate)
                     {            
                         new Thread( () -> 
                         {
@@ -1808,7 +1852,7 @@ public class Layout
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         
-        if (SIMULATE)
+        if (this.simulate)
         {
             jsonObj.put("simulate", true);
         }

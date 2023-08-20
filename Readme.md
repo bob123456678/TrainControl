@@ -149,6 +149,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.5 [In development]
+    - Added UI tab for changing autonomy settings
+
 * v1.10.4 [8/16/23]
     - Lock edges are now highlighted when editing the graph in the UI
     - Improved clarity of path error log output in debug mode

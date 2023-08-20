@@ -1152,19 +1152,19 @@ public final class CS2File
             }    
         }
         
-        Layout.SIMULATE = false;
         // Debug/dev only setting
-        if (o.has("simulate"))
+        try
         {
-            if (control.isDebug() && !control.getNetworkCommState())
+            layout.setSimulate(false);
+            
+            if (o.has("simulate"))
             {
-                control.log("Auto layout WARNING: Auto layout development / simulation mode enabled. Trains will not run.");
-                Layout.SIMULATE = true;
-            }   
-            else
-            {
-                control.log("Auto layout warning: Simulation mode can only be enabled when debug mode is active and CS2 is not connected.");
+                layout.setSimulate(o.getBoolean("simulate"));
             }
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout simulation warning: " + e.getMessage());
         }
         
         if (o.has("atomicRoutes"))
