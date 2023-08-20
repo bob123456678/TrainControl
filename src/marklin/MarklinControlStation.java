@@ -13,7 +13,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,7 +49,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public static final String DATA_FILE_NAME = "LocDB.data";
 
     // Debug mode
-    private static boolean debug = false;
+    private boolean debug = false;
+    
+    // Do we print out packets
+    public static boolean DEBUG_LOG_NETWORK = false;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -1018,7 +1020,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     synchronized public void receiveMessage(CS2Message message)
     {
         // Prints out each message
-        if (MarklinControlStation.debug)
+        if (this.debug && DEBUG_LOG_NETWORK)
         {
             this.log(message.toString());
         }
@@ -1128,7 +1130,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            if (debug)
+            if (debug && MarklinControlStation.DEBUG_LOG_NETWORK)
             {
                 this.log("Network transmission disabled\n" + m.toString());
             }
@@ -1603,7 +1605,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public boolean isDebug()
     {
-        return MarklinControlStation.debug;
+        return this.debug;
     }
     
     public View getGUI()

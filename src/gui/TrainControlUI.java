@@ -7554,6 +7554,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
             }
             
+            // Offer to load a blank graph if there is no JSON
+            if (this.autonomyJSON.getText().trim().equals(""))
+            {
+                this.loadBlankdocumentationClicked(null);
+                
+                // Return because there will be a recursive call
+                return;
+            }
+            
             this.model.parseAuto(this.autonomyJSON.getText());
 
             if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
@@ -7667,7 +7676,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void loadBlankdocumentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_loadBlankdocumentationClicked
         int dialogResult = JOptionPane.showConfirmDialog(this, 
-                "Are you sure you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges.",
+                "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges, and to place locomotives.",
                  "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if(dialogResult == JOptionPane.OK_OPTION)
         {

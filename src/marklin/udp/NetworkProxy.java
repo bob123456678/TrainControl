@@ -148,7 +148,7 @@ public class NetworkProxy
                     packet.setLength(buffer.length);
                 }
             }
-            catch (Exception e)
+            catch (IOException e)
             {
                 // Do not exit on error, simply close the socket connection
                 model.log("Network error");

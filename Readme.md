@@ -151,6 +151,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.10.5 [In development]
     - Added UI tab for changing autonomy settings
+    - Made autonomy interface more intuitive when creating a graph for the first time
 
 * v1.10.4 [8/16/23]
     - Lock edges are now highlighted when editing the graph in the UI
