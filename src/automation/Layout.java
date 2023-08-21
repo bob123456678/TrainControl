@@ -37,9 +37,6 @@ public class Layout
     // If set to true, paths will automatically execute.  Only useful for debugging / testing during development.
     private boolean simulate = false;
     
-    // ms to wait if no paths exist 
-    public static final int ROUTE_FIND_SLEEP = 5000;
-    
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
     
@@ -1138,14 +1135,7 @@ public class Layout
 
         this.control.log(loc.getName() + " has no free paths at the moment");
           
-        try
-        {
-            Thread.sleep(Layout.ROUTE_FIND_SLEEP);
-        } 
-        catch (InterruptedException ex)
-        {
-
-        }
+        loc.delay(minDelay, maxDelay);
         
         return null;
     }

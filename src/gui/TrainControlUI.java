@@ -1796,20 +1796,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
         autoSettingsPanel = new javax.swing.JPanel();
-        jLabel43 = new javax.swing.JLabel();
-        maxDelay = new javax.swing.JSlider();
+        jPanel3 = new javax.swing.JPanel();
         jLabel46 = new javax.swing.JLabel();
         minDelay = new javax.swing.JSlider();
-        jLabel47 = new javax.swing.JLabel();
-        maxLocInactiveSeconds = new javax.swing.JSlider();
         jLabel48 = new javax.swing.JLabel();
+        maxLocInactiveSeconds = new javax.swing.JSlider();
+        jLabel47 = new javax.swing.JLabel();
+        maxDelay = new javax.swing.JSlider();
+        jLabel43 = new javax.swing.JLabel();
         defaultLocSpeed = new javax.swing.JSlider();
-        preArrivalSpeedReduction = new javax.swing.JSlider();
         jLabel49 = new javax.swing.JLabel();
-        turnOffFunctionsOnArrival = new javax.swing.JCheckBox();
-        atomicRoutes = new javax.swing.JCheckBox();
-        simulate = new javax.swing.JCheckBox();
+        preArrivalSpeedReduction = new javax.swing.JSlider();
         jLabel50 = new javax.swing.JLabel();
+        atomicRoutes = new javax.swing.JCheckBox();
+        turnOffFunctionsOnArrival = new javax.swing.JCheckBox();
+        simulate = new javax.swing.JCheckBox();
+        jLabel51 = new javax.swing.JLabel();
+        jPanel4 = new javax.swing.JPanel();
+        hideReversing = new javax.swing.JCheckBox();
+        jLabel52 = new javax.swing.JLabel();
         exportJSON = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
         ManageLocPanel = new javax.swing.JPanel();
@@ -4404,7 +4409,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate JSON / Instant Stop");
+        validateButton.setText("Validate Graph / Instant Stop");
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4542,34 +4547,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
 
-        jLabel43.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel43.setText("Default Locomotive Speed (%)");
-        jLabel43.setFocusable(false);
-
-        maxDelay.setMajorTickSpacing(10);
-        maxDelay.setMaximum(30);
-        maxDelay.setMinorTickSpacing(1);
-        maxDelay.setPaintLabels(true);
-        maxDelay.setPaintTicks(true);
-        maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
-        maxDelay.setFocusable(false);
-        maxDelay.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                maxDelayStateChanged(evt);
-            }
-        });
-        maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                maxDelayMouseReleased(evt);
-            }
-        });
+        jPanel3.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
         jLabel46.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel46.setText("Minimum Delay (s)");
+        jLabel46.setText("Minimum Action Delay (s)");
         jLabel46.setFocusable(false);
 
         minDelay.setMajorTickSpacing(10);
-        minDelay.setMaximum(30);
+        minDelay.setMaximum(20);
         minDelay.setMinorTickSpacing(1);
         minDelay.setPaintLabels(true);
         minDelay.setPaintTicks(true);
@@ -4586,16 +4572,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel47.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel47.setText("Maximum Delay (s)");
-        jLabel47.setFocusable(false);
+        jLabel48.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel48.setText("Prioritize Locomotives After (min)");
+        jLabel48.setFocusable(false);
 
         maxLocInactiveSeconds.setMajorTickSpacing(5);
-        maxLocInactiveSeconds.setMaximum(20);
+        maxLocInactiveSeconds.setMaximum(10);
         maxLocInactiveSeconds.setMinorTickSpacing(1);
         maxLocInactiveSeconds.setPaintLabels(true);
         maxLocInactiveSeconds.setPaintTicks(true);
-        maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle after this many minutes will be prioritized.");
+        maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
         maxLocInactiveSeconds.setFocusable(false);
         maxLocInactiveSeconds.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
@@ -4608,9 +4594,31 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel48.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel48.setText("Prioritize Locomotives After (min)");
-        jLabel48.setFocusable(false);
+        jLabel47.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel47.setText("Maximum Action Delay (s)");
+        jLabel47.setFocusable(false);
+
+        maxDelay.setMajorTickSpacing(10);
+        maxDelay.setMaximum(20);
+        maxDelay.setMinorTickSpacing(1);
+        maxDelay.setPaintLabels(true);
+        maxDelay.setPaintTicks(true);
+        maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
+        maxDelay.setFocusable(false);
+        maxDelay.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                maxDelayStateChanged(evt);
+            }
+        });
+        maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                maxDelayMouseReleased(evt);
+            }
+        });
+
+        jLabel43.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel43.setText("Default Locomotive Speed (%)");
+        jLabel43.setFocusable(false);
 
         defaultLocSpeed.setMajorTickSpacing(10);
         defaultLocSpeed.setMinorTickSpacing(5);
@@ -4629,11 +4637,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        jLabel49.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel49.setText("Pre-arrival Speed Multiplier (%)");
+        jLabel49.setFocusable(false);
+
         preArrivalSpeedReduction.setMajorTickSpacing(10);
+        preArrivalSpeedReduction.setMinimum(10);
         preArrivalSpeedReduction.setMinorTickSpacing(5);
         preArrivalSpeedReduction.setPaintLabels(true);
         preArrivalSpeedReduction.setPaintTicks(true);
-        preArrivalSpeedReduction.setToolTipText("Locomotive slow down when they are about to reach their station.  This controls by how much to slow them down.");
+        preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
         preArrivalSpeedReduction.setFocusable(false);
         preArrivalSpeedReduction.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
@@ -4646,28 +4659,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel49.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel49.setText("Pre-arrival Speed Multiplier (%)");
-        jLabel49.setFocusable(false);
-
-        turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
-        turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
-        turnOffFunctionsOnArrival.setFocusable(false);
-        turnOffFunctionsOnArrival.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                turnOffFunctionsOnArrivalStateChanged(evt);
-            }
-        });
-        turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                turnOffFunctionsOnArrivalMouseReleased(evt);
-            }
-        });
-        turnOffFunctionsOnArrival.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                turnOffFunctionsOnArrivalActionPerformed(evt);
-            }
-        });
+        jLabel50.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel50.setText("Other Settings");
+        jLabel50.setFocusable(false);
 
         atomicRoutes.setText("Atomic Routes");
         atomicRoutes.setToolTipText("When unchecked, edges will unlock as trains pass them, for a more dynamic experience.  Edge and train lengths need to be set for best results.");
@@ -4685,6 +4679,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         atomicRoutes.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 atomicRoutesActionPerformed(evt);
+            }
+        });
+
+        turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
+        turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
+        turnOffFunctionsOnArrival.setFocusable(false);
+        turnOffFunctionsOnArrival.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                turnOffFunctionsOnArrivalStateChanged(evt);
+            }
+        });
+        turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                turnOffFunctionsOnArrivalMouseReleased(evt);
+            }
+        });
+        turnOffFunctionsOnArrival.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                turnOffFunctionsOnArrivalActionPerformed(evt);
             }
         });
 
@@ -4707,9 +4720,107 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel50.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel50.setText("Other Settings");
-        jLabel50.setFocusable(false);
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel47))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel43)
+                                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel48)))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel49))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel46)
+                            .addComponent(jLabel50)
+                            .addComponent(atomicRoutes)
+                            .addComponent(turnOffFunctionsOnArrival)
+                            .addComponent(simulate))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel46)
+                    .addComponent(jLabel48))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel47)
+                    .addComponent(jLabel43))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel49)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel50)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(atomicRoutes)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(turnOffFunctionsOnArrival)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(simulate))
+        );
+
+        jLabel51.setText("Fine tune the behavior of autonomous operation: hover for setting details.");
+
+        jPanel4.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        hideReversing.setText("Hide Reversing Stations");
+        hideReversing.setToolTipText("Temporarily hides reversing stations from view in the graph.");
+        hideReversing.setFocusable(false);
+        hideReversing.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                hideReversingMouseReleased(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(hideReversing)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(hideReversing)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jLabel52.setText("Graph UI options");
 
         javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
         autoSettingsPanel.setLayout(autoSettingsPanelLayout);
@@ -4718,60 +4829,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autoSettingsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(autoSettingsPanelLayout.createSequentialGroup()
-                        .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jLabel49)
-                    .addComponent(jLabel50)
-                    .addComponent(atomicRoutes)
-                    .addComponent(turnOffFunctionsOnArrival)
-                    .addComponent(simulate)
-                    .addGroup(autoSettingsPanelLayout.createSequentialGroup()
-                        .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel47)
-                            .addComponent(jLabel46))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel48)
-                            .addComponent(jLabel43)
-                            .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(215, 234, Short.MAX_VALUE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel51))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel52))
+                .addContainerGap(13, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(autoSettingsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel46)
-                    .addComponent(jLabel48))
+                    .addComponent(jLabel51, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel52))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel47)
-                    .addComponent(jLabel43))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel49)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel50)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(atomicRoutes)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(turnOffFunctionsOnArrival)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(simulate)
-                .addContainerGap(53, Short.MAX_VALUE))
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18))
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
@@ -7558,9 +7635,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (this.autonomyJSON.getText().trim().equals(""))
             {
                 this.loadBlankdocumentationClicked(null);
-                
-                // Return because there will be a recursive call
-                return;
             }
             
             this.model.parseAuto(this.autonomyJSON.getText());
@@ -7643,7 +7717,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             try
             {
                 textArea.setText(this.getModel().getAutoLayout().toJSON());
-                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);     
+                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);   
+                
+                // Place in clipboard
+                StringSelection selection = new StringSelection(textArea.getText());
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
             }
             catch (Exception e)
             {
@@ -7698,7 +7776,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 "}"
             );
             
-            this.validateButtonActionPerformed(null);
+            if (evt != null) this.validateButtonActionPerformed(null);
         }
     }//GEN-LAST:event_loadBlankdocumentationClicked
 
@@ -7706,139 +7784,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
     }//GEN-LAST:event_autosaveActionPerformed
 
-    private void turnOffFunctionsOnArrivalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalActionPerformed
-
-    private void atomicRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_atomicRoutesActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_atomicRoutesActionPerformed
-
     private void simulateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simulateActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_simulateActionPerformed
 
-    private void minDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minDelayStateChanged
-
-    }//GEN-LAST:event_minDelayStateChanged
-
-    private void maxDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxDelayStateChanged
-
-    }//GEN-LAST:event_maxDelayStateChanged
-
-    private void maxLocInactiveSecondsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsStateChanged
-
-    }//GEN-LAST:event_maxLocInactiveSecondsStateChanged
-
-    private void defaultLocSpeedStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_defaultLocSpeedStateChanged
-
-    }//GEN-LAST:event_defaultLocSpeedStateChanged
-
-    private void preArrivalSpeedReductionStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionStateChanged
-
-    }//GEN-LAST:event_preArrivalSpeedReductionStateChanged
-
-    private void atomicRoutesStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_atomicRoutesStateChanged
-
-    }//GEN-LAST:event_atomicRoutesStateChanged
-
-    private void turnOffFunctionsOnArrivalStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalStateChanged
-
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalStateChanged
+    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_simulateMouseReleased
 
     private void simulateStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_simulateStateChanged
 
     }//GEN-LAST:event_simulateStateChanged
 
-    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_minDelayMouseReleased
-
-    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
-
-    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxDelayMouseReleased
-
-    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_defaultLocSpeedMouseReleased
-
-    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
-
-    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_atomicRoutesMouseReleased
+    private void turnOffFunctionsOnArrivalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_turnOffFunctionsOnArrivalActionPerformed
 
     private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -7855,12 +7826,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
 
-    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
+    private void turnOffFunctionsOnArrivalStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalStateChanged
+
+    }//GEN-LAST:event_turnOffFunctionsOnArrivalStateChanged
+
+    private void atomicRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_atomicRoutesActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_atomicRoutesActionPerformed
+
+    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
         if (!this.isAutoLayoutRunning())
         {
             try
             {
-                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
+                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
             }
             catch (Exception e)
             {
@@ -7868,7 +7847,113 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 loadAutoLayoutSettings();
             }
         }
-    }//GEN-LAST:event_simulateMouseReleased
+    }//GEN-LAST:event_atomicRoutesMouseReleased
+
+    private void atomicRoutesStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_atomicRoutesStateChanged
+
+    }//GEN-LAST:event_atomicRoutesStateChanged
+
+    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
+
+    private void preArrivalSpeedReductionStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionStateChanged
+
+    }//GEN-LAST:event_preArrivalSpeedReductionStateChanged
+
+    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_defaultLocSpeedMouseReleased
+
+    private void defaultLocSpeedStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_defaultLocSpeedStateChanged
+
+    }//GEN-LAST:event_defaultLocSpeedStateChanged
+
+    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxDelayMouseReleased
+
+    private void maxDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxDelayStateChanged
+
+    }//GEN-LAST:event_maxDelayStateChanged
+
+    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
+
+    private void maxLocInactiveSecondsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsStateChanged
+
+    }//GEN-LAST:event_maxLocInactiveSecondsStateChanged
+
+    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_minDelayMouseReleased
+
+    private void minDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minDelayStateChanged
+
+    }//GEN-LAST:event_minDelayStateChanged
+
+    private void hideReversingMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideReversingMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+        }
+    }//GEN-LAST:event_hideReversingMouseReleased
 
     private boolean isAutoLayoutRunning()
     {
@@ -7942,6 +8027,40 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         graph.getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
         
         updateEdgeLength(e, graph);
+    }
+    
+    /**
+     * Updates the visibility of certain points and edges
+     */
+    synchronized public void updateVisiblePoints()
+    {
+        Graph g = this.graphViewer.getMainGraph();
+        
+        for (Point p : this.model.getAutoLayout().getPoints())
+        {    
+            if (this.hideReversing.isSelected() && p.isReversing())
+            {
+                g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
+            }
+            else
+            {
+                g.getNode(p.getUniqueId()).removeAttribute("ui.hide");
+            }
+        }
+        
+        // Hides edges, TODO move to a separate function later
+        for (Edge e : this.model.getAutoLayout().getEdges())
+        {
+            if (g.getNode(e.getEnd().getUniqueId()).getAttribute("ui.hide") != null || 
+                    g.getNode(e.getStart().getUniqueId()).getAttribute("ui.hide") != null)
+            {
+                g.getEdge(e.getUniqueId()).setAttribute("ui.hide");
+            }
+            else
+            {
+                g.getEdge(e.getUniqueId()).removeAttribute("ui.hide");
+            }   
+        }
     }
     
     /**
@@ -8640,6 +8759,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton exportJSON;
     private javax.swing.JButton gracefulStop;
+    private javax.swing.JCheckBox hideReversing;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -8686,6 +8806,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel49;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel50;
+    private javax.swing.JLabel jLabel51;
+    private javax.swing.JLabel jLabel52;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
@@ -8695,6 +8817,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
