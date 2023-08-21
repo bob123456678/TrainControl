@@ -196,6 +196,7 @@ Moreover, to make it easier to create graphs, from v1.9.0, all state associated 
 The following example JSON corresponds to the above code/layout and edge locking.
 
 To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate Graph".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
+
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via "Graceful Stop", or reset by the former button.  Graceful Stop is recommended, as this way the state will automatically be saved when you exit the program.   Chosen paths will be shown in the log.
 
