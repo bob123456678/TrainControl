@@ -149,7 +149,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.5 [In development]
+* v1.10.5 [8/20/23]
     - UI enhancements to eliminate the need for manual JSON edits
         - Added UI tab for changing autonomy settings
         - Made autonomy interface more intuitive when creating a graph for the first time
