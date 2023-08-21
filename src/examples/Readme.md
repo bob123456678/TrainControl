@@ -187,24 +187,13 @@ This functionality is essential when your layout includes crossings, since these
 # Running and Visualizing via TrainControl UI
 
 From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
+Moreover, to make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.
+
 The following example JSON corresponds to the above code/layout and edge locking.
 
-To make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.
-
-To determine the pace of operation, `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
-The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
-
-TrainControl will enable/disable each locomotive's preferred functions, if any, (as set in the UI) before departure and upon arrival, respectively.  These cannot be specified in the JSON.  
-However, you can set `turnOffFunctionsOnArrival` to `false` to skip turning off the functions on arrival.
-
-From v1.10.0, all locomotive configuration is nested within the `loc` array for better semantics and readability, so variables are no longer prefixed by "loc".
-
-Unless the `speed` is specified, each locomotive's preferred speed will be used (as set in the UI).  If neither are set, the program will revert to `defaultLocSpeed`.
-The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
-
-To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate JSON".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
+To get started, paste the JSON in TrainControl's "autonomy" tab, then click on "Validate Graph".  Any errors (such as non-existing edges or missing points) will be shown in the log.  
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
-Locomotives will then continue running per the specified layout until stopped via the former button.  Chosen paths will be shown in the log.
+Locomotives will then continue running per the specified layout until stopped via "Graceful Stop", or reset by the former button.  Graceful Stop is recommended, as this way the state will automatically be saved when you exit the program.   Chosen paths will be shown in the log.
 
 You can also manually specify where each locomotive should go through the "Locomotive Commands" tab.  The list of available paths is automatically calculated based on the graph state and S88 feedback. 
 
@@ -384,9 +373,13 @@ Reversing stations are intended for parking/shunting.  For example, if you want 
 
 If you want to designate a parking space without reversing functionality, simply change a station to a non-station. Paths that start from a non-station, or a reversing station, will never automatically be chosen.  When you want the locomotive to run again, manually trigger a path to another station, or change the point back to a station.
 
-# Advanced layouts
+# Advanced layouts and settings
 
-This graph model can be used to automate layouts with complex designs and tons of switches.  
+TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../cs2_sample_layout/config/)
+
+Remember that everything described below can now be fully edited via TrainControl's graph UI! 
+
+## Train lengths and non-atomic routes
 
 From v1.8.10, you can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
 This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
@@ -398,8 +391,25 @@ To ensure that potential collisions are avoided, each edge must be configured wi
 Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
 Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
+## Path selection logic
+
+Paths are selected at random from among the possible stations reachable by any given locomotive.  The shortest path is preferred unless it is occupied.
+
 From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
-A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](../../cs2_sample_layout/config/)
+## Pace of operation
 
-Remember that everything can now be fully edited via TrainControl's graph UI!
+`minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
+The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
+
+## Functions (sounds / lighting)
+
+TrainControl will enable/disable each locomotive's preferred functions, if any, before departure and upon arrival, respectively.  
+
+These preferred functons are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
+However, if you want to avoid turning off the functions on arrival you can set `turnOffFunctionsOnArrival` to `false`.  A good reason to use this is to keep operating sounds / lights on between paths.
+
+From v1.10.0, all locomotive configuration is nested within the `loc` array (on the stationed point) for better semantics and readability, so variables are no longer prefixed by "loc".
+
+Unless the `speed` is specified, each locomotive's preferred speed will be used (as set in the Locomotive Control UI).  If neither is set, the program will revert to `defaultLocSpeed`.
+The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
