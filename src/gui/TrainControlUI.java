@@ -7953,6 +7953,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.updateVisiblePoints();
         }
+        else
+        {
+            this.hideReversing.setSelected(!this.hideReversing.isSelected());
+        }
     }//GEN-LAST:event_hideReversingMouseReleased
 
     private boolean isAutoLayoutRunning()

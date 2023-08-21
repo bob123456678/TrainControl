@@ -194,7 +194,7 @@ public class Layout
         
         if ((!control.isDebug() || control.getNetworkCommState()) && simulate)
         {
-            throw new Exception("Simulation can only be enabled in debug mode and when not connected to a Central Station.  Debug mode is enabled by passing a second argument via the command line.");
+            throw new Exception("Simulation can only be enabled in debug mode and when not connected to a Central Station.\n\nDebug mode is enabled by passing a second argument via the command line.");
         }
 
         this.simulate = simulate;
