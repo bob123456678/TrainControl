@@ -463,7 +463,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.autonomyJSON.setText((String) obj);
             }
         }
-        catch (Exception e)
+        catch (IOException | ClassNotFoundException e)
         {
             this.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
         }
@@ -558,7 +558,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
                     this.model.log("Auto-saved autonomy state.");
                 }
-                catch (Exception ex)
+                catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException ex)
                 {
                     this.model.log("Failed to save auto layout JSON.");
                 }
