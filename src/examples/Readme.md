@@ -2,6 +2,11 @@
 
 Beyond its GUI, the TrainControl software can be used to progammatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
 
+There are three types of automation described on this page:
+    - Manually defining basic automation logic and commands via the Java API (good)
+    - Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
+    - Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
+
 ## API
 
 Before jumping into layout automation, it is important to understand the basics of the TrainControl Java API.  
@@ -111,9 +116,7 @@ These commands will execute before that edge is traversed by a locomotive.
     //
     // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
     //
-    // Note that from v1.8.0 of TrainControl,
-    // we can and should use control.getAutoLayout().configure instead of control.getAccessoryByName().turn/straight/red/green 
-    // This gives us additional sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would thus never be chosen
+    // The addConfigCommand API provies sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would never be chosen
     layout.createEdge("Station 2", "Main Track").addConfigCommand("Signal 2", GREEN);
     layout.createEdge("Station 1", "Main Track").addConfigCommand("Signal 1", GREEN);
 
@@ -137,6 +140,7 @@ These commands will execute before that edge is traversed by a locomotive.
 The `Layout` class also allows *optional* pre-departure, pre-arrival, and post-arrival callbacks to be set to turn on functions and lights as desired.
 In these lambda functions, `loc` is a reference to the locomotive itself.
                 
+    // You can also simply use layout.applyDefaultLocCallbacks(data.getLocByName("SNCF 422365")) to use the preferred functions set in the TrainControl UI
     data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3);});
     data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3).toggleF(11);});
 
@@ -187,7 +191,7 @@ This functionality is essential when your layout includes crossings, since these
 # Running and Visualizing via TrainControl UI
 
 From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
-Moreover, to make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  From v1.10.5, all settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
+Moreover, to make it easier to create graphs, from v1.9.0, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  From v1.10.5, all settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
 
 The following example JSON corresponds to the above code/layout and edge locking.
 

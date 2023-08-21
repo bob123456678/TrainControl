@@ -33,14 +33,10 @@ public class FullAutonomyExample
             // The train cannot stop here, but we create an extra point so that both routes share a common edge
             layout.createPoint("Main Track", false, null);
             
-            //
             // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
             //
-            
-            // Note that from v1.8.0 of TrainControl,
-            // we can and should use control.getAutoLayout().configure instead of control.getAccessoryByName().turn/straight/red/green 
-            // This gives us additional sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would thus never be chosen
-            
+            // The addConfigCommand API provies sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would never be chosen
+            //
             // If an accessory is not yet in the database, use control.newSignal or control.newSwitch
             
             layout.createEdge("Station 2", "Main Track").addConfigCommand("Signal 2", GREEN);
@@ -67,6 +63,7 @@ public class FullAutonomyExample
             // These can be used for setting locomotive functions, turning on lights, etc.
             //
             
+            // You can also simply use layout.applyDefaultLocCallbacks(data.getLocByName("SNCF 422365")) to use the preferred functions set in the TrainControl UI
             data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3);});
             data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3).toggleF(11);});
 
