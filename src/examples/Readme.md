@@ -187,7 +187,7 @@ This functionality is essential when your layout includes crossings, since these
 # Running and Visualizing via TrainControl UI
 
 From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
-Moreover, to make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.
+Moreover, to make it easier to create graphs, from v1.9.0, all state associated via graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  From v1.10.5, all settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
 
 The following example JSON corresponds to the above code/layout and edge locking.
 
@@ -197,7 +197,7 @@ Locomotives will then continue running per the specified layout until stopped vi
 
 You can also manually specify where each locomotive should go through the "Locomotive Commands" tab.  The list of available paths is automatically calculated based on the graph state and S88 feedback. 
 
-Note that a path with conflicting accessory commands will never be chosen. 
+Details on advanced configuration parameters can be found at the end of this document.
 
 ```
 {
@@ -393,14 +393,17 @@ Note that lock edges, which should be used for any overlapping/crossing tracks, 
 
 ## Path selection logic
 
-Paths are selected at random from among the possible stations reachable by any given locomotive.  The shortest path is preferred unless it is occupied.
-
-From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
+Paths are selected at random from among the possible stations reachable by any given locomotive, with the following conditions:
+    - The shortest path is preferred unless it is occupied or locked
+    - A path with conflicting accessory commands will never be chosen 
+    - From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
 ## Pace of operation
 
 `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
-The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
+The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. 
+
+From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
 
 ## Functions (sounds / lighting)
 
