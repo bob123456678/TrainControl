@@ -44,17 +44,21 @@ public class MarklinLayout
     // Corresponding accessory reference
     private final List<List<MarklinLayoutComponent>> grid;
     
-     // Network reference
+    // Network reference
     private final MarklinControlStation network;
+    
+    // Path to the layout file
+    private final String url;
    
     /**
      * Constructor
      * @param name
      * @param sx size x
      * @param sy size y
+     * @param url
      * @param network 
      */
-    public MarklinLayout(String name, int sx, int sy, MarklinControlStation network)
+    public MarklinLayout(String name, int sx, int sy, String url, MarklinControlStation network)
     {
         this.name = name;
         this.sx = sx;
@@ -62,7 +66,8 @@ public class MarklinLayout
         this.maxx = sx;
         this.maxy = sy;
         this.network = network;
-        
+        this.url = url;
+                
         this.grid = new ArrayList<>();
         
         for (int i = 0; i < sx; i++)
@@ -84,10 +89,10 @@ public class MarklinLayout
      * @param x
      * @param y
      */
-    public void execStateChange(int x, int y)
+    /*public void execStateChange(int x, int y)
     {
         // make a 
-    }
+    }*/
     
     public void addComponent(MarklinLayoutComponent.componentType t, 
             int x, int y, int orient, int state, int address, int rawAddresss) throws IOException

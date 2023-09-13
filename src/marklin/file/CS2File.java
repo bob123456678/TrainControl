@@ -898,7 +898,8 @@ public final class CS2File
         
         for (String name : names)
         { 
-            List<Map<String, String> > l = parseFile(fetchURL(getLayoutURL(name)));
+            String url = getLayoutURL(name);
+            List<Map<String, String> > l = parseFile(fetchURL(url));
             
             int maxX = 0;
             int maxY = 0;
@@ -933,7 +934,7 @@ public final class CS2File
                 }
             }
             
-            MarklinLayout layout = new MarklinLayout(name, maxX + 1, maxY + 1, this.control);
+            MarklinLayout layout = new MarklinLayout(name, maxX + 1, maxY + 1, url, this.control);
                         
             for (Map<String, String> m : l)
             {
