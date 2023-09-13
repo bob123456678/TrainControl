@@ -59,4 +59,5 @@ public interface ViewListener
     MarklinAccessory newSignal(String name, int address, boolean state);
     MarklinAccessory newSwitch(String name, int address, boolean state);
     public boolean getNetworkCommState();
+    public int getNumMessagesProcessed();
 }

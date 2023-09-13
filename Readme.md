@@ -149,6 +149,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.6 [Beta]
+    - If no CAN messages are received within the first 15 seconds after startup, a reminder pop-up will be shown stating that broadcasting must be enabled in CS2/CS3 settings
+
 * v1.10.5 [8/20/23]
     - UI enhancements to eliminate the need for manual JSON edits
         - Added UI tab for changing autonomy settings

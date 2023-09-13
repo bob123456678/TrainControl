@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -821,6 +823,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             repaintLayout();
         }
+        
+        // Monitor for network activity and show a warning if CS2/3 seems unresponsive
+        new Thread(() ->
+        {
+            int secsToWait = 15;
+            
+            try
+            {
+                Thread.sleep(secsToWait * 1000);
+            } catch (InterruptedException ex) { }
+            
+            if (this.model.getNumMessagesProcessed() == 0
+                && this.model.getNetworkCommState()
+            )
+            {
+                JOptionPane.showMessageDialog(this, "No CAN messages have been detected from the Central Station for " 
+                        + secsToWait + " seconds.\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
+            }
+        }).start();
     }
     
     public LocomotiveSelector getLocSelector()

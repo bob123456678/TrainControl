@@ -41,7 +41,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.10.5";
+    public static final String VERSION = "1.10.6";
     
     //// Settings
     
@@ -104,6 +104,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Automation controller
     private Layout autoLayout;
+    
+    // Number of network messages processed
+    private int numMessagesProcessed = 0;
             
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
@@ -406,14 +409,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(NetworkInterface.getIP()));
+                this.log("Station type detection result: " + (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)
             {
-                this.log(e.toString());
+                this.log("Station type detection error: " + e.toString());
             }
-            
-            this.log("Station detection result: " + (this.isCS3 ? "CS3" : "CS2"));
-                           
+                                       
             // Import layout
             String overrideLayoutPath = "";
             Preferences prefs = null;
@@ -1011,6 +1013,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.locIdCache.get(id).add(l.getUID());
         }
     }
+    
+    /**
+     * Fetches the number of CAN messages processed so far
+     * @return 
+     */
+    @Override
+    public int getNumMessagesProcessed()
+    {
+        return this.numMessagesProcessed;
+    }
         
     /**
      * Receives a network messages from the CS2 for interpretation
@@ -1024,6 +1036,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.log(message.toString());
         }
+        
+        numMessagesProcessed +=1;
         
         // Send the message to the appropriate listener
         if(message.isLocCommand())
