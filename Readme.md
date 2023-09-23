@@ -151,6 +151,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.10.6 [Beta]
     - If no CAN messages are received within the first 15 seconds after startup, a reminder pop-up will be shown stating that broadcasting must be enabled in CS2/CS3 settings
+    - Upon arriving at a terminus, added a delay before locomotives switch direction to allow for smooth deceleration
 
 * v1.10.5 [8/20/23]
     - UI enhancements to eliminate the need for manual JSON edits

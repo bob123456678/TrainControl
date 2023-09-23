@@ -1463,7 +1463,7 @@ public class Layout
         if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
         {
             this.control.log("Auto layout: Locomotive " + loc.getName() + " reached terminus or final reversing station. Reversing");   
-            loc.switchDirection().delay(1000); // pause to avoid network issues
+            loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection().delay(1000); // pause to avoid network issues
         }
         
         if (loc.hasCallback(CB_ROUTE_END))
