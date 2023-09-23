@@ -138,6 +138,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Maximum number of functions
     private static final int NUM_FN = 33;
     
+    // Number of seconds to wait before checking for CAN acivity
+    private static final int CAN_MONITOR_DELAY = 15;
+    
     // Data save file name
     private static final String DATA_FILE_NAME = "UIState.data";
     public static String AUTONOMY_FILE_NAME = "autonomy.json";
@@ -826,20 +829,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
-        {
-            int secsToWait = 15;
-            
+        {            
             try
             {
-                Thread.sleep(secsToWait * 1000);
+                Thread.sleep(CAN_MONITOR_DELAY * 1000);
             } catch (InterruptedException ex) { }
             
             if (this.model.getNumMessagesProcessed() == 0
                 && this.model.getNetworkCommState()
             )
             {
-                JOptionPane.showMessageDialog(this, "No CAN messages have been detected from the Central Station for " 
-                        + secsToWait + " seconds.\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
+                String message = "Warning: No CAN messages have been detected from the Central Station for " + CAN_MONITOR_DELAY + " seconds.";
+                this.model.log(message);
+                JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
     }
