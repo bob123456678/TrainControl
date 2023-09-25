@@ -220,6 +220,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
         locUsageReport.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
         locUsageReport.setText("Loc Usage Report");
+        locUsageReport.setFocusable(false);
         locUsageReport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 locUsageReportActionPerformed(evt);
