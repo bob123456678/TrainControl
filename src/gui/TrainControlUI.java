@@ -7563,14 +7563,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 for (Locomotive l : sortedLocs)
                 {
-                    this.log(l.getName() + " [" + (l.getTotalRuntime() / 1000.0) + "s]");   
+                    this.model.log(l.getName() + " [" + (l.getTotalRuntime() / 1000.0) + "s]");   
                 }   
 
-                this.log("Locomotive runtime report:");
+                this.model.log("Locomotive runtime report:");
             }
             else
             {
-                this.log("No data recorded.");
+                this.model.log("No data recorded.");
             }
 
         }).start();
@@ -7621,17 +7621,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     for (MarklinLocomotive l : locs.get(addr))
                     {
-                        this.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                        this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                     }
 
-                    this.log("---- Address " + addr + " ----");
+                    this.model.log("---- Address " + addr + " ----");
                 }   
 
-                this.log("Duplicate locomotive address report:");
+                this.model.log("Duplicate locomotive address report:");
             }
             else
             {
-                this.log("There are no duplicate locomotive addresses in the database.");
+                this.model.log("There are no duplicate locomotive addresses in the database.");
             }
 
             JOptionPane.showMessageDialog(this, message);
