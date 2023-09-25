@@ -471,7 +471,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (IOException | ClassNotFoundException e)
         {
-            this.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
+            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
         }
         
         // Right-clicks on the route list
@@ -1294,7 +1294,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     {
                         noImageButton(b);
 
-                        this.log("Failed to load image " + l.getImageURL());
+                        this.model.log("Failed to load image " + l.getImageURL());
                     }
                 }
                 else
@@ -1402,7 +1402,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         }
                         catch (IOException e)
                         {
-                            this.log("Icon not found: " + targetURL);
+                            this.model.log("Icon not found: " + targetURL);
                             //bt.setText("F" + Integer.toString(fNo));
                         } 
                     }).start();
@@ -7810,7 +7810,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     e.printStackTrace();
                 }
 
-                this.log("JSON error: " + e.getMessage());
+                this.model.log("JSON error: " + e.getMessage());
 
                 JOptionPane.showMessageDialog(this, "Failed to generate JSON.  Check log for details.");
             }
