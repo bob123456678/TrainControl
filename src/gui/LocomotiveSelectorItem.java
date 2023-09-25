@@ -5,31 +5,40 @@
  */
 package gui;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.io.IOException;
+import java.util.List;
+import javax.swing.JPanel;
 import marklin.MarklinLocomotive;
 
 /**
  *
  * @author Adam
  */
-public class LocomotiveSelectorItem extends javax.swing.JPanel {
+public final class LocomotiveSelectorItem extends javax.swing.JPanel {
     
     private MarklinLocomotive loc;
     private TrainControlUI tcui;
+    private JPanel mainLocList;
     
     /**
      * Creates new form LocomotiveSelectorItem
      * @param loc
      * @param ui
      */
-    public LocomotiveSelectorItem(MarklinLocomotive loc, TrainControlUI ui) {
+    public LocomotiveSelectorItem(MarklinLocomotive loc, TrainControlUI ui, JPanel mainLocList) {
         initComponents();
         
         this.loc = loc;
         this.tcui = ui;
+        this.mainLocList = mainLocList;
                 
         this.LocLabel.setText(loc.getName());
         
+        this.refreshToolTip();
+                
+        // Set icon
         if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null)
         {
             try 
@@ -49,6 +58,28 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
             locIcon.setIcon(null);
         }
 
+    }
+    
+    /**
+     * Makes the tooltip indicate current keyboard mappings
+     */
+    public void refreshToolTip()
+    {
+        // Set tooltip and label color
+        List<String> mappings = this.tcui.getAllLocButtonMappings(loc);
+        if (!mappings.isEmpty())
+        {
+            locIcon.setToolTipText("Mapped to: " + String.join(", ", mappings));
+            LocLabel.setForeground(Color.GRAY);
+        }
+        else
+        {
+            locIcon.setToolTipText(null);
+            LocLabel.setForeground(Color.BLACK);
+        }
+        
+        LocLabel.setToolTipText(this.locIcon.getToolTipText());
+        this.setToolTipText(this.locIcon.getToolTipText());
     }
     
     public String getText()
@@ -74,6 +105,9 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
         setMinimumSize(new java.awt.Dimension(140, 95));
         setPreferredSize(new java.awt.Dimension(140, 95));
         addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                formMouseEntered(evt);
+            }
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 formMouseReleased(evt);
             }
@@ -117,11 +151,19 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
         tcui.mapLocToCurrentButton(loc.getName());
         
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            // Update all other tooltips
+            for (Component c: this.mainLocList.getComponents())
+            {
+                ((LocomotiveSelectorItem) c).refreshToolTip();
+            }
+        }));
+        
         if (tcui.getLocSelector().doCloseWindow())
         {
             tcui.getLocSelector().setVisible(false);
-        }
-        
+        }  
     }//GEN-LAST:event_formMouseReleased
 
     private void LocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocLabelMouseReleased
@@ -132,6 +174,9 @@ public class LocomotiveSelectorItem extends javax.swing.JPanel {
         formMouseReleased(evt);
     }//GEN-LAST:event_locIconMouseReleased
 
+    private void formMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseEntered
+       
+    }//GEN-LAST:event_formMouseEntered
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel LocLabel;

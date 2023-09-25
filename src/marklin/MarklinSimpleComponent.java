@@ -31,6 +31,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private Integer arrivalFunction;
     private boolean reversible;
     private Integer trainLength;
+    private long totalRuntime;
     
     // Route state
     private int s88;
@@ -138,6 +139,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.arrivalFunction = l.getArrivalFunc();
         this.reversible = l.isReversible();
         this.trainLength = l.getTrainLength();
+        this.totalRuntime = l.getTotalRuntime();
     }
     
     public List<RouteCommand> getRoute()
@@ -256,6 +258,11 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public boolean getReversible()
     {
         return this.reversible;
+    }
+    
+    public long getTotalRuntime()
+    {
+        return this.totalRuntime;
     }
     
     public Integer getTrainLength()

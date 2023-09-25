@@ -149,6 +149,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.7 [Beta]
+    - Added a tooltip depicting the current key mapping to each locomotive tile in the locomotive selector window; mapped locomotives will be shown in gray.
+    - Added basic tracking of locomotive run time; report button available in the locomotive selector window
+
 * v1.10.6 [9/24/23]
     - If no CAN messages are received within the first 15 seconds after startup, a reminder pop-up will be shown stating that broadcasting must be enabled in CS2/CS3 settings
     - Upon arriving at a terminus, added a delay before locomotives switch direction to allow for smooth deceleration

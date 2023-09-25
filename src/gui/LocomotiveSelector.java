@@ -64,7 +64,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
             for (String s : model.getLocList())
             {
-                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(model.getLocByName(s), parent);
+                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(model.getLocByName(s), parent, this.MainLocList);
 
                 this.MainLocList.add(loc);
                 loc.setVisible(true);
@@ -114,6 +114,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         MainLocList = new javax.swing.JPanel();
         SyncWithCS = new javax.swing.JButton();
         closeOnLocSel = new javax.swing.JCheckBox();
+        locUsageReport = new javax.swing.JButton();
 
         setTitle("Locomotive Selector");
         setAutoRequestFocus(false);
@@ -217,6 +218,14 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             }
         });
 
+        locUsageReport.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        locUsageReport.setText("Loc Usage Report");
+        locUsageReport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                locUsageReportActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -234,6 +243,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                         .addGap(15, 15, 15)
                         .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(locUsageReport)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SyncWithCS)))
                 .addContainerGap())
         );
@@ -250,7 +261,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(renameLabel)
-                    .addComponent(SyncWithCS))
+                    .addComponent(SyncWithCS)
+                    .addComponent(locUsageReport))
                 .addContainerGap())
         );
 
@@ -313,6 +325,11 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         updateScrollArea();
     }//GEN-LAST:event_formFocusGained
 
+    private void locUsageReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locUsageReportActionPerformed
+        this.parent.generateLocUsageReport();
+        JOptionPane.showMessageDialog(this, "Check log for the report");
+    }//GEN-LAST:event_locUsageReportActionPerformed
+
     public boolean doCloseWindow()
     {
         return this.closeOnLocSel.isSelected();
@@ -362,6 +379,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     private javax.swing.JButton SyncWithCS;
     private javax.swing.JCheckBox closeOnLocSel;
     private javax.swing.JLabel locListLabel;
+    private javax.swing.JButton locUsageReport;
     private javax.swing.JLabel renameLabel;
     // End of variables declaration//GEN-END:variables
 }

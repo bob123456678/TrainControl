@@ -41,7 +41,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.10.6";
+    public static final String VERSION = "1.10.7";
     
     //// Settings
     
@@ -138,7 +138,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     c.getLocType(), 
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
                     c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(), 
-                    c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength());                
+                    c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -1376,10 +1376,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
         boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, 
-        Integer arrivalFunc, boolean reversible, Integer trainLength)
+        Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime)
     {
         MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions, preferredSpeed,
-            departureFunc, arrivalFunc, reversible, trainLength);
+            departureFunc, arrivalFunc, reversible, trainLength, totalRuntime);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         

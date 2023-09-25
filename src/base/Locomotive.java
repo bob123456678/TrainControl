@@ -62,6 +62,9 @@ public abstract class Locomotive
     // Number of completed paths, and last time
     protected Integer numPaths = 0;
     protected long lastPathTime = System.currentTimeMillis();
+    
+    protected long totalRuntime;
+    private long lastStartTime;
  
     /**
      * Constructor with name and all functions off
@@ -82,6 +85,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
+        this.totalRuntime = 0;
     }
     
     /**
@@ -201,6 +205,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
+        this.totalRuntime = 0;
     }
     
     /**
@@ -240,11 +245,12 @@ public abstract class Locomotive
      * @param arrivalFunc 
      * @param trainLength
      * @param reversible 
+     * @param totalRuntime 
      */
     public Locomotive(String name, int speed, locDirection direction,
         boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
-        int trainLength
+        int trainLength, long totalRuntime
     )
     {
         this.name = name;
@@ -269,6 +275,7 @@ public abstract class Locomotive
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
         this.trainLength = trainLength;
+        this.totalRuntime = totalRuntime;
     }
 
     /* Internal functionality */
@@ -281,7 +288,17 @@ public abstract class Locomotive
     {
         if (speed >= 0 && speed <= 100)
         {
-            this.speed = speed;
+            // Update total runtime stat
+            if (speed > 0 && this.speed == 0)
+            {
+                this.lastStartTime = System.currentTimeMillis();
+            }
+            else if (speed == 0 && this.speed > 0)
+            {
+                this.totalRuntime = this.totalRuntime + (System.currentTimeMillis() - this.lastStartTime);
+            }
+            
+            this.speed = speed;            
         }        
     }
     
@@ -884,5 +901,10 @@ public abstract class Locomotive
     public void setTrainLength(Integer trainLength)
     {
         this.trainLength = trainLength;
+    }
+    
+    public long getTotalRuntime()
+    {
+        return this.totalRuntime;
     }
 }

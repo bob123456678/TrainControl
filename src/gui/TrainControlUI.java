@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -586,6 +587,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     + iOException.getMessage());
             }
         }
+    }
+    
+    /**
+     * Gets a list of all buttons mapped to the given locomotive
+     * @param l
+     * @return 
+     */
+    public List<String> getAllLocButtonMappings(Locomotive l)
+    {
+        List<String> out = new ArrayList<>();
+        
+        for (Integer i = 0; i < this.locMapping.size(); i++)
+        {
+            for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+            {
+                if (entry.getValue().equals(l))
+                {
+                    out.add(entry.getKey().getText() + " (Page " + Integer.toString(i + 1) + ")");
+                }
+            }
+        }
+        
+        return out;
     }
 
     /**
@@ -7519,6 +7543,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_BulkDisableActionPerformed
 
+    public void generateLocUsageReport()
+    {
+        new Thread(()->
+        {   
+            List<Locomotive> sortedLocs = new ArrayList();
+
+            for (String s : this.model.getLocList())
+            {
+                if (this.model.getLocByName(s).getTotalRuntime() > 0)
+                {
+                    sortedLocs.add(this.model.getLocByName(s));
+                }
+            }
+            
+            if (!sortedLocs.isEmpty())
+            {               
+                sortedLocs.sort((Locomotive l1, Locomotive l2) -> Long.valueOf(l1.getTotalRuntime()).compareTo(l2.getTotalRuntime()));
+
+                for (Locomotive l : sortedLocs)
+                {
+                    this.log(l.getName() + " [" + (l.getTotalRuntime() / 1000.0) + "s]");   
+                }   
+
+                this.log("Locomotive runtime report:");
+            }
+            else
+            {
+                this.log("No data recorded.");
+            }
+
+        }).start();
+    }
+    
     private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
         
         new Thread(()->
