@@ -172,9 +172,9 @@ element
  .artikel=38
 element
  .id=0x30209
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=178
 element
  .id=0x3020a
  .typ=gerade
@@ -336,9 +336,9 @@ element
  .artikel=34
 element
  .id=0x3050a
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=74
 element
  .id=0x3050b
  .typ=prellbock
