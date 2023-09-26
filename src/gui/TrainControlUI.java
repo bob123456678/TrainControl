@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Font;
+import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
@@ -6864,6 +6865,33 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_clearButtonActionPerformed
 
+    /**
+     * Prompts for a new route ID and attempts to change the ID of the given route
+     * @param routeName 
+     */
+    public void changeRouteId(String routeName)
+    {        
+        try
+        {
+            String input = JOptionPane.showInputDialog(this, "Enter new ID:");
+            
+            if (input != null)
+            {
+                int newId = Math.abs(Integer.parseInt(input));
+                if (!this.model.changeRouteId(routeName, newId))
+                {
+                    JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the route first.");
+                }
+
+                this.refreshRouteList();
+            }
+        }
+        catch (HeadlessException | NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(this, "Must be a positive integer.");
+        }
+    }
+    
     public void renameLocomotive (String s)
     {
         Locomotive l = this.model.getLocByName(s);

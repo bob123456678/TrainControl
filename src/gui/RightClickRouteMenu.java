@@ -60,7 +60,7 @@ public class RightClickRouteMenu extends MouseAdapter {
             menuItem = new JMenuItem("Edit Route");
             menuItem.addActionListener(event -> ui.editRoute(e));    
             add(menuItem);
-            
+                        
             menuItem = new JMenuItem("Duplicate Route");
             menuItem.addActionListener(event -> ui.duplicateRoute(e));    
             add(menuItem);
@@ -76,6 +76,10 @@ public class RightClickRouteMenu extends MouseAdapter {
             add(menuItem);
             
             addSeparator();
+            
+            menuItem = new JMenuItem("Change Route ID");
+            menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
+            add(menuItem);
             
             menuItem = new JMenuItem("Delete Route");
             menuItem.addActionListener(event -> ui.deleteRoute(e));    

@@ -26,7 +26,7 @@ public class MarklinRoute extends Route
     private final MarklinControlStation network;
     
     // Internal identifier used by CS2
-    private final int id;
+    private int id;
     
     // Gui reference
     private final Set<LayoutLabel> tiles;
@@ -380,6 +380,11 @@ public class MarklinRoute extends Route
     public void setTriggerType(s88Triggers type)
     {
         this.triggerType = type;
+    }
+
+    public void setId(int id)
+    {
+        this.id = id;
     }
     
     @Override

@@ -99,11 +99,14 @@ element
  .artikel=-1
  .text=<- 17
 element
+ .id=0x30107
+ .typ=fahrstrasse
+ .artikel=38
+element
  .id=0x30109
- .typ=s88kontakt
- .drehung=1
- .artikel=2004
- .deviceId=0xc
+ .typ=signal
+ .drehung=3
+ .artikel=178
 element
  .id=0x3010a
  .typ=bogen
@@ -167,14 +170,11 @@ element
  .artikel=-1
  .text=16
 element
- .id=0x30208
- .typ=fahrstrasse
- .artikel=38
-element
  .id=0x30209
- .typ=signal
- .drehung=3
- .artikel=178
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=2004
+ .deviceId=0xc
 element
  .id=0x3020a
  .typ=gerade
@@ -335,10 +335,14 @@ element
  .typ=fahrstrasse
  .artikel=34
 element
+ .id=0x30509
+ .typ=fahrstrasse
+ .artikel=43
+element
  .id=0x3050a
- .typ=signal
- .drehung=3
- .artikel=74
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x3050b
  .typ=prellbock
@@ -468,9 +472,9 @@ element
  .artikel=-1
 element
  .id=0x3070a
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=signal
+ .drehung=3
+ .artikel=74
 element
  .id=0x3070b
  .typ=gerade

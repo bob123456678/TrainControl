@@ -404,3 +404,8 @@ Condition S88:
 103,0
 52,0
 6,1
+
+Route 43 (Lower Parking 17)
+
+83,1
+89,0

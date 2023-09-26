@@ -60,4 +60,5 @@ public interface ViewListener
     MarklinAccessory newSwitch(String name, int address, boolean state);
     public boolean getNetworkCommState();
     public int getNumMessagesProcessed();
+    public boolean changeRouteId(String name, int newId);
 }

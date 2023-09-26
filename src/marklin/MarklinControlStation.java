@@ -1557,6 +1557,28 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Changes the ID of an existing route.  The ID must not be in use
+     * @param name
+     * @param newId
+     * @return 
+     */
+    @Override
+    public boolean changeRouteId(String name, int newId)
+    {
+        MarklinRoute r = this.getRoute(name);
+        
+        // Route to clone does not exist, 
+        if (r == null || this.routeDB.getById(newId) != null) return false;
+        
+        this.routeDB.delete(name);
+        
+        r.setId(newId);
+        this.routeDB.add(r, name, newId);
+        
+        return true;
+    }
+    
+    /**
      * Gets route list, sorted by ID
      * @return 
      */
