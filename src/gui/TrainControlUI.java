@@ -7542,7 +7542,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             BulkEnableOrDisable(false);
         }).start();
     }//GEN-LAST:event_BulkDisableActionPerformed
-
+    
+    private String convertSecondsToHMmSs(long ms) {
+        long seconds = ms / 1000;
+        
+        long s = seconds % 60;
+        long m = (seconds / 60) % 60;
+        long h = (seconds / (60 * 60)) % 24;
+        
+        return String.format("%d:%02d:%02d", h,m,s);
+    }
+    
     public void generateLocUsageReport()
     {
         new Thread(()->
@@ -7563,7 +7573,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 for (Locomotive l : sortedLocs)
                 {
-                    this.model.log(l.getName() + " [" + (l.getTotalRuntime() / 1000.0) + "s]");   
+                    this.model.log(l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "]");   
                 }   
 
                 this.model.log("Locomotive runtime report:");
