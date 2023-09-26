@@ -1553,7 +1553,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void backwardLoc()
     {
-        if (this.activeLoc != null && this.activeLoc.goingForward())
+        if (this.activeLoc != null) // && this.activeLoc.goingForward())
         {
             new Thread(() -> {
                 this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
@@ -1566,7 +1566,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void forwardLoc()
     {
-        if(this.activeLoc != null && this.activeLoc.goingBackward())
+        if(this.activeLoc != null) // && this.activeLoc.goingBackward())
         {
             new Thread(() -> {
                 this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
