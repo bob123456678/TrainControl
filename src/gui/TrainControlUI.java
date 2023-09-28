@@ -7599,9 +7599,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {               
                 sortedLocs.sort((Locomotive l1, Locomotive l2) -> Long.valueOf(l1.getTotalRuntime()).compareTo(l2.getTotalRuntime()));
 
+                this.model.log("-----------------------");
+                
                 for (Locomotive l : sortedLocs)
                 {
-                    this.model.log(l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "]");   
+                    this.model.log("  " + l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "]");   
                 }   
 
                 this.model.log("Locomotive runtime report:");

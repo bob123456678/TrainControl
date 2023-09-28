@@ -56,8 +56,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
     public synchronized void refreshLocSelectorList()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
-
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
             this.MainLocList.removeAll();
 
             this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING));
@@ -327,8 +327,11 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     }//GEN-LAST:event_formFocusGained
 
     private void locUsageReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locUsageReportActionPerformed
-        this.parent.generateLocUsageReport();
-        JOptionPane.showMessageDialog(this, "Check log for the report");
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            this.parent.generateLocUsageReport();
+            JOptionPane.showMessageDialog(this, "Check log for the report");
+        }));
     }//GEN-LAST:event_locUsageReportActionPerformed
 
     public boolean doCloseWindow()
