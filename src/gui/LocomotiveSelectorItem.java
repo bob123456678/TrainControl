@@ -5,8 +5,8 @@
  */
 package gui;
 
-import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.io.IOException;
 import java.util.List;
 import javax.swing.JPanel;
@@ -26,8 +26,10 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
      * Creates new form LocomotiveSelectorItem
      * @param loc
      * @param ui
+     * @param mainLocList
      */
-    public LocomotiveSelectorItem(MarklinLocomotive loc, TrainControlUI ui, JPanel mainLocList) {
+    public LocomotiveSelectorItem(MarklinLocomotive loc, TrainControlUI ui, JPanel mainLocList)
+    {
         initComponents();
         
         this.loc = loc;
@@ -57,7 +59,6 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         {
             locIcon.setIcon(null);
         }
-
     }
     
     /**
@@ -70,12 +71,18 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         if (!mappings.isEmpty())
         {
             locIcon.setToolTipText("Mapped to: " + String.join(", ", mappings));
-            LocLabel.setForeground(Color.GRAY);
+            
+            Font font = new Font("Tahoma", Font.BOLD, 17); 
+            LocLabel.setFont(font);
+            // LocLabel.setForeground(Color.GRAY);
         }
         else
         {
             locIcon.setToolTipText(null);
-            LocLabel.setForeground(Color.BLACK);
+            
+            Font font = new Font("Tahoma", Font.PLAIN, 18); 
+            LocLabel.setFont(font);
+            // LocLabel.setForeground(Color.BLACK);
         }
         
         LocLabel.setToolTipText(this.locIcon.getToolTipText());
