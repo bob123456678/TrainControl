@@ -6530,18 +6530,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         } 
         else if (keyCode == KeyEvent.VK_BACK_SPACE && altPressed)
         {
-            if (this.KeyboardTab.getSelectedIndex() == 0)
-            {
-                this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
-            }
-            else
-            {
-                // Easy tab cycling
-                this.KeyboardTab.setSelectedIndex(
-                    this.KeyboardTab.getSelectedIndex() - 1
-                        % this.KeyboardTab.getComponentCount()
-                );
-            }
+            this.KeyboardTab.setSelectedIndex(
+                Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
+                        this.KeyboardTab.getComponentCount()
+                )
+            );
         } 
         else if (keyCode == KeyEvent.VK_SLASH)
         {
@@ -6846,14 +6839,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void TurnOffFnButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOffFnButtonActionPerformed
         new Thread(() ->
-            {
-                this.model.allFunctionsOff();
-            }).start();
+        {
+            this.model.allFunctionsOff();
+        }).start();
     }//GEN-LAST:event_TurnOffFnButtonActionPerformed
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
         
-        new Thread(() -> {
+        new Thread(() ->
+        {
             Integer r = this.model.syncWithCS2();
             refreshRouteList();
             this.selector.refreshLocSelectorList();
@@ -6864,7 +6858,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
         
-        new Thread(() -> {
+        new Thread(() ->
+        {
             int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all mappings?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
@@ -8102,7 +8097,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             this.generateLocUsageReport();
-            JOptionPane.showMessageDialog(this, "Check log for the report");
+
+            // Switch to next (Tools) tab
+            this.KeyboardTab.setSelectedIndex(
+                (this.KeyboardTab.getSelectedIndex() + 1) 
+                    % this.KeyboardTab.getComponentCount()
+            );
         }));
     }//GEN-LAST:event_LocUsageReportActionPerformed
 
