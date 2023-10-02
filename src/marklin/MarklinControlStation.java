@@ -41,7 +41,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.10.8";
+    public static final String VERSION = "1.10.8 (Beta)";
     
     //// Settings
     
@@ -134,11 +134,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {            
             if (c.getLocType() != null)
             {
-                newLocomotive(c.getName(), c.getAddress(), 
-                    c.getLocType(), 
-                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(), 
-                    c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime());                
+                newLocomotive(c);
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
@@ -1341,7 +1337,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Adds a new locomotive to the internal database with no state exception function types
+     * Adds a new locomotive to the internal database with no state except function types
      * @param name
      * @param address
      * @param type
@@ -1358,30 +1354,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Adds a new locomotive with expanded state
-     * @param name
-     * @param address
-     * @param type
-     * @param dir
-     * @param functions
-     * @param functionTypes
-     * @param preferredFunctions
-     * @param preferredSpeed
-     * @param departureFunc
-     * @param arrivalFunc
-     * @param reversible
-     * @param trainLength
+     * Adds a new locomotive with expanded state from saved data
+     * @param c
      * @return 
      */
-    private MarklinLocomotive newLocomotive(String name, int address, 
-        MarklinLocomotive.decoderType type, MarklinLocomotive.locDirection dir, 
-        boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed, Integer departureFunc, 
-        Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime)
+    private MarklinLocomotive newLocomotive(MarklinSimpleComponent c)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, dir, functions, functionTypes, preferredFunctions, preferredSpeed,
-            departureFunc, arrivalFunc, reversible, trainLength, totalRuntime);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, c.getAddress(), c.getLocType(), c.getName(),
+                c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
+                c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
+            c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime(), c.getHistoricalOperatingTime());
         
-        this.locDB.add(newLoc, name, newLoc.getUID());
+        this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
         
         return newLoc; 
     }

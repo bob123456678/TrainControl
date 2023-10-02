@@ -23,6 +23,7 @@ import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,8 +36,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -7585,7 +7584,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_BulkDisableActionPerformed
     
-    private String convertSecondsToHMmSs(long ms) {
+    private String convertSecondsToHMmSs(long ms)
+    {
         long seconds = ms / 1000;
         
         long s = seconds % 60;
@@ -7593,6 +7593,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         long h = (seconds / (60 * 60)) % 24;
         
         return String.format("%d:%02d:%02d", h,m,s);
+    }
+    
+    private String convertSecondsToDate(long timestamp)
+    {
+        if (timestamp == 0) return "Never";
+        
+        Instant i = Instant.ofEpochMilli( timestamp );
+         
+        return i.toString().split("T")[0];
     }
     
     public void generateLocUsageReport()
@@ -7617,7 +7626,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 
                 for (Locomotive l : sortedLocs)
                 {
-                    this.model.log("  " + l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "]");   
+                    this.model.log("  " + l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "] Last run: " + convertSecondsToDate(l.getHistoricalOperatingTime()));   
                 }   
 
                 this.model.log("Locomotive runtime report:");

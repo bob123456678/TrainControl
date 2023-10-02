@@ -98,12 +98,13 @@ public class MarklinLocomotive extends Locomotive
      * @param reversible
      * @param trainLength
      * @param totalRuntime
+     * @param historicalOperatingTime
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed,
-        Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime)
+        Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime, long historicalOperatingTime)
     {
-        super(name, 0, dir, functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, totalRuntime);
+        super(name, 0, dir, functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, totalRuntime, historicalOperatingTime);
 
         this.network = network;
         this.type = type;
@@ -428,6 +429,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {
+        // Force last known direction if this is the first command to move
+        if (this.lastStartTime == 0)
+        {
+            this.setDirection(this.getDirection());
+        }
+        
         super._setSpeed(speed);
         
         int newSpeed = this.getSpeed() * 10;

@@ -149,6 +149,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.8 [Beta]
+    - At locomotive startup, the last-known direction is now re-transmitted to the locomotive
+    - The date each locomotive was last run is now tracked
+
 * v1.10.7 [9/30/23]
     - Improvements to the locomotive selector window 
         - Added a tooltip depicting the current key mapping(s) to each locomotive tile

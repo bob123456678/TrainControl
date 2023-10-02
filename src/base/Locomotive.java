@@ -3,7 +3,6 @@ package base;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -63,8 +62,12 @@ public abstract class Locomotive
     protected Integer numPaths = 0;
     protected long lastPathTime = System.currentTimeMillis();
     
+    // Cumulative time of operation
     protected long totalRuntime;
-    private long lastStartTime;
+    
+    // When this locomotive was last run this session and overall, respectively
+    protected long lastStartTime = 0;
+    protected long historicalOperatingTime = 0;
  
     /**
      * Constructor with name and all functions off
@@ -206,6 +209,7 @@ public abstract class Locomotive
         this.preferredSpeed = 0;
         this.trainLength = 0;
         this.totalRuntime = 0;
+        this.historicalOperatingTime = 0;
     }
     
     /**
@@ -246,11 +250,12 @@ public abstract class Locomotive
      * @param trainLength
      * @param reversible 
      * @param totalRuntime 
+     * @param historicalOperatingTime 
      */
     public Locomotive(String name, int speed, locDirection direction,
         boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
-        int trainLength, long totalRuntime
+        int trainLength, long totalRuntime, long historicalOperatingTime
     )
     {
         this.name = name;
@@ -276,6 +281,7 @@ public abstract class Locomotive
         this.reversible = reversible;
         this.trainLength = trainLength;
         this.totalRuntime = totalRuntime;
+        this.historicalOperatingTime = historicalOperatingTime;
     }
 
     /* Internal functionality */
@@ -292,6 +298,7 @@ public abstract class Locomotive
             if (speed > 0 && this.speed == 0)
             {
                 this.lastStartTime = System.currentTimeMillis();
+                this.historicalOperatingTime = this.lastStartTime;
             }
             else if (speed == 0 && this.speed > 0)
             {
@@ -907,4 +914,9 @@ public abstract class Locomotive
     {
         return this.totalRuntime;
     }
+    
+    public long getHistoricalOperatingTime()
+    {
+        return this.historicalOperatingTime;
+    }   
 }
