@@ -300,7 +300,7 @@ public abstract class Locomotive
                 this.lastStartTime = System.currentTimeMillis();
                 this.historicalOperatingTime = this.lastStartTime;
             }
-            else if (speed == 0 && this.speed > 0)
+            else if (speed == 0 && this.speed > 0 && this.lastStartTime > 0)
             {
                 this.totalRuntime = this.totalRuntime + (System.currentTimeMillis() - this.lastStartTime);
             }

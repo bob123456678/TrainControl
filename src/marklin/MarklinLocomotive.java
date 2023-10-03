@@ -458,6 +458,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setDirection(locDirection direction)
     {
+        // Mark that we have alreay corrected the locomotive direction 
+        if (this.lastStartTime == 0)
+        {
+            this.lastStartTime = -1;
+        }
+        
         super._setDirection(direction);
         
         int newDirection = (direction == locDirection.DIR_FORWARD ? 1 : 2);
@@ -482,6 +488,12 @@ public class MarklinLocomotive extends Locomotive
     {
         if (this.validF(fNumber))
         {
+            // Force last known direction if this is the first command to move
+            if (this.lastStartTime == 0)
+            {
+                this.setDirection(this.getDirection());
+            }
+            
             super._setF(fNumber, state);
         
             this.network.exec(new CS2Message(
