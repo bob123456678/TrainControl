@@ -602,7 +602,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
             {
-                if (entry.getValue().equals(l))
+                if (l != null && l.equals(entry.getValue()))
                 {
                     out.add(entry.getKey().getText() + " (Page " + Integer.toString(i + 1) + ")");
                 }
@@ -760,21 +760,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         // Set the model reference
         this.model = listener;
-                
+                        
         // Add list of routes to tab
         refreshRouteList();
-        
+                
         // Add list of layouts to tab
         this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
-              
-        // Add the first locomotive to the mapping
-        if (!this.model.getLocList().isEmpty())
-        {
-            this.currentLocMapping().put(QButton, 
-            this.model.getLocByName(this.model.getLocList().get(0)));
-        }
-        
+               
         List<Map<Integer, String>> saveStates = this.restoreState();
+        boolean locWasLoaded = false;
         
         for (int j = 0; j < saveStates.size() && j < TrainControlUI.NUM_LOC_MAPPINGS; j++)
         {
@@ -788,10 +782,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (l != null && b != null)
                 {
+                    locWasLoaded = true;
+                    
                     // this.model.log("Loading mapping for page " + Integer.toString(j + 1) + ", " + l.getName());
                     this.locMapping.get(j).put(b, l);
                 }
             }
+        }
+        
+        // Add the first locomotive to the mapping if nothing was loaded
+        if (!this.model.getLocList().isEmpty() && !locWasLoaded)
+        {
+            this.currentLocMapping().put(
+                QButton, 
+                this.model.getLocByName(this.model.getLocList().get(0))
+            );
         }
         
         // Display the locomotive
@@ -1261,7 +1266,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private void repaintIcon(JButton b, Locomotive l, Integer correspondingLocMappingNumber)
     {
-        new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             if (b != null)
             {
@@ -1302,7 +1307,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     noImageButton(b);
                 }
             }
-        }).start();
+        }));
     }
     
     @Override
@@ -1327,7 +1332,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Visual stuff
             if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()))
             {
-                new Thread(() -> {
+                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                {
                     repaintIcon(this.currentButton, this.activeLoc, this.locMappingNumber);
                     
                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
@@ -1352,7 +1358,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         locIcon.setVisible(false);
                     }
                     
-                }).start();
+                }));
 
                 this.ActiveLocLabel.setText(name);
 
@@ -1371,7 +1377,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     bt.setHorizontalTextPosition(JButton.CENTER);
                     bt.setVerticalTextPosition(JButton.CENTER);
                     
-                    new Thread(() -> {
+                    javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                    {
                         try
                         {
                             if (functionType > 0 && LOAD_IMAGES)
@@ -1405,8 +1412,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             this.model.log("Icon not found: " + targetURL);
                             //bt.setText("F" + Integer.toString(fNo));
                         } 
-                    }).start();
-                    
+                    }));         
                 }
                 
                 for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)

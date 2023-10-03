@@ -152,6 +152,8 @@ Requires JDK 1.8+ and the following libraries:
 * v1.10.8 [Beta]
     - At locomotive startup, the last-known direction is now re-transmitted to the locomotive
     - The date each locomotive was last run is now tracked
+    - Fixed bug from v1.10.7 where the locomotive selection window would freeze after a locomotive was deleted from the database
+    - Reduced startup time when loading many locomotive icons
 
 * v1.10.7 [9/30/23]
     - Improvements to the locomotive selector window 
