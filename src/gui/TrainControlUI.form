@@ -213,7 +213,7 @@
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="QButton" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="QSlider" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="QLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="QLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -221,7 +221,7 @@
                                           <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="WSlider" max="32767" attributes="0"/>
                                       </Group>
-                                      <Component id="WLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="WLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -229,7 +229,7 @@
                                           <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="ESlider" max="32767" attributes="0"/>
                                       </Group>
-                                      <Component id="ELabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="ELabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -237,7 +237,7 @@
                                           <Component id="RSlider" max="32767" attributes="0"/>
                                           <Component id="RButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="RLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="RLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -245,7 +245,7 @@
                                           <Component id="TSlider" max="32767" attributes="0"/>
                                           <Component id="TButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="TLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="TLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -253,7 +253,7 @@
                                           <Component id="YSlider" max="32767" attributes="0"/>
                                           <Component id="YButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="YLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="YLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -261,7 +261,7 @@
                                           <Component id="USlider" max="32767" attributes="0"/>
                                           <Component id="UButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="ULabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="ULabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -269,7 +269,7 @@
                                           <Component id="IButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="ISlider" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="ILabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="ILabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -277,7 +277,7 @@
                                           <Component id="OSlider" max="32767" attributes="0"/>
                                           <Component id="OButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="OLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="OLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -285,7 +285,7 @@
                                           <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="PSlider" alignment="0" max="32767" attributes="0"/>
                                       </Group>
-                                      <Component id="PLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="PLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
@@ -294,7 +294,7 @@
                                           <Component id="ASlider" max="32767" attributes="0"/>
                                           <Component id="AButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="ALabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="ALabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -302,7 +302,7 @@
                                           <Component id="SSlider" max="32767" attributes="0"/>
                                           <Component id="SButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="SLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="SLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -310,7 +310,7 @@
                                           <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="DSlider" alignment="0" max="32767" attributes="0"/>
                                       </Group>
-                                      <Component id="DLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="DLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -318,7 +318,7 @@
                                           <Component id="FSlider" max="32767" attributes="0"/>
                                           <Component id="FButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="FLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="FLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -326,7 +326,7 @@
                                           <Component id="GSlider" max="32767" attributes="0"/>
                                           <Component id="GButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="GLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="GLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -334,7 +334,7 @@
                                           <Component id="HSlider" max="32767" attributes="0"/>
                                           <Component id="HButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="HLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="HLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -342,7 +342,7 @@
                                           <Component id="JSlider" max="32767" attributes="0"/>
                                           <Component id="JButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="JLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="JLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -350,7 +350,7 @@
                                           <Component id="KSlider" max="32767" attributes="0"/>
                                           <Component id="KButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="KLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="KLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -367,14 +367,14 @@
                                           <Component id="LButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="LSlider" alignment="0" max="32767" attributes="0"/>
                                       </Group>
-                                      <Component id="LLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="LLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="ZSlider" max="32767" attributes="0"/>
                                       <Component id="ZButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="ZLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="ZLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -382,7 +382,7 @@
                                           <Component id="XSlider" max="32767" attributes="0"/>
                                           <Component id="XButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="XLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="XLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -390,7 +390,7 @@
                                           <Component id="CSlider" max="32767" attributes="0"/>
                                           <Component id="CButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="CLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="CLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -398,7 +398,7 @@
                                           <Component id="VSlider" max="32767" attributes="0"/>
                                           <Component id="VButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="VLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="VLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
@@ -406,7 +406,7 @@
                                           <Component id="BSlider" max="32767" attributes="0"/>
                                           <Component id="BButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="BLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="BLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -414,13 +414,13 @@
                                           <Component id="NSlider" max="32767" attributes="0"/>
                                           <Component id="NButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="NLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="NLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="MButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="MSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="MLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="MLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                           </Group>
@@ -1416,11 +1416,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1446,6 +1448,7 @@
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1465,11 +1468,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1489,11 +1494,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1513,11 +1520,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1537,11 +1546,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1561,11 +1572,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1585,11 +1598,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1609,11 +1624,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1633,11 +1650,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1657,11 +1676,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1681,11 +1702,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1705,11 +1728,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1729,11 +1754,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1753,11 +1780,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1777,11 +1806,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1801,11 +1832,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1825,11 +1858,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1849,11 +1884,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1873,11 +1910,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1897,11 +1936,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1921,11 +1962,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1945,11 +1988,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1969,11 +2014,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -1993,11 +2040,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>
@@ -2017,11 +2066,13 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="2"/>
                     <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
                     <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                       <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                         <EmptyBorder/>
                       </Border>
                     </Property>
+                    <Property name="caretPosition" type="int" value="0"/>
                     <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                       <Color id="Default Cursor"/>
                     </Property>

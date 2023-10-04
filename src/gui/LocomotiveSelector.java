@@ -348,6 +348,15 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                     this.LocScroller.repaint();
                 }
             }  
+            
+            // Update all tooltips
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                for (Component c: this.MainLocList.getComponents())
+                {
+                    ((LocomotiveSelectorItem) c).refreshToolTip();
+                }
+            }));
         }
         catch (Exception e)
         {

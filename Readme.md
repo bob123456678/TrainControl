@@ -155,6 +155,7 @@ Requires JDK 1.8+ and the following libraries:
     - Fixed alignment of key mapping labels for long locomotive names
     - Fixed bug where the UI would fail to start up when no autonomy.json file existed
     - Fixed bug from v1.10.7 where the locomotive selection window would freeze after a locomotive was deleted from the database
+    - Fixed minor bug from v1.10.7 where the locomotive selection tooltips would not update after copy/pasting between the keyboard mappings
     - The "Q" button will no longer default to the first locomotive to the database as long as any other key is mapped
 
 * v1.10.7 [9/30/23]
