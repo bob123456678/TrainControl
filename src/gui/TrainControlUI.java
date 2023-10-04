@@ -1281,7 +1281,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     try 
                     {
                         ImageIcon ic = new javax.swing.ImageIcon(
-                            getLocImage(l.getImageURL(), 65)
+                            getLocImage(l.getImageURL(), 66)
                         );
                         
                         // The active page has changed since this thread was called.  No need to update the UI.
