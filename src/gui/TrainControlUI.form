@@ -212,158 +212,145 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="QButton" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="QLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="QSlider" alignment="0" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="WLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="WSlider" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="ELabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="ESlider" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="RSlider" max="32767" attributes="0"/>
-                                      <Component id="RLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="RButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="TSlider" max="32767" attributes="0"/>
-                                      <Component id="TLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="TButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="YSlider" max="32767" attributes="0"/>
-                                      <Component id="YLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="YButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="USlider" max="32767" attributes="0"/>
-                                      <Component id="ULabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="UButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="QLabel" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="IButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="ILabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="ISlider" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="WSlider" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Component id="WLabel" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="OSlider" max="32767" attributes="0"/>
-                                      <Component id="OLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="OButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="ESlider" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Component id="ELabel" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="PLabel" min="-2" max="-2" attributes="0"/>
-                                      <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                      <Component id="PSlider" alignment="0" max="32767" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="RSlider" max="32767" attributes="0"/>
+                                          <Component id="RButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="RLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="TSlider" max="32767" attributes="0"/>
+                                          <Component id="TButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="TLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="YSlider" max="32767" attributes="0"/>
+                                          <Component id="YButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="YLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="USlider" max="32767" attributes="0"/>
+                                          <Component id="UButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="ULabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="IButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="ISlider" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="ILabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="OSlider" max="32767" attributes="0"/>
+                                          <Component id="OButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="OLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="PSlider" alignment="0" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Component id="PLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="102" alignment="0" attributes="0">
-                                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                              <Component id="ASlider" max="32767" attributes="0"/>
-                                              <Component id="AButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
-                                              <Component id="ALabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="SSlider" max="32767" attributes="0"/>
-                                              <Component id="SLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="SButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="DLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                              <Component id="DSlider" alignment="0" max="32767" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="FSlider" max="32767" attributes="0"/>
-                                              <Component id="FLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="FButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="GSlider" max="32767" attributes="0"/>
-                                              <Component id="GLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="GButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="HSlider" max="32767" attributes="0"/>
-                                              <Component id="HLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="HButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="JSlider" max="32767" attributes="0"/>
-                                              <Component id="JLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="JButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="KSlider" max="32767" attributes="0"/>
-                                              <Component id="KLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="KButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
+                                      <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                          <Component id="ASlider" max="32767" attributes="0"/>
+                                          <Component id="AButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
-                                      <Group type="102" alignment="0" attributes="0">
-                                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                              <Component id="ZSlider" max="32767" attributes="0"/>
-                                              <Component id="ZButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
-                                              <Component id="ZLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="XSlider" max="32767" attributes="0"/>
-                                              <Component id="XLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="XButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="CSlider" max="32767" attributes="0"/>
-                                              <Component id="CLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="CButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="VSlider" max="32767" attributes="0"/>
-                                              <Component id="VLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="VButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="BSlider" max="32767" attributes="0"/>
-                                              <Component id="BLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="BButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="NSlider" max="32767" attributes="0"/>
-                                              <Component id="NLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="NButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
-                                          <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="MLabel" min="-2" max="-2" attributes="0"/>
-                                              <Component id="MButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                              <Component id="MSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
-                                          </Group>
+                                      <Component id="ALabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="SSlider" max="32767" attributes="0"/>
+                                          <Component id="SButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
+                                      <Component id="SLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                          <Component id="DSlider" alignment="0" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Component id="DLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="FSlider" max="32767" attributes="0"/>
+                                          <Component id="FButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="FLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="GSlider" max="32767" attributes="0"/>
+                                          <Component id="GButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="GLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="HSlider" max="32767" attributes="0"/>
+                                          <Component id="HButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="HLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="JSlider" max="32767" attributes="0"/>
+                                          <Component id="JButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="JLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="KSlider" max="32767" attributes="0"/>
+                                          <Component id="KButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="KLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -377,10 +364,63 @@
                                           <Component id="LocMappingNumberLabel" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="LLabel" min="-2" max="-2" attributes="0"/>
                                           <Component id="LButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="LSlider" alignment="0" max="32767" attributes="0"/>
                                       </Group>
+                                      <Component id="LLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                      <Component id="ZSlider" max="32767" attributes="0"/>
+                                      <Component id="ZButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="ZLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="XSlider" max="32767" attributes="0"/>
+                                          <Component id="XButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="XLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="CSlider" max="32767" attributes="0"/>
+                                          <Component id="CButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="CLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="VSlider" max="32767" attributes="0"/>
+                                          <Component id="VButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="VLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="BSlider" max="32767" attributes="0"/>
+                                          <Component id="BButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="BLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="NSlider" max="32767" attributes="0"/>
+                                          <Component id="NButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="NLabel" min="-2" pref="64" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="MButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="MSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="MLabel" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                           </Group>
@@ -421,18 +461,18 @@
                           </Group>
                           <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="QLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="WLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="ELabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="RLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="TLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="YLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="ULabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="ILabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="OLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="PLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="ELabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="QLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="WLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="RLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="TLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="YLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="ULabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="ILabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="OLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="PLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="GButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                               <Component id="HButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
@@ -462,17 +502,17 @@
                           </Group>
                           <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="ALabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="SLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="DLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="FLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="GLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="HLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="JLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="KLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="LLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="ALabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="SLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="DLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="FLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="GLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="HLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="JLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="KLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                              <Component id="LLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="23" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="1" attributes="0">
                               <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="3" max="-2" attributes="0">
@@ -498,13 +538,13 @@
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
-                                      <Component id="ZLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="XLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="CLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="VLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="BLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="NLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="MLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      <Component id="ZLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="XLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="CLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="VLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="BLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="NLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                                      <Component id="MLabel" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" attributes="0">
@@ -611,26 +651,6 @@
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LetterButtonPressed"/>
                   </Events>
-                </Component>
-                <Component class="javax.swing.JLabel" name="XLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel26"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="ZLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel25"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="VLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel28"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="CLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel27"/>
-                  </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="OButton">
                   <Properties>
@@ -764,41 +784,6 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LetterButtonPressed"/>
                   </Events>
                 </Component>
-                <Component class="javax.swing.JLabel" name="BLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel29"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="NLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel30"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="MLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel31"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="DLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel18"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="SLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel17"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="ALabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel16"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="PLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel15"/>
-                  </Properties>
-                </Component>
                 <Component class="javax.swing.JButton" name="YButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
@@ -810,11 +795,6 @@
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LetterButtonPressed"/>
                   </Events>
-                </Component>
-                <Component class="javax.swing.JLabel" name="OLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel14"/>
-                  </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="RButton">
                   <Properties>
@@ -899,76 +879,6 @@
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LetterButtonPressed"/>
                   </Events>
-                </Component>
-                <Component class="javax.swing.JLabel" name="KLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel23"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="LLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel24"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="HLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel21"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="JLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel22"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="FLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel19"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="GLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel20"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="ELabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel8"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="WLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel7"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="QLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel6"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="TLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel10"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="YLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel11"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="ULabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel12"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="ILabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel13"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="RLabel">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel9"/>
-                  </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="PrevLocMapping">
                   <Properties>
@@ -1498,6 +1408,631 @@
                     <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="sliderClicked"/>
                     <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="updateSliderSpeed"/>
                   </Events>
+                </Component>
+                <Component class="javax.swing.JTextField" name="ELabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="QLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="autoscrolls" type="boolean" value="false"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="WLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="RLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="TLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="YLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="ULabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="ILabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="OLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="PLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="ALabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="SLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="ZLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="DLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="FLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="GLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="HLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="JLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="KLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="LLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="XLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="CLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="VLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="BLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="NLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JTextField" name="MLabel">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f2" green="f2" red="f2" type="rgb"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                    <Property name="text" type="java.lang.String" value="label"/>
+                    <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+                      <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                        <EmptyBorder/>
+                      </Border>
+                    </Property>
+                    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+                      <Color id="Default Cursor"/>
+                    </Property>
+                    <Property name="focusable" type="boolean" value="false"/>
+                    <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[64, 21]"/>
+                    </Property>
+                  </Properties>
                 </Component>
               </SubComponents>
             </Container>

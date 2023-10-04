@@ -152,6 +152,7 @@ Requires JDK 1.8+ and the following libraries:
 * v1.10.8 [10/3/2023]
     - At locomotive startup, the last-known direction is now re-transmitted to ensure consistent operation
     - The date each locomotive was last run is now tracked
+    - Fixed alignment of key mapping labels for long locomotive names
     - Fixed bug where program would fail to start up when no autonomy JSON file existed
     - Fixed bug from v1.10.7 where the locomotive selection window would freeze after a locomotive was deleted from the database
     - The "Q" button will no longer default to the first locomotive to the database as long as any other key is mapped

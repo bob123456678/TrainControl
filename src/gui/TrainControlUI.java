@@ -51,6 +51,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
@@ -106,7 +107,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
     private final HashMap<javax.swing.JButton, Integer> rButtonMapping;
-    private final HashMap<javax.swing.JButton, JLabel> labelMapping;
+    private final HashMap<javax.swing.JButton, JTextField> labelMapping;
     private final HashMap<javax.swing.JButton, javax.swing.JSlider> sliderMapping;
     private final HashMap<javax.swing.JSlider, javax.swing.JButton> rSliderMapping;
     private final List<HashMap<javax.swing.JButton, Locomotive>> locMapping;
@@ -1639,10 +1640,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         MButton = new javax.swing.JButton();
         BButton = new javax.swing.JButton();
         NButton = new javax.swing.JButton();
-        XLabel = new javax.swing.JLabel();
-        ZLabel = new javax.swing.JLabel();
-        VLabel = new javax.swing.JLabel();
-        CLabel = new javax.swing.JLabel();
         OButton = new javax.swing.JButton();
         PButton = new javax.swing.JButton();
         AButton = new javax.swing.JButton();
@@ -1654,15 +1651,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         JButton = new javax.swing.JButton();
         LButton = new javax.swing.JButton();
         KButton = new javax.swing.JButton();
-        BLabel = new javax.swing.JLabel();
-        NLabel = new javax.swing.JLabel();
-        MLabel = new javax.swing.JLabel();
-        DLabel = new javax.swing.JLabel();
-        SLabel = new javax.swing.JLabel();
-        ALabel = new javax.swing.JLabel();
-        PLabel = new javax.swing.JLabel();
         YButton = new javax.swing.JButton();
-        OLabel = new javax.swing.JLabel();
         RButton = new javax.swing.JButton();
         TButton = new javax.swing.JButton();
         WButton = new javax.swing.JButton();
@@ -1670,20 +1659,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         QButton = new javax.swing.JButton();
         IButton = new javax.swing.JButton();
         UButton = new javax.swing.JButton();
-        KLabel = new javax.swing.JLabel();
-        LLabel = new javax.swing.JLabel();
-        HLabel = new javax.swing.JLabel();
-        JLabel = new javax.swing.JLabel();
-        FLabel = new javax.swing.JLabel();
-        GLabel = new javax.swing.JLabel();
-        ELabel = new javax.swing.JLabel();
-        WLabel = new javax.swing.JLabel();
-        QLabel = new javax.swing.JLabel();
-        TLabel = new javax.swing.JLabel();
-        YLabel = new javax.swing.JLabel();
-        ULabel = new javax.swing.JLabel();
-        ILabel = new javax.swing.JLabel();
-        RLabel = new javax.swing.JLabel();
         PrevLocMapping = new javax.swing.JButton();
         NextLocMapping = new javax.swing.JButton();
         LocMappingNumberLabel = new javax.swing.JLabel();
@@ -1713,6 +1688,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CSlider = new javax.swing.JSlider();
         XSlider = new javax.swing.JSlider();
         ZSlider = new javax.swing.JSlider();
+        ELabel = new javax.swing.JTextField();
+        QLabel = new javax.swing.JTextField();
+        WLabel = new javax.swing.JTextField();
+        RLabel = new javax.swing.JTextField();
+        TLabel = new javax.swing.JTextField();
+        YLabel = new javax.swing.JTextField();
+        ULabel = new javax.swing.JTextField();
+        ILabel = new javax.swing.JTextField();
+        OLabel = new javax.swing.JTextField();
+        PLabel = new javax.swing.JTextField();
+        ALabel = new javax.swing.JTextField();
+        SLabel = new javax.swing.JTextField();
+        ZLabel = new javax.swing.JTextField();
+        DLabel = new javax.swing.JTextField();
+        FLabel = new javax.swing.JTextField();
+        GLabel = new javax.swing.JTextField();
+        HLabel = new javax.swing.JTextField();
+        JLabel = new javax.swing.JTextField();
+        KLabel = new javax.swing.JTextField();
+        LLabel = new javax.swing.JTextField();
+        XLabel = new javax.swing.JTextField();
+        CLabel = new javax.swing.JTextField();
+        VLabel = new javax.swing.JTextField();
+        BLabel = new javax.swing.JTextField();
+        NLabel = new javax.swing.JTextField();
+        MLabel = new javax.swing.JTextField();
         jPanel6 = new javax.swing.JPanel();
         UpArrow = new javax.swing.JButton();
         DownArrow = new javax.swing.JButton();
@@ -2097,14 +2098,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        XLabel.setText("jLabel26");
-
-        ZLabel.setText("jLabel25");
-
-        VLabel.setText("jLabel28");
-
-        CLabel.setText("jLabel27");
-
         OButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         OButton.setText("O");
         OButton.setFocusable(false);
@@ -2204,20 +2197,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BLabel.setText("jLabel29");
-
-        NLabel.setText("jLabel30");
-
-        MLabel.setText("jLabel31");
-
-        DLabel.setText("jLabel18");
-
-        SLabel.setText("jLabel17");
-
-        ALabel.setText("jLabel16");
-
-        PLabel.setText("jLabel15");
-
         YButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         YButton.setText("Y");
         YButton.setFocusable(false);
@@ -2226,8 +2205,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 LetterButtonPressed(evt);
             }
         });
-
-        OLabel.setText("jLabel14");
 
         RButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         RButton.setText("R");
@@ -2291,34 +2268,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 LetterButtonPressed(evt);
             }
         });
-
-        KLabel.setText("jLabel23");
-
-        LLabel.setText("jLabel24");
-
-        HLabel.setText("jLabel21");
-
-        JLabel.setText("jLabel22");
-
-        FLabel.setText("jLabel19");
-
-        GLabel.setText("jLabel20");
-
-        ELabel.setText("jLabel8");
-
-        WLabel.setText("jLabel7");
-
-        QLabel.setText("jLabel6");
-
-        TLabel.setText("jLabel10");
-
-        YLabel.setText("jLabel11");
-
-        ULabel.setText("jLabel12");
-
-        ILabel.setText("jLabel13");
-
-        RLabel.setText("jLabel9");
 
         PrevLocMapping.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         PrevLocMapping.setText("<<< ,");
@@ -2708,6 +2657,241 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        ELabel.setBackground(new java.awt.Color(242, 242, 242));
+        ELabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        ELabel.setText("label");
+        ELabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        ELabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ELabel.setFocusable(false);
+        ELabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        ELabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        QLabel.setBackground(new java.awt.Color(242, 242, 242));
+        QLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        QLabel.setText("label");
+        QLabel.setAutoscrolls(false);
+        QLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        QLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        QLabel.setFocusable(false);
+        QLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        QLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        WLabel.setBackground(new java.awt.Color(242, 242, 242));
+        WLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        WLabel.setText("label");
+        WLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        WLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        WLabel.setFocusable(false);
+        WLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        WLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        RLabel.setBackground(new java.awt.Color(242, 242, 242));
+        RLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        RLabel.setText("label");
+        RLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        RLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        RLabel.setFocusable(false);
+        RLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        RLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        TLabel.setBackground(new java.awt.Color(242, 242, 242));
+        TLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        TLabel.setText("label");
+        TLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        TLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        TLabel.setFocusable(false);
+        TLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        TLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        YLabel.setBackground(new java.awt.Color(242, 242, 242));
+        YLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        YLabel.setText("label");
+        YLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        YLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        YLabel.setFocusable(false);
+        YLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        YLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        ULabel.setBackground(new java.awt.Color(242, 242, 242));
+        ULabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        ULabel.setText("label");
+        ULabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        ULabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ULabel.setFocusable(false);
+        ULabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        ULabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        ILabel.setBackground(new java.awt.Color(242, 242, 242));
+        ILabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        ILabel.setText("label");
+        ILabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        ILabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ILabel.setFocusable(false);
+        ILabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        ILabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        OLabel.setBackground(new java.awt.Color(242, 242, 242));
+        OLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        OLabel.setText("label");
+        OLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        OLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        OLabel.setFocusable(false);
+        OLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        OLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        PLabel.setBackground(new java.awt.Color(242, 242, 242));
+        PLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        PLabel.setText("label");
+        PLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        PLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        PLabel.setFocusable(false);
+        PLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        PLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        ALabel.setBackground(new java.awt.Color(242, 242, 242));
+        ALabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        ALabel.setText("label");
+        ALabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        ALabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ALabel.setFocusable(false);
+        ALabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        ALabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        SLabel.setBackground(new java.awt.Color(242, 242, 242));
+        SLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        SLabel.setText("label");
+        SLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        SLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        SLabel.setFocusable(false);
+        SLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        SLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        ZLabel.setBackground(new java.awt.Color(242, 242, 242));
+        ZLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        ZLabel.setText("label");
+        ZLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        ZLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ZLabel.setFocusable(false);
+        ZLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        ZLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        DLabel.setBackground(new java.awt.Color(242, 242, 242));
+        DLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        DLabel.setText("label");
+        DLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        DLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        DLabel.setFocusable(false);
+        DLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        DLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        FLabel.setBackground(new java.awt.Color(242, 242, 242));
+        FLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        FLabel.setText("label");
+        FLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        FLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        FLabel.setFocusable(false);
+        FLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        FLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        GLabel.setBackground(new java.awt.Color(242, 242, 242));
+        GLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        GLabel.setText("label");
+        GLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        GLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        GLabel.setFocusable(false);
+        GLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        GLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        HLabel.setBackground(new java.awt.Color(242, 242, 242));
+        HLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        HLabel.setText("label");
+        HLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        HLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        HLabel.setFocusable(false);
+        HLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        HLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        JLabel.setBackground(new java.awt.Color(242, 242, 242));
+        JLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        JLabel.setText("label");
+        JLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        JLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        JLabel.setFocusable(false);
+        JLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        JLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        KLabel.setBackground(new java.awt.Color(242, 242, 242));
+        KLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        KLabel.setText("label");
+        KLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        KLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        KLabel.setFocusable(false);
+        KLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        KLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        LLabel.setBackground(new java.awt.Color(242, 242, 242));
+        LLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        LLabel.setText("label");
+        LLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        LLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        LLabel.setFocusable(false);
+        LLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        LLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        XLabel.setBackground(new java.awt.Color(242, 242, 242));
+        XLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        XLabel.setText("label");
+        XLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        XLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        XLabel.setFocusable(false);
+        XLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        XLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        CLabel.setBackground(new java.awt.Color(242, 242, 242));
+        CLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        CLabel.setText("label");
+        CLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        CLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        CLabel.setFocusable(false);
+        CLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        CLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        VLabel.setBackground(new java.awt.Color(242, 242, 242));
+        VLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        VLabel.setText("label");
+        VLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        VLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        VLabel.setFocusable(false);
+        VLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        VLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        BLabel.setBackground(new java.awt.Color(242, 242, 242));
+        BLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        BLabel.setText("label");
+        BLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        BLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        BLabel.setFocusable(false);
+        BLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        BLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        NLabel.setBackground(new java.awt.Color(242, 242, 242));
+        NLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        NLabel.setText("label");
+        NLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        NLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        NLabel.setFocusable(false);
+        NLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        NLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
+        MLabel.setBackground(new java.awt.Color(242, 242, 242));
+        MLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        MLabel.setText("label");
+        MLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        MLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        MLabel.setFocusable(false);
+        MLabel.setMaximumSize(new java.awt.Dimension(64, 21));
+        MLabel.setMinimumSize(new java.awt.Dimension(64, 21));
+
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
         LocContainerLayout.setHorizontalGroup(
@@ -2718,130 +2902,110 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(QLabel, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(QSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(WLabel)
-                            .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(ELabel)
-                            .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(RSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(RLabel)
-                            .addComponent(RButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(TSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(TLabel)
-                            .addComponent(TButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(YSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(YLabel)
-                            .addComponent(YButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(USlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(ULabel)
-                            .addComponent(UButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(QSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(QLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ILabel)
-                            .addComponent(ISlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(WLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(OSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(OLabel)
-                            .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(ELabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(PLabel)
-                            .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(RSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(RButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(RLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(TSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(TButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(TLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(YSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(YButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(YLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(USlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(UButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(ULabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(IButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(ISlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(ILabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(OSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(OButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(OLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(PLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(LocContainerLayout.createSequentialGroup()
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(ASlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(AButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(ALabel, javax.swing.GroupLayout.Alignment.LEADING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(SSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(SLabel)
-                                    .addComponent(SButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(DLabel)
-                                    .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(FSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(FLabel)
-                                    .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(GSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(GLabel)
-                                    .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(HSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(HLabel)
-                                    .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(JSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(JLabel)
-                                    .addComponent(JButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(KSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(KLabel)
-                                    .addComponent(KButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(LocContainerLayout.createSequentialGroup()
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(ZSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(ZButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(ZLabel, javax.swing.GroupLayout.Alignment.LEADING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(XSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(XLabel)
-                                    .addComponent(XButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(CSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(CLabel)
-                                    .addComponent(CButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(VSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(VLabel)
-                                    .addComponent(VButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(BSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(BLabel)
-                                    .addComponent(BButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(NSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(NLabel)
-                                    .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(MLabel)
-                                    .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(ASlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(AButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(ALabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(SSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(SButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(SLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(DLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(FSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(FButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(FLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(GSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(GLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(HSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(HLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(JSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(JButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(JLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(KSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(KButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(KLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(LocContainerLayout.createSequentialGroup()
@@ -2852,9 +3016,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addGap(3, 3, 3)
                                 .addComponent(LocMappingNumberLabel))
                             .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(LLabel)
                                 .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(LLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(LocContainerLayout.createSequentialGroup()
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(ZSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(ZButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ZLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(XSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(XButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(XLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(CSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(CButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(CLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(VSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(VButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(VLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(BSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(BButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(BLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(NSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(NButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(NLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocContainerLayout.setVerticalGroup(
@@ -2887,17 +3091,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(USlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(1, 1, 1)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(QLabel)
-                    .addComponent(WLabel)
-                    .addComponent(ELabel)
-                    .addComponent(RLabel)
-                    .addComponent(TLabel)
-                    .addComponent(YLabel)
-                    .addComponent(ULabel)
-                    .addComponent(ILabel)
-                    .addComponent(OLabel)
-                    .addComponent(PLabel))
-                .addGap(24, 24, 24)
+                    .addComponent(ELabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(QLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(WLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(RLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(TLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(YLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ULabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ILabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(OLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(PLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(22, 22, 22)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(GButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(HButton, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2923,16 +3127,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(LSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(0, 0, 0)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(ALabel)
-                    .addComponent(SLabel)
-                    .addComponent(DLabel)
-                    .addComponent(FLabel)
-                    .addComponent(GLabel)
-                    .addComponent(HLabel)
-                    .addComponent(JLabel)
-                    .addComponent(KLabel)
-                    .addComponent(LLabel))
-                .addGap(24, 24, 24)
+                    .addComponent(ALabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(DLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(FLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(GLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(HLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(JLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(KLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(LLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(23, 23, 23)
                 .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE, false)
@@ -2955,13 +3159,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(MSlider, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(ZLabel)
-                            .addComponent(XLabel)
-                            .addComponent(CLabel)
-                            .addComponent(VLabel)
-                            .addComponent(BLabel)
-                            .addComponent(NLabel)
-                            .addComponent(MLabel)))
+                            .addComponent(ZLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(XLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(CLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(VLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(BLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(NLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addComponent(LocMappingNumberLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -8666,7 +8870,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AButton;
-    private javax.swing.JLabel ALabel;
+    private javax.swing.JTextField ALabel;
     private javax.swing.JSlider ASlider;
     private javax.swing.JLabel ActiveLocLabel;
     private javax.swing.JButton AddLocButton;
@@ -8674,23 +8878,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton AddRouteButton;
     private javax.swing.JButton AltEmergencyStop;
     private javax.swing.JButton BButton;
-    private javax.swing.JLabel BLabel;
+    private javax.swing.JTextField BLabel;
     private javax.swing.JSlider BSlider;
     private javax.swing.JToggleButton Backward;
     private javax.swing.JButton BulkDisable;
     private javax.swing.JButton BulkEnable;
     private javax.swing.JButton CButton;
-    private javax.swing.JLabel CLabel;
+    private javax.swing.JTextField CLabel;
     private javax.swing.JButton CS3OpenBrowser;
     private javax.swing.JSlider CSlider;
     private javax.swing.JLabel CurrentKeyLabel;
     private javax.swing.JButton DButton;
-    private javax.swing.JLabel DLabel;
+    private javax.swing.JTextField DLabel;
     private javax.swing.JSlider DSlider;
     private javax.swing.JLabel DirectionLabel;
     private javax.swing.JButton DownArrow;
     private javax.swing.JButton EButton;
-    private javax.swing.JLabel ELabel;
+    private javax.swing.JTextField ELabel;
     private javax.swing.JSlider ESlider;
     private javax.swing.JLabel EStopLabel;
     private javax.swing.JLabel EditExistingLocLabel1;
@@ -8731,7 +8935,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton F8;
     private javax.swing.JToggleButton F9;
     private javax.swing.JButton FButton;
-    private javax.swing.JLabel FLabel;
+    private javax.swing.JTextField FLabel;
     private javax.swing.JSlider FSlider;
     private javax.swing.JButton FiveButton;
     private javax.swing.JToggleButton Forward;
@@ -8739,20 +8943,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel FullSpeedLabel;
     private javax.swing.JTabbedPane FunctionTabs;
     private javax.swing.JButton GButton;
-    private javax.swing.JLabel GLabel;
+    private javax.swing.JTextField GLabel;
     private javax.swing.JSlider GSlider;
     private javax.swing.JButton HButton;
-    private javax.swing.JLabel HLabel;
+    private javax.swing.JTextField HLabel;
     private javax.swing.JSlider HSlider;
     private javax.swing.JButton IButton;
-    private javax.swing.JLabel ILabel;
+    private javax.swing.JTextField ILabel;
     private javax.swing.JSlider ISlider;
     private javax.swing.JPanel InnerLayoutPanel;
     private javax.swing.JButton JButton;
-    private javax.swing.JLabel JLabel;
+    private javax.swing.JTextField JLabel;
     private javax.swing.JSlider JSlider;
     private javax.swing.JButton KButton;
-    private javax.swing.JLabel KLabel;
+    private javax.swing.JTextField KLabel;
     private javax.swing.JSlider KSlider;
     private javax.swing.JLabel KeyboardLabel;
     private javax.swing.JLabel KeyboardLabel1;
@@ -8760,7 +8964,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel KeyboardPanel;
     private javax.swing.JTabbedPane KeyboardTab;
     private javax.swing.JButton LButton;
-    private javax.swing.JLabel LLabel;
+    private javax.swing.JTextField LLabel;
     private javax.swing.JSlider LSlider;
     private javax.swing.JScrollPane LayoutArea;
     private javax.swing.JComboBox LayoutList;
@@ -8777,39 +8981,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButton LocTypeMM2;
     private javax.swing.JButton LocUsageReport;
     private javax.swing.JButton MButton;
-    private javax.swing.JLabel MLabel;
+    private javax.swing.JTextField MLabel;
     private javax.swing.JSlider MSlider;
     private javax.swing.JPanel ManageLocPanel;
     private javax.swing.JButton NButton;
-    private javax.swing.JLabel NLabel;
+    private javax.swing.JTextField NLabel;
     private javax.swing.JSlider NSlider;
     private javax.swing.JButton NextKeyboard;
     private javax.swing.JButton NextLocMapping;
     private javax.swing.JButton NineButton;
     private javax.swing.JButton OButton;
-    private javax.swing.JLabel OLabel;
+    private javax.swing.JTextField OLabel;
     private javax.swing.JSlider OSlider;
     private javax.swing.JButton OnButton;
     private javax.swing.JButton OneButton;
     private javax.swing.JButton OverrideCS2DataPath;
     private javax.swing.JButton PButton;
-    private javax.swing.JLabel PLabel;
+    private javax.swing.JTextField PLabel;
     private javax.swing.JSlider PSlider;
     private javax.swing.JButton PowerOff;
     private javax.swing.JButton PrevKeyboard;
     private javax.swing.JButton PrevLocMapping;
     private javax.swing.JLabel PrimaryControls;
     private javax.swing.JButton QButton;
-    private javax.swing.JLabel QLabel;
+    private javax.swing.JTextField QLabel;
     private javax.swing.JSlider QSlider;
     private javax.swing.JButton RButton;
-    private javax.swing.JLabel RLabel;
+    private javax.swing.JTextField RLabel;
     private javax.swing.JSlider RSlider;
     private javax.swing.JButton RightArrow;
     private javax.swing.JTable RouteList;
     private javax.swing.JPanel RoutePanel;
     private javax.swing.JButton SButton;
-    private javax.swing.JLabel SLabel;
+    private javax.swing.JTextField SLabel;
     private javax.swing.JSlider SSlider;
     private javax.swing.JButton SevenButton;
     private javax.swing.JButton ShiftButton;
@@ -8883,30 +9087,30 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton SwitchButton9;
     private javax.swing.JButton SyncButton;
     private javax.swing.JButton TButton;
-    private javax.swing.JLabel TLabel;
+    private javax.swing.JTextField TLabel;
     private javax.swing.JSlider TSlider;
     private javax.swing.JButton ThreeButton;
     private javax.swing.JButton TurnOffFnButton;
     private javax.swing.JButton TurnOnLightsButton;
     private javax.swing.JButton TwoButton;
     private javax.swing.JButton UButton;
-    private javax.swing.JLabel ULabel;
+    private javax.swing.JTextField ULabel;
     private javax.swing.JSlider USlider;
     private javax.swing.JButton UpArrow;
     private javax.swing.JButton VButton;
-    private javax.swing.JLabel VLabel;
+    private javax.swing.JTextField VLabel;
     private javax.swing.JSlider VSlider;
     private javax.swing.JButton WButton;
-    private javax.swing.JLabel WLabel;
+    private javax.swing.JTextField WLabel;
     private javax.swing.JSlider WSlider;
     private javax.swing.JButton XButton;
-    private javax.swing.JLabel XLabel;
+    private javax.swing.JTextField XLabel;
     private javax.swing.JSlider XSlider;
     private javax.swing.JButton YButton;
-    private javax.swing.JLabel YLabel;
+    private javax.swing.JTextField YLabel;
     private javax.swing.JSlider YSlider;
     private javax.swing.JButton ZButton;
-    private javax.swing.JLabel ZLabel;
+    private javax.swing.JTextField ZLabel;
     private javax.swing.JSlider ZSlider;
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
