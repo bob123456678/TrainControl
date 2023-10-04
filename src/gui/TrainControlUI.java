@@ -451,28 +451,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Set selected route sort radio button
         this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(this.prefs.getBoolean(ROUTE_SORT_PREF, false));
-
-        // Load autonomy data
-        try
-        {
-            // Read object using ObjectInputStream
-            ObjectInputStream obj_in = new ObjectInputStream(
-                new FileInputStream(TrainControlUI.AUTONOMY_FILE_NAME)
-            );
-            
-            // Read an object
-            Object obj = obj_in.readObject();
-
-            if (obj instanceof String)
-            {
-                // Cast object
-                this.autonomyJSON.setText((String) obj);
-            }
-        }
-        catch (IOException | ClassNotFoundException e)
-        {
-            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
-        }
         
         // Right-clicks on the route list
         this.RouteList.addMouseListener(new RightClickRouteMenu(this));   
@@ -543,7 +521,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             obj_out.writeObject(l);
 
             this.model.log("Saving UI state to disk.");
-        } catch (IOException iOException)
+        } 
+        catch (IOException iOException)
         {
             this.model.log("Could not save UI state. " 
                 + iOException.getMessage());
@@ -760,6 +739,28 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         // Set the model reference
         this.model = listener;
+        
+        // Load autonomy data
+        try
+        {
+            // Read object using ObjectInputStream
+            ObjectInputStream obj_in = new ObjectInputStream(
+                new FileInputStream(TrainControlUI.AUTONOMY_FILE_NAME)
+            );
+            
+            // Read an object
+            Object obj = obj_in.readObject();
+
+            if (obj instanceof String)
+            {
+                // Cast object
+                this.autonomyJSON.setText((String) obj);
+            }
+        }
+        catch (IOException | ClassNotFoundException e)
+        {
+            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
+        }
                         
         // Add list of routes to tab
         refreshRouteList();
