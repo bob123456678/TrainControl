@@ -180,6 +180,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
 
         configCommands.setColumns(10);
         configCommands.setRows(5);
+        configCommands.setToolTipText("Format: Signal 1,red/green or Switch 2,turn/straight");
         jScrollPane2.setViewportView(configCommands);
 
         lockEdges.setModel(new javax.swing.AbstractListModel<String>() {
