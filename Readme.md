@@ -149,6 +149,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.9 [Beta]
+    - The "Edit s88" option will now be shown for all types of points in the graph UI, not just stations
+
 * v1.10.8 [10/3/2023]
     - At locomotive startup, the last-known direction is now re-transmitted to ensure consistent operation
     - The date each locomotive was last run is now tracked in the usage report
