@@ -1366,7 +1366,7 @@ public class Layout
                         loc.setSpeed(0)
                             .switchDirection()
                             .waitForSpeedBelow(1, YIELD_SLEEP)
-                            .delay(1000) // Pause for a more realistic appearance
+                            .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
                             .setSpeed(speed)
                             .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
                     }
