@@ -1,6 +1,7 @@
 package automation;
 
 import base.Accessory;
+import base.Accessory.accessorySetting;
 import static base.Accessory.accessorySetting.GREEN;
 import static base.Accessory.accessorySetting.RED;
 import static base.Accessory.accessorySetting.STRAIGHT;
@@ -17,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import marklin.MarklinAccessory;
@@ -698,6 +700,35 @@ public class Layout
         
         // Remove from db
         this.points.remove(name);
+    }
+    
+    /**
+     * Creates a new edge with a different ending point
+     * @param original
+     * @param newEnd
+     * @return
+     * @throws Exception 
+     */
+    synchronized public Edge copyEdge(Edge original, String newEnd) throws Exception
+    {
+        Edge newEdge = this.createEdge(original.getStart().getName(), newEnd);
+        
+        // Copy lock edges
+        for (Edge e : original.getLockEdges())
+        {
+            newEdge.addLockEdge(e);
+        }
+        
+        // Copy config commands
+        for (Entry <String, accessorySetting> m : original.getConfigCommands().entrySet())
+        {
+            newEdge.addConfigCommand(m.getKey(), m.getValue());   
+        }
+        
+        // Copy length
+        newEdge.setLength(original.getLength());
+        
+        return newEdge;
     }
     
     /**

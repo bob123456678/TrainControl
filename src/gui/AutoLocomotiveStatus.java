@@ -77,7 +77,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
             }
-            // Layout is in auto mode but loc is not running - show stauts message and hide the list
+            // Layout is in auto mode but loc is not running - show status message and hide the list
             else if (layout.isAutoRunning())
             {
                 if (layout.getLocomotiveLocation(locomotive) != null)
@@ -113,6 +113,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     this.locDest.setText("Locomotive is not placed on the graph.");
                 }
+                
+                // Sort the list
+                this.paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
                 
                 for (List<Edge> path : this.paths)
                 {

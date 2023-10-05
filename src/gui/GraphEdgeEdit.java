@@ -135,6 +135,9 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
             }
             else if (s.trim().length() > 0)
             {
+                // Reset highlighed lock edges
+                this.parent.highlightLockedEdges(null, null);
+                
                 throw new Exception("Command " + s + " must be comma-separated. Example: Signal 1,turn");
             }
         }

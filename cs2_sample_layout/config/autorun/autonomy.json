@@ -13,6 +13,14 @@
             "s88": 1011,
             "maxTrainLength": 0,
             "priority": -3,
+            "loc": {
+                "name": "SU 45-118",
+                "reversible": false,
+                "speed": 50,
+                "arrivalFunc": 12,
+                "departureFunc": 9,
+                "trainLength": 4
+            },
             "x": 567,
             "y": 182
         },
@@ -22,14 +30,6 @@
             "s88": 2011,
             "maxTrainLength": 3,
             "priority": -2,
-            "loc": {
-                "name": "ET21-442",
-                "reversible": false,
-                "speed": 62,
-                "arrivalFunc": 2,
-                "departureFunc": 16,
-                "trainLength": 4
-            },
             "x": 612,
             "y": 298
         },
@@ -38,14 +38,6 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "ET22-951",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 14,
-                "departureFunc": 3,
-                "trainLength": 3
-            },
             "x": 836,
             "y": 51
         },
@@ -85,22 +77,14 @@
             "name": "BottomMainPost",
             "station": false,
             "s88": 2013,
-            "x": 1033,
-            "y": 115
+            "x": 1188,
+            "y": 122
         },
         {
             "name": "BottomSecondary",
             "station": true,
             "s88": 1009,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EP08-009",
-                "reversible": false,
-                "speed": 74,
-                "arrivalFunc": 4,
-                "departureFunc": 10,
-                "trainLength": 3
-            },
             "x": 561,
             "y": 126
         },
@@ -129,22 +113,21 @@
             "name": "ParkingDown",
             "station": false,
             "s88": 2001,
-            "x": 802,
-            "y": 175
+            "x": 796,
+            "y": 200
+        },
+        {
+            "name": "ParkingDownPre",
+            "station": false,
+            "s88": 1001,
+            "x": 798,
+            "y": 161
         },
         {
             "name": "ParkingFront",
             "station": true,
             "s88": 5,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 3
-            },
             "x": 973,
             "y": 233
         },
@@ -156,12 +139,27 @@
             "y": 219
         },
         {
+            "name": "ParkingParkInner",
+            "station": false,
+            "x": 926,
+            "y": 155
+        },
+        {
             "name": "ParkingReverse",
             "station": false,
             "s88": 1003,
             "reversing": true,
-            "x": 792,
-            "y": 277
+            "x": 861,
+            "y": 535
+        },
+        {
+            "name": "ParkingTrack10",
+            "station": true,
+            "s88": 2016,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1078,
+            "y": 421
         },
         {
             "name": "ParkingTrack11",
@@ -169,8 +167,70 @@
             "s88": 2004,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 795,
-            "y": 243
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
+            "x": 1081,
+            "y": 464
+        },
+        {
+            "name": "ParkingTrack4",
+            "station": true,
+            "s88": 2002,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1087,
+            "y": 182
+        },
+        {
+            "name": "ParkingTrack5",
+            "station": true,
+            "s88": 2003,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1083,
+            "y": 224
+        },
+        {
+            "name": "ParkingTrack6",
+            "station": true,
+            "s88": 2009,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1079,
+            "y": 266
+        },
+        {
+            "name": "ParkingTrack7",
+            "station": true,
+            "s88": 2008,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1081,
+            "y": 304
+        },
+        {
+            "name": "ParkingTrack8",
+            "station": true,
+            "s88": 2006,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1076,
+            "y": 346
+        },
+        {
+            "name": "ParkingTrack9",
+            "station": true,
+            "s88": 2007,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1076,
+            "y": 384
         },
         {
             "name": "ParkingUp",
@@ -179,6 +239,21 @@
             "maxTrainLength": 0,
             "x": 908,
             "y": 353
+        },
+        {
+            "name": "ParkingUpPre",
+            "station": false,
+            "s88": 2001,
+            "x": 900,
+            "y": 414
+        },
+        {
+            "name": "ParkingUpReverse",
+            "station": false,
+            "s88": 14,
+            "reversing": true,
+            "x": 908,
+            "y": 489
         },
         {
             "name": "RampDown",
@@ -191,8 +266,8 @@
             "name": "RampUp",
             "station": false,
             "s88": 1027,
-            "x": 1033,
-            "y": 624
+            "x": 1182,
+            "y": 610
         },
         {
             "name": "TopMainPost",
@@ -249,14 +324,6 @@
             "s88": 1015,
             "maxTrainLength": 4,
             "priority": -2,
-            "loc": {
-                "name": "SU 45-118",
-                "reversible": false,
-                "speed": 50,
-                "arrivalFunc": 12,
-                "departureFunc": 9,
-                "trainLength": 4
-            },
             "x": 479,
             "y": 562
         },
@@ -509,7 +576,7 @@
         },
         {
             "start": "BottomMainAPre",
-            "end": "ParkingDown",
+            "end": "ParkingDownPre",
             "length": 0,
             "commands": [
                 {
@@ -529,20 +596,12 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 37",
-                    "state": "red"
-                },
-                {
                     "acc": "Switch 51",
                     "state": "turn"
                 },
                 {
                     "acc": "Switch 50",
                     "state": "turn"
-                },
-                {
-                    "acc": "Switch 8",
-                    "state": "straight"
                 },
                 {
                     "acc": "Switch 5",
@@ -555,28 +614,28 @@
                     "end": "BottomCrossover"
                 },
                 {
-                    "start": "RampDown",
-                    "end": "BottomInner"
-                },
-                {
-                    "start": "BottomSecondaryPre",
-                    "end": "BottomSecondary"
-                },
-                {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
-                },
-                {
-                    "start": "BottomSecondary",
-                    "end": "TunnelPre"
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
                 },
                 {
                     "start": "BottomMainAPre",
                     "end": "BottomMainA"
                 },
                 {
-                    "start": "BottomMainA",
-                    "end": "BottomMainPost"
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
                 }
             ]
         },
@@ -857,27 +916,42 @@
             ],
             "lockedges": [
                 {
-                    "start": "ParkingDown",
-                    "end": "ParkingFrontPre"
+                    "start": "BottomMainAPre",
+                    "end": "ParkingDownPre"
                 },
                 {
                     "start": "ParkingBack",
                     "end": "ParkingFrontPre"
                 },
                 {
-                    "start": "ParkingFront",
-                    "end": "ParkingBackPre"
-                },
-                {
                     "start": "ParkingBackPre",
                     "end": "ParkingBack"
+                },
+                {
+                    "start": "ParkingFront",
+                    "end": "ParkingBackPre"
                 }
             ]
         },
         {
             "start": "ParkingDown",
             "end": "ParkingFrontPre",
+            "length": 0
+        },
+        {
+            "start": "ParkingDownPre",
+            "end": "ParkingDown",
             "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 37",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 8",
+                    "state": "straight"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "ParkingBack",
@@ -898,6 +972,21 @@
                 {
                     "start": "ParkingFrontPre",
                     "end": "ParkingFront"
+                }
+            ]
+        },
+        {
+            "start": "ParkingDownPre",
+            "end": "ParkingParkInner",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 37",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 8",
+                    "state": "turn"
                 }
             ]
         },
@@ -942,6 +1031,179 @@
             ]
         },
         {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack10",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 55",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 71",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack4",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 4",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 7",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack5",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 4",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 7",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack6",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack7",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 31",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack8",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 31",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 29",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingParkInner",
+            "end": "ParkingTrack9",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 31",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 29",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
             "start": "ParkingReverse",
             "end": "ParkingTrack11",
             "length": 0,
@@ -957,6 +1219,15 @@
             ]
         },
         {
+            "start": "ParkingTrack10",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
             "start": "ParkingTrack11",
             "end": "ParkingFrontPre",
             "length": 0,
@@ -968,6 +1239,56 @@
                 "start": "ParkingBack",
                 "end": "ParkingFrontPre"
             }]
+        },
+        {
+            "start": "ParkingTrack4",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack5",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack6",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack7",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack8",
+            "end": "ParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "ParkingParkInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack9",
+            "end": "ParkingUpReverse",
+            "length": 0
         },
         {
             "start": "ParkingUp",
@@ -1008,10 +1329,6 @@
                 }
             ],
             "lockedges": [
-                {
-                    "start": "ParkingDown",
-                    "end": "ParkingFrontPre"
-                },
                 {
                     "start": "ParkingBack",
                     "end": "ParkingFrontPre"
@@ -1057,6 +1374,52 @@
                     "end": "Tunnel"
                 }
             ]
+        },
+        {
+            "start": "ParkingUpPre",
+            "end": "ParkingUp",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 102",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 32",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 37",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 8",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 5",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "ParkingBackPre",
+                    "end": "ParkingUp"
+                },
+                {
+                    "start": "ParkingFront",
+                    "end": "ParkingBackPre"
+                }
+            ]
+        },
+        {
+            "start": "ParkingUpReverse",
+            "end": "ParkingUpPre",
+            "length": 0
         },
         {
             "start": "RampDown",

@@ -410,7 +410,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 menuItem = new JMenuItem("Edit outgoing Edge...");
                 menuItem.addActionListener(event -> 
                     {
-                        // Get all point names excep tthis one
+                        // Get all point names except this one
                         List<String> edgeNames = new LinkedList<>();
 
                         for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
@@ -469,6 +469,101 @@ final public class GraphViewer extends javax.swing.JFrame {
                             }
                         }
                         
+                    }
+                ); 
+
+                add(menuItem);
+            }
+            
+            // Copy edge
+            if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
+            {
+                menuItem = new JMenuItem("Copy outgoing Edge...");
+                menuItem.addActionListener(event -> 
+                    {
+                        // Get all point names except this one
+                        List<String> edgeNames = new LinkedList<>();
+
+                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                        {
+                            edgeNames.add(e2.getName());
+                        }
+
+                        Collections.sort(edgeNames);
+
+                        String dialogResult;
+                        
+                        // Only prompt if there are multiple outgoing edges
+                        if (edgeNames.size() > 1)
+                        {
+                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                                "Which edge do you want to copy?",
+                                "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
+                                edgeNames.toArray(), // Array of choices
+                                edgeNames.get(0));
+                        }
+                        else
+                        {
+                            dialogResult = edgeNames.get(0);
+                        }
+
+                        if (dialogResult != null && !"".equals(dialogResult))
+                        {
+                            try
+                            {
+                                if (parent.getModel().getAutoLayout().getEdge(dialogResult) == null)
+                                {
+                                    JOptionPane.showMessageDialog((Component) swingView,
+                                        "This edge name does not exist.");
+                                }
+                                else
+                                {
+                                    Edge original = parent.getModel().getAutoLayout().getEdge(dialogResult);
+                                
+                                    // Get all point names except this one
+                                    Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
+                                    List<String> pointNames = new LinkedList<>();
+
+                                    for (Point p2 : points)
+                                    {
+                                        pointNames.add(p2.getName());
+                                    }
+
+                                    Collections.sort(pointNames);
+
+                                    // Remove self and all existing neighbors
+                                    pointNames.remove(nodeName);
+
+                                    for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                                    {
+                                        pointNames.remove(e2.getEnd().getName());
+                                    }
+
+                                    if (!pointNames.isEmpty())
+                                    {
+                                        dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                                                "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
+                                                "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
+                                                pointNames.toArray(), // Array of choices
+                                                pointNames.get(0));
+
+                                        if (dialogResult != null && !"".equals(dialogResult))
+                                        {
+                                            Edge e = parent.getModel().getAutoLayout().copyEdge(original, dialogResult);
+
+                                            ui.addEdge(e, mainGraph);
+                                            parent.repaintAutoLocList(false);
+                                            parent.getModel().getAutoLayout().refreshUI();
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Error copying edge: " + e.getMessage());
+                            }
+                        }
                     }
                 ); 
 
