@@ -519,6 +519,13 @@ final public class GraphViewer extends javax.swing.JFrame {
                                 else
                                 {
                                     Edge original = parent.getModel().getAutoLayout().getEdge(dialogResult);
+                                    
+                                    String[] options = { "Start", "End" };
+                                    int res = JOptionPane.showOptionDialog((Component) swingView, "Change which point?", "Copy Type",
+                                        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, 
+                                        options, options[0]);
+                                    
+                                    boolean changeEnd = (res == 1);
                                 
                                     // Get all point names except this one
                                     Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
@@ -534,22 +541,30 @@ final public class GraphViewer extends javax.swing.JFrame {
                                     // Remove self and all existing neighbors
                                     pointNames.remove(nodeName);
 
-                                    for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                                    if(changeEnd)
                                     {
-                                        pointNames.remove(e2.getEnd().getName());
+                                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                                        {
+                                            pointNames.remove(e2.getEnd().getName());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Remove current end
+                                        pointNames.remove(original.getEnd().getName());
                                     }
 
                                     if (!pointNames.isEmpty())
                                     {
                                         dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                                "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
+                                                "Choose the name of the station/point you wish to connect " + (changeEnd ? "to" : "from") + ":",
                                                 "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
                                                 pointNames.toArray(), // Array of choices
                                                 pointNames.get(0));
 
                                         if (dialogResult != null && !"".equals(dialogResult))
                                         {
-                                            Edge e = parent.getModel().getAutoLayout().copyEdge(original, dialogResult);
+                                            Edge e = parent.getModel().getAutoLayout().copyEdge(original, dialogResult, changeEnd);
 
                                             ui.addEdge(e, mainGraph);
                                             parent.repaintAutoLocList(false);

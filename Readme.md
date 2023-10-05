@@ -150,7 +150,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.10.9 [Beta]
-    - Added an option to copy existing graph edges (to a new end point)
+    - Added an option to copy existing graph edges (to a new start or end point)
     - Paths in semi-autonomous mode are now sorted alphabetically
     - The "Edit s88" option will now be shown for all types of points in the graph UI, not just stations
     - The pause after arriving at a reversing station is now randomly chosen between minDelay and maxDelay (was 1 second)

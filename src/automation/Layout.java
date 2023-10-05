@@ -703,15 +703,25 @@ public class Layout
     }
     
     /**
-     * Creates a new edge with a different ending point
+     * Creates a new edge with a different start ending point
      * @param original
-     * @param newEnd
+     * @param newPoint
+     * @param changeEnd true to change end, otherwise will change start
      * @return
      * @throws Exception 
      */
-    synchronized public Edge copyEdge(Edge original, String newEnd) throws Exception
+    synchronized public Edge copyEdge(Edge original, String newPoint, boolean changeEnd) throws Exception
     {
-        Edge newEdge = this.createEdge(original.getStart().getName(), newEnd);
+        Edge newEdge;
+        
+        if (changeEnd)
+        {
+            newEdge = this.createEdge(original.getStart().getName(), newPoint);
+        }
+        else
+        {
+            newEdge = this.createEdge(newPoint, original.getEnd().getName());
+        }
         
         // Copy lock edges
         for (Edge e : original.getLockEdges())

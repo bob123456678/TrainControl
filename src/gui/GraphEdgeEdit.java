@@ -124,6 +124,9 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
     {
         String[] commands = this.configCommands.getText().split("\n");
         
+        // Reset highlighed lock edges
+        this.parent.highlightLockedEdges(null, null);
+                
         for (String s : commands)
         {
             if (s.split(",").length == 2)
@@ -135,9 +138,6 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
             }
             else if (s.trim().length() > 0)
             {
-                // Reset highlighed lock edges
-                this.parent.highlightLockedEdges(null, null);
-                
                 throw new Exception("Command " + s + " must be comma-separated. Example: Signal 1,turn");
             }
         }
