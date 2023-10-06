@@ -53,6 +53,14 @@
             "station": true,
             "s88": 10,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
             "x": 955,
             "y": 5
         },
@@ -60,8 +68,8 @@
             "name": "BottomMainBCPre",
             "station": false,
             "s88": 1006,
-            "x": 564,
-            "y": 0
+            "x": 483,
+            "y": -1
         },
         {
             "name": "BottomMainC",
@@ -167,14 +175,6 @@
             "s88": 2004,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 3
-            },
             "x": 1081,
             "y": 464
         },
@@ -410,6 +410,32 @@
             "y": 35
         },
         {
+            "name": "TunnelCenterPark",
+            "station": true,
+            "s88": 1031,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 620,
+            "y": -57
+        },
+        {
+            "name": "TunnelLeftPark",
+            "station": true,
+            "s88": 1028,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 555,
+            "y": -37
+        },
+        {
+            "name": "TunnelParkReverse",
+            "station": false,
+            "s88": 9,
+            "reversing": true,
+            "x": 457,
+            "y": -83
+        },
+        {
             "name": "TunnelPre",
             "station": false,
             "s88": 1030,
@@ -422,6 +448,15 @@
             "s88": 1032,
             "x": 286,
             "y": 99
+        },
+        {
+            "name": "TunnelRightPark",
+            "station": true,
+            "s88": 1029,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 693,
+            "y": -81
         }
     ],
     "edges": [
@@ -569,10 +604,16 @@
             "start": "BottomMainAPre",
             "end": "BottomMainA",
             "length": 4,
-            "commands": [{
-                "acc": "Switch 100",
-                "state": "straight"
-            }]
+            "commands": [
+                {
+                    "acc": "Switch 100",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 40",
+                    "state": "red"
+                }
+            ]
         },
         {
             "start": "BottomMainAPre",
@@ -681,6 +722,21 @@
                 {
                     "start": "ParkingUp",
                     "end": "BottomInnerOtherside"
+                }
+            ]
+        },
+        {
+            "start": "BottomMainAPre",
+            "end": "TunnelParkReverse",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 100",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 40",
+                    "state": "green"
                 }
             ]
         },
@@ -1809,10 +1865,6 @@
                 {
                     "acc": "Signal 87",
                     "state": "red"
-                },
-                {
-                    "acc": "Signal 40",
-                    "state": "red"
                 }
             ],
             "lockedges": [{
@@ -1830,6 +1882,10 @@
                     "state": "straight"
                 },
                 {
+                    "acc": "Signal 89",
+                    "state": "red"
+                },
+                {
                     "acc": "Signal 38",
                     "state": "red"
                 },
@@ -1840,12 +1896,177 @@
                 {
                     "acc": "Signal 87",
                     "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
                 }
             ],
             "lockedges": [{
                 "start": "BottomMainC",
                 "end": "TunnelReverse"
             }]
+        },
+        {
+            "start": "TunnelCenterPark",
+            "end": "BottomMainAPre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 86",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "TunnelLeftPark",
+            "end": "BottomMainAPre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 86",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "TunnelParkReverse",
+            "end": "TunnelCenterPark",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 69",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 79",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 89",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 80",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainC"
+                },
+                {
+                    "start": "BottomMainC",
+                    "end": "TunnelReverse"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "start": "TunnelParkReverse",
+            "end": "TunnelLeftPark",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 79",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 80",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainC"
+                },
+                {
+                    "start": "BottomMainC",
+                    "end": "TunnelReverse"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "start": "TunnelParkReverse",
+            "end": "TunnelRightPark",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 69",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 79",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 89",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 80",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainC"
+                },
+                {
+                    "start": "BottomMainC",
+                    "end": "TunnelReverse"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                }
+            ]
         },
         {
             "start": "TunnelPre",
@@ -1890,6 +2111,21 @@
                 {
                     "start": "BottomInner",
                     "end": "BottomCrossover"
+                }
+            ]
+        },
+        {
+            "start": "TunnelRightPark",
+            "end": "BottomMainAPre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 86",
+                    "state": "green"
                 }
             ]
         }
