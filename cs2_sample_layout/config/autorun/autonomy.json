@@ -398,14 +398,6 @@
             "s88": 1032,
             "maxTrainLength": 0,
             "priority": -2,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 3
-            },
             "x": 350,
             "y": 35
         },
@@ -415,8 +407,16 @@
             "s88": 1031,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 620,
-            "y": -57
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
+            "x": 589,
+            "y": -56
         },
         {
             "name": "TunnelLeftPark",
@@ -424,16 +424,16 @@
             "s88": 1028,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 555,
-            "y": -37
+            "x": 515,
+            "y": -42
         },
         {
             "name": "TunnelParkReverse",
             "station": false,
             "s88": 9,
             "reversing": true,
-            "x": 457,
-            "y": -83
+            "x": 837,
+            "y": -27
         },
         {
             "name": "TunnelPre",
@@ -455,8 +455,8 @@
             "s88": 1029,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 693,
-            "y": -81
+            "x": 669,
+            "y": -80
         }
     ],
     "edges": [
@@ -735,8 +735,16 @@
                     "state": "straight"
                 },
                 {
+                    "acc": "Signal 89",
+                    "state": "green"
+                },
+                {
                     "acc": "Signal 40",
                     "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
                 }
             ]
         },
