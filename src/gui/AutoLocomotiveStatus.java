@@ -33,7 +33,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
      * @param loc
      * @param control
      */
-    public AutoLocomotiveStatus(Locomotive loc, ViewListener control) {
+    public AutoLocomotiveStatus(Locomotive loc, ViewListener control) 
+    {
         this.layout = control.getAutoLayout();
         this.locomotive = loc;
         this.control = control;
@@ -100,7 +101,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     this.locDest.setText("Double-click a path to execute");
                     
-                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
                     this.locStation.setVisible(true);
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)

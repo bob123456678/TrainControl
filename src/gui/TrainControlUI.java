@@ -8826,8 +8826,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     5, // padding
                     5)
             );
-                        
-            for (Locomotive loc : this.model.getAutoLayout().getLocomotivesToRun())
+            
+            // Sort alphabetically, with parked locomotives last
+            List<Locomotive> locs = new LinkedList<>(this.model.getAutoLayout().getLocomotivesToRun());
+            
+            locs.sort((Locomotive l1, Locomotive l2) -> {
+                Point loc1Point = this.model.getAutoLayout().getLocomotiveLocation(l1);
+                Point loc2Point = this.model.getAutoLayout().getLocomotiveLocation(l2);
+
+                if (loc1Point != null && loc2Point != null)
+                {
+                    if (loc1Point.isReversing() && !loc2Point.isReversing()) return 1;
+                    if (!loc1Point.isReversing() && loc2Point.isReversing()) return -1;
+                }
+                
+                return l1.getName().compareTo(l2.getName());
+            });
+            
+            for (Locomotive loc : locs)
             {
                 this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model));
             }

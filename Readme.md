@@ -152,6 +152,7 @@ Requires JDK 1.8+ and the following libraries:
 * v1.10.9 [Beta]
     - Added an option to copy existing graph edges (to a new start or end point)
     - Paths in semi-autonomous mode are now sorted alphabetically
+    - Locomotives in the semi-autonomous UI are now sorted alphabetically; parked locomotives always at the end
     - The "Edit s88" option will now be shown for all types of points in the graph UI, not just stations
     - The pause after arriving at a reversing station is now randomly chosen between minDelay and maxDelay (was 1 second)
     - Fixed bug where highlighted edges in edge edit mode would not be cleared after entering an invalid switch/signal command
