@@ -13,14 +13,6 @@
             "s88": 1011,
             "maxTrainLength": 0,
             "priority": -3,
-            "loc": {
-                "name": "SU 45-118",
-                "reversible": false,
-                "speed": 50,
-                "arrivalFunc": 12,
-                "departureFunc": 9,
-                "trainLength": 4
-            },
             "x": 567,
             "y": 182
         },
@@ -53,14 +45,6 @@
             "station": true,
             "s88": 10,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 3
-            },
             "x": 955,
             "y": 5
         },
@@ -103,7 +87,7 @@
             "y": 124
         },
         {
-            "name": "ParkingBack",
+            "name": "LowerBack",
             "station": true,
             "s88": 2005,
             "maxTrainLength": 0,
@@ -111,28 +95,28 @@
             "y": 292
         },
         {
-            "name": "ParkingBackPre",
+            "name": "LowerBackPre",
             "station": false,
             "s88": 1,
             "x": 975,
             "y": 313
         },
         {
-            "name": "ParkingDown",
+            "name": "LowerDown",
             "station": false,
             "s88": 2001,
             "x": 796,
             "y": 200
         },
         {
-            "name": "ParkingDownPre",
+            "name": "LowerDownPre",
             "station": false,
             "s88": 1001,
             "x": 798,
             "y": 161
         },
         {
-            "name": "ParkingFront",
+            "name": "LowerFront",
             "station": true,
             "s88": 5,
             "maxTrainLength": 0,
@@ -140,25 +124,48 @@
             "y": 233
         },
         {
-            "name": "ParkingFrontPre",
+            "name": "LowerFrontPre",
             "station": false,
             "s88": 1002,
             "x": 866,
             "y": 219
         },
         {
-            "name": "ParkingParkInner",
+            "name": "LowerParkingInner",
             "station": false,
             "x": 926,
             "y": 155
         },
         {
-            "name": "ParkingReverse",
+            "name": "LowerParkingReverse",
             "station": false,
             "s88": 1003,
             "reversing": true,
             "x": 861,
             "y": 535
+        },
+        {
+            "name": "LowerParkingUpReverse",
+            "station": false,
+            "s88": 14,
+            "reversing": true,
+            "x": 908,
+            "y": 489
+        },
+        {
+            "name": "LowerUp",
+            "station": true,
+            "s88": 1001,
+            "maxTrainLength": 0,
+            "x": 908,
+            "y": 353
+        },
+        {
+            "name": "LowerUpPre",
+            "station": false,
+            "s88": 2001,
+            "x": 900,
+            "y": 414
         },
         {
             "name": "ParkingTrack10",
@@ -233,29 +240,6 @@
             "y": 384
         },
         {
-            "name": "ParkingUp",
-            "station": true,
-            "s88": 1001,
-            "maxTrainLength": 0,
-            "x": 908,
-            "y": 353
-        },
-        {
-            "name": "ParkingUpPre",
-            "station": false,
-            "s88": 2001,
-            "x": 900,
-            "y": 414
-        },
-        {
-            "name": "ParkingUpReverse",
-            "station": false,
-            "s88": 14,
-            "reversing": true,
-            "x": 908,
-            "y": 489
-        },
-        {
             "name": "RampDown",
             "station": false,
             "s88": 2012,
@@ -308,6 +292,14 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
+            "loc": {
+                "name": "SU 45-118",
+                "reversible": false,
+                "speed": 50,
+                "arrivalFunc": 12,
+                "departureFunc": 9,
+                "trainLength": 4
+            },
             "x": 401,
             "y": 406
         },
@@ -406,6 +398,14 @@
             "s88": 1032,
             "maxTrainLength": 0,
             "priority": -2,
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
             "x": 350,
             "y": 35
         },
@@ -492,7 +492,7 @@
                     "end": "BottomSecondary"
                 },
                 {
-                    "start": "ParkingUp",
+                    "start": "LowerUp",
                     "end": "BottomInnerOtherside"
                 },
                 {
@@ -617,7 +617,7 @@
         },
         {
             "start": "BottomMainAPre",
-            "end": "ParkingDownPre",
+            "end": "LowerDownPre",
             "length": 0,
             "commands": [
                 {
@@ -720,7 +720,7 @@
                     "end": "BottomSecondary"
                 },
                 {
-                    "start": "ParkingUp",
+                    "start": "LowerUp",
                     "end": "BottomInnerOtherside"
                 }
             ]
@@ -839,8 +839,8 @@
                     "end": "TunnelPre"
                 },
                 {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingUp"
+                    "start": "LowerBackPre",
+                    "end": "LowerUp"
                 }
             ]
         },
@@ -864,8 +864,8 @@
             ]
         },
         {
-            "start": "ParkingBack",
-            "end": "ParkingFrontPre",
+            "start": "LowerBack",
+            "end": "LowerFrontPre",
             "length": 0,
             "commands": [
                 {
@@ -883,8 +883,8 @@
             ]
         },
         {
-            "start": "ParkingBack",
-            "end": "ParkingReverse",
+            "start": "LowerBack",
+            "end": "LowerParkingReverse",
             "length": 0,
             "commands": [
                 {
@@ -917,13 +917,13 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingBack",
-                "end": "ParkingFrontPre"
+                "start": "LowerBack",
+                "end": "LowerFrontPre"
             }]
         },
         {
-            "start": "ParkingBackPre",
-            "end": "ParkingBack",
+            "start": "LowerBackPre",
+            "end": "LowerBack",
             "length": 0,
             "commands": [
                 {
@@ -937,8 +937,8 @@
             ]
         },
         {
-            "start": "ParkingBackPre",
-            "end": "ParkingUp",
+            "start": "LowerBackPre",
+            "end": "LowerUp",
             "length": 0,
             "commands": [
                 {
@@ -973,30 +973,30 @@
             "lockedges": [
                 {
                     "start": "BottomMainAPre",
-                    "end": "ParkingDownPre"
+                    "end": "LowerDownPre"
                 },
                 {
-                    "start": "ParkingBack",
-                    "end": "ParkingFrontPre"
+                    "start": "LowerBack",
+                    "end": "LowerFrontPre"
                 },
                 {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingBack"
+                    "start": "LowerBackPre",
+                    "end": "LowerBack"
                 },
                 {
-                    "start": "ParkingFront",
-                    "end": "ParkingBackPre"
+                    "start": "LowerFront",
+                    "end": "LowerBackPre"
                 }
             ]
         },
         {
-            "start": "ParkingDown",
-            "end": "ParkingFrontPre",
+            "start": "LowerDown",
+            "end": "LowerFrontPre",
             "length": 0
         },
         {
-            "start": "ParkingDownPre",
-            "end": "ParkingDown",
+            "start": "LowerDownPre",
+            "end": "LowerDown",
             "length": 0,
             "commands": [
                 {
@@ -1010,30 +1010,30 @@
             ],
             "lockedges": [
                 {
-                    "start": "ParkingBack",
-                    "end": "ParkingFrontPre"
+                    "start": "LowerBack",
+                    "end": "LowerFrontPre"
                 },
                 {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingBack"
+                    "start": "LowerBackPre",
+                    "end": "LowerBack"
                 },
                 {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingUp"
+                    "start": "LowerBackPre",
+                    "end": "LowerUp"
                 },
                 {
-                    "start": "ParkingFront",
-                    "end": "ParkingBackPre"
+                    "start": "LowerFront",
+                    "end": "LowerBackPre"
                 },
                 {
-                    "start": "ParkingFrontPre",
-                    "end": "ParkingFront"
+                    "start": "LowerFrontPre",
+                    "end": "LowerFront"
                 }
             ]
         },
         {
-            "start": "ParkingDownPre",
-            "end": "ParkingParkInner",
+            "start": "LowerDownPre",
+            "end": "LowerParkingInner",
             "length": 0,
             "commands": [
                 {
@@ -1047,8 +1047,8 @@
             ]
         },
         {
-            "start": "ParkingFront",
-            "end": "ParkingBackPre",
+            "start": "LowerFront",
+            "end": "LowerBackPre",
             "length": 0,
             "commands": [{
                 "acc": "Switch 25",
@@ -1056,8 +1056,8 @@
             }]
         },
         {
-            "start": "ParkingFrontPre",
-            "end": "ParkingFront",
+            "start": "LowerFrontPre",
+            "end": "LowerFront",
             "length": 0,
             "commands": [
                 {
@@ -1087,7 +1087,7 @@
             ]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack10",
             "length": 0,
             "commands": [
@@ -1109,12 +1109,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack4",
             "length": 0,
             "commands": [
@@ -1128,12 +1128,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack5",
             "length": 0,
             "commands": [
@@ -1147,12 +1147,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack6",
             "length": 0,
             "commands": [
@@ -1170,12 +1170,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack7",
             "length": 0,
             "commands": [
@@ -1197,12 +1197,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack8",
             "length": 0,
             "commands": [
@@ -1228,12 +1228,12 @@
                 }
             ],
             "lockedges": [{
-                "start": "ParkingParkInner",
+                "start": "LowerParkingInner",
                 "end": "ParkingTrack9"
             }]
         },
         {
-            "start": "ParkingParkInner",
+            "start": "LowerParkingInner",
             "end": "ParkingTrack9",
             "length": 0,
             "commands": [
@@ -1260,7 +1260,7 @@
             ]
         },
         {
-            "start": "ParkingReverse",
+            "start": "LowerParkingReverse",
             "end": "ParkingTrack11",
             "length": 0,
             "commands": [
@@ -1275,79 +1275,12 @@
             ]
         },
         {
-            "start": "ParkingTrack10",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack11",
-            "end": "ParkingFrontPre",
-            "length": 0,
-            "commands": [{
-                "acc": "Signal 89",
-                "state": "green"
-            }],
-            "lockedges": [{
-                "start": "ParkingBack",
-                "end": "ParkingFrontPre"
-            }]
-        },
-        {
-            "start": "ParkingTrack4",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack5",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack6",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack7",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack8",
-            "end": "ParkingUpReverse",
-            "length": 0,
-            "lockedges": [{
-                "start": "ParkingParkInner",
-                "end": "ParkingTrack9"
-            }]
-        },
-        {
-            "start": "ParkingTrack9",
-            "end": "ParkingUpReverse",
+            "start": "LowerParkingUpReverse",
+            "end": "LowerUpPre",
             "length": 0
         },
         {
-            "start": "ParkingUp",
+            "start": "LowerUp",
             "end": "BottomInnerOtherside",
             "length": 0,
             "commands": [
@@ -1386,8 +1319,8 @@
             ],
             "lockedges": [
                 {
-                    "start": "ParkingBack",
-                    "end": "ParkingFrontPre"
+                    "start": "LowerBack",
+                    "end": "LowerFrontPre"
                 },
                 {
                     "start": "BottomInner",
@@ -1432,8 +1365,8 @@
             ]
         },
         {
-            "start": "ParkingUpPre",
-            "end": "ParkingUp",
+            "start": "LowerUpPre",
+            "end": "LowerUp",
             "length": 0,
             "commands": [
                 {
@@ -1463,18 +1396,85 @@
             ],
             "lockedges": [
                 {
-                    "start": "ParkingBackPre",
-                    "end": "ParkingUp"
+                    "start": "LowerBackPre",
+                    "end": "LowerUp"
                 },
                 {
-                    "start": "ParkingFront",
-                    "end": "ParkingBackPre"
+                    "start": "LowerFront",
+                    "end": "LowerBackPre"
                 }
             ]
         },
         {
-            "start": "ParkingUpReverse",
-            "end": "ParkingUpPre",
+            "start": "ParkingTrack10",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack11",
+            "end": "LowerFrontPre",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 89",
+                "state": "green"
+            }],
+            "lockedges": [{
+                "start": "LowerBack",
+                "end": "LowerFrontPre"
+            }]
+        },
+        {
+            "start": "ParkingTrack4",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack5",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack6",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack7",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack8",
+            "end": "LowerParkingUpReverse",
+            "length": 0,
+            "lockedges": [{
+                "start": "LowerParkingInner",
+                "end": "ParkingTrack9"
+            }]
+        },
+        {
+            "start": "ParkingTrack9",
+            "end": "LowerParkingUpReverse",
             "length": 0
         },
         {
