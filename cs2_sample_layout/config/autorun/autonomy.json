@@ -1917,7 +1917,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 86",
+                    "acc": "Signal 89",
                     "state": "green"
                 }
             ]
@@ -1932,7 +1932,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 86",
+                    "acc": "Signal 89",
                     "state": "green"
                 }
             ]
@@ -2124,7 +2124,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 86",
+                    "acc": "Signal 89",
                     "state": "green"
                 }
             ]
