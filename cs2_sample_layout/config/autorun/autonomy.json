@@ -292,14 +292,6 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
-            "loc": {
-                "name": "SU 45-118",
-                "reversible": false,
-                "speed": 50,
-                "arrivalFunc": 12,
-                "departureFunc": 9,
-                "trainLength": 4
-            },
             "x": 401,
             "y": 406
         },
@@ -332,14 +324,6 @@
             "s88": 1023,
             "maxTrainLength": 0,
             "priority": 1,
-            "loc": {
-                "name": "EU07-123",
-                "reversible": false,
-                "speed": 44,
-                "arrivalFunc": 2,
-                "departureFunc": 10,
-                "trainLength": 4
-            },
             "x": 297,
             "y": 418
         },
@@ -407,14 +391,6 @@
             "s88": 1031,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 3
-            },
             "x": 589,
             "y": -56
         },
@@ -424,6 +400,14 @@
             "s88": 1028,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
             "x": 515,
             "y": -42
         },
@@ -1562,8 +1546,8 @@
             "end": "RampDown",
             "length": 3,
             "lockedges": [{
-                "start": "TopMainPostReverse",
-                "end": "TopMainR0"
+                "start": "BottomMainAPre",
+                "end": "TopMainPostReverse"
             }]
         },
         {
@@ -1579,6 +1563,10 @@
                 {
                     "acc": "Switch 3",
                     "state": "straight"
+                },
+                {
+                    "acc": "Signal 39",
+                    "state": "green"
                 },
                 {
                     "acc": "Switch 75",
