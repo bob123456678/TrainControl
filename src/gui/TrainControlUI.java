@@ -46,7 +46,6 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTable;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -104,6 +103,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // The active locomotive button
     private javax.swing.JButton currentButton;
+    
+    // Page where the current button was selected
+    private int currentButtonlocMappingNumber;
     
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
     private final HashMap<javax.swing.JButton, Integer> rButtonMapping;
@@ -1326,7 +1328,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             // Pre-compute this so we can check if it has changed
-            String locLabel = "Page " + this.locMappingNumber + " Button " 
+            String locLabel = "Page " + this.currentButtonlocMappingNumber + " Button " 
                 + this.currentButton.getText()
                 + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
                 + ")";
@@ -1513,6 +1515,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (b != null)
         {
             this.currentButton = b;
+            this.currentButtonlocMappingNumber = this.locMappingNumber;
 
             this.currentButton.setEnabled(false);
 
@@ -1870,6 +1873,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         hideReversing = new javax.swing.JCheckBox();
+        clearNonParkedLocs = new javax.swing.JButton();
         jLabel52 = new javax.swing.JLabel();
         exportJSON = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
@@ -5114,13 +5118,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        clearNonParkedLocs.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        clearNonParkedLocs.setText("Clear Locomotives from Graph");
+        clearNonParkedLocs.setToolTipText("This button removes all non-parked locomotives from the autonomy graph.");
+        clearNonParkedLocs.setFocusable(false);
+        clearNonParkedLocs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clearNonParkedLocsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(hideReversing)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(hideReversing)
+                    .addComponent(clearNonParkedLocs))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -5128,6 +5144,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(hideReversing)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(clearNonParkedLocs)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -5146,7 +5164,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(13, Short.MAX_VALUE))
+                .addContainerGap(44, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -8378,11 +8396,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }//GEN-LAST:event_LocUsageReportActionPerformed
 
+    private void clearNonParkedLocsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearNonParkedLocsActionPerformed
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            if (!this.isAutoLayoutRunning())
+            {
+                try
+                {
+                    int dialogResult = JOptionPane.showConfirmDialog(
+                        this, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+
+                    if(dialogResult == JOptionPane.YES_OPTION)
+                    {
+                        List<Locomotive> locs = new ArrayList<>(this.model.getAutoLayout().getLocomotivesToRun());
+                        
+                        for (Locomotive l: locs)
+                        {
+                            Point p = this.model.getAutoLayout().getLocomotiveLocation(l);
+
+                            if (p != null && !p.isReversing() && p.isDestination())
+                            {
+                                this.model.getAutoLayout().moveLocomotive(null, p.getName(), false);
+                                this.updatePoint(p, this.graphViewer.getMainGraph());
+                            } 
+                        }
+                        
+                        this.repaintAutoLocList(false);
+                    }
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    loadAutoLayoutSettings();
+                }
+            }
+        }));
+    }//GEN-LAST:event_clearNonParkedLocsActionPerformed
+
     private boolean isAutoLayoutRunning()
     {
         if (this.model.getAutoLayout().isRunning())
         {
-            JOptionPane.showMessageDialog(this, "Unable to change settings while trains are running");
+            JOptionPane.showMessageDialog(this, "Unable to change settings while trains are running.");
             loadAutoLayoutSettings();
             return true;
         }
@@ -9195,6 +9251,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JButton checkDuplicates;
     private javax.swing.JButton clearButton;
+    private javax.swing.JButton clearNonParkedLocs;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton exportJSON;

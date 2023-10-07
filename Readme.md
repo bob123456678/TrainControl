@@ -149,6 +149,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.10 [Beta]
+    - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph
+    - Fixed minor UI bug where the keyboard mapping page shown for the currently active locomotive was always the currently selected page, instead of the page with the active button
+
 * v1.10.9 [10/5/23]
     - Added an option to copy existing graph edges (to a new start or end point)
     - The "Edit s88" option will now be shown for all types of points in the graph UI, not just stations
