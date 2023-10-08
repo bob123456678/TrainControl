@@ -154,7 +154,8 @@ Requires JDK 1.8+ and the following libraries:
     - The "hide reversing station" option is now remembered after exiting the program
     - The "hide reversing station" option will now also hide all points only connected to/from reversing stations
     - Improved UI startup speed when the CS3 has a large locomotive database
-    - Fixed locomotive label colors from v1.10.8
+    - Imptoved UI function icon alignment
+    - Fixed incorrect locomotive label background color from v1.10.8
     - Fixed minor UI bug where the keyboard mapping page shown for the currently active locomotive was always the currently selected page, instead of the page with the active button
 
 * v1.10.9 [10/5/23]

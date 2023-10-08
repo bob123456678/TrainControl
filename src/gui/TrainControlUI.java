@@ -1938,60 +1938,60 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F4 = new javax.swing.JToggleButton();
         F5 = new javax.swing.JToggleButton();
         F6 = new javax.swing.JToggleButton();
-        jLabel10 = new javax.swing.JLabel();
-        jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
-        jLabel15 = new javax.swing.JLabel();
-        jLabel16 = new javax.swing.JLabel();
-        jLabel17 = new javax.swing.JLabel();
-        jLabel18 = new javax.swing.JLabel();
-        jLabel20 = new javax.swing.JLabel();
-        jLabel21 = new javax.swing.JLabel();
-        jLabel22 = new javax.swing.JLabel();
-        jLabel23 = new javax.swing.JLabel();
-        jLabel41 = new javax.swing.JLabel();
-        jLabel11 = new javax.swing.JLabel();
+        f0Label = new javax.swing.JLabel();
+        f4Label = new javax.swing.JLabel();
+        f8Label = new javax.swing.JLabel();
+        f6Label = new javax.swing.JLabel();
+        f1Label = new javax.swing.JLabel();
+        f3Label = new javax.swing.JLabel();
+        f5Label = new javax.swing.JLabel();
+        f7Label = new javax.swing.JLabel();
+        f10Label = new javax.swing.JLabel();
+        f9Label = new javax.swing.JLabel();
+        f11Label = new javax.swing.JLabel();
+        f2Label = new javax.swing.JLabel();
+        f12Label = new javax.swing.JLabel();
         F12 = new javax.swing.JToggleButton();
-        jLabel28 = new javax.swing.JLabel();
+        f13Label = new javax.swing.JLabel();
         F13 = new javax.swing.JToggleButton();
-        jLabel27 = new javax.swing.JLabel();
+        f14Label = new javax.swing.JLabel();
         F14 = new javax.swing.JToggleButton();
-        jLabel29 = new javax.swing.JLabel();
+        f15Label = new javax.swing.JLabel();
         F15 = new javax.swing.JToggleButton();
         F16 = new javax.swing.JToggleButton();
         F17 = new javax.swing.JToggleButton();
         F18 = new javax.swing.JToggleButton();
-        jLabel25 = new javax.swing.JLabel();
-        jLabel30 = new javax.swing.JLabel();
-        jLabel31 = new javax.swing.JLabel();
+        f16Label = new javax.swing.JLabel();
+        f17Label = new javax.swing.JLabel();
+        f18Label = new javax.swing.JLabel();
         F19 = new javax.swing.JToggleButton();
-        jLabel42 = new javax.swing.JLabel();
+        f19Label = new javax.swing.JLabel();
         F12Panel = new javax.swing.JPanel();
-        jLabel24 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
+        f23Label = new javax.swing.JLabel();
+        f20Label = new javax.swing.JLabel();
         F22 = new javax.swing.JToggleButton();
         F23 = new javax.swing.JToggleButton();
-        jLabel33 = new javax.swing.JLabel();
-        jLabel34 = new javax.swing.JLabel();
+        f22Label = new javax.swing.JLabel();
+        f21Label = new javax.swing.JLabel();
         F20 = new javax.swing.JToggleButton();
         F21 = new javax.swing.JToggleButton();
-        jLabel40 = new javax.swing.JLabel();
-        jLabel35 = new javax.swing.JLabel();
+        f27Label = new javax.swing.JLabel();
+        f29Label = new javax.swing.JLabel();
         F24 = new javax.swing.JToggleButton();
-        jLabel44 = new javax.swing.JLabel();
+        f30Label = new javax.swing.JLabel();
         F27 = new javax.swing.JToggleButton();
-        jLabel45 = new javax.swing.JLabel();
-        jLabel12 = new javax.swing.JLabel();
+        f31Label = new javax.swing.JLabel();
+        f24Label = new javax.swing.JLabel();
         F25 = new javax.swing.JToggleButton();
         F26 = new javax.swing.JToggleButton();
         F28 = new javax.swing.JToggleButton();
-        jLabel36 = new javax.swing.JLabel();
+        f28Label = new javax.swing.JLabel();
         F29 = new javax.swing.JToggleButton();
-        jLabel37 = new javax.swing.JLabel();
+        f32Label = new javax.swing.JLabel();
         F32 = new javax.swing.JToggleButton();
-        jLabel38 = new javax.swing.JLabel();
+        f26Label = new javax.swing.JLabel();
         F30 = new javax.swing.JToggleButton();
-        jLabel39 = new javax.swing.JLabel();
+        f25Label = new javax.swing.JLabel();
         F31 = new javax.swing.JToggleButton();
 
         jList1.setModel(new javax.swing.AbstractListModel() {
@@ -5714,7 +5714,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F10.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        F10.setSelected(true);
         F10.setFocusable(false);
         F10.setMaximumSize(new java.awt.Dimension(75, 35));
         F10.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -5814,57 +5813,57 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel10.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel10.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel10.setText("F0");
+        f0Label.setForeground(new java.awt.Color(0, 0, 115));
+        f0Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f0Label.setText("F0");
 
-        jLabel13.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel13.setText("F4");
+        f4Label.setForeground(new java.awt.Color(0, 0, 115));
+        f4Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f4Label.setText("F4");
 
-        jLabel14.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel14.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel14.setText("F8");
+        f8Label.setForeground(new java.awt.Color(0, 0, 115));
+        f8Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f8Label.setText("F8");
 
-        jLabel15.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel15.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel15.setText("F6");
+        f6Label.setForeground(new java.awt.Color(0, 0, 115));
+        f6Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f6Label.setText("F6");
 
-        jLabel16.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel16.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel16.setText("F1");
+        f1Label.setForeground(new java.awt.Color(0, 0, 115));
+        f1Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f1Label.setText("F1");
 
-        jLabel17.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel17.setText("F3");
+        f3Label.setForeground(new java.awt.Color(0, 0, 115));
+        f3Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f3Label.setText("F3");
 
-        jLabel18.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel18.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel18.setText("F5");
+        f5Label.setForeground(new java.awt.Color(0, 0, 115));
+        f5Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f5Label.setText("F5");
 
-        jLabel20.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel20.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel20.setText("F7");
+        f7Label.setForeground(new java.awt.Color(0, 0, 115));
+        f7Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f7Label.setText("F7");
 
-        jLabel21.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel21.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel21.setText("F10");
+        f10Label.setForeground(new java.awt.Color(0, 0, 115));
+        f10Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f10Label.setText("F10");
 
-        jLabel22.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel22.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel22.setText("F9");
+        f9Label.setForeground(new java.awt.Color(0, 0, 115));
+        f9Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f9Label.setText("F9");
 
-        jLabel23.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel23.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel23.setText("F11");
+        f11Label.setForeground(new java.awt.Color(0, 0, 115));
+        f11Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f11Label.setText("F11");
 
-        jLabel41.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel41.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel41.setText("F2");
+        f2Label.setForeground(new java.awt.Color(0, 0, 115));
+        f2Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f2Label.setText("F2");
 
-        jLabel11.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel11.setText("F12");
+        f12Label.setForeground(new java.awt.Color(0, 0, 115));
+        f12Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f12Label.setText("F12");
 
         F12.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F12.setFocusable(false);
@@ -5877,9 +5876,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel28.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel28.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel28.setText("F13");
+        f13Label.setForeground(new java.awt.Color(0, 0, 115));
+        f13Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f13Label.setText("F13");
 
         F13.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F13.setFocusable(false);
@@ -5892,9 +5891,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel27.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel27.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel27.setText("F14");
+        f14Label.setForeground(new java.awt.Color(0, 0, 115));
+        f14Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f14Label.setText("F14");
 
         F14.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F14.setFocusable(false);
@@ -5907,9 +5906,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel29.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel29.setText("F15");
+        f15Label.setForeground(new java.awt.Color(0, 0, 115));
+        f15Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f15Label.setText("F15");
 
         F15.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F15.setFocusable(false);
@@ -5955,17 +5954,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel25.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel25.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel25.setText("F16");
+        f16Label.setForeground(new java.awt.Color(0, 0, 115));
+        f16Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f16Label.setText("F16");
 
-        jLabel30.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel30.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel30.setText("F17");
+        f17Label.setForeground(new java.awt.Color(0, 0, 115));
+        f17Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f17Label.setText("F17");
 
-        jLabel31.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel31.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel31.setText("F18");
+        f18Label.setForeground(new java.awt.Color(0, 0, 115));
+        f18Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f18Label.setText("F18");
 
         F19.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F19.setFocusable(false);
@@ -5978,9 +5977,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel42.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel42.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel42.setText("F19");
+        f19Label.setForeground(new java.awt.Color(0, 0, 115));
+        f19Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f19Label.setText("F19");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -5990,18 +5989,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f8Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f0Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(F8, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(F4, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(F0, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(f4Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(12, 12, 12)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel22, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel16, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f5Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f9Label, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f1Label, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F9, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(F5, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(F1, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -6014,30 +6013,30 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(F6, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel41, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(f2Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addGap(12, 12, 12)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(F7, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel17, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(f3Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(jLabel21, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(f10Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(F10, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(12, 12, 12)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(F11, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel23, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(f11Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(f6Label, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel20, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(f7Label, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jLabel11, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f12Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F12, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel28, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f13Label, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F13, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6046,16 +6045,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addGap(12, 12, 12)
                                 .addComponent(F15, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel27, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(f14Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(12, 12, 12)
-                                .addComponent(jLabel29, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                .addComponent(f15Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(F16, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel25, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(f16Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel30, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f17Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F17, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -6065,9 +6064,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(F19, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(15, 15, 15)
-                                .addComponent(jLabel31, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(f18Label, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jLabel42, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                                .addComponent(f19Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
                 .addContainerGap())
         );
 
@@ -6081,74 +6080,74 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(F0, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 0, 0)
+                .addGap(1, 1, 1)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(jLabel16)
-                    .addComponent(jLabel17)
-                    .addComponent(jLabel41))
+                    .addComponent(f0Label)
+                    .addComponent(f1Label)
+                    .addComponent(f3Label)
+                    .addComponent(f2Label))
                 .addGap(0, 0, 0)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(2, 2, 2)
+                .addGap(1, 1, 1)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel13)
-                    .addComponent(jLabel18)
-                    .addComponent(jLabel20)
-                    .addComponent(jLabel15))
+                    .addComponent(f4Label)
+                    .addComponent(f5Label)
+                    .addComponent(f7Label)
+                    .addComponent(f6Label))
                 .addGap(0, 0, 0)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 0, 0)
+                .addGap(1, 1, 1)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel21)
-                        .addComponent(jLabel22)
-                        .addComponent(jLabel23))
-                    .addComponent(jLabel14))
+                        .addComponent(f10Label)
+                        .addComponent(f9Label)
+                        .addComponent(f11Label))
+                    .addComponent(f8Label))
                 .addGap(0, 0, 0)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F14, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F15, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 0, 0)
+                .addGap(1, 1, 1)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel11)
-                    .addComponent(jLabel27)
-                    .addComponent(jLabel28)
-                    .addComponent(jLabel29))
+                    .addComponent(f12Label)
+                    .addComponent(f14Label)
+                    .addComponent(f13Label)
+                    .addComponent(f15Label))
                 .addGap(0, 0, 0)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F18, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(2, 2, 2)
+                .addGap(0, 0, 0)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel25)
-                    .addComponent(jLabel31)
-                    .addComponent(jLabel30)
-                    .addComponent(jLabel42)))
+                    .addComponent(f16Label)
+                    .addComponent(f18Label)
+                    .addComponent(f17Label)
+                    .addComponent(f19Label)))
         );
 
         FunctionTabs.addTab("F0-19", jPanel1);
 
         F12Panel.setBackground(new java.awt.Color(255, 255, 255));
 
-        jLabel24.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel24.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel24.setText("F23");
+        f23Label.setForeground(new java.awt.Color(0, 0, 115));
+        f23Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f23Label.setText("F23");
 
-        jLabel26.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel26.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel26.setText("F20");
+        f20Label.setForeground(new java.awt.Color(0, 0, 115));
+        f20Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f20Label.setText("F20");
 
         F22.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F22.setFocusable(false);
@@ -6172,13 +6171,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel33.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel33.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel33.setText("F22");
+        f22Label.setForeground(new java.awt.Color(0, 0, 115));
+        f22Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f22Label.setText("F22");
 
-        jLabel34.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel34.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel34.setText("F21");
+        f21Label.setForeground(new java.awt.Color(0, 0, 115));
+        f21Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f21Label.setText("F21");
 
         F20.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F20.setFocusable(false);
@@ -6202,13 +6201,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel40.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel40.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel40.setText("F27");
+        f27Label.setForeground(new java.awt.Color(0, 0, 115));
+        f27Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f27Label.setText("F27");
 
-        jLabel35.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel35.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel35.setText("F29");
+        f29Label.setForeground(new java.awt.Color(0, 0, 115));
+        f29Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f29Label.setText("F29");
 
         F24.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F24.setFocusable(false);
@@ -6221,9 +6220,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel44.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel44.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel44.setText("F30");
+        f30Label.setForeground(new java.awt.Color(0, 0, 115));
+        f30Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f30Label.setText("F30");
 
         F27.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F27.setFocusable(false);
@@ -6236,13 +6235,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel45.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel45.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel45.setText("F31");
+        f31Label.setForeground(new java.awt.Color(0, 0, 115));
+        f31Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f31Label.setText("F31");
 
-        jLabel12.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel12.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel12.setText("F24");
+        f24Label.setForeground(new java.awt.Color(0, 0, 115));
+        f24Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f24Label.setText("F24");
 
         F25.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F25.setFocusable(false);
@@ -6277,9 +6276,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel36.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel36.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel36.setText("F28");
+        f28Label.setForeground(new java.awt.Color(0, 0, 115));
+        f28Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f28Label.setText("F28");
 
         F29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F29.setFocusable(false);
@@ -6292,9 +6291,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel37.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel37.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel37.setText("F32");
+        f32Label.setForeground(new java.awt.Color(0, 0, 115));
+        f32Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f32Label.setText("F32");
 
         F32.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F32.setFocusable(false);
@@ -6307,9 +6306,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel38.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel38.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel38.setText("F26");
+        f26Label.setForeground(new java.awt.Color(0, 0, 115));
+        f26Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f26Label.setText("F26");
 
         F30.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F30.setFocusable(false);
@@ -6322,9 +6321,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel39.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel39.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel39.setText("F25");
+        f25Label.setForeground(new java.awt.Color(0, 0, 115));
+        f25Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        f25Label.setText("F25");
 
         F31.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         F31.setFocusable(false);
@@ -6345,49 +6344,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(F12PanelLayout.createSequentialGroup()
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jLabel26, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f20Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F20, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel34, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f21Label, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F21, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jLabel33, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f22Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F22, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(F23, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(f23Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, F12PanelLayout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jLabel37, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f32Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f24Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(F32, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(F28, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(F24, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel36, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(f28Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel35, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(f29Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(F29, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(F25, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel39, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(f25Label, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(12, 12, 12)
                         .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(F12PanelLayout.createSequentialGroup()
                                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(jLabel44, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(f30Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(F30, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel38, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(f26Label, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(12, 12, 12)
                                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(F31, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel40, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabel45, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addComponent(f27Label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(f31Label, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(F12PanelLayout.createSequentialGroup()
                                 .addComponent(F26, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(12, 12, 12)
@@ -6402,42 +6401,42 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(F21, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F22, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F23, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 0, 0)
+                .addGap(1, 1, 1)
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel26)
-                    .addComponent(jLabel33)
-                    .addComponent(jLabel34)
-                    .addComponent(jLabel24))
+                    .addComponent(f20Label)
+                    .addComponent(f22Label)
+                    .addComponent(f21Label)
+                    .addComponent(f23Label))
                 .addGap(0, 0, 0)
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F25, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F24, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F26, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F27, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 0, 0)
+                .addGap(1, 1, 1)
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel12)
-                    .addComponent(jLabel38)
-                    .addComponent(jLabel39)
-                    .addComponent(jLabel40))
+                    .addComponent(f24Label)
+                    .addComponent(f26Label)
+                    .addComponent(f25Label)
+                    .addComponent(f27Label))
                 .addGap(0, 0, 0)
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(F28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F29, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F30, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(F31, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(2, 2, 2)
+                .addGap(1, 1, 1)
                 .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(F12PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel44)
-                        .addComponent(jLabel35)
-                        .addComponent(jLabel45))
-                    .addComponent(jLabel36))
+                        .addComponent(f30Label)
+                        .addComponent(f29Label)
+                        .addComponent(f31Label))
+                    .addComponent(f28Label))
                 .addGap(0, 0, 0)
                 .addComponent(F32, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, 0)
-                .addComponent(jLabel37)
-                .addGap(0, 20, Short.MAX_VALUE))
+                .addComponent(f32Label)
+                .addGap(0, 49, Short.MAX_VALUE))
         );
 
         FunctionTabs.addTab("F20-32", F12Panel);
@@ -9270,48 +9269,48 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton exportJSON;
+    private javax.swing.JLabel f0Label;
+    private javax.swing.JLabel f10Label;
+    private javax.swing.JLabel f11Label;
+    private javax.swing.JLabel f12Label;
+    private javax.swing.JLabel f13Label;
+    private javax.swing.JLabel f14Label;
+    private javax.swing.JLabel f15Label;
+    private javax.swing.JLabel f16Label;
+    private javax.swing.JLabel f17Label;
+    private javax.swing.JLabel f18Label;
+    private javax.swing.JLabel f19Label;
+    private javax.swing.JLabel f1Label;
+    private javax.swing.JLabel f20Label;
+    private javax.swing.JLabel f21Label;
+    private javax.swing.JLabel f22Label;
+    private javax.swing.JLabel f23Label;
+    private javax.swing.JLabel f24Label;
+    private javax.swing.JLabel f25Label;
+    private javax.swing.JLabel f26Label;
+    private javax.swing.JLabel f27Label;
+    private javax.swing.JLabel f28Label;
+    private javax.swing.JLabel f29Label;
+    private javax.swing.JLabel f2Label;
+    private javax.swing.JLabel f30Label;
+    private javax.swing.JLabel f31Label;
+    private javax.swing.JLabel f32Label;
+    private javax.swing.JLabel f3Label;
+    private javax.swing.JLabel f4Label;
+    private javax.swing.JLabel f5Label;
+    private javax.swing.JLabel f6Label;
+    private javax.swing.JLabel f7Label;
+    private javax.swing.JLabel f8Label;
+    private javax.swing.JLabel f9Label;
     private javax.swing.JButton gracefulStop;
     private javax.swing.JCheckBox hideReversing;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
-    private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
-    private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
-    private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
-    private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel30;
-    private javax.swing.JLabel jLabel31;
     private javax.swing.JLabel jLabel32;
-    private javax.swing.JLabel jLabel33;
-    private javax.swing.JLabel jLabel34;
-    private javax.swing.JLabel jLabel35;
-    private javax.swing.JLabel jLabel36;
-    private javax.swing.JLabel jLabel37;
-    private javax.swing.JLabel jLabel38;
-    private javax.swing.JLabel jLabel39;
     private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel40;
-    private javax.swing.JLabel jLabel41;
-    private javax.swing.JLabel jLabel42;
     private javax.swing.JLabel jLabel43;
-    private javax.swing.JLabel jLabel44;
-    private javax.swing.JLabel jLabel45;
     private javax.swing.JLabel jLabel46;
     private javax.swing.JLabel jLabel47;
     private javax.swing.JLabel jLabel48;
