@@ -153,8 +153,9 @@ Requires JDK 1.8+ and the following libraries:
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph
     - The "hide reversing station" option is now remembered after exiting the program
     - The "hide reversing station" option will now also hide all points only connected to/from reversing stations
-    - Improved UI startup speed when the CS3 has a large locomotive database
-    - Imptoved UI function icon alignment
+    - Significantly improved UI startup speed when the CS3 has a large locomotive database
+    - Fixed UI function icon alignment
+    - Fixed maximum function counts: up to F28 for DCC and F31 for MFX (down from F32 for both)
     - Fixed incorrect locomotive label background color from v1.10.8
     - Fixed minor UI bug where the keyboard mapping page shown for the currently active locomotive was always the currently selected page, instead of the page with the active button
 
