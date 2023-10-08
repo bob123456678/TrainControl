@@ -438,6 +438,63 @@ public class Layout
         
         return newEdge;
     }
+    
+    /**
+     * Returns whether the given point only has incoming edges from reversing points
+     * @param p
+     * @return 
+     */
+    public boolean hasOnlyReversingIncoming(Point p)
+    {        
+        boolean hasNeighbor = false;
+
+        for (Edge e : this.getIncomingEdges(p))
+        {
+            hasNeighbor = true;
+
+            if (!e.getStart().isReversing()) return false;
+        }
+        
+        return hasNeighbor;
+    }
+    
+    /**
+     * Returns whether the given point's neighbors are all reversing points
+     * @param p
+     * @return 
+     */
+    public boolean hasOnlyReversingNeighbors(Point p)
+    {       
+        boolean hasNeighbor = false;
+        
+        for (Edge e : this.getNeighbors(p))
+        {
+            hasNeighbor = true;
+            if (!e.getEnd().isReversing()) return false;
+        }
+        
+        return hasNeighbor;
+    }
+    
+    /**
+     * Gets all incoming edges connected to the given point
+     * @param p
+     * @return 
+     */
+    public List<Edge> getIncomingEdges(Point p)
+    {
+        List<Edge> edgeList = new LinkedList<>();
+        
+        for (Edge e : this.getEdges())
+        {
+            if (e.getEnd().equals(p))
+            {
+                edgeList.add(e);
+            }
+        }
+        
+        return edgeList;
+    }
 
     /**
      * Gets all edges neighboring a point

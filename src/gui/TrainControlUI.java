@@ -77,6 +77,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String ROUTE_SORT_PREF = "RouteSorting";
     public static String ONTOP_SETTING_PREF = "OnTop";
     public static String AUTOSAVE_SETTING_PREF = "AutoSave";
+    public static String HIDE_REVERSING_PREF = "HideReversing";
 
     // Constants
     // Width of locomotive images
@@ -450,7 +451,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
-       
+        this.hideReversing.setSelected(this.prefs.getBoolean(HIDE_REVERSING_PREF, false));
+
         // Set selected route sort radio button
         this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(this.prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -8376,6 +8378,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (!this.isAutoLayoutRunning())
         {
             this.updateVisiblePoints();
+            this.prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
         }
         else
         {
@@ -8517,7 +8520,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         for (Point p : this.model.getAutoLayout().getPoints())
         {    
-            if (this.hideReversing.isSelected() && p.isReversing())
+            if (this.hideReversing.isSelected() && 
+                    (p.isReversing() 
+                    || this.model.getAutoLayout().hasOnlyReversingIncoming(p)
+                    || this.model.getAutoLayout().hasOnlyReversingNeighbors(p)
+                    )
+            )
             {
                 g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
             }
@@ -8801,6 +8809,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             });
             
             this.repaintAutoLocList(false);
+            this.updateVisiblePoints();
         } 
         catch (URISyntaxException ex)
         {

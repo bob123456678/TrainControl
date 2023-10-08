@@ -151,6 +151,8 @@ Requires JDK 1.8+ and the following libraries:
 
 * v1.10.10 [Beta]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph
+    - The "hide reversing station" option is now remembered after exiting the program
+    - The "hide reversing station" option will now also hide all points only connected to/from reversing stations
     - Fixed minor UI bug where the keyboard mapping page shown for the currently active locomotive was always the currently selected page, instead of the page with the active button
 
 * v1.10.9 [10/5/23]
