@@ -412,12 +412,29 @@
             "y": -42
         },
         {
+            "name": "TunnelLongPark",
+            "station": true,
+            "s88": 1018,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 818,
+            "y": -55
+        },
+        {
+            "name": "TunnelLongParkReverse",
+            "station": false,
+            "s88": 2013,
+            "reversing": true,
+            "x": 1106,
+            "y": -33
+        },
+        {
             "name": "TunnelParkReverse",
             "station": false,
             "s88": 9,
             "reversing": true,
-            "x": 837,
-            "y": -27
+            "x": 730,
+            "y": -20
         },
         {
             "name": "TunnelPre",
@@ -802,6 +819,11 @@
             "start": "BottomMainPost",
             "end": "RampUp",
             "length": 3
+        },
+        {
+            "start": "BottomMainPost",
+            "end": "TunnelLongParkReverse",
+            "length": 0
         },
         {
             "start": "BottomSecondary",
@@ -1942,6 +1964,60 @@
                 {
                     "acc": "Signal 89",
                     "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "TunnelLongPark",
+            "end": "BottomMainA",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 100",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 81",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
+                }
+            ]
+        },
+        {
+            "start": "TunnelLongParkReverse",
+            "end": "TunnelLongPark",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 69",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 98",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 81",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
                 }
             ]
         },
