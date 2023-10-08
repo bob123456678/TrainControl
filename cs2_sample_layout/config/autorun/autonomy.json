@@ -1827,19 +1827,31 @@
             "start": "TopR1ParkLong",
             "end": "TopMainR1Inter",
             "length": 0,
-            "commands": [{
-                "acc": "Switch 73",
-                "state": "straight"
-            }]
+            "commands": [
+                {
+                    "acc": "Switch 73",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 81",
+                    "state": "green"
+                }
+            ]
         },
         {
             "start": "TopR1ParkShort",
             "end": "TopMainR1Inter",
             "length": 0,
-            "commands": [{
-                "acc": "Switch 97",
-                "state": "straight"
-            }]
+            "commands": [
+                {
+                    "acc": "Switch 97",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 81",
+                    "state": "green"
+                }
+            ]
         },
         {
             "start": "Tunnel",
