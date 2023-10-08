@@ -120,6 +120,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private LayoutGrid trainGrid;
     private ExecutorService LayoutGridRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
+    private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
     private List<Future<?>> autonomyFutures = new LinkedList<>();
     
     // The keyboard being displayed
@@ -744,35 +745,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         // Set the model reference
         this.model = listener;
-        
-        // Load autonomy data
-        try
-        {
-            // Read object using ObjectInputStream
-            ObjectInputStream obj_in = new ObjectInputStream(
-                new FileInputStream(TrainControlUI.AUTONOMY_FILE_NAME)
-            );
-            
-            // Read an object
-            Object obj = obj_in.readObject();
-
-            if (obj instanceof String)
-            {
-                // Cast object
-                this.autonomyJSON.setText((String) obj);
-            }
-        }
-        catch (IOException | ClassNotFoundException e)
-        {
-            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
-        }
-                        
-        // Add list of routes to tab
-        refreshRouteList();
-                
-        // Add list of layouts to tab
-        this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
-               
+                 
         List<Map<Integer, String>> saveStates = this.restoreState();
         boolean locWasLoaded = false;
         
@@ -811,6 +784,38 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Display loc mapping page
         this.switchLocMapping(this.locMappingNumber);
         
+        // Generate list of locomotives
+        selector = new LocomotiveSelector(this.model, this);
+        selector.init();
+        
+        // Load autonomy data
+        try
+        {
+            // Read object using ObjectInputStream
+            ObjectInputStream obj_in = new ObjectInputStream(
+                new FileInputStream(TrainControlUI.AUTONOMY_FILE_NAME)
+            );
+            
+            // Read an object
+            Object obj = obj_in.readObject();
+
+            if (obj instanceof String)
+            {
+                // Cast object
+                this.autonomyJSON.setText((String) obj);
+            }
+        }
+        catch (IOException | ClassNotFoundException e)
+        {
+            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
+        }
+                        
+        // Add list of routes to tab
+        refreshRouteList();
+                
+        // Add list of layouts to tab
+        this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
+                
         // Display keyboard
         this.switchKeyboard(this.keyboardNumber);
         
@@ -846,13 +851,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         Timer displayTimer = new Timer(500, timerListener);
         displayTimer.start();*/
                 
-        // Generate list of locomotives
-        selector = new LocomotiveSelector(this.model, this);
-        selector.init();
-
         // Show window        
-        this.setVisible(true);   
-        
+        this.setVisible(true); 
+
         // Don't do this until the end, otherwise keyboard events may not register properly
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         
@@ -861,7 +862,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             repaintLayout();
         }
-        
+                
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
         {            
@@ -1273,7 +1274,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private void repaintIcon(JButton b, Locomotive l, Integer correspondingLocMappingNumber)
     {
-        new Thread(() -> 
+        ImageLoader.submit(new Thread(() -> 
         {
             if (b != null)
             {
@@ -1314,7 +1315,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     noImageButton(b);
                 }
             }
-        }).start();
+        }));
+    }
+    
+    public ExecutorService getImageLoader()
+    {
+        return this.ImageLoader;
     }
     
     @Override
@@ -1339,7 +1345,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Visual stuff
             if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()))
             {
-                new Thread(() -> 
+                ImageLoader.submit(new Thread(() -> 
                 {
                     repaintIcon(this.currentButton, this.activeLoc, this.locMappingNumber);
                     
@@ -1365,7 +1371,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         locIcon.setVisible(false);
                     }
                     
-                }).start();
+                }));
 
                 this.ActiveLocLabel.setText(name);
 
@@ -1384,7 +1390,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     bt.setHorizontalTextPosition(JButton.CENTER);
                     bt.setVerticalTextPosition(JButton.CENTER);
                     
-                    new Thread(() -> 
+                    ImageLoader.submit(new Thread(() -> 
                     {
                         try
                         {
@@ -1419,7 +1425,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             this.model.log("Icon not found: " + targetURL);
                             //bt.setText("F" + Integer.toString(fNo));
                         } 
-                    }).start();         
+                    }));         
                 }
                 
                 for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
@@ -2664,7 +2670,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ELabel.setBackground(new java.awt.Color(242, 242, 242));
+        ELabel.setBackground(new java.awt.Color(245, 245, 245));
         ELabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ELabel.setText("label");
         ELabel.setAutoscrolls(false);
@@ -2675,7 +2681,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ELabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ELabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        QLabel.setBackground(new java.awt.Color(242, 242, 242));
+        QLabel.setBackground(new java.awt.Color(245, 245, 245));
         QLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         QLabel.setText("label");
         QLabel.setAutoscrolls(false);
@@ -2686,7 +2692,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         QLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         QLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        WLabel.setBackground(new java.awt.Color(242, 242, 242));
+        WLabel.setBackground(new java.awt.Color(245, 245, 245));
         WLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         WLabel.setText("label");
         WLabel.setAutoscrolls(false);
@@ -2697,7 +2703,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         WLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         WLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        RLabel.setBackground(new java.awt.Color(242, 242, 242));
+        RLabel.setBackground(new java.awt.Color(245, 245, 245));
         RLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         RLabel.setText("label");
         RLabel.setAutoscrolls(false);
@@ -2708,7 +2714,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         RLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        TLabel.setBackground(new java.awt.Color(242, 242, 242));
+        TLabel.setBackground(new java.awt.Color(245, 245, 245));
         TLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         TLabel.setText("label");
         TLabel.setAutoscrolls(false);
@@ -2719,7 +2725,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         TLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        YLabel.setBackground(new java.awt.Color(242, 242, 242));
+        YLabel.setBackground(new java.awt.Color(245, 245, 245));
         YLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         YLabel.setText("label");
         YLabel.setAutoscrolls(false);
@@ -2730,7 +2736,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         YLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         YLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ULabel.setBackground(new java.awt.Color(242, 242, 242));
+        ULabel.setBackground(new java.awt.Color(245, 245, 245));
         ULabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ULabel.setText("label");
         ULabel.setAutoscrolls(false);
@@ -2741,7 +2747,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ULabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ULabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ILabel.setBackground(new java.awt.Color(242, 242, 242));
+        ILabel.setBackground(new java.awt.Color(245, 245, 245));
         ILabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ILabel.setText("label");
         ILabel.setAutoscrolls(false);
@@ -2752,7 +2758,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ILabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ILabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        OLabel.setBackground(new java.awt.Color(242, 242, 242));
+        OLabel.setBackground(new java.awt.Color(245, 245, 245));
         OLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         OLabel.setText("label");
         OLabel.setAutoscrolls(false);
@@ -2763,7 +2769,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         OLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         OLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        PLabel.setBackground(new java.awt.Color(242, 242, 242));
+        PLabel.setBackground(new java.awt.Color(245, 245, 245));
         PLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         PLabel.setText("label");
         PLabel.setAutoscrolls(false);
@@ -2774,7 +2780,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         PLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ALabel.setBackground(new java.awt.Color(242, 242, 242));
+        ALabel.setBackground(new java.awt.Color(245, 245, 245));
         ALabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ALabel.setText("label");
         ALabel.setAutoscrolls(false);
@@ -2785,7 +2791,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ALabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ALabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        SLabel.setBackground(new java.awt.Color(242, 242, 242));
+        SLabel.setBackground(new java.awt.Color(245, 245, 245));
         SLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         SLabel.setText("label");
         SLabel.setAutoscrolls(false);
@@ -2796,7 +2802,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         SLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ZLabel.setBackground(new java.awt.Color(242, 242, 242));
+        ZLabel.setBackground(new java.awt.Color(245, 245, 245));
         ZLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ZLabel.setText("label");
         ZLabel.setAutoscrolls(false);
@@ -2807,7 +2813,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ZLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ZLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        DLabel.setBackground(new java.awt.Color(242, 242, 242));
+        DLabel.setBackground(new java.awt.Color(245, 245, 245));
         DLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         DLabel.setText("label");
         DLabel.setAutoscrolls(false);
@@ -2818,7 +2824,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         DLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         DLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        FLabel.setBackground(new java.awt.Color(242, 242, 242));
+        FLabel.setBackground(new java.awt.Color(245, 245, 245));
         FLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         FLabel.setText("label");
         FLabel.setAutoscrolls(false);
@@ -2829,7 +2835,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         FLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        GLabel.setBackground(new java.awt.Color(242, 242, 242));
+        GLabel.setBackground(new java.awt.Color(245, 245, 245));
         GLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         GLabel.setText("label");
         GLabel.setAutoscrolls(false);
@@ -2840,7 +2846,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         GLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         GLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        HLabel.setBackground(new java.awt.Color(242, 242, 242));
+        HLabel.setBackground(new java.awt.Color(245, 245, 245));
         HLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         HLabel.setText("label");
         HLabel.setAutoscrolls(false);
@@ -2851,7 +2857,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         HLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         HLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        JLabel.setBackground(new java.awt.Color(242, 242, 242));
+        JLabel.setBackground(new java.awt.Color(245, 245, 245));
         JLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         JLabel.setText("label");
         JLabel.setAutoscrolls(false);
@@ -2862,7 +2868,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         JLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         JLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        KLabel.setBackground(new java.awt.Color(242, 242, 242));
+        KLabel.setBackground(new java.awt.Color(245, 245, 245));
         KLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         KLabel.setText("label");
         KLabel.setAutoscrolls(false);
@@ -2873,7 +2879,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         KLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        LLabel.setBackground(new java.awt.Color(242, 242, 242));
+        LLabel.setBackground(new java.awt.Color(245, 245, 245));
         LLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         LLabel.setText("label");
         LLabel.setAutoscrolls(false);
@@ -2884,7 +2890,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         LLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        XLabel.setBackground(new java.awt.Color(242, 242, 242));
+        XLabel.setBackground(new java.awt.Color(245, 245, 245));
         XLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         XLabel.setText("label");
         XLabel.setAutoscrolls(false);
@@ -2895,7 +2901,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         XLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         XLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        CLabel.setBackground(new java.awt.Color(242, 242, 242));
+        CLabel.setBackground(new java.awt.Color(245, 245, 245));
         CLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         CLabel.setText("label");
         CLabel.setAutoscrolls(false);
@@ -2906,7 +2912,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         CLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        VLabel.setBackground(new java.awt.Color(242, 242, 242));
+        VLabel.setBackground(new java.awt.Color(245, 245, 245));
         VLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         VLabel.setText("label");
         VLabel.setAutoscrolls(false);
@@ -2917,7 +2923,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         VLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         VLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        BLabel.setBackground(new java.awt.Color(242, 242, 242));
+        BLabel.setBackground(new java.awt.Color(245, 245, 245));
         BLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         BLabel.setText("label");
         BLabel.setAutoscrolls(false);
@@ -2928,7 +2934,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         BLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        NLabel.setBackground(new java.awt.Color(242, 242, 242));
+        NLabel.setBackground(new java.awt.Color(245, 245, 245));
         NLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         NLabel.setText("label");
         NLabel.setAutoscrolls(false);
@@ -2939,7 +2945,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         NLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         NLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        MLabel.setBackground(new java.awt.Color(242, 242, 242));
+        MLabel.setBackground(new java.awt.Color(245, 245, 245));
         MLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         MLabel.setText("label");
         MLabel.setAutoscrolls(false);

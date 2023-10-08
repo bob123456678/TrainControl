@@ -9,6 +9,7 @@ import java.awt.Component;
 import java.awt.Font;
 import java.io.IOException;
 import java.util.List;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import marklin.MarklinLocomotive;
 
@@ -43,17 +44,23 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         // Set icon
         if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null)
         {
-            try 
+            this.tcui.getImageLoader().submit(new Thread(() ->
             {
-                locIcon.setIcon(new javax.swing.ImageIcon(
-                    tcui.getLocImage(loc.getImageURL(), 135)
-                ));      
-                locIcon.setText("");
-            }
-            catch (IOException e)
-            {
-                locIcon.setIcon(null);
-            }
+                try 
+                {
+                    ImageIcon ic = new javax.swing.ImageIcon(
+                        tcui.getLocImage(loc.getImageURL(), 135)
+                    );
+                    
+                    locIcon.setIcon(ic);      
+                    locIcon.setText("");
+                }
+                catch (IOException e)
+                {
+                    tcui.getModel().log("Failed to load image: " + loc.getImageURL());
+                    locIcon.setIcon(null);
+                }
+            }));
         }
         else
         {
