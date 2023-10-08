@@ -768,9 +768,10 @@ element
  .artikel=-1
 element
  .id=0x809
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1018
+ .deviceId=0xc
 element
  .id=0x80a
  .typ=signal
