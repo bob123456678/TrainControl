@@ -252,7 +252,7 @@ public abstract class Locomotive
      * @param totalRuntime 
      * @param historicalOperatingTime 
      */
-    public Locomotive(String name, int speed, locDirection direction,
+    public Locomotive(String name, int speed, locDirection direction, int numF,
         boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
         int trainLength, long totalRuntime, long historicalOperatingTime
@@ -261,7 +261,7 @@ public abstract class Locomotive
         this.name = name;
         this.direction = direction;
         this.functionState = functionState;
-        this.numF = functionState.length;
+        this.numF = numF;
         this._setSpeed(speed);
         this.functionTypes = new int[numF];
         

@@ -17,7 +17,8 @@ public class MarklinLocomotive extends Locomotive
     
     /* Constants */
     
-    public static final int MFX_NUM_FN = 33;
+    public static final int MFX_NUM_FN = 32;
+    public static final int DCC_NUM_FN = 29;
     public static final int MM2_NUM_FN = 5;
     public static final int MM2_MAX_ADDR = 80;
     public static final int MFX_MAX_ADDR = 0x3FFF;
@@ -104,7 +105,7 @@ public class MarklinLocomotive extends Locomotive
         decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed,
         Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime, long historicalOperatingTime)
     {
-        super(name, 0, dir, functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, totalRuntime, historicalOperatingTime);
+        super(name, 0, dir, getMaxNumF(type), functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, totalRuntime, historicalOperatingTime);
 
         this.network = network;
         this.type = type;
@@ -191,6 +192,10 @@ public class MarklinLocomotive extends Locomotive
         if (decoder == decoderType.MM2)
         {
             return MM2_NUM_FN;
+        }
+        else if (decoder == decoderType.DCC)
+        {
+            return DCC_NUM_FN;
         }
         
         return MFX_NUM_FN;
