@@ -100,8 +100,8 @@ element
  .text=<- 17
 element
  .id=0x30107
- .typ=fahrstrasse
- .artikel=38
+ .artikel=-1
+ .text=16
 element
  .id=0x30109
  .typ=signal
@@ -167,8 +167,8 @@ element
  .artikel=-1
 element
  .id=0x30207
- .artikel=-1
- .text=16
+ .typ=fahrstrasse
+ .artikel=38
 element
  .id=0x30209
  .typ=s88kontakt
@@ -224,8 +224,8 @@ element
  .artikel=-1
 element
  .id=0x30305
- .typ=fahrstrasse
- .artikel=36
+ .artikel=-1
+ .text=13
 element
  .id=0x30309
  .typ=prellbock
@@ -285,12 +285,12 @@ element
  .artikel=-1
 element
  .id=0x30405
- .artikel=-1
- .text=13
+ .typ=fahrstrasse
+ .artikel=36
 element
  .id=0x30409
- .artikel=-1
- .text=11
+ .typ=fahrstrasse
+ .artikel=43
 element
  .id=0x3040a
  .typ=gerade
@@ -332,12 +332,12 @@ element
  .artikel=-1
 element
  .id=0x30506
- .typ=fahrstrasse
- .artikel=34
+ .artikel=-1
+ .text=12
 element
  .id=0x30509
- .typ=fahrstrasse
- .artikel=43
+ .artikel=-1
+ .text=11
 element
  .id=0x3050a
  .typ=gerade
@@ -399,8 +399,8 @@ element
  .artikel=-1
 element
  .id=0x30606
- .artikel=-1
- .text=12
+ .typ=fahrstrasse
+ .artikel=34
 element
  .id=0x3060a
  .typ=gerade
@@ -470,6 +470,10 @@ element
  .typ=prellbock
  .drehung=2
  .artikel=-1
+element
+ .id=0x30708
+ .artikel=-1
+ .text=Reset
 element
  .id=0x3070a
  .typ=signal
@@ -547,6 +551,10 @@ element
  .artikel=1020
  .deviceId=0xc
 element
+ .id=0x30808
+ .typ=fahrstrasse
+ .artikel=20
+element
  .id=0x3080a
  .typ=bogen
  .drehung=1
@@ -599,8 +607,8 @@ element
  .artikel=-1
 element
  .id=0x30907
- .typ=fahrstrasse
- .artikel=37
+ .artikel=-1
+ .text=18
 element
  .id=0x3090b
  .typ=bogen
@@ -665,8 +673,8 @@ element
  .artikel=-1
 element
  .id=0x30a05
- .typ=fahrstrasse
- .artikel=35
+ .artikel=-1
+ .text=14
 element
  .id=0x30a06
  .typ=gerade
@@ -674,8 +682,8 @@ element
  .artikel=-1
 element
  .id=0x30a07
- .artikel=-1
- .text=18
+ .typ=fahrstrasse
+ .artikel=37
 element
  .id=0x30a08
  .typ=tunnel
@@ -735,8 +743,8 @@ element
  .artikel=-1
 element
  .id=0x30b05
- .artikel=-1
- .text=14
+ .typ=fahrstrasse
+ .artikel=35
 element
  .id=0x30b06
  .typ=signal

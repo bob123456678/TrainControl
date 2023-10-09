@@ -208,7 +208,7 @@ Route 20 (Reset)
 90,1
 52,0
 50,0
-6,1
+6,0
 68,0
 97,0
 73,0
@@ -226,6 +226,11 @@ Route 20 (Reset)
 69,0
 103,0
 104,0
+102,0
+32,0
+8,0
+57,0
+36,0
 
 Route 21 (mid parking 1)
 
@@ -409,3 +414,34 @@ Route 43 (Lower Parking 17)
 
 83,1
 89,0
+
+Route 44 (Top Parking Left 6)
+
+68,1
+81,0
+23,1
+24,0
+
+Route 45 (Top Parking Center 7)
+
+68,1
+81,0
+23,0
+24,0
+
+Route 46 (Top Parking Right 8)
+
+68,1
+81,0
+23,0
+24,1
+
+Route 47 (Top Long Parking Left 9)
+
+97,1
+81,0
+
+Route 48 (Top Long Parking Right 10)
+
+73,1
+81,0

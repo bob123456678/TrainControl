@@ -388,6 +388,10 @@ element
  .artikel=194
  .zustand=1
 element
+ .id=0x402
+ .typ=fahrstrasse
+ .artikel=47
+element
  .id=0x403
  .typ=gerade
  .drehung=1
@@ -569,6 +573,10 @@ element
  .typ=rechtsweiche
  .artikel=146
  .zustand=1
+element
+ .id=0x602
+ .typ=fahrstrasse
+ .artikel=48
 element
  .id=0x603
  .typ=prellbock

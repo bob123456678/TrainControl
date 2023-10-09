@@ -518,7 +518,6 @@
         {
             "name": "TunnelParkReverse",
             "station": false,
-            "s88": 9,
             "reversing": true,
             "x": 730,
             "y": -20
@@ -697,6 +696,37 @@
             ]
         },
         {
+            "start": "BottomMainA",
+            "end": "TunnelParkReverse",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 69",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 100",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 89",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 86",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "BottomMainAPre",
+                "end": "BottomMainA"
+            }]
+        },
+        {
             "start": "BottomMainAPre",
             "end": "BottomMainA",
             "length": 4,
@@ -818,33 +848,6 @@
                 {
                     "start": "LowerUp",
                     "end": "BottomInnerOtherside"
-                }
-            ]
-        },
-        {
-            "start": "BottomMainAPre",
-            "end": "TunnelParkReverse",
-            "length": 0,
-            "commands": [
-                {
-                    "acc": "Switch 69",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Switch 100",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Signal 89",
-                    "state": "green"
-                },
-                {
-                    "acc": "Signal 40",
-                    "state": "green"
-                },
-                {
-                    "acc": "Switch 49",
-                    "state": "turn"
                 }
             ]
         },

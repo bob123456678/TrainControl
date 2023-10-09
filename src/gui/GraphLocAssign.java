@@ -7,6 +7,8 @@ package gui;
 
 import automation.Point;
 import base.Locomotive;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,6 +91,24 @@ public class GraphLocAssign extends javax.swing.JPanel {
         {
             String locomotive = (String) this.locAssign.getSelectedItem();
             Locomotive loc = this.parent.getModel().getLocByName(locomotive);
+            
+            // Dynamically set number of selectable functions
+            List<String> arrivalFuncModel= new ArrayList<>(Arrays.asList("None"));
+            List<String> departureFuncModel= new ArrayList<>(Arrays.asList("None"));
+            
+            for (int i = 0; i < loc.getNumF(); i++)
+            {
+                arrivalFuncModel.add(Integer.toString(i));
+                departureFuncModel.add(Integer.toString(i));
+            }
+            
+            arrivalFunc.setModel(
+                new javax.swing.DefaultComboBoxModel<>(arrivalFuncModel.toArray(new String[0])) 
+            );
+
+            departureFunc.setModel(
+                new javax.swing.DefaultComboBoxModel<>(departureFuncModel.toArray(new String[0])) 
+            );
             
             this.reversible.setSelected(loc.isReversible());
             
