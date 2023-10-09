@@ -1425,19 +1425,19 @@ public class Layout
                             this.control.setFeedbackState(current.getS88(), false);
                         }).start();
                     }
-                    
-                    // Reverse the locomotive if this is a reversing station
-                    if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
-                    {
-                        this.control.log("Auto layout: intermediate reversing for " + loc.getName());
-                        loc.setSpeed(0)
-                            .switchDirection()
-                            .waitForSpeedBelow(1, YIELD_SLEEP)
-                            .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
-                            .setSpeed(speed)
-                            .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
-                    }
-                }          
+                }    
+                
+                // Reverse the locomotive if this is a reversing station
+                if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
+                {
+                    this.control.log("Auto layout: intermediate reversing for " + loc.getName());
+                    loc.setSpeed(0)
+                        .switchDirection()
+                        .waitForSpeedBelow(1, YIELD_SLEEP)
+                        .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
+                        .setSpeed(speed)
+                        .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
+                }
                 
                 // We can also clear this edges dynamically 
                 // This can be useful, but extra care needs to be taken if any paths cross over

@@ -154,6 +154,7 @@ Requires JDK 1.8+ and the following libraries:
     - The "hide reversing station" option is now remembered after exiting the program
     - The "hide reversing station" option will now also hide all points only connected to/from reversing stations
     - Significantly improved UI startup speed when the CS3 has a large locomotive database
+    - Added support for reversing stations without an S88
     - The UI for adding/editing locomotives on the graph will now only show functions available to the chosen locomotive
     - Fixed UI function icon alignment
     - Fixed maximum function counts: up to F28 for DCC and F31 for MFX (down from F32 for both)
