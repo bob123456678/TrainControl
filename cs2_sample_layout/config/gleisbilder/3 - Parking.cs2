@@ -542,9 +542,10 @@ element
  .artikel=-1
 element
  .id=0x30806
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1020
+ .deviceId=0xc
 element
  .id=0x3080a
  .typ=bogen
