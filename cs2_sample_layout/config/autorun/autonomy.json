@@ -182,8 +182,33 @@
             "s88": 2004,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "EN57-1022",
+                "reversible": true,
+                "speed": 50,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 3
+            },
             "x": 1081,
             "y": 464
+        },
+        {
+            "name": "ParkingTrack12",
+            "station": true,
+            "s88": 1020,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "loc": {
+                "name": "BR 10 001",
+                "reversible": false,
+                "speed": 30,
+                "arrivalFunc": 3,
+                "departureFunc": 3,
+                "trainLength": 4
+            },
+            "x": 1079,
+            "y": 518
         },
         {
             "name": "ParkingTrack4",
@@ -191,6 +216,14 @@
             "s88": 2002,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "ET22-951",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 14,
+                "departureFunc": 3,
+                "trainLength": 3
+            },
             "x": 1087,
             "y": 182
         },
@@ -200,6 +233,14 @@
             "s88": 2003,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "ET21-442",
+                "reversible": false,
+                "speed": 62,
+                "arrivalFunc": 2,
+                "departureFunc": 16,
+                "trainLength": 4
+            },
             "x": 1083,
             "y": 224
         },
@@ -209,6 +250,14 @@
             "s88": 2009,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "TKt 63 PKP",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 2,
+                "departureFunc": 11,
+                "trainLength": 3
+            },
             "x": 1079,
             "y": 266
         },
@@ -218,6 +267,14 @@
             "s88": 2008,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "V 200 150",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 3,
+                "trainLength": 2
+            },
             "x": 1081,
             "y": 304
         },
@@ -364,6 +421,14 @@
             "s88": 1024,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "ICE TD DSB",
+                "reversible": false,
+                "speed": 42,
+                "arrivalFunc": 3,
+                "departureFunc": 4,
+                "trainLength": 5
+            },
             "x": 689,
             "y": 563
         },
@@ -373,6 +438,14 @@
             "s88": 1017,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "EB 3203 DSB",
+                "reversible": true,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 3,
+                "trainLength": 3
+            },
             "x": 581,
             "y": 532
         },
@@ -391,8 +464,14 @@
             "s88": 1031,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 589,
-            "y": -56
+            "loc": {
+                "name": "SM42 926",
+                "reversible": false,
+                "speed": 20,
+                "trainLength": 2
+            },
+            "x": 560,
+            "y": -57
         },
         {
             "name": "TunnelLeftPark",
@@ -401,9 +480,9 @@
             "maxTrainLength": 0,
             "reversing": true,
             "loc": {
-                "name": "EN57-1022",
+                "name": "EN57-925",
                 "reversible": true,
-                "speed": 50,
+                "speed": 35,
                 "arrivalFunc": 2,
                 "departureFunc": 15,
                 "trainLength": 3
@@ -417,6 +496,14 @@
             "s88": 1018,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "SU 46-035",
+                "reversible": false,
+                "speed": 52,
+                "arrivalFunc": 3,
+                "departureFunc": 20,
+                "trainLength": 3
+            },
             "x": 818,
             "y": -55
         },
@@ -456,6 +543,14 @@
             "s88": 1029,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "BR 232 241-0",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 11,
+                "trainLength": 2
+            },
             "x": 669,
             "y": -80
         }
@@ -732,6 +827,10 @@
             "length": 0,
             "commands": [
                 {
+                    "acc": "Switch 69",
+                    "state": "straight"
+                },
+                {
                     "acc": "Switch 100",
                     "state": "straight"
                 },
@@ -813,7 +912,21 @@
         {
             "start": "BottomMainC",
             "end": "TunnelReverse",
-            "length": 0
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 89",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 87",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
+                }
+            ]
         },
         {
             "start": "BottomMainPost",
@@ -887,6 +1000,10 @@
                     "state": "straight"
                 },
                 {
+                    "acc": "Switch 57",
+                    "state": "straight"
+                },
+                {
                     "acc": "Switch 30",
                     "state": "straight"
                 },
@@ -907,10 +1024,6 @@
                 },
                 {
                     "acc": "Switch 25",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Switch 57",
                     "state": "straight"
                 },
                 {
@@ -1279,12 +1392,61 @@
             "length": 0,
             "commands": [
                 {
+                    "acc": "Switch 57",
+                    "state": "straight"
+                },
+                {
                     "acc": "Signal 89",
                     "state": "green"
                 },
                 {
                     "acc": "Switch 83",
                     "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "LowerParkingReverse",
+            "end": "ParkingTrack12",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 101",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 36",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 57",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 89",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 32",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "LowerBackPre",
+                    "end": "LowerBack"
+                },
+                {
+                    "start": "LowerFront",
+                    "end": "LowerBackPre"
+                },
+                {
+                    "start": "LowerFrontPre",
+                    "end": "LowerFront"
                 }
             ]
         },
@@ -1440,6 +1602,31 @@
                 "start": "LowerBack",
                 "end": "LowerFrontPre"
             }]
+        },
+        {
+            "start": "ParkingTrack12",
+            "end": "LowerBack",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 102",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 89",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "LowerFront",
+                    "end": "LowerBackPre"
+                },
+                {
+                    "start": "LowerFrontPre",
+                    "end": "LowerFront"
+                }
+            ]
         },
         {
             "start": "ParkingTrack4",
