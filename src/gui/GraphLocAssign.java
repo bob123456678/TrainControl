@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 
 /**
  *
@@ -82,7 +84,22 @@ public class GraphLocAssign extends javax.swing.JPanel {
         this.departureFunc.setVisible(visibility);
         this.departureFuncLabel.setVisible(visibility);
         this.reversible.setVisible(visibility);
-        this.trainLength.setVisible(visibility);
+        this.trainLength.setVisible(visibility);   
+        
+        // Give the dropdown focus so you can filter with the keyboard
+        this.locAssign.addAncestorListener(new AncestorListener()
+        {
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {}
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                event.getComponent().requestFocusInWindow();
+            }
+        });
     }
     
     public final void updateValues()
@@ -226,7 +243,6 @@ public class GraphLocAssign extends javax.swing.JPanel {
         });
 
         reversible.setText("Reversible");
-        reversible.setFocusable(false);
         reversible.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 reversibleActionPerformed(evt);
@@ -234,7 +250,6 @@ public class GraphLocAssign extends javax.swing.JPanel {
         });
 
         arrivalFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31" }));
-        arrivalFunc.setFocusable(false);
 
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Arrival Function");
@@ -243,7 +258,6 @@ public class GraphLocAssign extends javax.swing.JPanel {
         departureFuncLabel.setText("Departure Function");
 
         departureFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31" }));
-        departureFunc.setFocusable(false);
 
         speedLabel.setForeground(new java.awt.Color(0, 0, 115));
         speedLabel.setText("Speed");
@@ -262,7 +276,6 @@ public class GraphLocAssign extends javax.swing.JPanel {
         departureFuncLabel1.setText("Train Length");
 
         trainLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
-        trainLength.setFocusable(false);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);

@@ -149,6 +149,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v1.10.11 [Beta]
+    - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection.
+
 * v1.10.10 [10/9/23]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph
     - The "hide reversing station" option is now remembered after exiting the program
