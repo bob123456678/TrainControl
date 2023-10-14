@@ -525,6 +525,9 @@ final public class GraphViewer extends javax.swing.JFrame {
                                         JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, 
                                         options, options[0]);
                                     
+                                    // Do nothing after pressing escape
+                                    if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION) return;
+                                        
                                     boolean changeEnd = (res == 1);
                                 
                                     // Get all point names except this one
