@@ -20,7 +20,8 @@ import javax.swing.event.AncestorListener;
  *
  * @author Adam
  */
-public class GraphLocAssign extends javax.swing.JPanel {
+public class GraphLocAssign extends javax.swing.JPanel
+{
     TrainControlUI parent;
     Point p;
 
@@ -213,6 +214,24 @@ public class GraphLocAssign extends javax.swing.JPanel {
     public String getLoc()
     {
         return (String) this.locAssign.getSelectedItem();
+    }
+    
+    /**
+     * Applies all changes from the UI
+     */
+    public void commitChanges()
+    {
+        parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false);
+
+        parent.getModel().getLocByName(getLoc()).setReversible(isReversible());
+        parent.getModel().getLocByName(getLoc()).setArrivalFunc(getArrivalFunc());
+        parent.getModel().getLocByName(getLoc()).setDepartureFunc(getDepartureFunc());
+        parent.getModel().getLocByName(getLoc()).setPreferredSpeed(getSpeed());
+        parent.getModel().getLocByName(getLoc()).setTrainLength(getTrainLength());
+
+        parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(getLoc()));
+        
+        parent.repaintAutoLocList(false);  
     }
 
     /**

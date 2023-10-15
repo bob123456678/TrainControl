@@ -150,8 +150,10 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.10.11 [Beta]
-    - New graph nodes are now created near the cursor, instead of at 0,0
-    - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection.
+    - New graph nodes are now created near the cursor instead of the lower-left corner of the window
+    - Double-clicking a station node is now a shortcut to opening the locomotive assignment window
+    - Clicking "mark as terminus station" on a non-station will now automatically convert the point to a station first
+    - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection
 
 * v1.10.10 [10/9/23]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph

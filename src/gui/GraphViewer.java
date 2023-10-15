@@ -69,17 +69,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Edit / Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                             if(dialogResult == JOptionPane.OK_OPTION)
                             {
-                                parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
-
-                                parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
-                                parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
-                                parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
-                                parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
-                                parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
-
-                                parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(edit.getLoc()));
-                                
-                                parent.repaintAutoLocList(false);
+                                edit.commitChanges();
                             }
                         }
                     );    
@@ -95,17 +85,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
-                            parent.getModel().getAutoLayout().moveLocomotive(edit.getLoc(), nodeName, false);
-
-                            parent.getModel().getLocByName(edit.getLoc()).setReversible(edit.isReversible());
-                            parent.getModel().getLocByName(edit.getLoc()).setArrivalFunc(edit.getArrivalFunc());
-                            parent.getModel().getLocByName(edit.getLoc()).setDepartureFunc(edit.getDepartureFunc());
-                            parent.getModel().getLocByName(edit.getLoc()).setPreferredSpeed(edit.getSpeed());
-                            parent.getModel().getLocByName(edit.getLoc()).setTrainLength(edit.getTrainLength());
-
-                            parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(edit.getLoc()));
-                            
-                            parent.repaintAutoLocList(false);
+                            edit.commitChanges();
                         }
                     }
                 ); 
@@ -247,6 +227,8 @@ final public class GraphViewer extends javax.swing.JFrame {
             menuItem.addActionListener(event -> { 
                 try
                 { 
+                    if (!p.isTerminus()) p.setDestination(true);
+                    
                     p.setTerminus(!p.isTerminus());
                     // parent.getModel().getAutoLayout().refreshUI();
                     ui.updatePoint(p, mainGraph);
@@ -255,7 +237,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                 catch (Exception ex)
                 {
                     JOptionPane.showMessageDialog((Component) swingView,
-                                    ex.getMessage()); 
+                     ex.getMessage()); 
                 }
             });
 
@@ -734,8 +716,8 @@ final public class GraphViewer extends javax.swing.JFrame {
         }
         
         // Disable the auto layout if a node gets dragged
-        swingView.setMouseManager(new DefaultMouseManager() {
-
+        swingView.setMouseManager(new DefaultMouseManager()
+        {
             GraphicElement lastNode;
             
             @Override
@@ -756,16 +738,18 @@ final public class GraphViewer extends javax.swing.JFrame {
                         element = lastNode;
                     }
                     
-                    if(element != null)
+                    if (element != null)
                     {
                         Node node = swingViewer.getGraphicGraph().getNode(element.getId());
                         
                         // Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
-                        
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setX(Double.valueOf(Toolkit.nodePosition(node)[0]).intValue());
-                        parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
+                        if (node != null)
+                        {
+                            parent.getModel().getAutoLayout().getPointById(node.getId()).setX(Double.valueOf(Toolkit.nodePosition(node)[0]).intValue());
+                            parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
 
-                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
+                            parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
+                        }
                     }
                 }
             }
@@ -792,17 +776,46 @@ final public class GraphViewer extends javax.swing.JFrame {
             @Override
             public void mouseClicked(MouseEvent evt)
             {
-                //if (evt.getClickCount() == 2)
-                //{
-                    if (SwingUtilities.isRightMouseButton(evt) 
-                            && !parent.getModel().getAutoLayout().isRunning())
+                if (!parent.getModel().getAutoLayout().isRunning())
+                {
+                    // Special double-click functionality - directly edit the locomotive
+                    if (!SwingUtilities.isRightMouseButton(evt) && evt.getClickCount() == 2)
                     {
                         GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
-                        
+
                         if (element != null)
                         {
                             Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
-                                 
+
+                            if (p != null && p.isDestination())
+                            {    
+                                // Select the active locomotive
+                                GraphLocAssign edit = new GraphLocAssign(parent, p, 
+                                    // If no locs in list, add new
+                                    parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
+                                );
+
+                                int dialogResult = JOptionPane.showConfirmDialog(
+                                    (Component) swingView, edit, 
+                                    !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() ? "Edit / Assign Locomotive" : "Place New Locomotive", 
+                                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+                                );
+
+                                if(dialogResult == JOptionPane.OK_OPTION)
+                                {
+                                    edit.commitChanges();
+                                }
+                            }
+                        }   
+                    }
+                    else if (SwingUtilities.isRightMouseButton(evt))
+                    {
+                        GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+
+                        if (element != null)
+                        {
+                            Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
+
                             if (p != null)
                             {                         
                                 RightClickMenu menu = new RightClickMenu(parent, p);
@@ -818,9 +831,9 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                             RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y);
                             menu.show(evt.getComponent(), evt.getX(), evt.getY());  
-                        }
-                    }
-                //}    
+                        }           
+                    }    
+                }
             }
         });
                 
