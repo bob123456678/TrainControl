@@ -38,6 +38,9 @@ public class LayoutGrid
         int width = layout.getMaxx() - layout.getMinx() + 1;
         int height = layout.getMaxy() - layout.getMiny() + 1;
 
+        // Increment width to fix GBC ui issue
+        width = width + 1;
+        
         // Create layout                      
         JPanel container;
         
@@ -68,11 +71,24 @@ public class LayoutGrid
         maxHeight = height * size;
                
         grid = new LayoutLabel[width][height];
-                
+                       
         for(int y = 0; y < height; y++)
         {
             for(int x = 0; x < width; x++)
             {
+                // GBC fix - we create a dummy column at the end with nothing in it to ensure long labels don't misalign things
+                if (x == (width - 1))
+                {
+                    grid[x][y] = new LayoutLabel(null, master, size, ui);
+                    gbc.gridwidth = 0;
+                    gbc.gridx = x;
+                    gbc.gridy = y;
+                    container.add(grid[x][y], gbc);  
+
+                    continue;
+                }
+                // End GBC fix
+                
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                 
                 grid[x][y] = new LayoutLabel(c, master, size, ui);
@@ -119,7 +135,7 @@ public class LayoutGrid
                 }
             }
         }     
- 
+        
         if (!container.equals(parent))
         {
             parent.add(container);

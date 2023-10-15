@@ -154,6 +154,8 @@ Requires JDK 1.8+ and the following libraries:
     - Double-clicking a station node is now a shortcut to opening the locomotive assignment window
     - Clicking "mark as terminus station" on a non-station will now automatically convert the point to a station first
     - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection
+    - Added a pop-up error message if an invalid layout file path is chosen via the "Choose Local Data Folder" button within Tools
+    - Fixed a bug in the layout UI where wide text labels in the last column would sometimes lead to misaligned tracks
 
 * v1.10.10 [10/9/23]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph

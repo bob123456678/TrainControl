@@ -7070,15 +7070,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
 
             this.model.syncWithCS2();
-            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
-            this.repaintLayout();
+            
+            if (!this.model.getLayoutList().isEmpty())
+            {   
+                this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+                this.repaintLayout();
 
-            // Show the layout tab if it wasn't already visible
-            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
-            {
-                this.KeyboardTab.add(this.layoutPanel, 1);
-                this.KeyboardTab.setTitleAt(1, "Layout");
+                // Show the layout tab if it wasn't already visible
+                if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+                {
+                    this.KeyboardTab.add(this.layoutPanel, 1);
+                    this.KeyboardTab.setTitleAt(1, "Layout");
+                }
             }
+            else
+            {
+                JOptionPane.showMessageDialog(this, "Invalid path. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
+            }    
         }).start();
     }//GEN-LAST:event_OverrideCS2DataPathActionPerformed
 
