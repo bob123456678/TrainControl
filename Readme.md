@@ -150,6 +150,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v1.10.11 [Beta]
+    - New graph nodes are now created near the cursor, instead of at 0,0
     - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection.
 
 * v1.10.10 [10/9/23]

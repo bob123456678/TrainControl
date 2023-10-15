@@ -748,21 +748,6 @@ final public class GraphViewer extends javax.swing.JFrame {
                 
                 if (SwingUtilities.isLeftMouseButton(evt))
                 {
-                    int maxY =  0;
-                    
-                    for (Object o : swingViewer.getGraphicGraph().nodes().toArray())
-                    {
-                        Node node = (Node) o;
-                        Point3 position = view.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
-                        
-                        if (Double.valueOf(position.y).intValue() > maxY)
-                        {
-                            maxY = Double.valueOf(position.y).intValue();
-                        }
-                    }
-                    
-                    final int maxYY = maxY;
-                
                     GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
                     
                     // The above sometimes fails if the element has the lowest Y value.  Use stored element instead.
@@ -780,13 +765,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                         parent.getModel().getAutoLayout().getPointById(node.getId()).setX(Double.valueOf(Toolkit.nodePosition(node)[0]).intValue());
                         parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
 
-                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (maxYY - Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
-                        
-                        // Old method - ensured no negative numbers, but not always accurate when exporting
-                        //parent.getModel().getAutoLayout().getPointById(node.getId()).setX(new Double(position.x).intValue());
-                        //parent.getModel().getAutoLayout().getPointById(node.getId()).setY(maxYY - new Double(position.y).intValue());
-                        
-                        //parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + new Double(position.x).intValue() + "," + (maxYY - new Double(position.y).intValue()));
+                        parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
                     }
                 }
             }
@@ -828,15 +807,16 @@ final public class GraphViewer extends javax.swing.JFrame {
                             {                         
                                 RightClickMenu menu = new RightClickMenu(parent, p);
 
-                                menu.show(evt.getComponent(), evt.getX(), evt.getY());  
+                                menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
                             }
                         }  
                         else
                         {
-                            // Right click on edges does not current work, so all edge related options will be on the point right click menu
-                            // Todo insert at cursor
-                            RightClickMenuNew menu = new RightClickMenuNew(parent, 0, 0);
+                            // Right click on edges does not currently work, so all edge related options will be on the point right click menu
+                            // Insert at cursor
+                            Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
 
+                            RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y);
                             menu.show(evt.getComponent(), evt.getX(), evt.getY());  
                         }
                     }
@@ -845,60 +825,35 @@ final public class GraphViewer extends javax.swing.JFrame {
         });
                 
         // Set custom key listener
-        swingView.setShortcutManager(new DefaultShortcutManager() {
-
+        swingView.setShortcutManager(new DefaultShortcutManager()
+        {
             private View viewui;
 
             @Override
-            public void init(GraphicGraph graph, View view) {
+            public void init(GraphicGraph graph, View view)
+            {
                 this.viewui = view;
                 view.addListener("Key", this);
             }
 
             @Override
-            public void release() {
+            public void release()
+            {
                 viewui.removeListener("Key", this);
             }
             
             @Override
-            public void keyPressed(KeyEvent e) {
-                                
-                // Print out coordinates of each node to assist with making the JSON file
-                if (e.getKeyCode() == KeyEvent.VK_C)
-                {
-                    int maxY =  0;
-                    
-                    for (Object o : swingViewer.getGraphicGraph().nodes().toArray())
-                    {
-                        Node node = (Node) o;
-                        Point3 position = viewui.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
-                        
-                        if (Double.valueOf(position.y).intValue() > maxY)
-                        {
-                            maxY = Double.valueOf(position.y).intValue();
-                        }
-                    }
-                    
-                    final int maxYY = maxY;
-                
-                    swingViewer.getGraphicGraph().nodes().forEach((node) -> {
-                        Point3 position = viewui.getCamera().transformGuToPx(Toolkit.nodePosition(node)[0], Toolkit.nodePosition(node)[1], 0);
-                        parent.getModel().log(node.getId() + "\n \"x\" : " + Double.valueOf(position.x).intValue() + ",\n \"y\" : " + (maxYY - Double.valueOf(position.y).intValue()) + "\n");
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setX(Double.valueOf(position.x).intValue());
-                        parent.getModel().getAutoLayout().getPoint(node.getId()).setY(maxYY - Double.valueOf(position.y).intValue());
-                    });  
-                }
-                
+            public void keyPressed(KeyEvent e)
+            {                     
+                // Pass event to main UI
                 parent.childWindowKeyEvent(e);
             }
 
             @Override
-            public void keyReleased(KeyEvent e) {
-            }
+            public void keyReleased(KeyEvent e) { }
 
             @Override
-            public void keyTyped(KeyEvent e) {
-            }
+            public void keyTyped(KeyEvent e) { }
         });
         
         // Render window
