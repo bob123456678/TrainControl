@@ -149,7 +149,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.10.11 [Beta]
+* v1.10.11 [10/15/23]
     - New graph nodes are now created near the cursor instead of the lower-left corner of the window
     - Double-clicking a station node is now a shortcut to opening the locomotive assignment window
     - Clicking "mark as terminus station" on a non-station will now automatically convert the point to a station first
