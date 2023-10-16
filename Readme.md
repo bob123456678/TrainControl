@@ -156,6 +156,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added corresponding `active` JSON key within `points`
         - Added corresponding option to the right-click menu in the graph UI
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
+    - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
 
 * v1.10.11 [10/15/23]

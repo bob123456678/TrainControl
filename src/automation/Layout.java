@@ -459,6 +459,43 @@ public class Layout
     }
     
     /**
+     * Returns whether the given point only has incoming edges from inactive points
+     * @param p
+     * @return 
+     */
+    public boolean hasOnlyInactiveIncoming(Point p)
+    {        
+        boolean hasNeighbor = false;
+
+        for (Edge e : this.getIncomingEdges(p))
+        {
+            hasNeighbor = true;
+
+            if (e.getStart().isActive()) return false;
+        }
+        
+        return hasNeighbor;
+    }
+    
+    /**
+     * Returns whether the given point's neighbors are all inactive points
+     * @param p
+     * @return 
+     */
+    public boolean hasOnlyInactiveNeighbors(Point p)
+    {       
+        boolean hasNeighbor = false;
+        
+        for (Edge e : this.getNeighbors(p))
+        {
+            hasNeighbor = true;
+            if (e.getEnd().isActive()) return false;
+        }
+        
+        return hasNeighbor;
+    }
+    
+    /**
      * Returns whether the given point's neighbors are all reversing points
      * @param p
      * @return 

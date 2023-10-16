@@ -78,6 +78,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String ONTOP_SETTING_PREF = "OnTop";
     public static String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static String HIDE_REVERSING_PREF = "HideReversing";
+    public static String HIDE_INACTIVE_PREF = "HideInactive";
 
     // Constants
     // Width of locomotive images
@@ -452,6 +453,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(this.prefs.getBoolean(HIDE_REVERSING_PREF, false));
+        this.hideInactive.setSelected(this.prefs.getBoolean(HIDE_INACTIVE_PREF, false));
 
         // Set selected route sort radio button
         this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -1881,6 +1883,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel4 = new javax.swing.JPanel();
         hideReversing = new javax.swing.JCheckBox();
         clearNonParkedLocs = new javax.swing.JButton();
+        hideInactive = new javax.swing.JCheckBox();
         jLabel52 = new javax.swing.JLabel();
         exportJSON = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
@@ -5133,6 +5136,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        hideInactive.setText("Hide Inactive Points");
+        hideInactive.setToolTipText("Temporarily hides reversing stations from view in the graph.");
+        hideInactive.setFocusable(false);
+        hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                hideInactiveMouseReleased(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -5140,15 +5152,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(hideReversing)
-                    .addComponent(clearNonParkedLocs))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(clearNonParkedLocs))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(hideReversing)
+                            .addComponent(hideInactive))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(hideReversing)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(hideInactive)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(clearNonParkedLocs)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -5182,7 +5202,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18))
+                .addContainerGap())
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
@@ -8426,6 +8446,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }//GEN-LAST:event_clearNonParkedLocsActionPerformed
 
+    private void hideInactiveMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideInactiveMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+            this.prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
+        }
+        else
+        {
+            this.hideInactive.setSelected(!this.hideInactive.isSelected());
+        }
+    }//GEN-LAST:event_hideInactiveMouseReleased
+
     private boolean isAutoLayoutRunning()
     {
         if (this.model.getAutoLayout().isRunning())
@@ -8513,6 +8545,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     (p.isReversing() 
                     || this.model.getAutoLayout().hasOnlyReversingIncoming(p)
                     || this.model.getAutoLayout().hasOnlyReversingNeighbors(p)
+                    )
+            )
+            {
+                g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
+            }
+            else if (this.hideInactive.isSelected() && 
+                    (!p.isActive()
+                    && (this.model.getAutoLayout().hasOnlyInactiveIncoming(p) || this.model.getAutoLayout().hasOnlyReversingNeighbors(p))
                     )
             )
             {
@@ -9295,6 +9335,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel f9Label;
     private javax.swing.JPanel functionPanel;
     private javax.swing.JButton gracefulStop;
+    private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
