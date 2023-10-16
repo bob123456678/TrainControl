@@ -45,7 +45,7 @@ public abstract class Locomotive
     private String imageURL;
     
     // Types of functions
-    protected final int[] functionTypes;
+    protected int[] functionTypes;
     
     // Custom event callbacks
     protected Map<String, Consumer<Locomotive>> callbacks;
@@ -195,13 +195,8 @@ public abstract class Locomotive
         this.functionState = new boolean[numFunctions];
         this.numF = numFunctions;
         this._setSpeed(0);
-        this.functionTypes = new int[numFunctions];
         
-        // Safely copy function types - raw data is often shorter or longer than needed
-        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
-        { 
-            this.functionTypes[i] = functionTypes[i];
-        }
+        this.setFunctionTypes(functionTypes);
   
         this.callbacks = new HashMap<>();
         
@@ -210,6 +205,21 @@ public abstract class Locomotive
         this.trainLength = 0;
         this.totalRuntime = 0;
         this.historicalOperatingTime = 0;
+    }
+    
+    /**
+     * Safely sets the function types
+     * @param functionTypes 
+     */
+    public final void setFunctionTypes(int[] functionTypes)
+    {
+        this.functionTypes = new int[this.numF];
+        
+        // Safely copy function types - raw data is often shorter or longer than needed
+        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
+        { 
+            this.functionTypes[i] = functionTypes[i];
+        }
     }
     
     /**
@@ -263,13 +273,7 @@ public abstract class Locomotive
         this.functionState = functionState;
         this.numF = numF;
         this._setSpeed(speed);
-        this.functionTypes = new int[numF];
-        
-        // Safely copy function types - raw data is often shorter or longer than needed
-        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
-        { 
-            this.functionTypes[i] = functionTypes[i];
-        }
+        this.setFunctionTypes(functionTypes);
         
         this.callbacks = new HashMap<>();
         

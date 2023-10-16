@@ -33,10 +33,10 @@ public class MarklinLocomotive extends Locomotive
     public static final String[] COLOR_WHITE = {"i_we", "a_we"};
     
     // The raw locomotive address
-    private final int address;
+    private int address;
     
     // Calculated UID
-    private final int UID;
+    private int UID;
     
     // The locomotive's decoder
     private final decoderType type;
@@ -207,7 +207,7 @@ public class MarklinLocomotive extends Locomotive
      */
     public int getIntUID()
     {
-        return UID;
+        return this.UID;
     }
     
     /**
@@ -228,6 +228,17 @@ public class MarklinLocomotive extends Locomotive
         return this.address;
     }
     
+    /**
+     * Sets the raw locomotive address
+     * Should only be called when updating state from CS2/CS3
+     * @param newAddress
+     */
+    public void setAddress(int newAddress)
+    {
+        this.address = newAddress;
+        this.UID = calculateUID();
+    }
+       
     /**
      * Gets the decoder type
      * @return 

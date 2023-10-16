@@ -292,6 +292,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         {
             Integer r = this.model.syncWithCS2();
             this.refreshLocSelectorList();
+            this.parent.repaintLoc();
 
             JOptionPane.showMessageDialog(this, "Sync complete.  Items added: " + r.toString());
         }));

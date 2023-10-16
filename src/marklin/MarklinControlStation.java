@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -520,39 +521,54 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Add new locomotives
                 if (!this.locDB.hasId(l.getUID()))
                 {
-                    this.log("Added locomotive " + l.getName() 
-                            + " with address " 
-                            + l.getAddress() + " ("
-                            + util.Conversion.intToHex(l.getIntUID()) + ")"
-                            + " from Central Station"
-                    );
+                    if (this.locDB.hasName(l.getName()))
+                    {
+                        // Show message that we did not sync a loc with a duplicate name
+                        this.log("Did not import locomotive " + l.getName() + " from Central Station because a different locomotive with the same name exists in TrainControl.");
+                    }
+                    else
+                    {
+                        this.log("Added locomotive " + l.getName() 
+                                + " with address " 
+                                + l.getAddress() + " ("
+                                + util.Conversion.intToHex(l.getIntUID()) + ")"
+                                + " from Central Station"
+                        );
 
-                    newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());
-                    num++;
-                }
-                
-                // Show message that we did not sync a loc with a duplicate address
-                if (this.locDB.hasId(l.getUID()) && !this.locDB.getById(l.getUID()).getName().equals(l.getName()))
-                {
-                    this.log("Locomotive " + l.getName() +
-                            " was not imported because database already contains a locomotive with the same address: " + 
-                            this.locDB.getById(l.getUID()).getName() + " (" + l.getUID() + ")");
-                }
-                
-                // Set current locomotive icon - use name for MM2 due to risk of address collision
-                if (l.getDecoderType() == MarklinLocomotive.decoderType.MM2)
-                {
-                    if (this.locDB.getByName(l.getName()) != null && l.getImageURL() != null)
-                    {
-                        this.locDB.getByName(l.getName()).setImageURL(l.getImageURL());                         
+                        newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());
+                        num++;
                     }
                 }
-                else
+                
+                // We already have this locomotive, with the same decoder type, but different address.  Update the address and UID in database
+                if (this.locDB.getByName(l.getName()) != null 
+                    && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
+                    && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
+                )
                 {
-                    if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
-                    {
-                        this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
-                    }
+                    String oldAddr = this.getLocAddress(l.getName());
+                    this.locDB.getByName(l.getName()).setAddress(l.getAddress());
+                    
+                    // Update DB entry
+                    MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                    this.locDB.delete(l.getName());
+                    this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+                    
+                    this.log("Updated address of " + existingLoc.getName() + " from " + oldAddr + " to " + this.getLocAddress(existingLoc.getName()));
+                }
+                
+                // Update function types if they have changed
+                if (this.locDB.hasId(l.getUID()) && !Arrays.equals(this.locDB.getById(l.getUID()).getFunctionTypes(), l.getFunctionTypes()))
+                {
+                    this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes());
+                    
+                    this.log("Updated function types for " + l.getName());
+                }
+                              
+                // Set current locomotive icon
+                if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                {
+                    this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
                 }
             }
         }

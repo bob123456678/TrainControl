@@ -155,6 +155,11 @@ Requires JDK 1.8+ and the following libraries:
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
         - Added corresponding `active` JSON key within `points`
         - Added corresponding option to the right-click menu in the graph UI
+    - Improved locomotive synchronization with CS2/CS3
+        - Locomotives with the same name and decoder type, but a different address in TrainControl, will now have their address automatically updated to match the Central Station
+        - Changes to locomotive functions are now automatically synchronized
+        - Fixed a bug where a shadow copy of a locomotive with the same name (but a different address) could exist in TrainControl's database
+        - The "Sync w/ Central Station" right-click option will now also update the locomotive's address/functions/icon
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive

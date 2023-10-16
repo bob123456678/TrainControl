@@ -1077,8 +1077,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (l != null)
         {
             new Thread(() -> {
+                this.model.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc();
+                this.repaintLayout();
             }).start();
         }   
     }
@@ -6870,6 +6872,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Ensure route changes are synced
                 this.model.syncWithCS2();
                 this.repaintLayout();
+                this.repaintLoc();
             }
         }
     }
@@ -7090,6 +7093,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
 
             this.model.syncWithCS2();
+            this.repaintLoc();
             
             if (!this.model.getLayoutList().isEmpty())
             {   
@@ -7142,6 +7146,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Integer r = this.model.syncWithCS2();
             refreshRouteList();
             this.selector.refreshLocSelectorList();
+            this.repaintLoc();
 
             JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
         }).start();
@@ -7682,6 +7687,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Ensure route changes are synced
                 this.model.syncWithCS2();
                 this.repaintLayout();
+                this.repaintLoc();
             }
         }
         catch (Exception e)
