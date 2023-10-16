@@ -64,6 +64,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             this.locDest.setForeground(new Color(0, 0, 115));
             
             this.locStation.setVisible(false);
+            
+            // Grey out locomotives on inactive points
+            if (layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive())
+            {
+                this.locName.setForeground(Color.LIGHT_GRAY);
+            }
+            else
+            {
+                this.locName.setForeground(Color.BLACK);
+            }
 
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive))

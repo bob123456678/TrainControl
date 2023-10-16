@@ -1294,6 +1294,27 @@ public final class CS2File
                     }
                 }  
                 
+                if (point.has("active"))
+                {
+                    if (point.get("active") instanceof Boolean)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setActive(point.getBoolean("active"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for active " + point.toString());
+                        layout.invalidate();
+                    }
+                }   
+                
                 if (point.has("reversing"))
                 {
                     if (point.get("reversing") instanceof Boolean)

@@ -22,6 +22,7 @@ public class Point
     private Integer maxTrainLength = 0;
     private Integer priority = 0;
     private Integer uniqueId;
+    private boolean active;
     
     // Unique ID for any new node
     private static Integer id = 0;
@@ -34,6 +35,7 @@ public class Point
         this.currentLoc = null;
         this.isTerminus = false;
         this.isReversing = false;
+        this.active = true;
 
         if (isDestination && !hasS88())
         {
@@ -42,6 +44,26 @@ public class Point
         
         // Save the immutable unique ID
         this.uniqueId = ++id;
+    }
+    
+    /**
+     * Sets the point as active or inactive
+     * @param status 
+     */
+    public void setActive(boolean status)
+    {
+        this.active = status;
+    }
+    
+    /**
+     * Returns if the point is active.
+     * Active means the point will be selected by autonomous logic
+     * Ignored for non-stations
+     * @return 
+     */
+    public boolean isActive()
+    {        
+        return this.active;
     }
     
     /**
@@ -312,6 +334,11 @@ public class Point
         
         jsonObj.put("name", this.getName());
         jsonObj.put("station", this.isDestination);
+        
+        if (!this.isActive())
+        {
+            jsonObj.put("active", this.active);
+        }
         
         if (this.hasS88())
         {

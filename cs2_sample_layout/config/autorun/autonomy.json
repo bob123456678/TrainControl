@@ -77,6 +77,14 @@
             "station": true,
             "s88": 1009,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "EP08-009",
+                "reversible": false,
+                "speed": 74,
+                "arrivalFunc": 4,
+                "departureFunc": 10,
+                "trainLength": 3
+            },
             "x": 561,
             "y": 126
         },
@@ -133,12 +141,14 @@
         {
             "name": "LowerParkingInner",
             "station": false,
+            "active": false,
             "x": 926,
             "y": 155
         },
         {
             "name": "LowerParkingReverse",
             "station": false,
+            "active": false,
             "s88": 1003,
             "reversing": true,
             "x": 864,
@@ -170,6 +180,7 @@
         {
             "name": "ParkingTrack10",
             "station": true,
+            "active": false,
             "s88": 2016,
             "maxTrainLength": 0,
             "reversing": true,
@@ -179,6 +190,7 @@
         {
             "name": "ParkingTrack11",
             "station": true,
+            "active": false,
             "s88": 2004,
             "maxTrainLength": 0,
             "reversing": true,
@@ -196,6 +208,7 @@
         {
             "name": "ParkingTrack12",
             "station": true,
+            "active": false,
             "s88": 1020,
             "maxTrainLength": 0,
             "reversing": true,
@@ -213,6 +226,7 @@
         {
             "name": "ParkingTrack4",
             "station": true,
+            "active": false,
             "s88": 2002,
             "maxTrainLength": 0,
             "reversing": true,
@@ -230,6 +244,7 @@
         {
             "name": "ParkingTrack5",
             "station": true,
+            "active": false,
             "s88": 2003,
             "maxTrainLength": 0,
             "reversing": true,
@@ -247,6 +262,7 @@
         {
             "name": "ParkingTrack6",
             "station": true,
+            "active": false,
             "s88": 2009,
             "maxTrainLength": 0,
             "reversing": true,
@@ -264,6 +280,7 @@
         {
             "name": "ParkingTrack7",
             "station": true,
+            "active": false,
             "s88": 2008,
             "maxTrainLength": 0,
             "reversing": true,
@@ -281,6 +298,7 @@
         {
             "name": "ParkingTrack8",
             "station": true,
+            "active": false,
             "s88": 2006,
             "maxTrainLength": 0,
             "reversing": true,
@@ -290,6 +308,7 @@
         {
             "name": "ParkingTrack9",
             "station": true,
+            "active": false,
             "s88": 2007,
             "maxTrainLength": 0,
             "reversing": true,
@@ -337,6 +356,7 @@
         {
             "name": "TopMainR0Park",
             "station": true,
+            "active": false,
             "s88": 1010,
             "maxTrainLength": 0,
             "reversing": true,
@@ -418,6 +438,7 @@
         {
             "name": "TopParkReversing",
             "station": false,
+            "active": false,
             "s88": 2012,
             "reversing": true,
             "x": 599,
@@ -426,6 +447,7 @@
         {
             "name": "TopR1ParkLong",
             "station": true,
+            "active": false,
             "s88": 1024,
             "maxTrainLength": 0,
             "reversing": true,
@@ -443,6 +465,7 @@
         {
             "name": "TopR1ParkShort",
             "station": true,
+            "active": false,
             "s88": 1017,
             "maxTrainLength": 0,
             "reversing": true,
@@ -469,6 +492,7 @@
         {
             "name": "TunnelCenterPark",
             "station": true,
+            "active": false,
             "s88": 1031,
             "maxTrainLength": 0,
             "reversing": true,
@@ -478,12 +502,13 @@
                 "speed": 20,
                 "trainLength": 2
             },
-            "x": 569,
-            "y": -60
+            "x": 582,
+            "y": -61
         },
         {
             "name": "TunnelLeftPark",
             "station": true,
+            "active": false,
             "s88": 1028,
             "maxTrainLength": 0,
             "reversing": true,
@@ -501,6 +526,7 @@
         {
             "name": "TunnelLongPark",
             "station": true,
+            "active": false,
             "s88": 1018,
             "maxTrainLength": 0,
             "reversing": true,
@@ -518,6 +544,7 @@
         {
             "name": "TunnelLongParkReverse",
             "station": false,
+            "active": false,
             "s88": 2013,
             "reversing": true,
             "x": 1106,
@@ -526,6 +553,7 @@
         {
             "name": "TunnelParkReverse",
             "station": false,
+            "active": false,
             "reversing": true,
             "x": 730,
             "y": -20
@@ -547,6 +575,7 @@
         {
             "name": "TunnelRightPark",
             "station": true,
+            "active": false,
             "s88": 1029,
             "maxTrainLength": 0,
             "reversing": true,
@@ -558,8 +587,8 @@
                 "departureFunc": 11,
                 "trainLength": 2
             },
-            "x": 669,
-            "y": -80
+            "x": 693,
+            "y": -79
         }
     ],
     "edges": [
@@ -2418,6 +2447,5 @@
     "preArrivalSpeedReduction": 0.5,
     "turnOffFunctionsOnArrival": true,
     "atomicRoutes": false,
-    "maxLocInactiveSeconds": 120,
-    "simulate": true
+    "maxLocInactiveSeconds": 120
 }

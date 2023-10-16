@@ -222,6 +222,26 @@ final public class GraphViewer extends javax.swing.JFrame {
 
             add(menuItem);
             addSeparator();
+            
+            // Enable/disable point
+            menuItem = new JMenuItem("Mark as " + (p.isActive() ? "Inactive" : "Active"));
+            menuItem.addActionListener(event -> { 
+                try
+                { 
+                    p.setActive(!p.isActive());
+                    // parent.getModel().getAutoLayout().refreshUI();
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(false); 
+                } 
+                catch (Exception ex) 
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                                    ex.getMessage()); 
+                }
+            });
+
+            add(menuItem);
+            addSeparator();
 
             menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
             menuItem.addActionListener(event -> { 
@@ -280,7 +300,7 @@ final public class GraphViewer extends javax.swing.JFrame {
             });
 
             add(menuItem);
-                        
+                                    
             // Rename option applicable to all nodes
             menuItem = new JMenuItem("Rename " + nodeName);
             menuItem.addActionListener(event -> 
@@ -315,7 +335,7 @@ final public class GraphViewer extends javax.swing.JFrame {
             );  
                 
             add(menuItem);
-            
+                        
             // Add edge
             addSeparator();
             

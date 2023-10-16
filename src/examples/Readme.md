@@ -342,11 +342,13 @@ Edge colors:
 * Green - path is executing along this edge, edges have been reached
 * Gray - edges are locked to avoid collisions, per `lockedges` definition
 * Black - edges are unoccupied / unlocked with no active path
+* Orange - shown only while editing the edge; indicates that it is within the list of lock edges
 
 Point colors:
 * Blue - no active route.  Label indicates if locomotive is stationed.
 * Red - active route - locomotive soon to pass through
 * Green - active route - locomotive has passed through
+* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v1.11.0)
 
 Point shapes:
 * Circle - regular station

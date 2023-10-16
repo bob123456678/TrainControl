@@ -8584,6 +8584,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
             }
         }
+        
+        if (p.isActive())
+        {
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);");
+        }
+        else
+        {
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);");
+        }
     }
     
     /**
@@ -8890,8 +8899,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (loc1Point != null && loc2Point != null)
                 {
-                    if (loc1Point.isReversing() && !loc2Point.isReversing()) return 1;
-                    if (!loc1Point.isReversing() && loc2Point.isReversing()) return -1;
+                    if (loc1Point.isActive() && !loc2Point.isActive()) return -1;
+                    if (!loc1Point.isActive() && loc2Point.isActive()) return 1;
                 }
                 
                 return l1.getName().compareTo(l2.getName());

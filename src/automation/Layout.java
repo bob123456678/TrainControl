@@ -565,10 +565,10 @@ public class Layout
                 return false;
             }
             
-            // Starting or intermediate reversing stations not allowed in auto running
-            if (this.isAutoRunning() && e.getStart().isReversing())
+            // Inactive points not allowed in auto running
+            if (this.isAutoRunning() && (!e.getStart().isActive() || !e.getEnd().isActive()))
             {
-                logPathError(loc, path, "Contains a starting or intermediate reversing station, which cannot be chosen in autonomous operation");
+                logPathError(loc, path, "Contains an inactive point, which cannot be chosen in autonomous operation");
                 
                 return false;
             }
@@ -608,9 +608,9 @@ public class Layout
             return false;
         }
         
-        if (path.get(path.size() - 1).getEnd().isReversing() && this.isAutoRunning())
+        if (!path.get(path.size() - 1).getEnd().isActive() && this.isAutoRunning())
         {
-            logPathError(loc, path, "Disallowed because reversing station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
+            logPathError(loc, path, "Disallowed because inactive station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
             
             return false;
         }
@@ -618,7 +618,7 @@ public class Layout
         // Only reversible locomotives can go to a terminus
         if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
-            logPathError(loc, path, "Disallowed because " + loc.getName() + " is not reversible");
+            logPathError(loc, path, "Terminus disallowed because " + loc.getName() + " is not reversible");
             
             return false;
         }
@@ -1191,12 +1191,12 @@ public class Layout
         for (Point start : this.points.values())
         {
             if (loc.equals(start.getCurrentLocomotive()) 
-                    && !start.isReversing() && start.isDestination() // not needed from a logic perspective, but will speed things up
+                    && start.isActive() && start.isDestination() // not needed from a validation perspective, but will speed things up
             )
             {
                 for (Point end : ends)
                 {                        
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive())
                     {
                         try 
                         {
