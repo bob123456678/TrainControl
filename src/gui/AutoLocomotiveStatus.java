@@ -62,11 +62,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
             this.locDest.setForeground(new Color(0, 0, 115));
-            
-            this.locStation.setVisible(false);
-            
-            // Grey out locomotives on inactive points
-            if (layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive())
+                        
+            // Grey out locomotives on inactive points / not on the graph
+            if ((
+                    layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
+                    layout.getLocomotiveLocation(locomotive) == null
+            )
             {
                 this.locName.setForeground(Color.LIGHT_GRAY);
             }
@@ -83,7 +84,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)));
                 
                 this.locStation.setText("@" + milestones.get(milestones.size() - 1).getName());
-                this.locStation.setVisible(true);
                 
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
@@ -95,10 +95,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     this.locDest.setText("No active path.");
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
-                    this.locStation.setVisible(true);
                 }
                 else
                 {
+                    this.locStation.setText("?????");
                     this.locDest.setText("Locomotive is not placed on the graph.");
                 }
                 
@@ -112,16 +112,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                     this.locDest.setText("Double-click a path to execute");
                     
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
-                    this.locStation.setVisible(true);
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {
                     this.locDest.setText("No available paths.");
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName());
-                    this.locStation.setVisible(true);
                 }
                 else
                 {
+                    this.locStation.setText("?????");
                     this.locDest.setText("Locomotive is not placed on the graph.");
                 }
                 
@@ -130,7 +129,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 
                 for (List<Edge> path : this.paths)
                 {
-                    pathList.add(pathList.getSize(), Edge.pathToString(path));
+                    pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName());
+                        //Edge.pathToString(path));
                 }
                 
                 this.locAvailPaths.setVisible(true);
@@ -158,16 +158,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         setBackground(new java.awt.Color(238, 238, 238));
         setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         setFocusable(false);
-        setMaximumSize(new java.awt.Dimension(240, 205));
-        setPreferredSize(new java.awt.Dimension(240, 205));
+        setMaximumSize(new java.awt.Dimension(219, 220));
+        setPreferredSize(new java.awt.Dimension(219, 220));
 
         locName.setFont(new java.awt.Font("Tahoma", 1, 16)); // NOI18N
-        locName.setText("jLabel1");
+        locName.setText("locName");
         locName.setFocusable(false);
 
         locDest.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         locDest.setForeground(new java.awt.Color(0, 0, 115));
-        locDest.setText("jLabel2");
+        locDest.setText("locDest");
         locDest.setFocusable(false);
 
         locAvailPaths.setModel(new javax.swing.AbstractListModel<String>() {
@@ -191,9 +191,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(locAvailPaths);
 
-        locStation.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        locStation.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         locStation.setForeground(new java.awt.Color(0, 0, 115));
-        locStation.setText("jLabel2");
+        locStation.setText("locStation");
         locStation.setFocusable(false);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -203,13 +203,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(locName)
                             .addComponent(locDest)
+                            .addComponent(locName)
                             .addComponent(locStation))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 156, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -220,9 +220,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locStation)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(locDest)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 148, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
+                .addComponent(locDest)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents

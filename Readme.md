@@ -155,6 +155,7 @@ Requires JDK 1.8+ and the following libraries:
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
         - Added corresponding `active` JSON key within `points`
         - Added corresponding option to the right-click menu in the graph UI
+    - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
 
 * v1.10.11 [10/15/23]

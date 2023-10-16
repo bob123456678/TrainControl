@@ -834,6 +834,10 @@
                     "end": "BottomSecondary"
                 },
                 {
+                    "start": "LowerBackPre",
+                    "end": "LowerUp"
+                },
+                {
                     "start": "RampDown",
                     "end": "BottomInner"
                 },
@@ -1535,8 +1539,8 @@
             ],
             "lockedges": [
                 {
-                    "start": "LowerBack",
-                    "end": "LowerFrontPre"
+                    "start": "BottomCrossover",
+                    "end": "TunnelPre"
                 },
                 {
                     "start": "BottomInner",
@@ -1547,8 +1551,28 @@
                     "end": "BottomInnerOtherside"
                 },
                 {
+                    "start": "BottomInner",
+                    "end": "Tunnel"
+                },
+                {
                     "start": "BottomInnerOtherside",
                     "end": "BottomInner"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "LowerDownPre"
+                },
+                {
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                },
+                {
+                    "start": "LowerBack",
+                    "end": "LowerFrontPre"
                 },
                 {
                     "start": "RampDown",
@@ -1559,23 +1583,7 @@
                     "end": "BottomSecondaryPre"
                 },
                 {
-                    "start": "BottomCrossover",
-                    "end": "TunnelPre"
-                },
-                {
-                    "start": "BottomSecondaryPre",
-                    "end": "BottomSecondary"
-                },
-                {
-                    "start": "BottomSecondary",
-                    "end": "TunnelPre"
-                },
-                {
                     "start": "TunnelPre",
-                    "end": "Tunnel"
-                },
-                {
-                    "start": "BottomInner",
                     "end": "Tunnel"
                 }
             ]
