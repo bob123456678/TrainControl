@@ -83,7 +83,7 @@ public class AutoJSONExport extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jsonSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonSaveAsActionPerformed
-        
+        this.jsonSaveAs.setEnabled(false);
         new Thread(() ->
         {
             try
@@ -111,6 +111,8 @@ public class AutoJSONExport extends javax.swing.JPanel {
                     e.printStackTrace();
                 }
             }
+            
+            this.jsonSaveAs.setEnabled(true);
         }).start();
     }//GEN-LAST:event_jsonSaveAsActionPerformed
 

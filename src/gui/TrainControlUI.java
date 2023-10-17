@@ -8429,6 +8429,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_hideInactiveMouseReleased
 
     private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
+        this.loadJSONButton.setEnabled(false);
         new Thread(()->
             {
                 try
@@ -8455,6 +8456,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         e.printStackTrace();
                     }
                 }
+
+                this.loadJSONButton.setEnabled(true);
             }).start();
     }//GEN-LAST:event_loadJSONButtonActionPerformed
 
