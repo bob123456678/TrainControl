@@ -654,34 +654,6 @@ final public class GraphViewer extends javax.swing.JFrame {
                 ); 
 
                 add(menuItem);
-                
-                /*for (Edge e : neighbors)
-                {    
-                    menuItem = new JMenuItem("Delete Edge to " + e.getEnd());
-                    menuItem.addActionListener(event -> 
-                    {
-                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, 
-                                "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
-                                "Edge Deletion", JOptionPane.YES_NO_OPTION);
-                        
-                        if(dialogResult == JOptionPane.YES_OPTION)
-                        {
-                            try 
-                            {
-                                parent.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
-                                mainGraph.removeEdge(e.getUniqueId());
-                                parent.getModel().getAutoLayout().refreshUI();
-                                parent.repaintAutoLocList(false);
-                            } 
-                            catch (Exception ex)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView, ex.getMessage());
-                            }
-                        } 
-                   }); 
-                    
-                   add(menuItem);
-                }*/
             }
             
             // Delete point

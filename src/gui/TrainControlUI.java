@@ -8468,31 +8468,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 try
                 {
-                    /*if(!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
-                    {
-                        int dialogResult = JOptionPane.showConfirmDialog(this,
-                            "Before saving it to a new file, do you want to overwrite the displayed/auto-saved JSON based on the current graph state?",
-                            "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
-                        if(dialogResult == JOptionPane.YES_OPTION)
-                        {
-                            this.autonomyJSON.setText(this.model.getAutoLayout().toJSON());
-                        }
-                    }
-
-                    JFileChooser fc = this.getJSONFileChooser(JFileChooser.FILES_ONLY);
-
-                    int i = fc.showSaveDialog(this);
-
-                    if (i == JFileChooser.APPROVE_OPTION)
-                    {
-                        File f = fc.getSelectedFile();
-
-                        byte[] json = this.model.getAutoLayout().toJSON().getBytes();
-
-                        Files.write(Paths.get(f.getPath()), json);
-                        this.prefs.put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
-                    }*/
-
                     JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this),
                         "JSON for current state", JOptionPane.PLAIN_MESSAGE
                     );
