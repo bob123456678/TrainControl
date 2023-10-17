@@ -195,7 +195,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private void syncLayouts() throws Exception
     {
-        // List<Integer> addresses = new LinkedList<>();
+        // Prune stale feedbacks
+        List<Integer> feedbackAddresses = new LinkedList<>();
 
         for (MarklinLayout l : fileParser.parseLayout())
         {
@@ -306,33 +307,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     // CS2 gives us no state info :(
                     c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
+                    
+                    feedbackAddresses.add(c.getRawAddress());
                 }   
                 else if (c.isRoute())
                 {
                     c.setRoute(this.routeDB.getById(c.getAddress()));
                 }
             }
-        }   
+        }
         
-        // Code for basic address stats
-        /*Collections.sort(addresses);
-
-        if (addresses.size() >= 1)
+        // Prune stale feedback
+        if (!feedbackAddresses.isEmpty())
         {
-            Integer min = addresses.get(0);
-            Integer max = addresses.get(addresses.size() - 1);
-            
-            System.out.println("Minimum address:" + min);
-            System.out.println("Maximum address:" + max);
-            
-            for (int i = 1; i < max; i++)
+            for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!addresses.contains(i))
+                if (!feedbackAddresses.contains(feedbackId))
                 {
-                    System.out.println("Free address: " + i);
+                    MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
+                    this.log("Pruning feedback that is not present on any layout: " + fb.getName());
+                    this.feedbackDB.delete(fb.getName());
                 }
             }
-        }*/
+        }
     }
     
     private Preferences getPrefs()

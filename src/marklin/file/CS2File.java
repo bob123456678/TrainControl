@@ -342,6 +342,9 @@ public final class CS2File
             }
         }
         
+        // Release the resource
+        in.close();
+        
         return items;
     }
     

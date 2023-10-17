@@ -116,7 +116,6 @@ public class AutoJSONExport extends javax.swing.JPanel {
         }).start();
     }//GEN-LAST:event_jsonSaveAsActionPerformed
 
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jsonSaveAs;

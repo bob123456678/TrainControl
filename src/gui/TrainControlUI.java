@@ -14,6 +14,8 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,13 +29,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,6 +57,9 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -829,6 +841,38 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         
         // Add list of routes to tab
         refreshRouteList();
+        
+        // Attempt to create an empty layout if needed
+        if (this.model.getLayoutList().isEmpty())
+        {
+            try
+            {
+                this.model.log("No layout detected. Initializing local demo layout...");
+                String path = this.initializeEmptyLayout();
+
+                if (path != null)
+                {
+                    this.model.log("Layout initialized at: " + path);
+                    this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+                    this.model.syncWithCS2();
+                    this.repaintLoc();
+                }
+                else
+                {
+                    this.model.log("Failed to initialize demo layout.");
+                }
+            }
+            catch (Exception e)
+            {
+                this.model.log("Critical error while initializing demo layout.");
+                
+                if (this.model.isDebug())
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+        // End attempt to create empty layout
                 
         // Add list of layouts to tab
         this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
@@ -8571,11 +8615,132 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Unzips an empty layout to the current folder and returns the path
+     * @return
+     */
+    private String initializeEmptyLayout()
+    {
+        try
+        {
+            String from = "resources/sample_layout.zip";
+            File to = new File("sample_layout.zip");
+            
+            copyResource(from, to);
+            
+            this.model.log("Attempting to extract " + to.getAbsolutePath());
+            
+            File outputFolder = new File("");
+            this.unzipFile(Paths.get(to.getPath()),outputFolder.getAbsolutePath());
+            to.delete();
+            
+            File outputPath = new File("sample_layout/");
+            
+            return outputPath.getAbsolutePath();
+        } 
+        catch (Exception ex) 
+        {
+            this.model.log("Error during demo layout extraction.");
+            
+            if (this.model.isDebug())
+            {
+                ex.printStackTrace();
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Copies a JAR resource file to the specified path
+     * @param resource
+     * @param output
+     * @throws IOException 
+     */
+    private void copyResource(String resource, File output) throws IOException
+    {
+        InputStream is = TrainControlUI.class.getResource(resource).openStream();
+        OutputStream os = new FileOutputStream(output.getPath());
+
+        byte[] b = new byte[2048];
+        int length;
+
+        while ((length = is.read(b)) != -1)
+        {
+            os.write(b, 0, length);
+        }
+
+        is.close();
+        os.close();
+    }
+    
+    /**
+     * Unzips a file
+     * https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/
+     * @param filePathToUnzip
+     * @throws java.io.IOException
+     */
+    private void unzipFile(Path filePathToUnzip, String folderName)
+    {
+        Path parentDir = filePathToUnzip.getParent();
+        String fileName = filePathToUnzip.toFile().getName();
+        Path targetDir = Paths.get(folderName);
+
+        //Open the file
+        try (ZipFile zip = new ZipFile(filePathToUnzip.toFile())) {
+
+          FileSystem fileSystem = FileSystems.getDefault();
+          Enumeration<? extends ZipEntry> entries = zip.entries();
+
+          //We will unzip files in this folder
+          if (!targetDir.toFile().isDirectory()
+              && !targetDir.toFile().mkdirs()) {
+            throw new IOException("failed to create directory " + targetDir);
+          }
+
+          //Iterate over entries
+          while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+
+            File f = new File(targetDir.resolve(Paths.get(entry.getName())).toString());
+
+            //If directory then create a new directory in uncompressed folder
+            if (entry.isDirectory()) {
+              if (!f.isDirectory() && !f.mkdirs()) {
+                throw new IOException("failed to create directory " + f);
+              }
+            }
+
+            //Else create the file
+            else {
+              File parent = f.getParentFile();
+              if (!parent.isDirectory() && !parent.mkdirs()) {
+                throw new IOException("failed to create directory " + parent);
+              }
+
+              try(InputStream in = zip.getInputStream(entry)) {
+                Files.copy(in, f.toPath());
+              }
+
+            }
+          }
+        } 
+        catch (IOException e)
+        {
+            this.model.log(e.getMessage());
+            
+            if (this.model.isDebug())
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
      * Opens the layout editor app for the current layout
      * @param evt 
      */
     private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
-        
+                
         if (!this.isWindows())
         {
             JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
@@ -8599,19 +8764,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Extract the binary
                 if (!app.exists())
                 {
-                    InputStream is = TrainControlUI.class.getResource("resources/TrackDiagramEditor.exe").openStream();
-                    OutputStream os = new FileOutputStream(app.getPath());
-
-                    byte[] b = new byte[2048];
-                    int length;
-
-                    while ((length = is.read(b)) != -1)
-                    {
-                        os.write(b, 0, length);
-                    }
-
-                    is.close();
-                    os.close();
+                    copyResource("resources/TrackDiagramEditor.exe", app);
                 }
                 
                 // Execute the app

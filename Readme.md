@@ -103,7 +103,9 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-Expanded support for CS3 layouts is planned for the future, and a program to generate/edit CS2 layout files is coming soon!
+From v1.11.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for basic editing support, and accessible via the "Edit" button within the Layout tab.
+
+Expanded support for CS3 layouts is planned for the future, and better static layout editor integration is coming soon!
 
 ## Running TrainControl
 
@@ -149,7 +151,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.11.0 [Beta] (New feature: activate or deactivate points to customize autonomously operating trains / chosen routes.)
+* v1.11.0 [Beta] (New feature: activate or deactivate points to customize autonomously operating trains / chosen routes.  Layout editor integration.)
     - Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
@@ -163,10 +165,13 @@ Requires JDK 1.8+ and the following libraries:
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
+    - Integrated a layout editor app to allow for the editing of track diagrams (Windows only)
+        - A basic layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
     - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
+    - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
 * v1.10.11 [10/15/23]
     - New graph nodes are now created near the cursor instead of the lower-left corner of the window
