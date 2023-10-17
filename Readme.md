@@ -151,7 +151,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.11.0 [Beta] (New feature: activate or deactivate points to customize autonomously operating trains / chosen routes.  Layout editor integration.)
+* v1.11.0 [Beta] (New feature: Layout editor integration on Windows. Activate or deactivate points to customize autonomously operating trains / chosen routes.)
     - Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
@@ -166,7 +166,8 @@ Requires JDK 1.8+ and the following libraries:
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
     - Integrated a layout editor app to allow for the editing of track diagrams (Windows only)
-        - A basic layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
+        - Added an edit button to each layout page; this automatically opens the editor
+        - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
     - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
