@@ -5323,7 +5323,7 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="LayoutPathLabel">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="jLabel43"/>
+                    <Property name="text" type="java.lang.String" value="path to layout folder"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="OverrideCS2DataPath">

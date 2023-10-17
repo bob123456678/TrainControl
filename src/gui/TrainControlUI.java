@@ -841,38 +841,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         
         // Add list of routes to tab
         refreshRouteList();
-        
-        // Attempt to create an empty layout if needed
-        if (this.model.getLayoutList().isEmpty())
-        {
-            try
-            {
-                this.model.log("No layout detected. Initializing local demo layout...");
-                String path = this.initializeEmptyLayout();
-
-                if (path != null)
-                {
-                    this.model.log("Layout initialized at: " + path);
-                    this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
-                    this.model.syncWithCS2();
-                    this.repaintLoc();
-                }
-                else
-                {
-                    this.model.log("Failed to initialize demo layout.");
-                }
-            }
-            catch (Exception e)
-            {
-                this.model.log("Critical error while initializing demo layout.");
-                
-                if (this.model.isDebug())
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        // End attempt to create empty layout
                 
         // Add list of layouts to tab
         this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
@@ -893,25 +861,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             repaintPathLabel();
         }
         
-        // Hide routes if no routes
-        if (this.model.getRouteList().isEmpty())
-        {
-            //this.KeyboardTab.remove(this.RoutePanel);
-        }
-        
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
-        
-        // Periodically repaint the locomotive state
-        /*ActionListener timerListener = new ActionListener(){
-            public void actionPerformed(ActionEvent event){
-             repaintLoc();
-            }
-        };
-        Timer displayTimer = new Timer(500, timerListener);
-        displayTimer.start();*/
-                
+                        
         // Show window        
         this.setVisible(true); 
 
@@ -922,6 +875,54 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (!this.model.getLayoutList().isEmpty())
         {
             repaintLayout();
+        }
+        else
+        {
+            // Attempt to create an empty layout if needed
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this, "No CS2 or local layout files found.  Do you want to initialize a new track diagram in the current directory?",
+                "Create New Track Diagram", JOptionPane.YES_NO_OPTION
+            );
+
+            if(dialogResult == JOptionPane.YES_OPTION)
+            {
+                new Thread(() ->
+                {
+                    try
+                    {
+                        this.model.log("No layout detected. Initializing local demo layout...");
+                        String path = this.initializeEmptyLayout();
+
+                        if (path != null)
+                        {
+                            this.model.log("Layout initialized at: " + path);
+                            this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+                            
+                            this.model.syncWithCS2();
+                            this.repaintLoc();
+                        }
+
+                        if (!this.model.getLayoutList().isEmpty())
+                        {
+                            this.initializeTrackDiagram(true);
+                        }
+                        else
+                        {
+                            this.model.log("Failed to initialize demo layout.");
+                            JOptionPane.showMessageDialog(this, "Failed to initialize demo layout.");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        this.model.log("Critical error while initializing demo layout.");
+
+                        if (this.model.isDebug())
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
         }
                 
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
@@ -941,6 +942,35 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
+    }
+    
+    /**
+     * Shows the layout tab and re-loads the track diagram
+     */
+    public void initializeTrackDiagram(boolean showTab)
+    {
+        if (!this.model.getLayoutList().isEmpty())
+        {
+            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+            this.repaintLayout();
+
+            // Show the layout tab if it wasn't already visible
+            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+            {
+                this.KeyboardTab.add(this.layoutPanel, 1);
+                this.KeyboardTab.setTitleAt(1, "Layout");
+            }
+            
+            if (showTab)
+            {
+                // Open the tab
+                this.KeyboardTab.setSelectedIndex(1);
+            }
+        }
+        else
+        {
+            this.model.log("Model error: no layout loaded.");
+        }
     }
     
     public LocomotiveSelector getLocSelector()
@@ -5593,7 +5623,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jLabel32.setText("Layout files are currently being loaded from:");
 
-        LayoutPathLabel.setText("jLabel43");
+        LayoutPathLabel.setText("path to layout folder");
 
         OverrideCS2DataPath.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         OverrideCS2DataPath.setText("Choose Local Data Folder");
@@ -7207,15 +7237,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             if (!this.model.getLayoutList().isEmpty())
             {   
-                this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
-                this.repaintLayout();
-
-                // Show the layout tab if it wasn't already visible
-                if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
-                {
-                    this.KeyboardTab.add(this.layoutPanel, 1);
-                    this.KeyboardTab.setTitleAt(1, "Layout");
-                }
+                this.initializeTrackDiagram(true);
             }
             else
             {
@@ -9770,7 +9792,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Set UI label
         if ("".equals(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "")))
         {
-            LayoutPathLabel.setText(this.prefs.get(IP_PREF, ""));
+            LayoutPathLabel.setText(this.prefs.get(IP_PREF, "(none loaded)"));
         }
         else
         {
