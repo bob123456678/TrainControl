@@ -84,15 +84,10 @@ public class MarklinLayout
         }
     }
     
-    /**
-     * Called upon user request, i.e. GUI button press
-     * @param x
-     * @param y
-     */
-    /*public void execStateChange(int x, int y)
+    public String getUrl()
     {
-        // make a 
-    }*/
+        return url;
+    }
     
     public void addComponent(MarklinLayoutComponent.componentType t, 
             int x, int y, int orient, int state, int address, int rawAddresss) throws IOException

@@ -18,12 +18,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,6 +43,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -468,6 +475,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Hide initially
         locCommandPanels.remove(this.locCommandTab);
         locCommandPanels.remove(this.autoSettingsPanel);
+        
+        // Layout editing only supported on windows
+        if (!this.isWindows())
+        {
+            this.editLayoutButton.setVisible(false);
+        }
     }
     
     /*private static void setupTabTraversalKeys(JTabbedPane tabbedPane)
@@ -1772,6 +1785,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel19 = new javax.swing.JLabel();
         allButton = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JSeparator();
+        editLayoutButton = new javax.swing.JButton();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         jScrollPane5 = new javax.swing.JScrollPane();
@@ -3672,6 +3686,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
+        editLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        editLayoutButton.setText("Edit");
+        editLayoutButton.setFocusable(false);
+        editLayoutButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editLayoutButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layoutPanelLayout = new javax.swing.GroupLayout(layoutPanel);
         layoutPanel.setLayout(layoutPanelLayout);
         layoutPanelLayout.setHorizontalGroup(
@@ -3688,6 +3711,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(sizeLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(editLayoutButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -3704,7 +3729,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 474, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 484, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -3714,7 +3739,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(layoutNewWindow)
                         .addComponent(smallButton)
-                        .addComponent(jLabel19))
+                        .addComponent(jLabel19)
+                        .addComponent(editLayoutButton))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                         .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.TRAILING)
                         .addComponent(allButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
@@ -7187,6 +7213,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             refreshRouteList();
             this.selector.refreshLocSelectorList();
             this.repaintLoc();
+            this.repaintLayout();
 
             JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
         }).start();
@@ -8535,6 +8562,87 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
 
     /**
+     * Checks if the current OS is Windows
+     * @return 
+     */
+    private boolean isWindows()
+    {
+        return System.getProperty("os.name").startsWith("Windows");
+    }
+    
+    /**
+     * Opens the layout editor app for the current layout
+     * @param evt 
+     */
+    private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
+        
+        if (!this.isWindows())
+        {
+            JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
+            return;
+        }
+        
+        this.editLayoutButton.setEnabled(false);
+        
+        new Thread(() -> 
+        {
+            try
+            {
+                String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");         
+                Path p = Paths.get(new URL(layoutUrl).toURI());
+
+                // URL appUrl = TrainControlUI.class.getResource("resources/TrackDiagramEditor.exe");
+                // Path p2 = Paths.get(appUrl.toURI());
+
+                File app = new File("TrackDiagramEditor.exe");
+                
+                // Extract the binary
+                if (!app.exists())
+                {
+                    InputStream is = TrainControlUI.class.getResource("resources/TrackDiagramEditor.exe").openStream();
+                    OutputStream os = new FileOutputStream(app.getPath());
+
+                    byte[] b = new byte[2048];
+                    int length;
+
+                    while ((length = is.read(b)) != -1)
+                    {
+                        os.write(b, 0, length);
+                    }
+
+                    is.close();
+                    os.close();
+                }
+                
+                // Execute the app
+                String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
+
+                this.model.log("Running layout editor: " + cmd);        
+
+                Runtime rt = Runtime.getRuntime();
+                Process pr = rt.exec(cmd);
+
+                pr.waitFor();
+
+                this.model.log("Editing session complete.");
+
+                this.model.syncWithCS2();
+                this.repaintLayout(); 
+            }
+            catch (Exception ex)
+            {
+                this.model.log("Layout editing error: " + ex.getMessage());
+                
+                if (this.model.isDebug())
+                {
+                    ex.printStackTrace();
+                }
+            }
+            this.editLayoutButton.setEnabled(true);
+        }).start();
+    }//GEN-LAST:event_editLayoutButtonActionPerformed
+    
+    /**
      * Returns a file chooser for autonomy files
      * @param type
      * @return 
@@ -9396,6 +9504,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton clearNonParkedLocs;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
+    private javax.swing.JButton editLayoutButton;
     private javax.swing.JButton exportJSON;
     private javax.swing.JLabel f0Label;
     private javax.swing.JLabel f10Label;

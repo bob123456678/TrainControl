@@ -2542,6 +2542,8 @@
                               <Component id="sizeLabel" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="SizeList" min="-2" pref="97" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="editLayoutButton" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="jLabel19" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
@@ -2562,7 +2564,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="LayoutArea" pref="474" max="32767" attributes="0"/>
+                      <Component id="LayoutArea" pref="484" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="103" alignment="1" groupAlignment="3" attributes="0">
@@ -2573,6 +2575,7 @@
                               <Component id="layoutNewWindow" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="smallButton" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="editLayoutButton" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                               <Component id="jSeparator1" alignment="1" max="32767" attributes="0"/>
@@ -2709,6 +2712,18 @@
               <Properties>
                 <Property name="orientation" type="int" value="1"/>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="editLayoutButton">
+              <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Tahoma" size="11" style="1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Edit"/>
+                <Property name="focusable" type="boolean" value="false"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="editLayoutButtonActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>
