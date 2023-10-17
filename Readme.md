@@ -149,13 +149,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.11.0 [Beta] (New feature: activate or deactivate points to customize autonomosuly operating trains / chosen routes)
+* v1.11.0 [Beta] (New feature: activate or deactivate points to customize autonomously operating trains / chosen routes.)
     - Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
         - Added corresponding `active` JSON key within `points`
         - Added corresponding option to the right-click menu in the graph UI
-    - Improved locomotive synchronization with CS2/CS3
+    - Improved locomotive database synchronization with CS2/CS3
         - Locomotives with the same name and decoder type, but a different address in TrainControl, will now have their address automatically updated to match the Central Station
         - Changes to locomotive functions are now automatically synchronized
         - Fixed a bug where a shadow copy of a locomotive with the same name (but a different address) could exist in TrainControl's database
