@@ -158,8 +158,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         setBackground(new java.awt.Color(238, 238, 238));
         setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         setFocusable(false);
-        setMaximumSize(new java.awt.Dimension(219, 220));
-        setPreferredSize(new java.awt.Dimension(219, 220));
+        setMaximumSize(new java.awt.Dimension(219, 223));
+        setPreferredSize(new java.awt.Dimension(219, 223));
 
         locName.setFont(new java.awt.Font("Tahoma", 1, 16)); // NOI18N
         locName.setText("locName");
@@ -205,9 +205,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(locDest)
                             .addComponent(locName)
-                            .addComponent(locStation))
+                            .addComponent(locStation)
+                            .addComponent(locDest))
                         .addGap(0, 156, Short.MAX_VALUE))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE))
                 .addContainerGap())
@@ -220,9 +220,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locStation)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 148, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 148, Short.MAX_VALUE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents

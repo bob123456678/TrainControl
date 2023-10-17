@@ -528,11 +528,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else
                     {
-                        this.log("Added locomotive " + l.getName() 
-                                + " with address " 
-                                + l.getAddress() + " ("
-                                + util.Conversion.intToHex(l.getIntUID()) + ")"
-                                + " from Central Station"
+                        this.log("Added " + l.getDecoderTypeLabel() + " locomotive " + l.getName() 
+                            + " with address " 
+                            + l.getAddress() + " ("
+                            + util.Conversion.intToHex(l.getIntUID()) + ")"
+                            + " from Central Station"
                         );
 
                         newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());

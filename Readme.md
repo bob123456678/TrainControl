@@ -160,6 +160,10 @@ Requires JDK 1.8+ and the following libraries:
         - Changes to locomotive functions are now automatically synchronized
         - Fixed a bug where a shadow copy of a locomotive with the same name (but a different address) could exist in TrainControl's database
         - The "Sync w/ Central Station" right-click option will now also update the locomotive's address/functions/icon
+    - Improved the autonomy JSON UI
+        - Added option to load graph JSON from a file (to make managing presets easier)
+        - Added option to save graph JSON to a file
+    - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive

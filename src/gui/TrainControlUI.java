@@ -23,6 +23,8 @@ import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,14 +49,14 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
 import javax.swing.JSlider;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
@@ -79,6 +81,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static String HIDE_REVERSING_PREF = "HideReversing";
     public static String HIDE_INACTIVE_PREF = "HideInactive";
+    public static String LAST_USED_FOLDER = "LastUsedFolder";
 
     // Constants
     // Width of locomotive images
@@ -1858,10 +1861,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane2 = new javax.swing.JScrollPane();
         autonomyJSON = new javax.swing.JTextArea();
         jLabel6 = new javax.swing.JLabel();
-        jLabel9 = new javax.swing.JLabel();
-        loadBlank = new javax.swing.JLabel();
+        exportJSON = new javax.swing.JButton();
+        loadJSONButton = new javax.swing.JButton();
         jSeparator3 = new javax.swing.JSeparator();
         autosave = new javax.swing.JCheckBox();
+        jsonDocumentationButton = new javax.swing.JButton();
+        loadDefaultBlankGraph = new javax.swing.JButton();
+        jSeparator4 = new javax.swing.JSeparator();
+        jSeparator5 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
@@ -1887,7 +1894,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         clearNonParkedLocs = new javax.swing.JButton();
         hideInactive = new javax.swing.JCheckBox();
         jLabel52 = new javax.swing.JLabel();
-        exportJSON = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
         ManageLocPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
@@ -4734,7 +4740,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate Graph / Instant Stop");
+        validateButton.setText("Validate JSON & Open Graph UI");
+        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4745,6 +4752,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
         startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         startAutonomy.setText("Start Autonomous Operation");
+        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
         startAutonomy.setEnabled(false);
         startAutonomy.setFocusable(false);
         startAutonomy.addActionListener(new java.awt.event.ActionListener() {
@@ -4775,35 +4783,70 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
 
-        jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Documentation");
-        jLabel9.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jLabel9.setFocusable(false);
-        jLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                documentationClicked(evt);
+        exportJSON.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        exportJSON.setText("Export Current Graph...");
+        exportJSON.setEnabled(false);
+        exportJSON.setFocusable(false);
+        exportJSON.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportJSONActionPerformed(evt);
             }
         });
 
-        loadBlank.setForeground(new java.awt.Color(0, 0, 115));
-        loadBlank.setText("Load Blank Graph");
-        loadBlank.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        loadBlank.setFocusable(false);
-        loadBlank.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                loadBlankdocumentationClicked(evt);
+        loadJSONButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        loadJSONButton.setText("Load JSON from File...");
+        loadJSONButton.setFocusable(false);
+        loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadJSONButtonActionPerformed(evt);
             }
         });
 
-        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator3.setBackground(new java.awt.Color(238, 238, 238));
+        jSeparator3.setForeground(new java.awt.Color(238, 238, 238));
+        jSeparator3.setEnabled(false);
 
-        autosave.setText("Auto-save graph state on exit");
+        autosave.setText("Auto-save on exit");
         autosave.setFocusable(false);
+        autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        autosave.setMaximumSize(new java.awt.Dimension(139, 20));
+        autosave.setMinimumSize(new java.awt.Dimension(139, 20));
+        autosave.setPreferredSize(new java.awt.Dimension(139, 20));
         autosave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 autosaveActionPerformed(evt);
             }
         });
+
+        jsonDocumentationButton.setForeground(new java.awt.Color(0, 0, 155));
+        jsonDocumentationButton.setText("Documentation");
+        jsonDocumentationButton.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        jsonDocumentationButton.setBorderPainted(false);
+        jsonDocumentationButton.setContentAreaFilled(false);
+        jsonDocumentationButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jsonDocumentationButton.setFocusable(false);
+        jsonDocumentationButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jsonDocumentationButtonActionPerformed(evt);
+            }
+        });
+
+        loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
+        loadDefaultBlankGraph.setText("Initialize Blank Graph");
+        loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        loadDefaultBlankGraph.setContentAreaFilled(false);
+        loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        loadDefaultBlankGraph.setFocusable(false);
+        loadDefaultBlankGraph.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadDefaultBlankGraphActionPerformed(evt);
+            }
+        });
+
+        jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator5.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
         autonomyPanel.setLayout(autonomyPanelLayout);
@@ -4812,35 +4855,46 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
                     .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel6)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(autosave)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 273, Short.MAX_VALUE)
-                        .addComponent(loadBlank)
+                        .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(exportJSON)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel9)))
-                .addContainerGap())
+                        .addComponent(jSeparator3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(loadDefaultBlankGraph)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jsonDocumentationButton))
+                    .addComponent(jScrollPane2))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel6))
         );
         autonomyPanelLayout.setVerticalGroup(
             autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(loadBlank)
-                    .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel9)
-                        .addComponent(autosave))
-                    .addComponent(jSeparator3))
+                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(exportJSON)
+                    .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jsonDocumentationButton)
+                    .addComponent(loadDefaultBlankGraph)
+                    .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, 19, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 19, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(loadJSONButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2)
+                .addContainerGap())
+            .addGroup(autonomyPanelLayout.createSequentialGroup()
+                .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
-                .addGap(18, 18, 18))
+                .addContainerGap(430, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
@@ -5191,7 +5245,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(44, Short.MAX_VALUE))
+                .addContainerGap(53, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -5208,16 +5262,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
-
-        exportJSON.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        exportJSON.setText("Export State to JSON");
-        exportJSON.setEnabled(false);
-        exportJSON.setFocusable(false);
-        exportJSON.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                exportJSONActionPerformed(evt);
-            }
-        });
 
         gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
         gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
@@ -5241,8 +5285,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(locCommandPanels)
                     .addGroup(autoPanelLayout.createSequentialGroup()
                         .addComponent(validateButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportJSON)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(gracefulStop)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -5259,9 +5301,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(startAutonomy)
                         .addComponent(gracefulStop))
-                    .addGroup(autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(validateButton)
-                        .addComponent(exportJSON)))
+                    .addComponent(validateButton))
                 .addContainerGap())
         );
 
@@ -7081,7 +7121,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void OverrideCS2DataPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OverrideCS2DataPathActionPerformed
         new Thread(()->
         { 
-            JFileChooser fc = new JFileChooser();
+            JFileChooser fc = new JFileChooser(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             int i = fc.showOpenDialog(this);
             if (i == JFileChooser.APPROVE_OPTION)
@@ -8049,8 +8089,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
-        new Thread( () -> {
-            
+        new Thread( () ->
+        {    
             // If valid, confirm before we overwrite
             if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid() 
                     && !this.model.getAutoLayout().getPoints().isEmpty())
@@ -8060,7 +8100,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
                         int dialogResult = JOptionPane.showConfirmDialog(
-                                this, "UI graph state has changed.  Reloading the JSON will reset any changes.  Proceed?"
+                                this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
                                 , "Confirm Reset", JOptionPane.YES_NO_OPTION);
                         
                         if(dialogResult == JOptionPane.NO_OPTION) return;
@@ -8068,14 +8108,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 catch (Exception e)
                 {
-
+                    if (this.model.isDebug())
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
             
             // Offer to load a blank graph if there is no JSON
             if (this.autonomyJSON.getText().trim().equals(""))
             {
-                this.loadBlankdocumentationClicked(null);
+                this.loadDefaultBlankGraphActionPerformed(null);
             }
             
             this.model.parseAuto(this.autonomyJSON.getText());
@@ -8086,7 +8129,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 locCommandPanels.remove(this.autoSettingsPanel);
                 
                 this.startAutonomy.setEnabled(false);
-                JOptionPane.showMessageDialog(this, "Validation failed.  Check log for details.");
+                JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.");
 
                 this.KeyboardTab.requestFocus();
                 
@@ -8123,19 +8166,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_validateButtonActionPerformed
 
-    private void documentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_documentationClicked
-        try
-        {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
-        }
-        catch (IOException | URISyntaxException e1) {
-        }
-    }//GEN-LAST:event_documentationClicked
-
-    private void autonomyJSONKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_autonomyJSONKeyReleased
-
-    }//GEN-LAST:event_autonomyJSONKeyReleased
-
     private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
         this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_locCommandPanelsMouseClicked
@@ -8143,40 +8173,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void LocFunctionsPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocFunctionsPanelMouseEntered
         this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_LocFunctionsPanelMouseEntered
-
-    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
-        
-        new Thread(() -> 
-        {
-            JTextArea textArea = new JTextArea();
-            textArea.setColumns(50);
-            textArea.setRows(30);
-            textArea.setLineWrap(true);
-            textArea.setWrapStyleWord(true);
-            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-
-            try
-            {
-                textArea.setText(this.getModel().getAutoLayout().toJSON());
-                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "JSON for current state", JOptionPane.PLAIN_MESSAGE);   
-                
-                // Place in clipboard
-                StringSelection selection = new StringSelection(textArea.getText());
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-            }
-            catch (Exception e)
-            {
-                if (this.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
-
-                this.model.log("JSON error: " + e.getMessage());
-
-                JOptionPane.showMessageDialog(this, "Failed to generate JSON.  Check log for details.");
-            }
-        }).start();
-    }//GEN-LAST:event_exportJSONActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
         
@@ -8192,38 +8188,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
     }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
-
-    private void loadBlankdocumentationClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_loadBlankdocumentationClicked
-        int dialogResult = JOptionPane.showConfirmDialog(this, 
-                "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges, and to place locomotives.",
-                 "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if(dialogResult == JOptionPane.OK_OPTION)
-        {
-            this.autonomyJSON.setText(
-                "{\n" +
-                "    \"points\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"edges\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"minDelay\": 3,\n" +
-                "    \"maxDelay\": 10,\n" +
-                "    \"defaultLocSpeed\": 35,\n" +
-                "    \"preArrivalSpeedReduction\": 0.5,\n" +
-                "    \"turnOffFunctionsOnArrival\": true,\n" +
-                "    \"atomicRoutes\": true,\n" +
-                "    \"maxLocInactiveSeconds\": 120\n" +
-                "}"
-            );
-            
-            if (evt != null) this.validateButtonActionPerformed(null);
-        }
-    }//GEN-LAST:event_loadBlankdocumentationClicked
-
-    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
-        this.prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
-    }//GEN-LAST:event_autosaveActionPerformed
 
     private void simulateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simulateActionPerformed
         // TODO add your handling code here:
@@ -8464,6 +8428,154 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_hideInactiveMouseReleased
 
+    private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
+        new Thread(()->
+            {
+                try
+                {
+                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                    int i = fc.showOpenDialog(this);
+
+                    if (i == JFileChooser.APPROVE_OPTION)
+                    {
+                        File f = fc.getSelectedFile();
+
+                        this.autonomyJSON.setText(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+                        prefs.put(LAST_USED_FOLDER, f.getParent());
+
+                        validateButtonActionPerformed(null);
+                    }
+                }
+                catch (HeadlessException | IOException e)
+                {
+                    JOptionPane.showMessageDialog(this, "Error opening file.");
+
+                    if (this.model.isDebug())
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+    }//GEN-LAST:event_loadJSONButtonActionPerformed
+
+    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
+        this.prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
+    }//GEN-LAST:event_autosaveActionPerformed
+
+    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
+
+        new Thread(() ->
+            {
+                try
+                {
+                    /*if(!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
+                    {
+                        int dialogResult = JOptionPane.showConfirmDialog(this,
+                            "Before saving it to a new file, do you want to overwrite the displayed/auto-saved JSON based on the current graph state?",
+                            "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
+                        if(dialogResult == JOptionPane.YES_OPTION)
+                        {
+                            this.autonomyJSON.setText(this.model.getAutoLayout().toJSON());
+                        }
+                    }
+
+                    JFileChooser fc = this.getJSONFileChooser(JFileChooser.FILES_ONLY);
+
+                    int i = fc.showSaveDialog(this);
+
+                    if (i == JFileChooser.APPROVE_OPTION)
+                    {
+                        File f = fc.getSelectedFile();
+
+                        byte[] json = this.model.getAutoLayout().toJSON().getBytes();
+
+                        Files.write(Paths.get(f.getPath()), json);
+                        this.prefs.put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                    }*/
+
+                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this),
+                        "JSON for current state", JOptionPane.PLAIN_MESSAGE
+                    );
+
+                    // Place in clipboard
+                    StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
+                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+                }
+                catch (Exception e)
+                {
+                    if (this.getModel().isDebug())
+                    {
+                        e.printStackTrace();
+                    }
+
+                    this.model.log("JSON error: " + e.getMessage());
+
+                    JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
+                }
+            }).start();
+    }//GEN-LAST:event_exportJSONActionPerformed
+
+    private void autonomyJSONKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_autonomyJSONKeyReleased
+
+    }//GEN-LAST:event_autonomyJSONKeyReleased
+
+    private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
+       try
+        {
+            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
+        }
+        catch (IOException | URISyntaxException e1) {
+        }
+    }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
+
+    private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
+                int dialogResult = JOptionPane.showConfirmDialog(this,
+            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges, and to place locomotives.",
+            "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if(dialogResult == JOptionPane.OK_OPTION)
+        {
+            this.autonomyJSON.setText(
+                "{\n" +
+                "    \"points\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"edges\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"minDelay\": 3,\n" +
+                "    \"maxDelay\": 10,\n" +
+                "    \"defaultLocSpeed\": 35,\n" +
+                "    \"preArrivalSpeedReduction\": 0.5,\n" +
+                "    \"turnOffFunctionsOnArrival\": true,\n" +
+                "    \"atomicRoutes\": true,\n" +
+                "    \"maxLocInactiveSeconds\": 120\n" +
+                "}"
+            );
+
+            if (evt != null) this.validateButtonActionPerformed(null);
+        }
+    }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
+
+    /**
+     * Returns a file chooser for autonomy files
+     * @param type
+     * @return 
+     */
+    public JFileChooser getJSONFileChooser(int type)
+    {
+        JFileChooser fc = new JFileChooser(
+            this.prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
+        );
+                
+        fc.setFileSelectionMode(type);
+        //FileFilter filter =  new FileNameExtensionFilter("Text File", "txt");
+        //fc.setFileFilter(filter);
+        FileFilter filter = new FileNameExtensionFilter("JSON File", "json");
+        fc.setFileFilter(filter);
+        
+        return fc;        
+    }
+    
     private boolean isAutoLayoutRunning()
     {
         if (this.model.getAutoLayout().isRunning())
@@ -9361,7 +9473,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
     private javax.swing.JList jList1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel12;
@@ -9380,10 +9491,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
+    private javax.swing.JSeparator jSeparator4;
+    private javax.swing.JSeparator jSeparator5;
+    private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
-    private javax.swing.JLabel loadBlank;
+    private javax.swing.JButton loadDefaultBlankGraph;
+    private javax.swing.JButton loadJSONButton;
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;

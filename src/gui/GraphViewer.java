@@ -596,7 +596,66 @@ final public class GraphViewer extends javax.swing.JFrame {
             {                    
                 addSeparator();
 
-                for (Edge e : neighbors)
+                menuItem = new JMenuItem("Delete outgoing Edge...");
+                menuItem.addActionListener(event -> 
+                    {
+                        // Get all point names except this one
+                        List<String> edgeNames = new LinkedList<>();
+
+                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                        {
+                            edgeNames.add(e2.getName());
+                        }
+
+                        Collections.sort(edgeNames);
+
+                        String dialogResult;
+                        
+                        // Only prompt if there are multiple outgoing edges
+                        if (edgeNames.size() > 1)
+                        {
+                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                                "Which edge do you want to permanently delete?",
+                                "Delete Edge", JOptionPane.QUESTION_MESSAGE, null, 
+                                edgeNames.toArray(), // Array of choices
+                                edgeNames.get(0));
+                        }
+                        else
+                        {
+                            dialogResult = edgeNames.get(0);
+                        }
+
+                        if (dialogResult != null && !"".equals(dialogResult))
+                        {                            
+                            try
+                            {
+                                Edge e = parent.getModel().getAutoLayout().getEdge(dialogResult);
+                                
+                                int confirmation = JOptionPane.showConfirmDialog((Component) swingView, 
+                                    "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
+                                    "Edge Deletion", JOptionPane.YES_NO_OPTION
+                                );
+                        
+                                if (confirmation == JOptionPane.YES_OPTION)
+                                {
+                                    parent.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
+                                    mainGraph.removeEdge(e.getUniqueId());
+                                    parent.getModel().getAutoLayout().refreshUI();
+                                    parent.repaintAutoLocList(false);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "Error deleting edge: " + e.getMessage());
+                            }
+                        }   
+                    }
+                ); 
+
+                add(menuItem);
+                
+                /*for (Edge e : neighbors)
                 {    
                     menuItem = new JMenuItem("Delete Edge to " + e.getEnd());
                     menuItem.addActionListener(event -> 
@@ -622,7 +681,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                    }); 
                     
                    add(menuItem);
-                }
+                }*/
             }
             
             // Delete point
