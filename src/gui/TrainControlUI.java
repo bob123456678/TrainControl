@@ -8828,6 +8828,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.log("Editing session complete.");
 
                 this.model.syncWithCS2();
+                
+                // Store previously selected page
+                int oldIndex = this.LayoutList.getSelectedIndex();
+                
+                // Update list of pages
+                if (this.model.getLayoutList() != null && !this.model.getLayoutList().isEmpty())
+                {
+                    this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+                }
+                
+                // Restore index
+                if (this.LayoutList.getModel().getSize() > oldIndex)
+                {
+                    this.LayoutList.setSelectedIndex(oldIndex);
+                }
+                
                 this.repaintLayout(); 
             }
             catch (Exception ex)
