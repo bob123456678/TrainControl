@@ -878,51 +878,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else
         {
-            // Attempt to create an empty layout if needed
-            int dialogResult = JOptionPane.showConfirmDialog(
-                this, "No CS2 or local layout files found.  Do you want to initialize a new track diagram in the current directory?",
-                "Create New Track Diagram", JOptionPane.YES_NO_OPTION
-            );
-
-            if(dialogResult == JOptionPane.YES_OPTION)
-            {
-                new Thread(() ->
-                {
-                    try
-                    {
-                        this.model.log("No layout detected. Initializing local demo layout...");
-                        String path = this.initializeEmptyLayout();
-
-                        if (path != null)
-                        {
-                            this.model.log("Layout initialized at: " + path);
-                            this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
-                            
-                            this.model.syncWithCS2();
-                            this.repaintLoc();
-                        }
-
-                        if (!this.model.getLayoutList().isEmpty())
-                        {
-                            this.initializeTrackDiagram(true);
-                        }
-                        else
-                        {
-                            this.model.log("Failed to initialize demo layout.");
-                            JOptionPane.showMessageDialog(this, "Failed to initialize demo layout.");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        this.model.log("Critical error while initializing demo layout.");
-
-                        if (this.model.isDebug())
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-            }
+            createAndApplyEmptyLayout();
         }
                 
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
@@ -942,6 +898,61 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
+    }
+    
+    /**
+     * Self-contained method to initialize a blank layout
+     */
+    public void createAndApplyEmptyLayout()
+    {
+        // Attempt to create an empty layout if needed
+        int dialogResult = JOptionPane.showConfirmDialog(
+            this, "Do you want to initialize a new track diagram in the current directory?",
+            "Create New Track Diagram", JOptionPane.YES_NO_OPTION
+        );
+
+        if (dialogResult == JOptionPane.YES_OPTION)
+        {
+            new Thread(() ->
+            {
+                try
+                {
+                    this.model.log("No layout detected. Initializing local demo layout...");
+                    String path = this.initializeEmptyLayout();
+
+                    if (path != null)
+                    {
+                        this.model.log("Layout initialized at: " + path);
+                        this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+
+                        this.model.syncWithCS2();
+                        this.repaintLoc();
+                    }
+
+                    if (!this.model.getLayoutList().isEmpty())
+                    {
+                        this.initializeTrackDiagram(true);
+                    }
+                    else
+                    {
+                        this.model.log("Failed to initialize demo layout.");
+                        JOptionPane.showMessageDialog(this, "Failed to initialize demo layout.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    this.model.log("Critical error while initializing demo layout.");
+
+                    if (this.model.isDebug())
+                    {
+                        e.printStackTrace();
+                    }
+                }
+                
+                this.initEmptyLayout.setEnabled(true);
+                
+            }).start();
+        }
     }
     
     /**
@@ -2009,6 +2020,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LayoutPathLabel = new javax.swing.JLabel();
         OverrideCS2DataPath = new javax.swing.JButton();
         CS3OpenBrowser = new javax.swing.JButton();
+        initEmptyLayout = new javax.swing.JButton();
         EditExistingLocLabel3 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -5643,6 +5655,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        initEmptyLayout.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        initEmptyLayout.setText("Initialize New Layout");
+        initEmptyLayout.setFocusable(false);
+        initEmptyLayout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                initEmptyLayoutActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
         jPanel12.setLayout(jPanel12Layout);
         jPanel12Layout.setHorizontalGroup(
@@ -5652,7 +5673,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel32)
                     .addComponent(LayoutPathLabel)
-                    .addComponent(OverrideCS2DataPath)
+                    .addGroup(jPanel12Layout.createSequentialGroup()
+                        .addComponent(OverrideCS2DataPath)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(initEmptyLayout))
                     .addComponent(CS3OpenBrowser))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -5664,8 +5688,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LayoutPathLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(OverrideCS2DataPath)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(OverrideCS2DataPath)
+                    .addComponent(initEmptyLayout))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(CS3OpenBrowser)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -5708,7 +5734,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(41, Short.MAX_VALUE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -8816,6 +8842,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.editLayoutButton.setEnabled(true);
         }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
+
+    private void initEmptyLayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initEmptyLayoutActionPerformed
+        this.initEmptyLayout.setEnabled(false);
+        this.createAndApplyEmptyLayout();
+    }//GEN-LAST:event_initEmptyLayoutActionPerformed
     
     /**
      * Returns a file chooser for autonomy files
@@ -9717,6 +9748,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton gracefulStop;
     private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
+    private javax.swing.JButton initEmptyLayout;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;

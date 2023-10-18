@@ -168,6 +168,7 @@ Requires JDK 1.8+ and the following libraries:
     - Integrated a layout editor app to allow for the editing of track diagrams (Windows only)
         - Added an edit button to each layout page; this automatically opens the editor
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
+        - Added button to the Tools tab to initialize an empty layout on demand
     - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
