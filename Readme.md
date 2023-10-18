@@ -173,6 +173,7 @@ Requires JDK 1.8+ and the following libraries:
     - Improved semi-autonomous operation UI (larger fonts, less scrolling)
     - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
+    - Fixed bug where empty rows/columns in layouts were not rendered correctly
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
 * v1.10.11 [10/15/23]

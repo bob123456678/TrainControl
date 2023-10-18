@@ -5,8 +5,10 @@
 package gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -14,6 +16,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import marklin.MarklinLayoutComponent;
 
@@ -78,6 +81,11 @@ public final class LayoutLabel extends JLabel
                     });    
                 }
             }
+        }
+        // Blank tiles need to be the same size
+        else
+        {
+            this.setIcon(new EmptyIcon(size,size)); 
         }
     }
     
@@ -177,5 +185,40 @@ public final class LayoutLabel extends JLabel
                 }
             }
         }).start();
+    }
+    
+    /**
+     * An empty icon with arbitrary width and height.
+     */
+    private final class EmptyIcon implements Icon
+    {
+        private int width;
+        private int height;
+
+        public EmptyIcon()
+        {
+          this(0, 0);
+        }
+
+        public EmptyIcon(int width, int height)
+        {
+          this.width = width;
+          this.height = height;
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+          return height;
+        }
+
+        @Override
+        public int getIconWidth()
+        {
+          return width;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {}
     }
 }

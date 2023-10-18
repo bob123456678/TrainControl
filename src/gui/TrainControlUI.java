@@ -949,7 +949,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                 }
                 
-                this.initEmptyLayout.setEnabled(true);
+                this.jButton1.setEnabled(true);
                 
             }).start();
         }
@@ -2020,7 +2020,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LayoutPathLabel = new javax.swing.JLabel();
         OverrideCS2DataPath = new javax.swing.JButton();
         CS3OpenBrowser = new javax.swing.JButton();
-        initEmptyLayout = new javax.swing.JButton();
+        jButton1 = new javax.swing.JButton();
         EditExistingLocLabel3 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -3792,11 +3792,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(layoutPanelLayout.createSequentialGroup()
                         .addComponent(layoutListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sizeLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(editLayoutButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -5655,12 +5655,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        initEmptyLayout.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        initEmptyLayout.setText("Initialize New Layout");
-        initEmptyLayout.setFocusable(false);
-        initEmptyLayout.addActionListener(new java.awt.event.ActionListener() {
+        jButton1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jButton1.setText("Initialize New Layout");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                initEmptyLayoutActionPerformed(evt);
+                jButton1ActionPerformed(evt);
             }
         });
 
@@ -5676,7 +5675,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(jPanel12Layout.createSequentialGroup()
                         .addComponent(OverrideCS2DataPath)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(initEmptyLayout))
+                        .addComponent(jButton1))
                     .addComponent(CS3OpenBrowser))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -5690,8 +5689,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(OverrideCS2DataPath)
-                    .addComponent(initEmptyLayout))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(jButton1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(CS3OpenBrowser)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -5734,7 +5733,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addContainerGap(41, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -8859,10 +8858,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
-    private void initEmptyLayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initEmptyLayoutActionPerformed
-        this.initEmptyLayout.setEnabled(false);
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        this.jButton1.setEnabled(false);
         this.createAndApplyEmptyLayout();
-    }//GEN-LAST:event_initEmptyLayoutActionPerformed
+    }//GEN-LAST:event_jButton1ActionPerformed
     
     /**
      * Returns a file chooser for autonomy files
@@ -9764,7 +9763,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton gracefulStop;
     private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
-    private javax.swing.JButton initEmptyLayout;
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
