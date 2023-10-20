@@ -7046,6 +7046,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
+    /**
+     * Navigates to a specific layout page
+     * @param page 
+     */
+    public void goToLayoutPage(int page)
+    {
+        int index = page - 1;
+        
+        if (this.LayoutList.getModel().getSize() > index && index >= 0)
+        {
+            this.model.log("Jumping to layout page " + page);
+            this.LayoutList.setSelectedIndex(index);
+            this.repaintLayout();
+        }
+        else
+        {
+            this.model.log("Layout page " + page + " does not exist.");
+        }
+    }
+    
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_NextKeyboardActionPerformed
     {//GEN-HEADEREND:event_NextKeyboardActionPerformed
         this.switchKeyboard(this.keyboardNumber + 1);

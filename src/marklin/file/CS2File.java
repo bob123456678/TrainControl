@@ -879,6 +879,7 @@ public final class CS2File
                 return MarklinLayoutComponent.componentType.TEXT;
             // Unsupported components
             case "pfeil":       // Link to another page
+                return MarklinLayoutComponent.componentType.LINK;
             default:
                 this.control.log("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");

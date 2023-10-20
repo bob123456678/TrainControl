@@ -157,6 +157,11 @@ Requires JDK 1.8+ and the following libraries:
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
         - Added corresponding `active` JSON key within `points`
         - Added corresponding option to the right-click menu in the graph UI
+    - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
+    - Graph UI improvements
+        - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
+        - Improved semi-autonomous operation UI (larger fonts, less scrolling)
+        - Added option to hide all inactive points from the graph UI
     - Improved locomotive database synchronization with CS2/CS3
         - Locomotives with the same name and decoder type, but a different address in TrainControl, will now have their address automatically updated to match the Central Station
         - Changes to locomotive functions are now automatically synchronized
@@ -169,14 +174,12 @@ Requires JDK 1.8+ and the following libraries:
         - Added an edit button to each layout page; this automatically opens the editor
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
         - Added button to the Tools tab to initialize an empty layout on demand
-    - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
-    - Improved semi-autonomous operation UI (larger fonts, less scrolling)
-    - Added option to hide all inactive points from the graph UI
-    - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
-    - Updated overpass track diagram icons
-    - Added a button to revert to the CS2 layout when currently using a local layout
-    - Fixed UI errors when TrainControl was run without a layout
-    - Fixed bug where empty rows/columns in layouts were not rendered correctly
+    - Track diagram improvements
+        - Added basic support for page links (pfeil) which change the active diagram page when clicked
+        - Updated overpass track diagram icons
+        - Added a button to revert to the CS2 layout when currently using a local layout
+        - Fixed UI errors when TrainControl was run without a layout
+        - Fixed bug where empty rows/columns in layouts were not rendered correctly
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
 * v1.10.11 [10/15/23]

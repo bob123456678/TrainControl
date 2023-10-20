@@ -18,7 +18,7 @@ public class MarklinLayoutComponent
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
         SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK_DOUBLE_CURVE, FEEDBACK, END, TUNNEL, 
-        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT};
+        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK};
     
     private final String resourcePath = "/gui/resources/icons";
     
@@ -203,6 +203,11 @@ public class MarklinLayoutComponent
         return this.type == componentType.SWITCH_THREE;
     }
     
+    public boolean isLink()
+    {
+        return this.type == componentType.LINK;
+    }
+    
     /**
      * Generates a buffered image for rotation
      * @param img
@@ -356,6 +361,8 @@ public class MarklinLayoutComponent
                 return "switch_y";
             case ROUTE:
                 return "route";
+            case LINK:
+                return "link";
         }
         
         return "";
@@ -518,6 +525,10 @@ public class MarklinLayoutComponent
         else if (this.isRoute() && this.getRoute() != null)
         {
             return "Route " + this.getRoute().getId();
+        }
+        else if (this.isLink())
+        {
+            return "Link to page " + this.getRawAddress();
         }
         else
         {

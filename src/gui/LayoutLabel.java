@@ -14,8 +14,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import marklin.MarklinLayoutComponent;
@@ -53,7 +51,7 @@ public final class LayoutLabel extends JLabel
         {
             if (this.component.isSwitch() || this.component.isSignal() 
                     || this.component.isUncoupler() || this.component.isFeedback()
-                    || this.component.isRoute())
+                    || this.component.isRoute() || this.component.isLink())
             {
                 if (this.component.isFeedback())
                 {
@@ -66,6 +64,17 @@ public final class LayoutLabel extends JLabel
                            
                            // So that possible routes get dynamically updated
                            tcUI.repaintAutoLocList(true);
+                        }  
+                    }); 
+                }
+                else if (this.component.isLink())
+                {
+                    this.addMouseListener(new MouseAdapter()  
+                    {  
+                        @Override
+                        public void mouseClicked(MouseEvent e)  
+                        {  
+                            tcUI.goToLayoutPage(component.getRawAddress());
                         }  
                     }); 
                 }
@@ -151,7 +160,7 @@ public final class LayoutLabel extends JLabel
                     }
                     catch (IOException ex)
                     {
-                        Logger.getLogger(LayoutLabel.class.getName()).log(Level.SEVERE, null, ex);
+                        this.tcUI.getModel().log(ex.getMessage());
                     }
 
                     this.imageName = component.getImageName(size);
