@@ -177,7 +177,7 @@ Requires JDK 1.8+ and the following libraries:
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
         - Added button to the Tools tab to initialize an empty layout on demand
     - Track diagram improvements
-        - Added basic support for page links (pfeil) which change the active diagram page when clicked
+        - Added support for page links (pfeil) which change the active diagram page when clicked
         - Updated overpass track diagram icons
         - Added a button to revert to the CS2 layout when currently using a local layout
         - Fixed UI errors when TrainControl was run without a layout

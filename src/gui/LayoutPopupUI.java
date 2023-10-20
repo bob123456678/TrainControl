@@ -39,20 +39,27 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         this.layout = l;
     }
     
-    public void render()
+    private void drawGrid()
     {
+        this.ExtLayoutPanel.removeAll();
+
         LayoutGrid grid = new LayoutGrid(this.layout, size,
-                this.ExtLayoutPanel, 
-                this,
-                true, parent);
+            this.ExtLayoutPanel, 
+            this,
+            true, parent);
         
-        this.setAlwaysOnTop(true);
-                
         setTitle(this.layout.getName());
-        
+
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
-          
+    }
+    
+    public void render()
+    {        
+        this.setAlwaysOnTop(true);
+                      
+        drawGrid();
+        
         pack();
      
         setVisible(true);
@@ -67,6 +74,29 @@ public class LayoutPopupUI extends javax.swing.JFrame {
             }
           }
         );
+    }
+    
+    /**
+     * Updates the layout page
+     * @param page 
+     */
+    public void goToLayoutPage(int page)
+    {
+        int index = page - 1;
+     
+        if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
+        {
+            this.parent.getModel().log("Popup layout jumping to page " + page);
+
+            this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
+            
+            drawGrid();  
+            this.repaint();
+        }
+        else
+        {
+            this.parent.getModel().log("Popup layout page " + page + " does not exist");
+        }
     }
     
     public JPanel getPanel()
