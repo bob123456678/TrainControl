@@ -439,10 +439,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 
                 try
                 {
-                    for (String name : this.layoutDB.getItemNames())
-                    {
-                        this.layoutDB.delete(name);
-                    }
+                    this.clearLayouts();
                     
                     syncLayouts();
                 }
@@ -587,6 +584,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.log("Sync complete.");
         
         return num;
+    }
+    
+    /**
+     * Deletes the current layout from the model
+     */
+    @Override
+    public void clearLayouts()
+    {
+        for (String name : this.layoutDB.getItemNames())
+        {
+            this.layoutDB.delete(name);
+        }
     }
     
     /**

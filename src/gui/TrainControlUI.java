@@ -52,14 +52,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -174,6 +171,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private static final String DATA_FILE_NAME = "UIState.data";
     public static final String AUTONOMY_FILE_NAME = "autonomy.json";
 
+    // External resources
+    public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
+    public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
+    public static final String GRAPH_CSS_FILE = "graph.css";
+    public static final String RESOURCE_PATH = "resources/";
+    public static final String DEMO_LAYOUT_OUTPUT_PATH = "sample_layout/";
+                        
     // Image cache
     private static HashMap<String, Image> imageCache;
     
@@ -853,14 +857,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.CS3OpenBrowser.setVisible(false);
         }
-        
-        // Display layout if applicable
-        if (this.model.getLayoutList().isEmpty())
-        {
-            this.KeyboardTab.remove(this.layoutPanel);
-            repaintPathLabel();
-        }
-        
+                
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
@@ -872,11 +869,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         
         // Render layout now that the UI is visible
-        if (!this.model.getLayoutList().isEmpty())
-        {
-            repaintLayout();
-        }
-        else
+        repaintLayout();
+        
+        if (this.model.getLayoutList().isEmpty())
         {
             createAndApplyEmptyLayout();
         }
@@ -949,7 +944,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                 }
                 
-                this.jButton1.setEnabled(true);
+                this.initNewLayoutButton.setEnabled(true);
                 
             }).start();
         }
@@ -964,13 +959,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
             this.repaintLayout();
-
-            // Show the layout tab if it wasn't already visible
-            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
-            {
-                this.KeyboardTab.add(this.layoutPanel, 1);
-                this.KeyboardTab.setTitleAt(1, "Layout");
-            }
             
             if (showTab)
             {
@@ -2020,7 +2008,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LayoutPathLabel = new javax.swing.JLabel();
         OverrideCS2DataPath = new javax.swing.JButton();
         CS3OpenBrowser = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        initNewLayoutButton = new javax.swing.JButton();
+        useCS2Layout = new javax.swing.JButton();
         EditExistingLocLabel3 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -5655,11 +5644,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jButton1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        jButton1.setText("Initialize New Layout");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        initNewLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        initNewLayoutButton.setText("Initialize New Local Layout");
+        initNewLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                initNewLayoutButtonActionPerformed(evt);
+            }
+        });
+
+        useCS2Layout.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        useCS2Layout.setText("Switch to CS2 Layout");
+        useCS2Layout.setToolTipText("Reverts to using the track diagram on your Central Station, if any.");
+        useCS2Layout.setFocusable(false);
+        useCS2Layout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                useCS2LayoutActionPerformed(evt);
             }
         });
 
@@ -5675,8 +5674,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(jPanel12Layout.createSequentialGroup()
                         .addComponent(OverrideCS2DataPath)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1))
-                    .addComponent(CS3OpenBrowser))
+                        .addComponent(initNewLayoutButton))
+                    .addGroup(jPanel12Layout.createSequentialGroup()
+                        .addComponent(CS3OpenBrowser)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(useCS2Layout)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel12Layout.setVerticalGroup(
@@ -5689,9 +5691,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(OverrideCS2DataPath)
-                    .addComponent(jButton1))
+                    .addComponent(initNewLayoutButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(CS3OpenBrowser)
+                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(CS3OpenBrowser)
+                    .addComponent(useCS2Layout))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -8669,8 +8673,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         try
         {
-            String from = "resources/sample_layout.zip";
-            File to = new File("sample_layout.zip");
+            String from = RESOURCE_PATH + DEMO_LAYOUT_ZIP;
+            File to = new File(DEMO_LAYOUT_ZIP);
             
             copyResource(from, to);
             
@@ -8680,7 +8684,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.unzipFile(Paths.get(to.getPath()),outputFolder.getAbsolutePath());
             to.delete();
             
-            File outputPath = new File("sample_layout/");
+            File outputPath = new File(DEMO_LAYOUT_OUTPUT_PATH);
             
             return outputPath.getAbsolutePath();
         } 
@@ -8794,6 +8798,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return;
         }
         
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
+                    + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
+            return;
+        }
+        
         this.editLayoutButton.setEnabled(false);
         
         new Thread(() -> 
@@ -8803,16 +8814,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");         
                 Path p = Paths.get(new URL(layoutUrl).toURI());
 
-                // URL appUrl = TrainControlUI.class.getResource("resources/TrackDiagramEditor.exe");
-                // Path p2 = Paths.get(appUrl.toURI());
-
-                File app = new File("TrackDiagramEditor.exe");
-                
+                File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
+                                
                 // Extract the binary
                 if (!app.exists())
                 {
-                    copyResource("resources/TrackDiagramEditor.exe", app);
+                    copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE, app);
                 }
+                
+                // Delete the binary on exit
+                app.deleteOnExit();
                 
                 // Execute the app
                 String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
@@ -8858,10 +8869,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        this.jButton1.setEnabled(false);
+    private void initNewLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initNewLayoutButtonActionPerformed
+        this.initNewLayoutButton.setEnabled(false);
         this.createAndApplyEmptyLayout();
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_initNewLayoutButtonActionPerformed
+
+    private void useCS2LayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCS2LayoutActionPerformed
+        
+        // Hide the tab in case loading fails but the model still has the local diagram
+        this.KeyboardTab.remove(this.layoutPanel);
+        
+        new Thread(() -> {  
+            this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+            this.model.clearLayouts();
+            this.model.syncWithCS2();
+            this.repaintLoc();
+            this.repaintLayout();
+        }).start();
+    }//GEN-LAST:event_useCS2LayoutActionPerformed
     
     /**
      * Returns a file chooser for autonomy files
@@ -9114,8 +9139,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         graphViewer = new GraphViewer(graph, this, !setPoints);
 
         // Custom stylsheet
-        URL resource = TrainControlUI.class.getResource("resources/graph.css");
-
+        URL resource = TrainControlUI.class.getResource(RESOURCE_PATH + GRAPH_CSS_FILE);
+        
         int maxY = 0;
         
         for (Point p : this.model.getAutoLayout().getPoints())
@@ -9763,7 +9788,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton gracefulStop;
     private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton initNewLayoutButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
@@ -9825,6 +9850,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton startAutonomy;
     private javax.swing.JButton syncLocStateButton;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
+    private javax.swing.JButton useCS2Layout;
     private javax.swing.JButton validateButton;
     // End of variables declaration//GEN-END:variables
 
@@ -9834,16 +9860,30 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         { "Large", "60" }, 
       }).collect(Collectors.toMap(data -> data[0], data -> Integer.valueOf(data[1])));
     
+    /**
+     * Checks if layout files are being loaded from the local filesystem
+     * @return 
+     */
+    private boolean isLocalLayout()
+    {
+        return !"".equals(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+    }
+    
+    /**
+     * Repaints the label with the layout file path
+     */
     public void repaintPathLabel()
     {
         // Set UI label
-        if ("".equals(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "")))
+        if (!isLocalLayout())
         {
             LayoutPathLabel.setText(this.prefs.get(IP_PREF, "(none loaded)"));
+            this.useCS2Layout.setVisible(false);
         }
         else
         {
             LayoutPathLabel.setText(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+            this.useCS2Layout.setVisible(true);
         }
     }
     
@@ -9851,27 +9891,40 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public synchronized void repaintLayout()
     {    
         repaintPathLabel();
-        
-        this.LayoutGridRenderer.submit(new Thread(() -> 
-        { 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                
+        if (this.model.getLayoutList().isEmpty())
+        {
+            this.KeyboardTab.remove(this.layoutPanel);
+        }
+        else 
+        {
+            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
             {
-                this.KeyboardTab.repaint();
+                this.KeyboardTab.add(this.layoutPanel, 1);
+                this.KeyboardTab.setTitleAt(1, "Layout");
+            }
+        
+            this.LayoutGridRenderer.submit(new Thread(() -> 
+            { 
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    this.KeyboardTab.repaint();
 
-                //InnerLayoutPanel.setVisible(false);
-                this.trainGrid = new LayoutGrid(
-                        this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
-                        this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
-                        InnerLayoutPanel, 
-                        KeyboardTab, 
-                        false,
-                        this
-                );
-                InnerLayoutPanel.setVisible(true);
+                    //InnerLayoutPanel.setVisible(false);
+                    this.trainGrid = new LayoutGrid(
+                            this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
+                            this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
+                            InnerLayoutPanel, 
+                            KeyboardTab, 
+                            false,
+                            this
+                    );
+                    InnerLayoutPanel.setVisible(true);
 
-                // Important!
-                this.KeyboardTab.repaint();
+                    // Important!
+                    this.KeyboardTab.repaint();
+                }));
             }));
-        }));
+        }
     }
 }

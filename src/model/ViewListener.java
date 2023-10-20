@@ -61,4 +61,5 @@ public interface ViewListener
     public boolean getNetworkCommState();
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);
+    public void clearLayouts();
 }

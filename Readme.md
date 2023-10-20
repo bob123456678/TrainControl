@@ -174,6 +174,8 @@ Requires JDK 1.8+ and the following libraries:
     - Added option to hide all inactive points from the graph UI
     - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
     - Updated overpass track diagram icons
+    - Added a button to revert to the CS2 layout when currently using a local layout
+    - Fixed UI errors when TrainControl was run without a layout
     - Fixed bug where empty rows/columns in layouts were not rendered correctly
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
