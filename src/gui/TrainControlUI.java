@@ -8871,7 +8871,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
                     zippedApp.delete();
                 }
-                                
+                
+                // Delete the binary on exit
+                app.deleteOnExit();
+                
                 // Execute the app
                 String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
 
