@@ -165,6 +165,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // External resources
     public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
+    public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
     public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
     public static final String GRAPH_CSS_FILE = "graph.css";
     public static final String RESOURCE_PATH = "resources/";
@@ -8709,7 +8710,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.model.log("Attempting to extract " + to.getAbsolutePath());
             
             File outputFolder = new File("");
-            this.unzipFile(Paths.get(to.getPath()),outputFolder.getAbsolutePath());
+            this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
             to.delete();
             
             File outputPath = new File(DEMO_LAYOUT_OUTPUT_PATH);
@@ -8859,12 +8860,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Extract the binary
                 if (!app.exists())
                 {
-                    copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE, app);
+                    File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
+
+                    this.model.log("Unpacking track diagram editor executable...");
+
+                    copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
+                    
+                    this.model.log("Attempting to extract " + zippedApp.getAbsolutePath());
+
+                    this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
+                    zippedApp.delete();
                 }
-                
-                // Delete the binary on exit
-                app.deleteOnExit();
-                
+                                
                 // Execute the app
                 String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
 
