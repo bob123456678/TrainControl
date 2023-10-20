@@ -14,8 +14,6 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -24,20 +22,14 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -947,6 +939,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.initNewLayoutButton.setEnabled(true);
                 
             }).start();
+        }
+        else
+        {
+            this.initNewLayoutButton.setEnabled(true);
         }
     }
     
@@ -5646,6 +5642,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         initNewLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         initNewLayoutButton.setText("Initialize New Local Layout");
+        initNewLayoutButton.setFocusable(false);
         initNewLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 initNewLayoutButtonActionPerformed(evt);
@@ -8905,13 +8902,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Hide the tab in case loading fails but the model still has the local diagram
         this.KeyboardTab.remove(this.layoutPanel);
-        
-        new Thread(() -> {  
-            this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
-            this.model.clearLayouts();
-            this.model.syncWithCS2();
-            this.repaintLoc();
-            this.repaintLayout();
+        this.useCS2Layout.setEnabled(false);
+
+        new Thread(() -> 
+        {
+            try
+            {
+                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+                this.model.clearLayouts();
+                this.model.syncWithCS2();
+                this.repaintLoc();
+                this.repaintLayout();
+            }
+            catch (Exception e)
+            {
+                this.model.log("Error synchronizing layout from CS2.");
+            }
+            
+            this.useCS2Layout.setEnabled(true);
+            
         }).start();
     }//GEN-LAST:event_useCS2LayoutActionPerformed
     
