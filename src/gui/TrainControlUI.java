@@ -9932,7 +9932,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Set UI label
         if (!isLocalLayout())
         {
-            LayoutPathLabel.setText(this.prefs.get(IP_PREF, "(none loaded)"));
+            LayoutPathLabel.setText("Central Station: " + this.prefs.get(IP_PREF, "(none loaded)"));
             this.useCS2Layout.setVisible(false);
         }
         else
