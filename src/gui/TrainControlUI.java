@@ -7310,7 +7310,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.repaintLoc();
             this.repaintLayout();
 
-            JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
+            if ("-1".equals(r.toString()))
+            {
+                JOptionPane.showMessageDialog(ManageLocPanel, "Sync failed.  See log.");
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
+            }
         }).start();
     }//GEN-LAST:event_SyncButtonActionPerformed
 
