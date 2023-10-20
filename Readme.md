@@ -35,7 +35,9 @@ Right-click a locomotive to change it or set additional options, such as preferr
 
 **Layout View**
 
-Layouts are downloaded automatically from the CS2, or configurable manually via a layout file with the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Track diagrams for your layout are downloaded automatically from the CS2, or configurable manually via local layout files if using the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+
+On Windows, you can also edit local track diagrams via a bundled app.
 
 ![UI screenshot: layout](assets/ui_layout.png?raw=true)
 
@@ -105,7 +107,7 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 From v1.11.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for basic editing support, and accessible via the "Edit" button within the Layout tab.
 
-Expanded support for CS3 layouts is planned for the future, and better static layout editor integration is coming soon!
+Expanded support for CS3 layouts is planned for the future.
 
 ## Running TrainControl
 
