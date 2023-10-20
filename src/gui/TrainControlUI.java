@@ -894,7 +894,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         // Attempt to create an empty layout if needed
         int dialogResult = JOptionPane.showConfirmDialog(
-            this, "Do you want to initialize a new track diagram in the current directory?",
+            this, "Do you want to initialize a new track diagram?\n\nLayout files will be written to: \n" + 
+                    new File(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH).getAbsolutePath(),
             "Create New Track Diagram", JOptionPane.YES_NO_OPTION
         );
 
@@ -948,12 +949,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     /**
      * Shows the layout tab and re-loads the track diagram
+     * @param showTab
      */
-    public void initializeTrackDiagram(boolean showTab)
+    synchronized public void initializeTrackDiagram(boolean showTab)
     {
+        this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+
         if (!this.model.getLayoutList().isEmpty())
         {
-            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+            this.repaintLoc();
             this.repaintLayout();
             
             if (showTab)
@@ -8712,7 +8716,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             return outputPath.getAbsolutePath();
         } 
-        catch (Exception ex) 
+        catch (IOException ex) 
         {
             this.model.log("Error during demo layout extraction.");
             
@@ -8779,23 +8783,35 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             File f = new File(targetDir.resolve(Paths.get(entry.getName())).toString());
 
             //If directory then create a new directory in uncompressed folder
-            if (entry.isDirectory()) {
-              if (!f.isDirectory() && !f.mkdirs()) {
+            if (entry.isDirectory())
+            {
+              if (!f.isDirectory() && !f.mkdirs())
+              {
                 throw new IOException("failed to create directory " + f);
               }
             }
 
             //Else create the file
-            else {
+            else
+            {
               File parent = f.getParentFile();
               if (!parent.isDirectory() && !parent.mkdirs()) {
                 throw new IOException("failed to create directory " + parent);
               }
 
-              try(InputStream in = zip.getInputStream(entry)) {
+              try(InputStream in = zip.getInputStream(entry))
+              {
                 Files.copy(in, f.toPath());
               }
-
+              catch (Exception e)
+              {
+                  this.model.log(e.getMessage());
+                  
+                  if (this.model.isDebug())
+                  {
+                      e.printStackTrace();
+                  }
+              }
             }
           }
         } 
@@ -8901,18 +8917,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void useCS2LayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCS2LayoutActionPerformed
         
         // Hide the tab in case loading fails but the model still has the local diagram
-        this.KeyboardTab.remove(this.layoutPanel);
         this.useCS2Layout.setEnabled(false);
 
         new Thread(() -> 
         {
             try
             {
+                this.KeyboardTab.remove(this.layoutPanel);
+
                 this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
                 this.model.clearLayouts();
                 this.model.syncWithCS2();
-                this.repaintLoc();
-                this.repaintLayout();
+                
+                // Set the updated list of layout pages
+                initializeTrackDiagram(true);
             }
             catch (Exception e)
             {
@@ -8920,6 +8938,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             this.useCS2Layout.setEnabled(true);
+            this.repaintPathLabel();
             
         }).start();
     }//GEN-LAST:event_useCS2LayoutActionPerformed
