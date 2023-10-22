@@ -186,6 +186,7 @@ Requires JDK 1.8+ and the following libraries:
         - Fixed UI errors when TrainControl was run without a layout
         - Fixed bug where empty rows/columns in layouts were not rendered correctly
         - Padding at the top/left of the layout is now rendered, consistent with what is shown in CS2 track diagrams
+        - Text labels will now be rendered on any tile with a .text property
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
 * v1.10.11 [10/15/23]
