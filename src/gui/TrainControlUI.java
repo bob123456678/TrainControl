@@ -867,7 +867,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (this.model.getLayoutList().isEmpty())
         {
-            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH);
+            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, true);
         }
                 
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
@@ -892,19 +892,31 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     /**
      * Self-contained method to initialize a blank layout
      * @param folderName
+     * @param verify
      */
-    public void createAndApplyEmptyLayout(String folderName)
+    public void createAndApplyEmptyLayout(String folderName, boolean verify)
     {
-        // Attempt to create an empty layout if needed
-        int dialogResult = JOptionPane.showConfirmDialog(
-            this, "Do you want to initialize a new track diagram?\n\nLayout files will be written to: \n" + 
-                    new File(folderName).getAbsolutePath(),
-            "Create New Track Diagram", JOptionPane.YES_NO_OPTION
-        );
-
-        if (dialogResult == JOptionPane.YES_OPTION)
+        boolean proceed;
+        
+        if (!verify)
         {
-            new Thread(() ->
+            proceed = true;
+        }
+        else
+        {        
+            // Attempt to create an empty layout if needed
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this, "Do you want to initialize a new track diagram?\n\nLayout files will be written to: \n" + 
+                        new File(folderName).getAbsolutePath(),
+                "Create New Track Diagram", JOptionPane.YES_NO_OPTION
+            );
+            
+            proceed = (dialogResult == JOptionPane.YES_OPTION);
+        }
+        
+        if (proceed)
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 try
                 {
@@ -942,7 +954,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 
                 this.initNewLayoutButton.setEnabled(true);
                 
-            }).start();
+            }));
         }
         else
         {
@@ -1149,7 +1161,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    
     public void locFunctionsOff(Locomotive l)
     {
         if (l != null)
@@ -1168,13 +1179,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (l != null)
         {
-            new Thread(() -> {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
                 this.model.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true);
                 this.repaintLayout();
                 this.repaintMappings(l);
-            }).start();
+            }));
         }   
     }
         
@@ -1316,7 +1327,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     @Override
     public void repaintSwitches()
     {
-        new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
 
@@ -1331,7 +1342,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.switchMapping.get(i).setSelected(false);
                 }
             }
-        }).start();
+        }));
     }
     
     /**
@@ -1661,7 +1672,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null)
         {
-            new Thread(() -> {
+            new Thread(() ->
+            {
                 this.activeLoc.setSpeed(speed);
             }).start();
             //repaintLoc();  not needed because the network will update it
@@ -1672,11 +1684,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null)
         {
-            new Thread(() -> {
-                //this.activeLoc.stop();
+            new Thread(() ->
+            {
                 this.activeLoc.instantStop();
             }).start();
-            //repaintLoc();
         }
     }
     
@@ -1684,11 +1695,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (this.activeLoc != null) // && this.activeLoc.goingForward())
         {
-            new Thread(() -> {
+            new Thread(() ->
+            {
                 this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
                 this.Forward.setSelected(false);
                 this.Backward.setSelected(true);
-                //repaintLoc();  
             }).start();
         } 
     }
@@ -1697,11 +1708,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if(this.activeLoc != null) // && this.activeLoc.goingBackward())
         {
-            new Thread(() -> {
+            new Thread(() ->
+            {
                 this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
                 this.Forward.setSelected(true);
                 this.Backward.setSelected(false);
-                //repaintLoc();  
             }).start();
         }
     }
@@ -7172,7 +7183,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
-        new Thread(() -> {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
             LayoutPopupUI popup = new LayoutPopupUI(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
                     this.layoutSizes.get("Large"),
@@ -7180,7 +7191,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             );
 
             popup.render();
-        }).start();
+        }));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
@@ -8946,29 +8957,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            String newName = JOptionPane.showInputDialog(this, "Enter a folder name for your new layout:", TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH.replace("/", ""));
+            JOptionPane.showMessageDialog(this, "In the next window, please select a folder for the new layout.");
 
-            if (newName != null)
+            JFileChooser fc = new JFileChooser(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int i = fc.showOpenDialog(this);
+            if (i == JFileChooser.APPROVE_OPTION)
             {
-                newName = newName.replaceAll("[^a-zA-Z0-9_\\s]", "");
+                File f = fc.getSelectedFile();
+                String filepath = f.getPath();
 
-                if (newName.trim().length() == 0)
-                {
-                    JOptionPane.showMessageDialog(this, "Invalid name.  Only letters, numbers, spaces, and underscore are allowed.");
-                    return;
-                }
-
-                File destination = new File(newName);
-
-                if (destination.exists())
-                {
-                    JOptionPane.showMessageDialog(this, "Folder already exists:\n" + destination.getAbsolutePath());
-                    return;
-                }
-
+                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+                
                 this.initNewLayoutButton.setEnabled(false);
 
-                this.createAndApplyEmptyLayout(newName + "/");
+                this.createAndApplyEmptyLayout(filepath, false);
             }
         }));
     }//GEN-LAST:event_initNewLayoutButtonActionPerformed
@@ -9027,11 +9030,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            FileFilter filter = new FileNameExtensionFilter("GIF Image", "gif");
-            fc.setFileFilter(filter);
-            filter = new FileNameExtensionFilter("JPEG Image", ".jpg");
-            fc.setFileFilter(filter);
-            filter = new FileNameExtensionFilter("PNG Image", ".jpg");
+            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP images", "jpg", "png", "gif", "jpeg", "jpe", "bmp");
             fc.setFileFilter(filter);
 
             fc.setAcceptAllFileFilterUsed(false);
