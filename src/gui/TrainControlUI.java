@@ -9025,8 +9025,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
         {
+            String currentPath = null;
+
+            if (l.getLocalImageURL() != null)
+            {
+                File currentIcon = new File(l.getLocalImageURL());
+
+                if (currentIcon.exists())
+                {
+                    currentPath = currentIcon.getParent();
+                }
+
+                this.model.log("Current icon for " + l.getName() + " is " + l.getLocalImageURL());
+            }
+            
             JFileChooser fc = new JFileChooser(
-                this.prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+                currentPath != null ? currentPath : this.prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
