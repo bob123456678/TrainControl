@@ -52,6 +52,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
 
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
+        pack();
     }
     
     public void render()
@@ -59,9 +60,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         this.setAlwaysOnTop(true);
                       
         drawGrid();
-        
-        pack();
-     
+             
         setVisible(true);
         
         // Hide the window on close so that LayoutLabels know they can be deleted
