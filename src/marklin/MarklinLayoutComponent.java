@@ -528,7 +528,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isLink())
         {
-            return "Link to page " + this.getRawAddress();
+            return "Link to page " + (this.getRawAddress() + 1);
         }
         else
         {

@@ -78,11 +78,11 @@ public class LayoutPopupUI extends javax.swing.JFrame {
     
     /**
      * Updates the layout page
-     * @param page 
+     * @param index
      */
-    public void goToLayoutPage(int page)
+    public void goToLayoutPage(int index)
     {
-        int index = page - 1;
+        int page = index + 1;
      
         if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
         {

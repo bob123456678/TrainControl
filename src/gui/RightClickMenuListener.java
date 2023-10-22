@@ -109,7 +109,6 @@ public class RightClickMenuListener extends MouseAdapter {
             {
                 addSeparator();
                 
-                
                 menuItem = new JMenuItem("Apply Saved Function Preset");
                 menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-P");
@@ -147,6 +146,21 @@ public class RightClickMenuListener extends MouseAdapter {
                 menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
                 
                 add(menuItem);
+                
+                addSeparator();
+
+                menuItem = new JMenuItem("Set Local Locomotive Icon");
+                menuItem.addActionListener(event -> ui.setLocIcon(ui.getButtonLocomotive(source)));
+                
+                add(menuItem);
+                
+                if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
+                {
+                    menuItem = new JMenuItem("Clear Local Locomotive Icon");
+                    menuItem.addActionListener(event -> ui.clearLocIcon(ui.getButtonLocomotive(source)));
+
+                    add(menuItem);
+                }
                  
                 // Option to clear the mapping
                 addSeparator();

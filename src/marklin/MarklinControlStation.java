@@ -43,6 +43,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
     public static final String VERSION = "1.11.0 (Beta)";
+    public static final String PROG_TITLE = "Train Control for Marklin Central Station v";
     
     //// Settings
     
@@ -171,7 +172,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.sendPing();
             
-            if (autoPowerOn) this.go();            
+            if (autoPowerOn) this.go(); 
         }
         else
         {
@@ -559,8 +560,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.log("Updated function types for " + l.getName());
                 }
                               
-                // Set current locomotive icon
-                if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
+                // Set current locomotive icon if a remote icon is available, and a local icon is not set
+                if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null && this.locDB.getById(l.getUID()).getLocalImageURL() == null)
                 {
                     this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
                 }
@@ -1386,6 +1387,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
                 c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
             c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime(), c.getHistoricalOperatingTime());
+        
+        newLoc.setLocalImageURL(c.getLocalImageURL());
         
         this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
         

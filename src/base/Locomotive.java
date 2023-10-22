@@ -43,6 +43,7 @@ public abstract class Locomotive
     
     // Picture of this locomotive
     private String imageURL;
+    private String localImageURL;
     
     // Types of functions
     protected int[] functionTypes;
@@ -792,12 +793,31 @@ public abstract class Locomotive
     }
     
     /**
+     * Returns the local image URL, if any
+     * @return 
+     */
+    public String getLocalImageURL()
+    {
+        return this.localImageURL;
+    }
+    
+    /**
      * Sets the image URL
      * @param u 
      */
     public void setImageURL(String u)
     {
         this.imageURL = u;
+    }
+    
+    /**
+     * Sets a local image URL (this is remembered between saves)
+     * @param u 
+     */
+    public void setLocalImageURL(String u)
+    {
+        this.imageURL = u;
+        this.localImageURL = this.imageURL;
     }
          
     /**

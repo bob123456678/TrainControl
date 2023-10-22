@@ -73,7 +73,7 @@ public final class LayoutLabel extends JLabel
                     {  
                         @Override
                         public void mouseClicked(MouseEvent e)  
-                        {                              
+                        {                  
                             if (parent instanceof LayoutPopupUI)
                             {
                                 ((LayoutPopupUI) parent).goToLayoutPage(component.getRawAddress()); 

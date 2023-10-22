@@ -90,6 +90,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static String HIDE_REVERSING_PREF = "HideReversing";
     public static String HIDE_INACTIVE_PREF = "HideInactive";
     public static String LAST_USED_FOLDER = "LastUsedFolder";
+    public static String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
 
     // Constants
     // Width of locomotive images
@@ -866,7 +867,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (this.model.getLayoutList().isEmpty())
         {
-            createAndApplyEmptyLayout();
+            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH);
         }
                 
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
@@ -890,13 +891,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     /**
      * Self-contained method to initialize a blank layout
+     * @param folderName
      */
-    public void createAndApplyEmptyLayout()
+    public void createAndApplyEmptyLayout(String folderName)
     {
         // Attempt to create an empty layout if needed
         int dialogResult = JOptionPane.showConfirmDialog(
             this, "Do you want to initialize a new track diagram?\n\nLayout files will be written to: \n" + 
-                    new File(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH).getAbsolutePath(),
+                    new File(folderName).getAbsolutePath(),
             "Create New Track Diagram", JOptionPane.YES_NO_OPTION
         );
 
@@ -907,7 +909,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 try
                 {
                     this.model.log("No layout detected. Initializing local demo layout...");
-                    String path = this.initializeEmptyLayout();
+                    String path = this.initializeEmptyLayout(folderName);
 
                     if (path != null)
                     {
@@ -1016,11 +1018,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void showLocSelector()
     {
-        new Thread(()->
+        javax.swing.SwingUtilities.invokeLater(new Thread(()->
         { 
             this.selector.setVisible(true);
             this.selector.updateScrollArea();    
-        }).start();
+        }));
     }
     
     /**
@@ -1169,8 +1171,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             new Thread(() -> {
                 this.model.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
-                repaintLoc();
+                repaintLoc(true);
                 this.repaintLayout();
+                this.repaintMappings(l);
             }).start();
         }   
     }
@@ -1234,6 +1237,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     private synchronized void repaintMappings()
+    {
+        repaintMappings(null);
+    }
+    
+    /**
+     * Which locomotive's button do we force refresh?
+     * @param forceUpdateLoc 
+     */
+    private synchronized void repaintMappings(Locomotive forceUpdateLoc)
     {                 
         // Only repaint a button if the locomotive has changed
         for(JButton b : this.labelMapping.keySet())
@@ -1262,7 +1274,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     name = name.substring(0,9);
                 }
                 
-                if (!this.labelMapping.get(b).getText().equals(name))
+                if (!this.labelMapping.get(b).getText().equals(name) || l.equals(forceUpdateLoc))
                 {
                     this.labelMapping.get(b).setText(name); 
                     this.labelMapping.get(b).setCaretPosition(0);
@@ -1418,6 +1430,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     @Override
     public void repaintLoc()
+    {
+        repaintLoc(false);
+    }
+    
+    public void repaintLoc(boolean force)
     {     
         if (this.activeLoc != null)
         {            
@@ -1436,7 +1453,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             // Only repaint icon if the locomotive is changed
             // Visual stuff
-            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()))
+            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
             {
                 ImageLoader.submit(new Thread(() -> 
                 {
@@ -2100,7 +2117,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane1.setViewportView(jList1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        setTitle("Marklin Layout Controller v" + MarklinControlStation.VERSION);
+        setTitle(MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION);
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
@@ -7050,11 +7067,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     /**
      * Navigates to a specific layout page
-     * @param page 
+     * @param index 
      */
-    public void goToLayoutPage(int page)
+    public void goToLayoutPage(int index)
     {
-        int index = page - 1;
+        int page = index + 1;
         
         if (this.LayoutList.getModel().getSize() > index && index >= 0)
         {
@@ -8698,7 +8715,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * Unzips an empty layout to the current folder and returns the path
      * @return
      */
-    private String initializeEmptyLayout()
+    private String initializeEmptyLayout(String folderName)
     {
         try
         {
@@ -8709,13 +8726,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             this.model.log("Attempting to extract " + to.getAbsolutePath());
             
-            File outputFolder = new File("");
+            File outputFolder = new File(folderName);
             this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
             to.delete();
-            
-            File outputPath = new File(DEMO_LAYOUT_OUTPUT_PATH);
-            
-            return outputPath.getAbsolutePath();
+                        
+            return outputFolder.getAbsolutePath();
         } 
         catch (IOException ex) 
         {
@@ -8847,6 +8862,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         this.editLayoutButton.setEnabled(false);
+
+        // Force window to not be on top
+        this.setAlwaysOnTop(false);
         
         new Thread(() -> 
         {
@@ -8915,13 +8933,44 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     ex.printStackTrace();
                 }
             }
+            
             this.editLayoutButton.setEnabled(true);
+
+            // Revert preference
+            alwaysOnTopCheckboxActionPerformed(null);                                                    
+
         }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
     private void initNewLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initNewLayoutButtonActionPerformed
-        this.initNewLayoutButton.setEnabled(false);
-        this.createAndApplyEmptyLayout();
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            String newName = JOptionPane.showInputDialog(this, "Enter a folder name for your new layout:", TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH.replace("/", ""));
+
+            if (newName != null)
+            {
+                newName = newName.replaceAll("[^a-zA-Z0-9_\\s]", "");
+
+                if (newName.trim().length() == 0)
+                {
+                    JOptionPane.showMessageDialog(this, "Invalid name.  Only letters, numbers, spaces, and underscore are allowed.");
+                    return;
+                }
+
+                File destination = new File(newName);
+
+                if (destination.exists())
+                {
+                    JOptionPane.showMessageDialog(this, "Folder already exists:\n" + destination.getAbsolutePath());
+                    return;
+                }
+
+                this.initNewLayoutButton.setEnabled(false);
+
+                this.createAndApplyEmptyLayout(newName + "/");
+            }
+        }));
     }//GEN-LAST:event_initNewLayoutButtonActionPerformed
 
     private void useCS2LayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCS2LayoutActionPerformed
@@ -8929,7 +8978,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Hide the tab in case loading fails but the model still has the local diagram
         this.useCS2Layout.setEnabled(false);
 
-        new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             try
             {
@@ -8950,8 +8999,59 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.useCS2Layout.setEnabled(true);
             this.repaintPathLabel();
             
-        }).start();
+        }));
     }//GEN-LAST:event_useCS2LayoutActionPerformed
+    
+    public void clearLocIcon(Locomotive l)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            l.setLocalImageURL(null);
+            this.model.syncWithCS2();
+            this.repaintLoc(true);
+            this.repaintMappings(l);
+        }));
+    }
+    
+    
+    /**
+     * Allows a local image to be set for a locomotive
+     * @param l 
+     */
+    public void setLocIcon(Locomotive l)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
+        {
+            JFileChooser fc = new JFileChooser(
+                this.prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+            );
+
+            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            FileFilter filter = new FileNameExtensionFilter("GIF Image", "gif");
+            fc.setFileFilter(filter);
+            filter = new FileNameExtensionFilter("JPEG Image", ".jpg");
+            fc.setFileFilter(filter);
+            filter = new FileNameExtensionFilter("PNG Image", ".jpg");
+            fc.setFileFilter(filter);
+
+            fc.setAcceptAllFileFilterUsed(false);
+
+            int i = fc.showOpenDialog(this);
+
+            if (i == JFileChooser.APPROVE_OPTION)
+            {
+                File f = fc.getSelectedFile();
+
+                l.setLocalImageURL(Paths.get(f.getAbsolutePath()).toUri().toString());
+                prefs.put(LAST_USED_ICON_FOLDER, f.getParent());
+
+                this.repaintLoc(true);
+                this.repaintMappings(l);
+                
+                // TODO - clear icon setting if load failed
+            } 
+        }));
+    }
     
     /**
      * Returns a file chooser for autonomy files

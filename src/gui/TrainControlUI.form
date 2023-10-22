@@ -38,7 +38,7 @@
   <Properties>
     <Property name="defaultCloseOperation" type="int" value="0"/>
     <Property name="title" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-      <Connection code="&quot;Marklin Layout Controller v&quot; + MarklinControlStation.VERSION" type="code"/>
+      <Connection code="MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION" type="code"/>
     </Property>
     <Property name="alwaysOnTop" type="boolean" value="true"/>
     <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
