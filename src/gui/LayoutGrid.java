@@ -54,7 +54,15 @@ public class LayoutGrid
             container.setBackground(Color.white);
             
             // Things mess up without this
-            parent.setLayout(new FlowLayout());
+            if (MarklinLayout.IGNORE_PADDING)
+            {
+                parent.setLayout(new FlowLayout());
+            }
+            else
+            {
+                // If we want to left-align smaller layouts
+                parent.setLayout(new FlowLayout(FlowLayout.LEFT));
+            }
         }
         else
         {

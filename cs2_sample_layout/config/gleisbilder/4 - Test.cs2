@@ -152,6 +152,7 @@ element
 element
  .id=0x10810
  .typ=lampe
+ .artikel=-1
 element
  .id=0x10906
  .typ=s88kontakt

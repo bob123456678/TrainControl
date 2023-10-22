@@ -16,6 +16,9 @@ public class MarklinLayout
     private final int sx;
     private final int sy;
     
+    // Set to true to trim layouts around the top/left edges
+    public static final boolean IGNORE_PADDING = false;
+    
     int minx = 0;
     int miny = 0;
     int maxx;
@@ -136,8 +139,17 @@ public class MarklinLayout
     
     public void checkBounds()
     {
-        minx = sx;
-        miny = sy;
+        if (IGNORE_PADDING)
+        {
+            minx = sx;
+            miny = sy;
+        }
+        else
+        {
+            minx = 0;
+            miny = 0;
+        }
+        
         maxx = 0;
         maxy = 0;
         
@@ -149,12 +161,18 @@ public class MarklinLayout
                 {
                     if (x < minx)
                     {
-                        minx = x;
+                        if (IGNORE_PADDING)
+                        {
+                            minx = x;
+                        }
                     }
                     
                     if (y < miny)
                     {
-                        miny = y;
+                        if (IGNORE_PADDING)
+                        {
+                            miny = y;
+                        }
                     }
                     
                     if (x > maxx)
