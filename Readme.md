@@ -183,6 +183,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added a button to revert to the CS2 layout when currently using a local layout
         - Fixed UI errors when TrainControl was run without a layout
         - Fixed bug where empty rows/columns in layouts were not rendered correctly
+        - Padding at the top/left of the layout is now rendered, consistent with what is shown in CS2 track diagrams
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
 * v1.10.11 [10/15/23]
