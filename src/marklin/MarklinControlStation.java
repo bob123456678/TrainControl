@@ -42,7 +42,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.11.0 (Beta)";
+    public static final String VERSION = "1.11.0 (Beta 35)";
     public static final String PROG_TITLE = "TrainControl for Marklin Central Station v";
     
     //// Settings
@@ -221,7 +221,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     )
                     {
                         // Skip components without a digital address
-                        if (c.getAddress() == 0) continue;
+                        if (c.getAddress() <= 0)
+                        {
+                            this.log("Layout: invalid accessory address: " + c.getTypeName() + " " + c.getAddress() + " at " + c.getX() + "," + c.getY() + " ");
+                            continue;
+                        }
                         
                         if (c.isSwitch() || c.isUncoupler())
                         {

@@ -19,6 +19,9 @@ public class LayoutGrid
     public LayoutLabel[][] grid;
     public final int maxWidth;
     public final int maxHeight;
+    
+    // Should the .text property be rendered in non-empty cells?
+    public static final boolean ALLOW_TEXT_ANYWHERE = true;
 
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
@@ -101,7 +104,7 @@ public class LayoutGrid
                 
                 grid[x][y] = new LayoutLabel(c, master, size, ui);
                 
-                if (c != null && c.isText())
+                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
                 {
                     // Text labels can overflow.  This ensures that they don't widen other cells.
                     gbc.gridwidth = 0;

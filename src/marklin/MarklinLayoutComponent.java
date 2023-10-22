@@ -33,7 +33,7 @@ public class MarklinLayoutComponent
     private final int state;
     private final int address;
     private final int rawAddress;
-    private String label= "";
+    private String label = "";
     
     // Type
     private componentType type;
@@ -148,6 +148,11 @@ public class MarklinLayoutComponent
     public void setLabel(String label)
     {
         this.label = label;
+    }
+    
+    public boolean hasLabel()
+    {
+        return this.label != null && !"".equals(label);
     }
     
     public String getLabel()
@@ -319,7 +324,7 @@ public class MarklinLayoutComponent
      */
     public String getTypeName()
     {
-        switch(this.type)
+        switch (this.type)
         {
             case UNCOUPLER:
                 return "decouple";

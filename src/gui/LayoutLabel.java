@@ -121,17 +121,19 @@ public final class LayoutLabel extends JLabel
      */
     private synchronized void setImage(boolean update)
     {
-        new Thread(() -> {
+        new Thread(() ->
+        {
             if (this.component != null)
             {            
                 // Special handling for text labels
-                if (this.component.isText())
+                if (LayoutGrid.ALLOW_TEXT_ANYWHERE && this.component.hasLabel() || !LayoutGrid.ALLOW_TEXT_ANYWHERE && this.component.isText())
                 {
                     this.setText(this.component.getLabel());
                     this.setForeground(Color.black);
-                    this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));                
+                    this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));  
                 }
-                else
+ 
+                if (!this.component.isText())
                 {
                     try
                     {

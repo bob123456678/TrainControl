@@ -1057,7 +1057,7 @@ public final class CS2File
     }
      
     /**
-     * Parses an autonomous operation configuration file
+     * Parses TrainControl's autonomous operation configuration file
      * @param config 
      * @return  
      */
