@@ -1,23 +1,23 @@
-# Marklin Central Station 2/3 Train Control
+# TrainControl for Marklin Central Station 2 and 3
 
-This cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix / DCC digital layout.
+This powerful cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix / DCC digital layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout and many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
 overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
-enabling functions, emergency stop, etc.  You can also open windows with interactive track diagrams.
+enabling functions, smooth deceleration, emergency stop, etc.  You can also open windows with interactive track diagrams and edit track diagrams.
 
 As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
 operating your layout, with the Central Station serving solely as the track interface
-and locomotive database.
+and MFX locomotive database.
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to programmatically control the entire layout.  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
-which enables *fully autonmous* operation at the push of a single button,
-as well as semi-autonmous point-to-point operation between stations.
+which enables tracking train locations for *fully autonmous* operation at the push of a single button,
+as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes.
 
 ## Overview
 
@@ -55,7 +55,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 **Full Autonomy**
 
-Defined via a special [JSON configuration file](src/examples/Readme.md), represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  You can pick destinations for specific trains, or let the system continuously execute random routes.
+Defined via a special [JSON configuration file](src/examples/Readme.md), represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.
 
 ![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
 
@@ -72,23 +72,25 @@ The graph UI will show you which routes are active, which edges are locked, and 
 * Set up automatic and conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions
 * Download locomotive, layout, and route information from the CS2/CS3
+* Set function and speed presets for locomotives
 * View S88 feedback
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 * (From v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
 * (From v1.8.0) Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
 * (From v1.9.0) Full UI for editing autonomy graph models
 * (From v1.10.0) Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
+* (From v1.11.0) UI for editing track diagrams (Windows only)
 
 **Requirements:**
 
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
-* CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings
+* Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings
 
 **Limitations:**
 
-* Automatic layout download only works with CS2, not CS3 (static layout files can be used with CS3 if desired)
-* Central Station IP address must be manually entered (recommend configuring a static IP in your router)
+* Automatic layout download only works with CS2, not CS3 (local layout files can be used with a CS3 if desired)
+* Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
 
 **Layouts and the CS3**
 

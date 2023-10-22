@@ -43,7 +43,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
     public static final String VERSION = "1.11.0 (Beta)";
-    public static final String PROG_TITLE = "Train Control for Marklin Central Station v";
+    public static final String PROG_TITLE = "TrainControl for Marklin Central Station v";
     
     //// Settings
     
@@ -127,7 +127,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set debug mode
         this.debug(debug);
         
-        this.log("Marklin Control v" + VERSION);
+        this.log(PROG_TITLE + VERSION);
         
         this.log("Restoring state...");
         
