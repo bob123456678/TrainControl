@@ -4,8 +4,10 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
@@ -118,8 +120,21 @@ public class LayoutGrid
                 gbc.gridx = x;
                 gbc.gridy = y;
                 
-                container.add(grid[x][y], gbc);     
-                
+                container.add(grid[x][y], gbc);  
+
+                // Render text separately
+                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
+                {
+                    JLabel text = new JLabel();
+                    text.setText(c.getLabel());
+                    text.setForeground(Color.BLACK);
+                    text.setBackground(Color.WHITE);
+                    text.setFont(new Font("Sans Serif", Font.PLAIN, size / 2));
+                    
+                    container.add(text, gbc);
+                    container.setComponentZOrder(text, 0);
+                }
+                                                                              
                 // Set references for each tile accessory
                 if (c != null)
                 {

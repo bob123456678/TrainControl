@@ -7,7 +7,6 @@ package gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
@@ -101,7 +100,7 @@ public final class LayoutLabel extends JLabel
         // Blank tiles need to be the same size
         else
         {
-            this.setIcon(new EmptyIcon(size,size)); 
+            this.setIcon(new EmptyIcon(size, size)); 
         }
     }
     
@@ -126,14 +125,14 @@ public final class LayoutLabel extends JLabel
             if (this.component != null)
             {            
                 // Special handling for text labels
-                if (LayoutGrid.ALLOW_TEXT_ANYWHERE && this.component.hasLabel() || !LayoutGrid.ALLOW_TEXT_ANYWHERE && this.component.isText())
+                if (this.component.isText())
                 {
-                    this.setText(this.component.getLabel());
+                    // Text labels are now rendered at the grid level
+                    /*this.setText(this.component.getLabel());
                     this.setForeground(Color.black);
-                    this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));  
+                    this.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));*/
                 }
- 
-                if (!this.component.isText())
+                else
                 {
                     try
                     {
