@@ -124,7 +124,16 @@ Requires JDK 1.8+ and the following libraries:
 
 **Running the application (build or release JAR):**
 
-```java -jar TrainControl.jar [CS2 IP address]```
+```java -jar TrainControl.jar [CS2_IP_address [debug [simulate]]]```
+
+Examples:
+
+* ```java -jar TrainControl.jar``` (UI will prompt for IP)
+* ```java -jar TrainControl.jar 192.168.50.10``` (Will attempt to connect to the Central Station at 192.168.50.10)
+* ```java -jar TrainControl.jar 192.168.50.10 debug``` (Same as above, but with debug mode: extra error logging)
+* ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
+
+All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
 ## Keyboard Commands / Key Mappings
 
