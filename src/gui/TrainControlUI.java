@@ -7335,6 +7335,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
             }
+            else
+            {
+                return;
+            }
 
             this.model.syncWithCS2();
             this.repaintLoc();
