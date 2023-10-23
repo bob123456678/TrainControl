@@ -74,23 +74,24 @@ import model.View;
 import model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
+import util.Conversion;
 
 /**
  * UI for controlling trains and switches using the keyboard
  */
 public class TrainControlUI extends javax.swing.JFrame implements View 
-{
+{    
     // Preferences fields
-    public static String IP_PREF = "initIP";
-    public static String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath";
-    public static String SLIDER_SETTING_PREF = "SliderSetting";
-    public static String ROUTE_SORT_PREF = "RouteSorting";
-    public static String ONTOP_SETTING_PREF = "OnTop";
-    public static String AUTOSAVE_SETTING_PREF = "AutoSave";
-    public static String HIDE_REVERSING_PREF = "HideReversing";
-    public static String HIDE_INACTIVE_PREF = "HideInactive";
-    public static String LAST_USED_FOLDER = "LastUsedFolder";
-    public static String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
+    public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
+    public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
+    public static final String SLIDER_SETTING_PREF = "SliderSetting";
+    public static final String ROUTE_SORT_PREF = "RouteSorting";
+    public static final String ONTOP_SETTING_PREF = "OnTop";
+    public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
+    public static final String HIDE_REVERSING_PREF = "HideReversing";
+    public static final String HIDE_INACTIVE_PREF = "HideInactive";
+    public static final String LAST_USED_FOLDER = "LastUsedFolder";
+    public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
 
     // Constants
     // Width of locomotive images

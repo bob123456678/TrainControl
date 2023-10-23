@@ -42,7 +42,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "1.11.0 (Beta 36)";
+    public static final String VERSION = "1.11.0 (Beta 37)";
     public static final String PROG_TITLE = "TrainControl for Marklin Central Station v";
     
     //// Settings
