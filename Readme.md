@@ -107,7 +107,7 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-From v1.11.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for basic editing support, and accessible via the "Edit" button within the Layout tab.
+From v1.11.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
 
 Expanded support for CS3 layouts is planned for the future.
 
