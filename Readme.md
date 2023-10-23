@@ -155,7 +155,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v1.11.0 [Beta] (New feature: Layout editor integration on Windows. Activate or deactivate points to customize autonomously operating trains / chosen routes.)
+* v1.11.0 [Beta] (New feature: Layout editor integration on Windows. Activate or deactivate points to customize autonomously operating trains / chosen routes.  Numerous stability enhancements.)
     - Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
