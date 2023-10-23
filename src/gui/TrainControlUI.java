@@ -5473,6 +5473,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocAddressInput.setInheritsPopupMenu(true);
 
         jLabel3.setText("Locomotive Address");
+        jLabel3.setToolTipText("Integer for DCC/MM2, hex for MFX.");
         jLabel3.setFocusable(false);
 
         jLabel1.setText("Locomotive Name");
