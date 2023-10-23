@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -2041,6 +2043,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         initNewLayoutButton = new javax.swing.JButton();
         useCS2Layout = new javax.swing.JButton();
         EditExistingLocLabel3 = new javax.swing.JLabel();
+        aboutLabel = new javax.swing.JButton();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         debugArea = new javax.swing.JTextArea();
@@ -5733,6 +5736,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         EditExistingLocLabel3.setForeground(new java.awt.Color(0, 0, 115));
         EditExistingLocLabel3.setText("CS2 Layout UI Override");
 
+        aboutLabel.setForeground(new java.awt.Color(0, 0, 155));
+        aboutLabel.setText("About / Readme");
+        aboutLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        aboutLabel.setBorderPainted(false);
+        aboutLabel.setContentAreaFilled(false);
+        aboutLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        aboutLabel.setFocusable(false);
+        aboutLabel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                aboutLabelActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout ManageLocPanelLayout = new javax.swing.GroupLayout(ManageLocPanel);
         ManageLocPanel.setLayout(ManageLocPanelLayout);
         ManageLocPanelLayout.setHorizontalGroup(
@@ -5747,17 +5763,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGap(404, 404, Short.MAX_VALUE))
                     .addGroup(ManageLocPanelLayout.createSequentialGroup()
                         .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(EditExistingLocLabel3)
-                            .addComponent(AddNewLocLabel)
-                            .addComponent(EditExistingLocLabel1)
-                            .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(ManageLocPanelLayout.createSequentialGroup()
+                                .addComponent(AddNewLocLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(aboutLabel))
+                            .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(ManageLocPanelLayout.createSequentialGroup()
+                                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(EditExistingLocLabel3)
+                                    .addComponent(EditExistingLocLabel1))
+                                .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(54, 54, 54))))
         );
         ManageLocPanelLayout.setVerticalGroup(
             ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(ManageLocPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(AddNewLocLabel)
+                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(AddNewLocLabel)
+                    .addComponent(aboutLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -5768,7 +5792,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(41, Short.MAX_VALUE))
+                .addContainerGap(39, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -8682,8 +8706,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
         }
-        catch (IOException | URISyntaxException e1) {
-        }
+        catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
 
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
@@ -9005,6 +9028,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
         }));
     }//GEN-LAST:event_useCS2LayoutActionPerformed
+
+    private void aboutLabelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutLabelActionPerformed
+        try 
+        {
+            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
+        } catch (IOException | URISyntaxException e1) { }
+    }//GEN-LAST:event_aboutLabelActionPerformed
     
     public void clearLocIcon(Locomotive l)
     {
@@ -9913,6 +9943,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider ZSlider;
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
+    private javax.swing.JButton aboutLabel;
     private javax.swing.JButton allButton;
     private javax.swing.JCheckBox alwaysOnTopCheckbox;
     private javax.swing.JCheckBox atomicRoutes;
