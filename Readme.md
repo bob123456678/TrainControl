@@ -180,6 +180,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Changes to locomotive functions are now automatically synchronized
         - Fixed a bug where a shadow copy of a locomotive with the same name (but a different address) could exist in TrainControl's database
         - The "Sync w/ Central Station" right-click option will now also update the locomotive's address/functions/icon
+        - The manual "Add locomotive" option under Tools now accepts MFX addresses as integer or hex
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
