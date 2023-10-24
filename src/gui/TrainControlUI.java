@@ -5473,7 +5473,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocAddressInput.setInheritsPopupMenu(true);
 
         jLabel3.setText("Locomotive Address");
-        jLabel3.setToolTipText("Integer for DCC/MM2, hex for MFX.");
+        jLabel3.setToolTipText("Enter as integer or hex for MFX, and integer to DCC/MM2.");
         jLabel3.setFocusable(false);
 
         jLabel1.setText("Locomotive Name");
@@ -7774,14 +7774,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 if (this.LocTypeMFX.isSelected())
                 {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                    if (this.LocAddressInput.getText().contains("0x"))
+                    {
+                        locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                    }
+                    else
+                    {
+                        locAddress = Integer.parseInt(this.LocAddressInput.getText());
+                    }
                 }
                 else
                 {
                     locAddress = Integer.parseInt(this.LocAddressInput.getText());
                 }
             }
-            catch (Exception e)
+            catch (NumberFormatException e)
             {
                 JOptionPane.showMessageDialog(this,
                     "Please enter a numerical address");
