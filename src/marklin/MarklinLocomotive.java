@@ -113,7 +113,7 @@ public class MarklinLocomotive extends Locomotive
         this.UID = calculateUID();
         
         assert this.functionTypes.length == getMaxNumF(type);
-        assert functions.length == getMaxNumF(type);
+        assert this.functionState.length == getMaxNumF(type);
     }
     
     /**

@@ -32,7 +32,7 @@ public abstract class Locomotive
     private final int numF;
        
     // State of functions
-    private final boolean[] functionState;
+    protected boolean[] functionState;
     
     // A preset of preferred function state
     private boolean[] preferredFunctions;
@@ -224,6 +224,21 @@ public abstract class Locomotive
     }
     
     /**
+     * Safely sets the function state
+     * @param functionState 
+     */
+    public final void setFunctionState(boolean[] functionState)
+    {
+        this.functionState = new boolean[this.numF];
+        
+        // Safely copy function types - raw data is often shorter or longer than needed
+        for (int i = 0; i < functionState.length && i < this.functionState.length; i++)
+        { 
+            this.functionState[i] = functionState[i];
+        }
+    }
+    
+    /**
      * Gets the function type list
      * @return 
      */    
@@ -271,11 +286,11 @@ public abstract class Locomotive
     {
         this.name = name;
         this.direction = direction;
-        this.functionState = functionState;
         this.numF = numF;
         this._setSpeed(speed);
+        this.setFunctionState(functionState);
         this.setFunctionTypes(functionTypes);
-        
+      
         this.callbacks = new HashMap<>();
         
         this.preferredFunctions = preferredFunctions;
