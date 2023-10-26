@@ -80,6 +80,7 @@ The graph UI will show you which routes are active, which edges are locked, and 
 * (From v1.9.0) Full UI for editing autonomy graph models
 * (From v1.10.0) Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
 * (From v1.11.0) UI for editing track diagrams (Windows only)
+* (From V1.11.0) Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 
 **Requirements:**
 
