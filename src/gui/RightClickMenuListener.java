@@ -161,7 +161,14 @@ public class RightClickMenuListener extends MouseAdapter {
 
                     add(menuItem);
                 }
-                 
+                
+                addSeparator();
+
+                menuItem = new JMenuItem("Customize Function Icons");
+                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source));
+
+                add(menuItem);
+                     
                 // Option to clear the mapping
                 addSeparator();
 

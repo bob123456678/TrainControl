@@ -9046,6 +9046,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         } catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_aboutLabelActionPerformed
     
+    public void setFunctionIcon(Locomotive l, JButton source)
+    {
+        LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this);
+        // Select the locomotive
+        source.doClick();
+        
+        JOptionPane.showMessageDialog(this, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
+    }
+    
     public void clearLocIcon(Locomotive l)
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 

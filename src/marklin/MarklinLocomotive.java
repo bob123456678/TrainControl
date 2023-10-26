@@ -2,6 +2,7 @@ package marklin;
 
 import base.Locomotive;
 import base.RemoteDevice;
+import java.net.URL;
 import java.util.Objects;
 import marklin.udp.CS2Message;
 import util.Conversion;
@@ -43,6 +44,12 @@ public class MarklinLocomotive extends Locomotive
     
     // Reference to the network
     private final MarklinControlStation network;    
+    
+    // Local function icons
+    private final String resourcePath = "/gui/resources/functions";
+    public static final int NUM_FN_ICONS = 112;
+    // Track if user customizations were made
+    private boolean customFunctions = false;
                 
     /**
      * Constructor with name, type, and address
@@ -117,6 +124,32 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * Changes the function type for a single function
+     * @param fNo
+     * @param type 
+     * @param momentary 
+     */
+    public void setFunctionType(int fNo, int type, boolean momentary)
+    {
+        if (this.validF(fNo))
+        {
+            this.functionTypes[fNo] = type + (momentary ? 128 : 0);
+        }
+        
+        this.customFunctions = true;
+    }
+    
+    public void setCustomFunctions(boolean state)
+    {
+        this.customFunctions = state;
+    }
+    
+    public boolean isCustomFunctions()
+    {
+        return this.customFunctions;
+    }
+    
+    /**
      * Determines the Marklin UID based on address and protocol
      */
     private int calculateUID()
@@ -163,13 +196,30 @@ public class MarklinLocomotive extends Locomotive
         int index = active ? 1 : 0;
         String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
         
-        // > 128 just means it's a pulse function
-        if (fType > 112)
+        // > 128 just means it's a pulse function.  While loop in case this is 224-255
+        while (fType > NUM_FN_ICONS)
         {
-            fType = fType % 128;
+            fType = fType % Math.min(128, fType); // icons 113-127 do not exist
+        }
+
+        String iconName = "FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
+        
+        // Load local version of the marklin icon
+        try
+        {
+            URL resource = MarklinLocomotive.class.getResource(resourcePath + "/" + iconName);
+            return resource.toString();
+        }
+        catch (Exception e)
+        {
+            if (this.network.isDebug())
+            {
+                this.network.log("Missing local function icon: " + iconName);
+            }
         }
         
-        return "http://" + this.network.getIP() + "/fcticons/FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
+        // Icon was missing, try loading from central station
+        return "http://" + this.network.getIP() + "/fcticons/" + iconName;
     }
     
     /**

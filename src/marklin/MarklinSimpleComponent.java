@@ -34,6 +34,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private long totalRuntime;
     private long historicalOperatingTime;
     private String localImageURL;
+    private boolean customFunctions;
     
     // Route state
     private int s88;
@@ -144,6 +145,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.totalRuntime = l.getTotalRuntime();
         this.historicalOperatingTime = l.getHistoricalOperatingTime();
         this.localImageURL = l.getLocalImageURL();
+        this.customFunctions = l.isCustomFunctions();
     }
     
     public List<RouteCommand> getRoute()
@@ -289,5 +291,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public String getLocalImageURL()
     {
         return this.localImageURL;
+    }
+    
+    public boolean getCustomFunctions()
+    {
+        return this.customFunctions;
     }
 }

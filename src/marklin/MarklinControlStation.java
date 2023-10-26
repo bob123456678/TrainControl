@@ -43,7 +43,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v1.11.0 (Beta 42) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v1.11.0 (Beta 43) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -564,9 +564,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Update function types if they have changed
                 if (this.locDB.hasId(l.getUID()) && !Arrays.equals(this.locDB.getById(l.getUID()).getFunctionTypes(), l.getFunctionTypes()))
                 {
-                    this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes());
-                    
-                    this.log("Updated function types for " + l.getName());
+                    if (this.locDB.getById(l.getUID()).isCustomFunctions())
+                    {
+                        this.log("Function types for " + l.getName() + " do not match central station, but this will be ignored becaues the locomotive was customized via the UI.");
+                    }
+                    else
+                    {
+                        this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes());
+
+                        this.log("Updated function types for " + l.getName());
+                    }
                 }
                               
                 // Set current locomotive icon if a remote icon is available, and a local icon is not set
@@ -1398,6 +1405,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime(), c.getHistoricalOperatingTime());
         
         newLoc.setLocalImageURL(c.getLocalImageURL());
+        newLoc.setCustomFunctions(c.getCustomFunctions());
         
         this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
         

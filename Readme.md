@@ -189,6 +189,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
         - Added button to the Tools tab to initialize an empty layout on demand
     - Custom icons can now be chosen for locomotives, even if no icon is selected in the Central Station
+    - Custom function icons can now be chosen for locomotives, even if no icon is selected in the Central Station
     - Track diagram improvements
         - Added support for page links (pfeil) which change the active diagram page when clicked
         - Updated overpass track diagram icons
