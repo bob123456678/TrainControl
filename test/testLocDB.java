@@ -32,16 +32,20 @@ public class testLocDB {
     {   
         int numLocs = model.getLocList().size();
         String locName = "New locomotive test";
+        int address = 10;
         
-        model.newMFXLocomotive(locName, 10);
+        model.newMFXLocomotive(locName, address);
 
         assert model.getLocByName(locName) != null;   
         assert model.getLocList().size() == numLocs + 1;
+        assert model.getLocByName(locName).getAddress() == address;
+        assert model.getLocList().contains(locName);
         
         model.deleteLoc(locName);
-        
+     
         assert model.getLocByName(locName) == null;
         assert model.getLocList().size() == numLocs;
+        assert !model.getLocList().contains(locName);
     }
     
     /**
