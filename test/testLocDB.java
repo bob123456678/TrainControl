@@ -43,6 +43,24 @@ public class testLocDB {
         assert model.getLocByName(locName) == null;
         assert model.getLocList().size() == numLocs;
     }
+    
+    /**
+     * Adding and deleting a locomotive from the database
+     */
+    @Test
+    public void testRenameLoc()
+    {   
+        String locName = "New locomotive test 2";
+        String locName2 = "New locomotive test 2 copy";
+        
+        model.newMFXLocomotive(locName, 20);
+
+        model.renameLoc(locName, locName2);
+        
+        assert model.getLocByName(locName) == null;
+        assert model.getLocByName(locName2) != null;
+        assert locName2.equals(model.getLocByName(locName2).getName());
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
