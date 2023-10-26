@@ -554,7 +554,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.model.log("Saving UI state to disk.");
+            this.model.log("Saving UI state to: " + new File(TrainControlUI.DATA_FILE_NAME).getAbsolutePath());
         } 
         catch (IOException iOException)
         {

@@ -30,15 +30,18 @@ public class testLocDB {
     @Test
     public void testAddAndDeleteLoc()
     {   
+        int numLocs = model.getLocList().size();
         String locName = "New locomotive test";
         
         model.newMFXLocomotive(locName, 10);
 
         assert model.getLocByName(locName) != null;   
+        assert model.getLocList().size() == numLocs + 1;
         
         model.deleteLoc(locName);
         
         assert model.getLocByName(locName) == null;
+        assert model.getLocList().size() == numLocs;
     }
 
     @BeforeClass

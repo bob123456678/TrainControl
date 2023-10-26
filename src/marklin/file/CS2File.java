@@ -579,7 +579,7 @@ public final class CS2File
                 {
                     decoderType = MarklinLocomotive.decoderType.MULTI_UNIT;
 
-                    if (this.control != null)
+                    if (this.control != null && this.control.isDebug())
                     {
                         this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + uid);
                     }
@@ -920,7 +920,10 @@ public final class CS2File
                     }
                     else
                     {
-                        this.control.log("Layout: element has no coordinate info, assuming 0,0 (" + m + ")");
+                        if (this.control.isDebug())
+                        {
+                            this.control.log("Layout: element has no coordinate info, assuming 0,0 (" + m + ")");
+                        }
                     }
                     
                     Integer x = coord % 256;

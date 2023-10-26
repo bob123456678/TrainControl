@@ -6,6 +6,7 @@ import base.RemoteDeviceCollection;
 import base.RouteCommand;
 import gui.TrainControlUI;
 import java.awt.HeadlessException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,7 +43,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v1.11.0 (Beta 41) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v1.11.0 (Beta 42) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -439,8 +440,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
                 
-                this.log("Layout override setting enabled.  Will attempt to load static CS2 layout from: " + overrideLayoutPath);
-                this.log("This path should contain the same 'gleisbild' file structure as the CS2 config folder.");
+                this.log("Loading static layout files from: " + overrideLayoutPath);
+                
+                if (debug)
+                {
+                    this.log("This path should contain a 'config' folder with the same 'gleisbild' folder structure as on the CS2.");
+                }
                 
                 try
                 {
@@ -456,7 +461,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                        e.printStackTrace();
                     }
                            
-                    this.log("Error, reverting to default layout load.");
+                    this.log("Error, reverting to default layout load." + (!debug ? " Enable debug mode for details." : ""));
                     prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
@@ -674,11 +679,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.log("Saving DB to disk.");
+            this.log("Saving database state to: " + new File(MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
         } 
         catch (IOException iOException)
         {
-            this.log("Could not save DB. " + iOException.getMessage());
+            this.log("Could not save database. " + iOException.getMessage());
         }
     }
 
