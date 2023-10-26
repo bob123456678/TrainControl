@@ -39,6 +39,7 @@ public class testLocDB {
         assert model.getLocByName(locName) != null;   
         assert model.getLocList().size() == numLocs + 1;
         assert model.getLocByName(locName).getAddress() == address;
+        assert model.getLocByName(locName).getName() == locName;
         assert model.getLocList().contains(locName);
         
         model.deleteLoc(locName);
