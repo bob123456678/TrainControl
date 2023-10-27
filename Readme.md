@@ -12,7 +12,7 @@ operating your layout, with the Central Station serving solely as the track inte
 and MFX locomotive database.
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
-also be used to programmatically control the entire layout [see API](src/examples/Readme.md).  Layout and locomotive information is automatically
+also be used to programmatically control the entire layout ([see API](src/examples/Readme.md)).  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
