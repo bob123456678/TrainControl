@@ -405,6 +405,8 @@ Paths are selected at random from among the possible stations reachable by any g
     - A path with conflicting accessory commands will never be chosen 
     - From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
+From v1.11.0, you can mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
+
 ## Pace of operation
 
 `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
