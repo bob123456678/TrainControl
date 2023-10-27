@@ -59,14 +59,15 @@ public class testLocDB {
         String locName2 = "New locomotive test 2 copy";
         
         model.newMFXLocomotive(locName, 20);
+        model.deleteLoc(locName2);
 
         model.renameLoc(locName, locName2);
-        
+                
         assert model.getLocByName(locName) == null;
         assert model.getLocByName(locName2) != null;
         assert locName2.equals(model.getLocByName(locName2).getName());
     }
-
+    
     @BeforeClass
     public static void setUpClass() throws Exception
     {

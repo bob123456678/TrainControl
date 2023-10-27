@@ -197,7 +197,6 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Added a button to revert to the CS2 layout when currently using a local layout
         - Fixed UI errors when TrainControl was run without a layout
         - Fixed bug where empty rows/columns in layouts were not rendered correctly
-        - Padding at the top/left of the layout is now rendered, consistent with what is shown in CS2 track diagrams
         - Text labels will now be rendered on any tile with a .text property
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database

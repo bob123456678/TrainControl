@@ -7794,6 +7794,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     "Please enter a numerical address");
                 return;
             }
+            
+            locAddress = Math.abs(locAddress);
 
             if (type == marklin.MarklinLocomotive.decoderType.MM2)
             {

@@ -17,7 +17,7 @@ public class MarklinLayout
     private final int sy;
     
     // Set to true to trim layouts around the top/left edges & center in the UI
-    public static final boolean IGNORE_PADDING = false;
+    public static final boolean IGNORE_PADDING = true;
     
     int minx = 0;
     int miny = 0;
