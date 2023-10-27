@@ -3,9 +3,9 @@
 Beyond its GUI, the TrainControl software can be used to progammatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
 
 There are three types of automation described on this page:
-    - Manually defining basic automation logic and commands via the Java API (good)
-    - Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
-    - Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
+* Manually defining basic automation logic and commands via the Java API (good)
+* Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
+* Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
 
 ## API
 
