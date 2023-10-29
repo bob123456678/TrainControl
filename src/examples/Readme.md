@@ -348,13 +348,13 @@ Point colors:
 * Blue - no active route.  Label indicates if locomotive is stationed.
 * Red - active route - locomotive soon to pass through
 * Green - active route - locomotive has passed through
-* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v1.11.0)
+* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)
 
 Point shapes:
-* Circle - regular station
-* Square - terminus station
-* Cross - reversing station (large) or reversing point (small)
-* Diamond - intermediate point that is not a station (locomotives pass through during a route; locomotives manually stationed here will not be automatically run)
+* Circle - regular station.  Any train can stop here.
+* Square - terminus station. Only reversable trains can stop here.  They will switch direction on arrival.
+* Cross - reversing station (large) or reversing point (small).  Any train can stop here and will switch direciton on arrival.  Useful for shunting/parking.
+* Diamond - intermediate point that is not a station (trains pass through these while operating between stations; locomotives manually placed here will not be automatically run)
 
 ![Sample layout](../../assets/graph2.png?raw=true)
 
@@ -405,7 +405,7 @@ Paths are selected at random from among the possible stations reachable by any g
     - A path with conflicting accessory commands will never be chosen 
     - From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
-From v1.11.0, you can mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
+From v2.0.0, you can mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
 
 ## Pace of operation
 

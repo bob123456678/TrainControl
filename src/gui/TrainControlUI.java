@@ -2040,6 +2040,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CS3OpenBrowser = new javax.swing.JButton();
         initNewLayoutButton = new javax.swing.JButton();
         useCS2Layout = new javax.swing.JButton();
+        jSeparator6 = new javax.swing.JSeparator();
         EditExistingLocLabel3 = new javax.swing.JLabel();
         aboutLabel = new javax.swing.JButton();
         logPanel = new javax.swing.JPanel();
@@ -5654,7 +5655,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel12.setBackground(new java.awt.Color(245, 245, 245));
         jPanel12.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
-        jLabel32.setText("Layout files are currently being loaded from:");
+        jLabel32.setText("\"Gleisbild\" layout files are currently being loaded from:");
 
         LayoutPathLabel.setText("path to layout folder");
 
@@ -5686,7 +5687,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         useCS2Layout.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        useCS2Layout.setText("Switch to CS2 Layout");
+        useCS2Layout.setText("Switch to Central Station Layout");
         useCS2Layout.setToolTipText("Reverts to using the track diagram on your Central Station, if any.");
         useCS2Layout.setFocusable(false);
         useCS2Layout.addActionListener(new java.awt.event.ActionListener() {
@@ -5704,14 +5705,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel32)
                     .addComponent(LayoutPathLabel)
-                    .addGroup(jPanel12Layout.createSequentialGroup()
-                        .addComponent(OverrideCS2DataPath)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(initNewLayoutButton))
-                    .addGroup(jPanel12Layout.createSequentialGroup()
-                        .addComponent(CS3OpenBrowser)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(useCS2Layout)))
+                    .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel12Layout.createSequentialGroup()
+                            .addComponent(useCS2Layout)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(CS3OpenBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(jSeparator6, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel12Layout.createSequentialGroup()
+                            .addComponent(OverrideCS2DataPath)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(initNewLayoutButton))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel12Layout.setVerticalGroup(
@@ -5726,14 +5729,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(OverrideCS2DataPath)
                     .addComponent(initNewLayoutButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, 0)
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(CS3OpenBrowser)
-                    .addComponent(useCS2Layout))
+                    .addComponent(useCS2Layout)
+                    .addComponent(CS3OpenBrowser))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         EditExistingLocLabel3.setForeground(new java.awt.Color(0, 0, 115));
-        EditExistingLocLabel3.setText("CS2 Layout UI Override");
+        EditExistingLocLabel3.setText("Layout Diagram Data Source");
 
         aboutLabel.setForeground(new java.awt.Color(0, 0, 155));
         aboutLabel.setText("About / Readme");
@@ -5769,8 +5774,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(ManageLocPanelLayout.createSequentialGroup()
                                 .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(EditExistingLocLabel3)
-                                    .addComponent(EditExistingLocLabel1))
+                                    .addComponent(EditExistingLocLabel1)
+                                    .addComponent(EditExistingLocLabel3))
                                 .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(54, 54, 54))))
         );
@@ -5791,7 +5796,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(EditExistingLocLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(39, Short.MAX_VALUE))
+                .addContainerGap(29, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -10058,6 +10063,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
+    private javax.swing.JSeparator jSeparator6;
     private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;

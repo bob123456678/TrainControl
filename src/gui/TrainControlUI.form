@@ -4938,8 +4938,8 @@
                                   <Component id="jPanel12" alignment="0" max="32767" attributes="0"/>
                                   <Group type="102" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="EditExistingLocLabel1" min="-2" max="-2" attributes="0"/>
                                           <Component id="EditExistingLocLabel3" min="-2" max="-2" attributes="0"/>
-                                          <Component id="EditExistingLocLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                   </Group>
@@ -4968,7 +4968,7 @@
                       <Component id="EditExistingLocLabel3" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel12" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="39" max="32767" attributes="0"/>
+                      <EmptySpace pref="29" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -5305,15 +5305,18 @@
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="jLabel32" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="LayoutPathLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Group type="102" alignment="0" attributes="0">
-                                  <Component id="OverrideCS2DataPath" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="initNewLayoutButton" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <Group type="102" alignment="0" attributes="0">
-                                  <Component id="CS3OpenBrowser" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="useCS2Layout" min="-2" max="-2" attributes="0"/>
+                              <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="useCS2Layout" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="CS3OpenBrowser" max="32767" attributes="0"/>
+                                  </Group>
+                                  <Component id="jSeparator6" alignment="0" max="32767" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="OverrideCS2DataPath" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="initNewLayoutButton" min="-2" max="-2" attributes="0"/>
+                                  </Group>
                               </Group>
                           </Group>
                           <EmptySpace max="32767" attributes="0"/>
@@ -5333,9 +5336,11 @@
                               <Component id="initNewLayoutButton" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
+                          <Component id="jSeparator6" min="-2" pref="10" max="-2" attributes="0"/>
+                          <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="CS3OpenBrowser" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="useCS2Layout" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="CS3OpenBrowser" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
@@ -5345,7 +5350,7 @@
               <SubComponents>
                 <Component class="javax.swing.JLabel" name="jLabel32">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Layout files are currently being loaded from:"/>
+                    <Property name="text" type="java.lang.String" value="&quot;Gleisbild&quot; layout files are currently being loaded from:"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JLabel" name="LayoutPathLabel">
@@ -5394,13 +5399,15 @@
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Tahoma" size="11" style="1"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="Switch to CS2 Layout"/>
+                    <Property name="text" type="java.lang.String" value="Switch to Central Station Layout"/>
                     <Property name="toolTipText" type="java.lang.String" value="Reverts to using the track diagram on your Central Station, if any."/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="useCS2LayoutActionPerformed"/>
                   </Events>
+                </Component>
+                <Component class="javax.swing.JSeparator" name="jSeparator6">
                 </Component>
               </SubComponents>
             </Container>
@@ -5409,7 +5416,7 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="CS2 Layout UI Override"/>
+                <Property name="text" type="java.lang.String" value="Layout Diagram Data Source"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JButton" name="aboutLabel">

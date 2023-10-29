@@ -37,9 +37,11 @@ Right-click a locomotive to change it or set additional options, such as preferr
 
 Track diagrams for your layout are downloaded automatically from the CS2, or configurable manually via local layout files if using the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
-On Windows, you can also edit local track diagrams via a bundled app.
+![UI screenshot: layout viewer](assets/tc_layout_v2.png?raw=true)
 
-![UI screenshot: layout](assets/ui_layout.png?raw=true)
+From v2.0.0, on Windows only, you can also edit local track diagrams via a bundled app.
+
+![UI screenshot: layout editor](assets/track_diagram_editor.png?raw=true)
 
 **Keyboard**
 
@@ -55,11 +57,11 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 **Full Autonomy**
 
-Defined via a special [JSON configuration file](src/examples/Readme.md), represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.
+Defined via a special [JSON configuration file](src/examples/Readme.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.
 
 ![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
 
-The graph UI will show you which routes are active, which edges are locked, and where different trains are stationed.  This can also help you debug your graph as you build it.  While trains are not running, you can right-click any station to reassign a train.
+The graph UI will show you which routes are active, which edges are locked, and where different trains are stationed.  This can also help you debug your graph as you build it.  While trains are not running, you can right-click any station to reassign a train and view possible routes.
 
 <img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
 
@@ -79,8 +81,8 @@ The graph UI will show you which routes are active, which edges are locked, and 
 * (From v1.8.0) Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
 * (From v1.9.0) Full UI for editing autonomy graph models
 * (From v1.10.0) Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
-* (From v1.11.0) UI for editing track diagrams (Windows only)
-* (From V1.11.0) Customize locomotive icons and function icons without needing to set them in the CS2/CS3
+* (From v2.0.0) Full UI for editing track diagrams (Windows only)
+* (From V2.0.0) Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 
 **Requirements:**
 
@@ -108,7 +110,7 @@ If you change the local files, clicking on "Sync with CS2" will update the layou
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-From v1.11.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
+From v2.0.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
 
 Expanded support for CS3 layouts is planned for the future.
 
@@ -165,13 +167,28 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 ## Changelog
 
-* v1.11.0 [Beta] (New feature: Layout editor integration on Windows. Activate or deactivate points to customize autonomously operating trains / chosen routes.  Numerous stability enhancements.)
-    - Points can now be marked as active or inactive
+* v2.0.0 [Beta] (This version adds a few missing features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
+    - Integrated a layout editor app [(TrackDiagramEditor)](https://github.com/bob123456678/TrackDiagramEditor) to allow for the editing of track diagrams (Windows only)
+        - Added an edit button to each layout page; this automatically opens the editor
+        - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
+        - Added button to the Tools tab to initialize an empty layout on demand
+    - Track diagram improvements
+        - Added support for page links (pfeil) which change the active diagram page when clicked
+        - Updated overpass track diagram icons
+        - Added a button to revert to the CS2 layout when currently using a local layout
+        - Fixed UI errors when TrainControl was run without a layout
+        - Fixed bug where empty rows/columns in layouts were not rendered correctly
+        - Text labels will now be rendered on any tile with a .text property    
+    - Expanded locomotive customization options
+        - Custom icons from your PC can now be chosen for locomotives, even if no icon is selected in the Central Station
+        - Function icons can now be assigned to locomotive functions, even if no icon is selected in the Central Station
+        - Locally configured icons will get priority over Central Station icons
+    - Autonomy graph: Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
         - Added corresponding `active` JSON key within `points`
-        - Added corresponding option to the right-click menu in the graph UI
-    - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
+        - Added corresponding controls to the right-click menu in the graph UI
+        - Reverted behavior from v1.10.0 where all reversing stations were automatically treated as inactive
     - Graph UI improvements
         - The edge deletion option in the graph UI right-click menu will now prompt for an edge rather than listing all edges
         - Improved semi-autonomous operation UI (larger fonts, less scrolling)
@@ -185,19 +202,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
-    - Integrated a layout editor app to allow for the editing of track diagrams (Windows only)
-        - Added an edit button to each layout page; this automatically opens the editor
-        - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
-        - Added button to the Tools tab to initialize an empty layout on demand
-    - Custom icons can now be chosen for locomotives, even if no icon is selected in the Central Station
-    - Custom function icons can now be chosen for locomotives, even if no icon is selected in the Central Station
-    - Track diagram improvements
-        - Added support for page links (pfeil) which change the active diagram page when clicked
-        - Updated overpass track diagram icons
-        - Added a button to revert to the CS2 layout when currently using a local layout
-        - Fixed UI errors when TrainControl was run without a layout
-        - Fixed bug where empty rows/columns in layouts were not rendered correctly
-        - Text labels will now be rendered on any tile with a .text property
+
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 
