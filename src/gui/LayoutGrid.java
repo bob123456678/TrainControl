@@ -7,10 +7,14 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
+import util.ImageUtil;
 
 /**
  *
@@ -24,7 +28,7 @@ public class LayoutGrid
     
     // Should the .text property be rendered in non-empty cells?
     public static final boolean ALLOW_TEXT_ANYWHERE = true;
-
+    
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
      * @param layout reference to the layout from the model
@@ -45,7 +49,8 @@ public class LayoutGrid
 
         // Increment width to fix GBC ui issue
         width = width + 1;
-        
+        height = height + 1;
+
         // Create layout                      
         JPanel container;
         
@@ -90,14 +95,14 @@ public class LayoutGrid
             for(int x = 0; x < width; x++)
             {
                 // GBC fix - we create a dummy column at the end with nothing in it to ensure long labels don't misalign things
-                if (x == (width - 1))
+                if (x == (width - 1) || y == (height - 1))
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui);
                     gbc.gridwidth = 0;
+                    gbc.gridheight = 0;
                     gbc.gridx = x;
                     gbc.gridy = y;
                     container.add(grid[x][y], gbc);  
-
                     continue;
                 }
                 // End GBC fix
@@ -105,12 +110,12 @@ public class LayoutGrid
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                 
                 grid[x][y] = new LayoutLabel(c, master, size, ui);
-                
+                gbc.anchor = GridBagConstraints.BASELINE_LEADING;
+
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
                 {
                     // Text labels can overflow.  This ensures that they don't widen other cells.
                     gbc.gridwidth = 0;
-                    gbc.anchor = GridBagConstraints.BASELINE_LEADING;
                 }
                 else
                 {
@@ -119,9 +124,12 @@ public class LayoutGrid
                 
                 gbc.gridx = x;
                 gbc.gridy = y;
+                gbc.gridheight = 1; // Height will always be 1, except if rendering text
                 
-                container.add(grid[x][y], gbc);  
+                // grid[x][y].setBorder(new LineBorder(Color.BLUE, 1)); // for debugging only
 
+                container.add(grid[x][y], gbc);  
+                
                 // Render text separately
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
                 {
@@ -130,6 +138,22 @@ public class LayoutGrid
                     text.setForeground(Color.BLACK);
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Sans Serif", Font.PLAIN, size / 2));
+                    
+                    // Shift on-tile labels down
+                    // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
+                    // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
+                    if (!c.isText())
+                    {
+                        //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
+                        gbc.gridheight = 0;
+                        text.setText("<html><br>" + text.getText() + "</html>");                                     
+                    }
+                    else
+                    {
+                        //text.setBorder(new EmptyBorder(5 * (size / 30), 0, 0, 0)); //top, left, bottom, right
+                        // 11 * (size / 30) at left to center
+                        gbc.gridheight = 0;    
+                    }
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);

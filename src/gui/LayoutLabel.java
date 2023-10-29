@@ -96,6 +96,11 @@ public final class LayoutLabel extends JLabel
                     });    
                 }
             }
+            // Blank tiles need to be the same size
+            else
+            {
+                this.setIcon(new EmptyIcon(size, size)); 
+            }
         }
         // Blank tiles need to be the same size
         else
