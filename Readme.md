@@ -178,7 +178,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Added a button to revert to the CS2 layout when currently using a local layout
         - Fixed UI errors when TrainControl was run without a layout
         - Fixed bug where empty rows/columns in layouts were not rendered correctly
-        - Text labels will now be rendered on any tile with a .text property    
+        - Text labels will now be rendered on any tile with a .text property (such text is aligned between track icons)
     - Expanded locomotive customization options
         - Custom icons from your PC can now be chosen for locomotives, even if no icon is selected in the Central Station
         - Function icons can now be assigned to locomotive functions, even if no icon is selected in the Central Station
