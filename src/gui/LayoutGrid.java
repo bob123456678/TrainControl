@@ -2,6 +2,7 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -146,7 +147,10 @@ public class LayoutGrid
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
-                        text.setText("<html><br>" + text.getText() + "</html>");                                     
+                        text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");      
+                        
+                        // How the correct cursor
+                        if (c.isClickable()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     else
                     {

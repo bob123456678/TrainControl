@@ -155,6 +155,12 @@ public class MarklinLayoutComponent
         return this.label != null && !"".equals(label);
     }
     
+    public boolean isClickable()
+    {
+        return this.isRoute() || this.isSignal() || this.isSwitch() || this.isUncoupler() || this.isFeedback()
+                || this.isLamp() || this.isLink();
+    }
+    
     public String getLabel()
     {
         return this.label;

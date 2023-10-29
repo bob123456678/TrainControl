@@ -84,14 +84,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x2020a
- .artikel=-1
- .text=9
-element
- .id=0x2020b
- .artikel=-1
- .text=10
-element
  .id=0x20304
  .typ=gerade
  .drehung=1
@@ -105,10 +97,12 @@ element
  .id=0x2030a
  .typ=fahrstrasse
  .artikel=47
+ .text=   9
 element
  .id=0x2030b
  .typ=fahrstrasse
  .artikel=48
+ .text=   10
 element
  .id=0x2030c
  .typ=bogen
@@ -163,7 +157,7 @@ element
 element
  .id=0x20409
  .artikel=-1
- .text=6
+ .text= 6
 element
  .id=0x2040a
  .typ=prellbock
@@ -245,7 +239,7 @@ element
 element
  .id=0x20509
  .artikel=-1
- .text=7
+ .text= 7
 element
  .id=0x2050a
  .typ=s88kontakt
@@ -323,7 +317,7 @@ element
 element
  .id=0x20609
  .artikel=-1
- .text=8
+ .text= 8
 element
  .id=0x2060a
  .typ=gerade
@@ -574,27 +568,27 @@ element
 element
  .id=0x20a08
  .artikel=-1
- .text=Reset
+ .text= Reset
 element
  .id=0x20a0c
  .artikel=-1
- .text=5
+ .text=  5
 element
  .id=0x20a0d
  .artikel=-1
- .text=4
+ .text=  4
 element
  .id=0x20a0e
  .artikel=-1
- .text=3
+ .text=  3
 element
  .id=0x20a0f
  .artikel=-1
- .text=2
+ .text=  2
 element
  .id=0x20a11
  .artikel=-1
- .text=1
+ .text=  1
 element
  .id=0x20a12
  .typ=s88kontakt

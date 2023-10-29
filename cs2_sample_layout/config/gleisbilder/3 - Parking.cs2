@@ -120,10 +120,7 @@ element
  .id=0x30108
  .typ=fahrstrasse
  .artikel=38
-element
- .id=0x30109
- .artikel=-1
- .text=16
+ .text=  16
 element
  .id=0x3010a
  .typ=signal
@@ -179,10 +176,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30206
- .artikel=-1
- .text=13
-element
  .id=0x3020a
  .typ=s88kontakt
  .drehung=1
@@ -194,17 +187,10 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x3020c
- .artikel=-1
- .text=10
-element
  .id=0x3020d
  .typ=fahrstrasse
  .artikel=18
-element
- .id=0x3020e
- .artikel=-1
- .text=9
+ .text=   9
 element
  .id=0x3020f
  .typ=bogen
@@ -247,6 +233,7 @@ element
  .id=0x30306
  .typ=fahrstrasse
  .artikel=36
+ .text=  13
 element
  .id=0x3030a
  .typ=prellbock
@@ -260,6 +247,7 @@ element
  .id=0x3030c
  .typ=fahrstrasse
  .artikel=19
+ .text=  10
 element
  .id=0x3030d
  .typ=prellbock
@@ -311,17 +299,10 @@ element
  .drehung=2
  .artikel=-1
 element
- .id=0x30407
- .artikel=-1
- .text=12
-element
- .id=0x30409
- .artikel=-1
- .text=   11
-element
  .id=0x3040a
  .typ=fahrstrasse
  .artikel=43
+ .text=  11
 element
  .id=0x3040b
  .typ=gerade
@@ -355,7 +336,7 @@ element
 element
  .id=0x30411
  .artikel=-1
- .text=8
+ .text= 8
 element
  .id=0x30415
  .typ=gerade
@@ -385,6 +366,7 @@ element
  .id=0x30507
  .typ=fahrstrasse
  .artikel=34
+ .text=  12
 element
  .id=0x3050b
  .typ=gerade
@@ -422,7 +404,7 @@ element
 element
  .id=0x30512
  .artikel=-1
- .text=7
+ .text= 7
 element
  .id=0x30515
  .typ=gerade
@@ -505,7 +487,7 @@ element
 element
  .id=0x30614
  .artikel=-1
- .text=6
+ .text= 6
 element
  .id=0x30615
  .typ=gerade
@@ -594,10 +576,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30808
- .artikel=-1
- .text=18
-element
  .id=0x3080c
  .typ=bogen
  .artikel=-1
@@ -637,7 +615,7 @@ element
 element
  .id=0x30814
  .artikel=-1
- .text=5
+ .text= 5
 element
  .id=0x30815
  .typ=gerade
@@ -660,10 +638,6 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x30906
- .artikel=-1
- .text=14
-element
  .id=0x30907
  .typ=gerade
  .drehung=1
@@ -672,6 +646,7 @@ element
  .id=0x30908
  .typ=fahrstrasse
  .artikel=37
+ .text=  18
 element
  .id=0x30909
  .typ=pfeil
@@ -704,7 +679,7 @@ element
 element
  .id=0x30912
  .artikel=-1
- .text=4
+ .text= 4
 element
  .id=0x30914
  .typ=bogen
@@ -734,6 +709,7 @@ element
  .id=0x30a06
  .typ=fahrstrasse
  .artikel=35
+ .text=  14
 element
  .id=0x30a07
  .typ=signal
@@ -868,7 +844,7 @@ element
 element
  .id=0x30b14
  .artikel=-1
- .text=3
+ .text= 3
 element
  .id=0x30b15
  .typ=gerade
@@ -949,7 +925,7 @@ element
 element
  .id=0x30c14
  .artikel=-1
- .text=2
+ .text= 2
 element
  .id=0x30c15
  .typ=gerade
@@ -1031,7 +1007,7 @@ element
 element
  .id=0x30d12
  .artikel=-1
- .text=1
+ .text= 1
 element
  .id=0x30d15
  .typ=gerade

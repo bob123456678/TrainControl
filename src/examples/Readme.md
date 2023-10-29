@@ -356,7 +356,7 @@ Point shapes:
 * Cross - reversing station (large) or reversing point (small).  Any train can stop here and will switch direciton on arrival.  Useful for shunting/parking.
 * Diamond - intermediate point that is not a station (trains pass through these while operating between stations; locomotives manually placed here will not be automatically run)
 
-![Sample layout](../../assets/graph2.png?raw=true)
+![Sample layout](../../assets/graph2b.png?raw=true)
 
 # Prettifying the Graph Visualizaton
 
