@@ -3,10 +3,13 @@ package util;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineMetrics;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
@@ -17,7 +20,7 @@ import java.util.HashMap;
 public class ImageUtil
 {
     
-     public static final HashMap<RenderingHints.Key, Object> RenderingProperties = new HashMap<>();
+    public static final HashMap<RenderingHints.Key, Object> RenderingProperties = new HashMap<>();
 
     static
     {
@@ -101,5 +104,54 @@ public class ImageUtil
         graphics.dispose();
 
         return rotatedImage;
+    }
+    
+    /**
+     * https://stackoverflow.com/questions/15975610/java-image-scaling-improve-quality
+     * @param image
+     * @param width
+     * @param height
+     * @return 
+     */
+    public static BufferedImage getScaledImage(BufferedImage image, int width, int height)
+    {
+        int imageWidth  = image.getWidth();
+        int imageHeight = image.getHeight();
+
+        double scaleX = (double)width/imageWidth;
+        double scaleY = (double)height/imageHeight;
+        AffineTransform scaleTransform = AffineTransform.getScaleInstance(scaleX, scaleY);
+        AffineTransformOp bilinearScaleOp = new AffineTransformOp(scaleTransform, AffineTransformOp.TYPE_BILINEAR);
+
+        return bilinearScaleOp.filter(
+            image,
+            new BufferedImage(width, height, image.getType()));
+    }
+    
+    /**
+    * Converts a given Image into a BufferedImage
+    * https://stackoverflow.com/questions/13605248/java-converting-image-to-bufferedimage
+    * @param img The Image to be converted
+    * @return The converted BufferedImage
+    */
+    public static BufferedImage toTransparentBufferedImage(Image img)
+    {
+        /*if (img instanceof BufferedImage)
+        {
+            return (BufferedImage) img;
+        }*/
+
+        // Create a buffered image with transparency
+        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the image on to the buffered image
+        Graphics2D bGr = bimage.createGraphics();
+        bGr.setColor(new Color(0,0,0,0));
+        bGr.fillRect(0, 0, img.getWidth(null), img.getHeight(null));
+        bGr.drawImage(img, 0, 0, null);
+        bGr.dispose();
+
+        // Return the buffered image
+        return bimage;
     }
 }

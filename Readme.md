@@ -16,7 +16,7 @@ also be used to programmatically control the entire layout ([see API](src/exampl
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
-which enables tracking train locations for *fully autonmous* operation at the push of a single button,
+which enables tracking train locations for *fully autonomous* operation at the push of a single button,
 as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes.
 
 ## Overview
@@ -202,7 +202,8 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
-
+    - Improved quality of locomotive and function icons (they will be less pixelated)
+    - Increased size of the active locomotive icon
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
 

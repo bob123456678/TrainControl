@@ -362,7 +362,7 @@ Point shapes:
 
 For each point, you can specify optional, relative `x` and `y` coordinates in the JSON: these will fix the points to a specific location on the graph.  If any point is missing a coordinate, the points on the graph will assume a random layout.
 
-If you want to adjust the graph once created, maximize it, use your mouse to move points around, and then press the `C` key.  Coordinates will be shown in the console, which you can then paste into your JSON file.
+If you want to adjust the graph once created, maximize it, and simply use your mouse to move points around.  The coordinates will automatically be saved on exit, or you can use the "Export Current Graph" button to view the updated JSON file.
 
 # Terminus Stations
 
