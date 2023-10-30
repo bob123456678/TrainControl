@@ -19,9 +19,9 @@ import marklin.MarklinLocomotive;
  */
 public final class LocomotiveSelectorItem extends javax.swing.JPanel {
     
-    private MarklinLocomotive loc;
+    private final MarklinLocomotive loc;
     private TrainControlUI tcui;
-    private JPanel mainLocList;
+    private final JPanel mainLocList;
     
     /**
      * Creates new form LocomotiveSelectorItem
