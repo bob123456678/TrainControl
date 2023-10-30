@@ -198,7 +198,8 @@ public final class LayoutLabel extends JLabel
      */
     public void updateImage()
     {
-        new Thread(() -> {
+        new Thread(() -> 
+        {
             if (this.component != null)
             {
                 if (!this.component.getImageName(size).equals(this.imageName))
@@ -219,25 +220,25 @@ public final class LayoutLabel extends JLabel
 
         public EmptyIcon()
         {
-          this(0, 0);
+            this(0, 0);
         }
 
         public EmptyIcon(int width, int height)
         {
-          this.width = width;
-          this.height = height;
+            this.width = width;
+            this.height = height;
         }
 
         @Override
         public int getIconHeight()
         {
-          return height;
+            return height;
         }
 
         @Override
         public int getIconWidth()
         {
-          return width;
+            return width;
         }
 
         @Override

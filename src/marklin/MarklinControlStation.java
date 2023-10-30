@@ -43,7 +43,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 46) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 47) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1075,7 +1075,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         numMessagesProcessed +=1;
         
         // Send the message to the appropriate listener
-        if(message.isLocCommand())
+        if (message.isLocCommand())
         {               
             Integer id = message.extractUID();
             

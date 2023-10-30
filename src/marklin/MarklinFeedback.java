@@ -53,17 +53,20 @@ public class MarklinFeedback extends Feedback
      */
     public void updateTiles()
     {        
-        Iterator<LayoutLabel> i = this.tiles.iterator();
-        while (i.hasNext())
+        new Thread(() ->
         {
-            LayoutLabel nxtTile = i.next();
-            nxtTile.updateImage();
-
-            if (!nxtTile.isParentVisible())
+            Iterator<LayoutLabel> i = this.tiles.iterator();
+            while (i.hasNext())
             {
-                i.remove();
+                LayoutLabel nxtTile = i.next();
+                nxtTile.updateImage();
+
+                if (!nxtTile.isParentVisible())
+                {
+                    i.remove();
+                }
             }
-        }
+        }).start();
     }
         
     @Override
