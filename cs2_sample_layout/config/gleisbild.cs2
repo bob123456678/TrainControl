@@ -20,3 +20,8 @@ seite
  .name=3 - Parking
  .xoffset=2
  .yoffset=1
+seite
+ .id=4
+ .name=5 - Combined
+ .xoffset=2
+ .yoffset=2
