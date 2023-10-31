@@ -559,8 +559,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         } 
         catch (IOException iOException)
         {
-            this.model.log("Could not save UI state. " 
-                + iOException.getMessage());
+            this.model.log("Could not save UI state. " + iOException.getMessage());
         }
         
         if (this.autosave.isSelected() && null != this.model.getAutoLayout() 
@@ -576,7 +575,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 try
                 {
                     this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
-                    this.model.log("Auto-saved autonomy state.");
+                    this.model.log("Auto-saving autonomy state...");
                 }
                 catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException ex)
                 {
@@ -594,6 +593,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 // Write object out to disk
                 obj_out.writeObject(this.autonomyJSON.getText());
+                
+                this.model.log("Saved autonomy JSON to: " + new File(TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
             }
             catch (IOException iOException)
             {
@@ -946,7 +947,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 catch (Exception e)
                 {
-                    this.model.log("Critical error while initializing demo layout.");
+                    this.model.log("Critical error while initializing demo layout: " + e.getMessage());
 
                     if (this.model.isDebug())
                     {
@@ -954,8 +955,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                 }
                 
-                this.initNewLayoutButton.setEnabled(true);
-                
+                this.initNewLayoutButton.setEnabled(true);      
             }));
         }
         else

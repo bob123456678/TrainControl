@@ -68,8 +68,9 @@ The graph UI will show you which routes are active, which edges are locked, and 
 ## Features
 
 * Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
-* View and interact with layout diagrams, with support for multiple windows
 * Configure up to 8 different key mappings for up to 208 locomotives
+* Simultaneous operation across multiple PCs
+* View and interact with layout diagrams, with support for multiple windows
 * Convenient hotkeys for power off, emergency stop, and smooth deceleration
 * Set up automatic and conditional routes triggered by S88 feedback modules
 * Automate bulk tasks such as turning off all functions

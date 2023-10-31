@@ -57,7 +57,7 @@ public abstract class Feedback
      * Sets the state of the feedback
      * @param set
      */
-    protected void _setState(boolean set)
+    synchronized protected void _setState(boolean set)
     {
         if (set != this.set)
         {
