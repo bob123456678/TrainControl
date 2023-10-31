@@ -57,7 +57,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 **Full Autonomy**
 
-Defined via a special [JSON configuration file](src/examples/Readme.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.
+Defined via a special [JSON configuration file](src/examples/Readme.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
 ![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
 
@@ -67,29 +67,34 @@ The graph UI will show you which routes are active, which edges are locked, and 
 
 ## Features
 
-* Easily control locomotives (mm2, mfx, dcc), signals, switches, and routes
-* Configure up to 8 different key mappings for up to 208 locomotives
-* Simultaneous operation across multiple PCs
-* View and interact with layout diagrams, with support for multiple windows
-* Convenient hotkeys for power off, emergency stop, and smooth deceleration
-* Set up automatic and conditional routes triggered by S88 feedback modules
-* Automate bulk tasks such as turning off all functions
+* Easily control locomotives (MM2, MFX, DCC), signals, switches, and routes
 * Download locomotive, layout, and route information from the CS2/CS3
-* Set function and speed presets for locomotives
-* View S88 feedback
+* Customize locomotive icons and function icons without needing to set them in the CS2/CS3
+* Powerful keyboard interface
+    * Configure up to 8 different key mappings for up to 208 locomotives
+    * Convenient hotkeys for power off, emergency stop, and smooth deceleration
+    * Simultaneous operation across multiple PCs
+* Track diagrams
+    * View unlimited layout diagrams, with support for multiple windows
+    * Toggle signals, switches, lights, uncouplers, and routes
+    * View S88 feedback
+    * Full UI for editing track diagrams (Windows only)
+* Basic automation
+    * Set up automatic and conditional routes triggered by S88 feedback modules
+    * Automate bulk tasks such as turning off all functions
+    * Set function and speed presets for locomotives
+* Advanced automation
+    * [Graph model](src/examples/Readme.md) w/ JSON configuration for location tracking and fully autonomous train operation
+    * Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
+    * Full UI for editing autonomy graph models
+    * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
-* (From v1.8.0) [Graph model](src/examples/Readme.md) w/ JSON configuration for dynamic layout modeling and fully autonomous train operation
-* (From v1.8.0) Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
-* (From v1.9.0) Full UI for editing autonomy graph models
-* (From v1.10.0) Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
-* (From v2.0.0) Full UI for editing track diagrams (Windows only)
-* (From v2.0.0) Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 
 **Requirements:**
 
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
-* Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings
+* Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (a warning will be shown after 15 seconds if this is not enabled)
 
 **Limitations:**
 
@@ -99,7 +104,7 @@ The graph UI will show you which routes are active, which edges are locked, and 
 **Layouts and the CS3**
 
 This program was originally written to import and display layouts created/configured from within the CS2.
-Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.  Also, the CS3 has its own web-based UI which can also be used as an alternative.
+Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.
 
 However, even when using a CS3, you can view CS2 layouts in this program as follows:
 - Create an empty folder on your PC
@@ -107,13 +112,13 @@ However, even when using a CS3, you can view CS2 layouts in this program as foll
 - Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
 - The static local layout will now be shown in the Layout tab
 
-If you change the local files, clicking on "Sync with CS2" will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
+If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
+
+If you change the local files, clicking on "Sync with CS2" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
-From v2.0.0, if no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
-
-Expanded support for CS3 layouts is planned for the future.
+As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ## Running TrainControl
 
@@ -141,6 +146,8 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 ## Keyboard Commands / Key Mappings
 
+TrainControl's key mappings are designed to allow you to send any command nearly instantly
+
 * Letter keys (select a locomotive)
 * Up/down arrow (speed up/slow down) (hold Alt to double the increment)
 * Left/right arrow (change direction)
@@ -165,6 +172,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 * Alt+U (save current speed as a preset for current loc)
 * Alt+V (apply saved speed preset for current loc)
 
+![Key mapping](assets/keyboard.png?raw=true)
 
 ## Changelog
 
@@ -215,6 +223,9 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection
     - Added a pop-up error message if an invalid layout file path is chosen via the "Choose Local Data Folder" button within Tools
     - Fixed a bug in the layout UI where wide text labels in the last column would sometimes lead to misaligned tracks
+
+<details>
+<summary>View prior versions</summary>
 
 * v1.10.10 [10/9/23]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph
@@ -612,3 +623,4 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 * v1.3.2
     - First public release
 
+</details>
