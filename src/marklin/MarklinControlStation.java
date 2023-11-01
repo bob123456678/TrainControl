@@ -1566,14 +1566,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void deleteRoute(String name)
     {
-        // Make sure automatic execution gets disables
+        // Make sure automatic execution gets disabled
+        
         MarklinRoute r = this.routeDB.getByName(name);
         if (r != null)
         {
             r.disable();
-        }
-        
-        this.routeDB.delete(name);
+            this.routeDB.delete(r.getName());
+        }        
     }
     
     /**
@@ -1612,6 +1612,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.routeDB.add(r, name, newId);
         
         return true;
+    }
+    
+    /**
+     * Gets all existing routes
+     * @return 
+     */
+    public List<MarklinRoute> getRoutes()
+    {
+        return this.routeDB.getItems();
     }
     
     /**
@@ -1714,28 +1723,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
             configObj.put(r.toJSON());
         }
         
-        outputObj.put("data", configObj);
+        outputObj.put("routes", configObj);
         
         return outputObj.toString(4);
     }
     
-    @Override
-    public void importRoutes(String json)
+    public List<MarklinRoute> parseRoutesFromJson(String json)
     {
         List<MarklinRoute> routes = new ArrayList<>();
         JSONObject jsonObject = new JSONObject(json);
-        JSONArray dataArray = jsonObject.getJSONArray("data");
+        JSONArray dataArray = jsonObject.getJSONArray("routes");
 
         for (int i = 0; i < dataArray.length(); i++)
         {
             MarklinRoute route = MarklinRoute.fromJSON(dataArray.getJSONObject(i), this);
             routes.add(route);
-        }
+        } 
+        
+        return routes;
+    }
+    
+    /**
+     * Replaces existing route data with that from a JSON file
+     * @param json 
+     */
+    @Override
+    public void importRoutes(String json)
+    {
+        List<MarklinRoute> routes = this.parseRoutesFromJson(json);
         
         this.log("Deleting existing routes...");
         for (MarklinRoute r : this.routeDB.getItems())
         {
-            this.routeDB.delete(r.getName());
+            this.deleteRoute(r.getName());
         }
         
         // If all read successfully, remove existing routes and update route DB
@@ -1787,7 +1807,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (initIP == null)
                     {
-                        initIP = JOptionPane.showInputDialog("Enter CS2 IP Address: ");
+                        initIP = JOptionPane.showInputDialog("Enter Central Station IP Address: ");
 
                         if (initIP == null)
                         {

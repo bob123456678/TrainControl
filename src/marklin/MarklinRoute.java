@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -483,7 +484,7 @@ public class MarklinRoute extends Route
             for (String pair : conditionS88Pairs)
             {
                 String[] parts = pair.split(",");
-                conditionS88s.put(Math.abs(Integer.valueOf(parts[0])), parts[1].equals("1"));
+                conditionS88s.put(Math.abs(Integer.parseInt(parts[0])), parts[1].equals("1"));
             }
         }
 
@@ -498,5 +499,32 @@ public class MarklinRoute extends Route
         }
 
         return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionS88s);
+    }
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        MarklinRoute other = (MarklinRoute) o;
+        return id == other.id &&
+                s88 == other.s88 &&
+                enabled == other.enabled &&
+                triggerType == other.triggerType &&
+                this.conditionS88s.equals(other.getConditionS88s())
+                && this.getRoute().equals(other.getRoute());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 53 * hash + this.id;
+        hash = 53 * hash + (this.enabled ? 1 : 0);
+        hash = 53 * hash + Objects.hashCode(this.triggerType);
+        hash = 53 * hash + this.s88;
+        hash = 53 * hash + Objects.hashCode(this.conditionS88s);
+        return hash;
     }
 }
