@@ -3,6 +3,7 @@ package base;
 import static base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
 import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
+import static base.RouteCommand.commandType.TYPE_STOP;
 import java.util.LinkedHashMap;
 
 /**
@@ -12,7 +13,7 @@ import java.util.LinkedHashMap;
  */
 public class RouteCommand implements java.io.Serializable
 {    
-    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION};
+    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP};
 
     public static String KEY_NAME = "NAME";
     public static String KEY_ADDRESS = "ADDRESS";
@@ -91,7 +92,23 @@ public class RouteCommand implements java.io.Serializable
         
         return r;
     }
-                
+    
+    /**
+     * Returns a stop command
+     * @return 
+     */
+    public static RouteCommand RouteCommandStop()
+    {
+        RouteCommand r = new RouteCommand(TYPE_STOP);
+        
+        return r;
+    }
+
+    public boolean isStop()
+    {
+        return this.type == TYPE_STOP;
+    }
+    
     protected boolean isLocomotive()
     {
         return this.type == TYPE_LOCOMOTIVE;
@@ -188,6 +205,10 @@ public class RouteCommand implements java.io.Serializable
         else if (this.isLocomotive())
         {
             typeString = "Locomotive";
+        }
+        else if (this.isStop())
+        {
+            return "stop";
         }
         
         return typeString + ": " + this.commandConfig.toString();

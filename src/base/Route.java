@@ -157,6 +157,10 @@ abstract public class Route
             {
                 out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + (r.getDelay() > 0 ? "," + r.getDelay() : "") + "\n";
             }
+            else if (r.isStop())
+            {
+                out += r.toString() + "\n";
+            }
         }
         
         return out.trim();

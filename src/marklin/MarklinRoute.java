@@ -195,26 +195,34 @@ public class MarklinRoute extends Route
 
                 for (RouteCommand rc : this.route)
                 {
-                    int idd = rc.getAddress();
-                    boolean state = rc.getSetting();
-                    
-                    this.network.setAccessoryState(idd, state);
-
-                    try
+                    if (rc.isAccessory())
                     {
-                        if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                        int idd = rc.getAddress();
+                        boolean state = rc.getSetting();
+
+                        this.network.setAccessoryState(idd, state);
+
+                        try
                         {
-                            this.network.log("Delay for accessory " + idd + " is " + rc.getDelay());
-                            Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                            if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                            {
+                                this.network.log("Delay for accessory " + idd + " is " + rc.getDelay());
+                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                            }
+                            else
+                            {
+                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
+                            }    
+                        } 
+                        catch (InterruptedException ex)
+                        {
+
                         }
-                        else
-                        {
-                            Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
-                        }    
-                    } 
-                    catch (InterruptedException ex)
+                    }
+                    else if (rc.isStop())
                     {
-
+                        this.network.log("Power turned off due to route condition");
+                        this.network.stop();
                     }
                 }
 

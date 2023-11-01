@@ -7896,7 +7896,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             for (String line : routeContent.split("\n"))
             {
-                if (line.trim().length() > 0)
+                if ("stop".equals(line.trim()))
+                {
+                    newRoute.add(RouteCommand.RouteCommandStop());
+                }
+                else if (line.trim().length() > 0)
                 {
                     int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
                     boolean state = line.split(",")[1].trim().equals("1");

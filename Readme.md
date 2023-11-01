@@ -23,7 +23,7 @@ as well as semi-autonmous point-to-point operation between stations. You can of 
 
 **Main UI**
 
-You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3.
+You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.
 
 ![UI screenshot: locomotive control](assets/ui_main.png?raw=true)
 
@@ -212,6 +212,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
+    - Conditional routes now support stop commands to enable basic collision detection
     - Improved quality of locomotive and function icons (they will be less pixelated)
     - Increased size of the active locomotive icon
     - Different instances of TrainControl will now use unique track diagram and IP preferences
