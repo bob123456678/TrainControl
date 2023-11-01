@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import model.ModelListener;
 import model.View;
 import model.ViewListener;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.
@@ -44,7 +46,7 @@ import org.json.JSONArray;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 50) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 51) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -319,7 +321,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }   
                 else if (c.isRoute())
                 {
-                    c.setRoute(this.routeDB.getById(c.getAddress()));
+                    MarklinRoute r = this.routeDB.getById(c.getAddress());
+                    
+                    if (r == null)
+                    {
+                        this.log("Layout warning: route button with address " + c.getAddress() + " at " + c.getX() + "," + c.getY() + " does not correspond to an existing route.");
+                    }
+                    
+                    c.setRoute(r);
                 }
             }
         }
@@ -1689,10 +1698,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Export all routes to a JSON string
+     * @return 
+     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.NoSuchFieldException
      */
     @Override
     public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
+        JSONObject outputObj = new JSONObject();
+        
         JSONArray configObj = new JSONArray();
         
         for (MarklinRoute r : this.routeDB.getItems())
@@ -1700,7 +1714,48 @@ public class MarklinControlStation implements ViewListener, ModelListener
             configObj.put(r.toJSON());
         }
         
-        return configObj.toString(4);
+        outputObj.put("data", configObj);
+        
+        return outputObj.toString(4);
+    }
+    
+    @Override
+    public void importRoutes(String json)
+    {
+        List<MarklinRoute> routes = new ArrayList<>();
+        JSONObject jsonObject = new JSONObject(json);
+        JSONArray dataArray = jsonObject.getJSONArray("data");
+
+        for (int i = 0; i < dataArray.length(); i++)
+        {
+            MarklinRoute route = MarklinRoute.fromJSON(dataArray.getJSONObject(i), this);
+            routes.add(route);
+        }
+        
+        this.log("Deleting existing routes...");
+        for (MarklinRoute r : this.routeDB.getItems())
+        {
+            this.routeDB.delete(r.getName());
+        }
+        
+        // If all read successfully, remove existing routes and update route DB
+        for (MarklinRoute route : routes)
+        {
+            // Delete existing routes
+            /*if (this.getRoute(route.getName()) != null)
+            {
+                this.log("Deleting route: " + route.getName());
+                this.deleteRoute(route.getName());
+            }
+            if (this.routeDB.getById(route.getId()) != null)
+            {
+                this.log("Deleting route: " + this.routeDB.getById(route.getId()).getName());
+                this.deleteRoute(this.routeDB.getById(route.getId()).getName());
+            }*/
+
+            this.log("Adding route: " + route.getName());
+            this.newRoute(route);
+        }
     }
     
     /**

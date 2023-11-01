@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -442,17 +443,60 @@ public class MarklinRoute extends Route
         }
         
         // Use simple representation for now
-        /*JSONArray configObj = new JSONArray();
+        JSONArray configObj = new JSONArray();
 
         for (RouteCommand rc : this.getRoute())
         {
             configObj.put(rc.toJSON());
         }
-            
-        jsonObj.put("state", configObj);*/
-        
-        jsonObj.put("commands", this.toCSV());
+                    
+        jsonObj.put("commands", configObj);
   
         return jsonObj;
+    }
+    
+     /**
+     * Create a MarklinRoute object from JSON
+     * @param jsonObject The JSON representation of MarklinRoute
+     * @param network
+     * @return MarklinRoute object
+     */
+    public static MarklinRoute fromJSON(JSONObject jsonObject, MarklinControlStation network)
+    {
+        String name = jsonObject.getString("name");
+        int id = jsonObject.getInt("id");
+        int s88 = jsonObject.optInt("s88", 0);
+        boolean enabled = jsonObject.getBoolean("auto");
+
+        MarklinRoute.s88Triggers triggerType = null;
+        if (jsonObject.has("triggerType"))
+        {
+            triggerType = MarklinRoute.s88Triggers.valueOf(jsonObject.getString("triggerType"));
+        }
+
+        Map<Integer, Boolean> conditionS88s = new HashMap<>();
+        
+        if (jsonObject.has("conditionS88"))
+        {
+            String conditionS88String = jsonObject.getString("conditionS88");
+            String[] conditionS88Pairs = conditionS88String.split("\n");
+            for (String pair : conditionS88Pairs)
+            {
+                String[] parts = pair.split(",");
+                conditionS88s.put(Integer.valueOf(parts[0]), parts[1].equals("1"));
+            }
+        }
+
+        List<RouteCommand> routeCommands = new ArrayList<>();
+        if (jsonObject.has("commands"))
+        {
+            JSONArray commandsArray = jsonObject.getJSONArray("commands");
+            for (int i = 0; i < commandsArray.length(); i++)
+            {
+                routeCommands.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i).toString()));
+            }
+        }
+
+        return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionS88s);
     }
 }

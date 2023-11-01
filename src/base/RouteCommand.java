@@ -253,4 +253,49 @@ public class RouteCommand implements java.io.Serializable
   
         return jsonObj;
     }
+    
+    public static RouteCommand fromJSON(String json) throws IllegalArgumentException
+    {
+        JSONObject jsonObject = new JSONObject(json);
+        RouteCommand.commandType type = RouteCommand.commandType.valueOf(jsonObject.getString("type"));
+        RouteCommand routeCommand;
+
+        switch (type)
+        {
+            case TYPE_ACCESSORY:
+                int address = Integer.parseInt(jsonObject.getJSONObject("state").getString("ADDRESS"));
+                boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                routeCommand = RouteCommand.RouteCommandAccessory(address, setting);
+                break;
+
+            case TYPE_FUNCTION:
+                String name = jsonObject.getJSONObject("state").getString("NAME");
+                int function = Integer.parseInt(jsonObject.getJSONObject("state").getString("FUNCTION"));
+                boolean functionSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                routeCommand = RouteCommand.RouteCommandFunction(name, function, functionSetting);
+                break;
+
+            case TYPE_LOCOMOTIVE:
+                String locoName = jsonObject.getJSONObject("state").getString("NAME");
+                int speed = Integer.parseInt(jsonObject.getJSONObject("state").getString("SPEED"));
+                routeCommand = RouteCommand.RouteCommandLocomotive(locoName, speed);
+                break;
+
+            case TYPE_STOP:
+                routeCommand = RouteCommand.RouteCommandStop();
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid command type in route command JSON.");
+        }
+
+        // Adding delay if present
+        if (jsonObject.getJSONObject("state").has("DELAY"))
+        {
+            int delay = Integer.parseInt(jsonObject.getJSONObject("state").getString("DELAY"));
+            routeCommand.setDelay(delay);
+        }
+
+        return routeCommand;
+    }
 }

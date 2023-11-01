@@ -212,8 +212,11 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file
-    - Conditional routes now support stop commands to enable basic collision detection
-    - Improved quality of locomotive and function icons (they will be less pixelated)
+    - Route UI features
+        - Conditional routes now support stop commands to enable basic collision detection
+        - Added buttons to export/import all routes (useful for backups)
+        - Added warnings if route buttons on a layout do not correspond to a valid route
+    - Improved the image quality of locomotive and function icons (they will be less pixelated)
     - Increased size of the active locomotive icon
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
