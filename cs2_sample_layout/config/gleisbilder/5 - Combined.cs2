@@ -2,10 +2,6 @@
 page=2
 version
  .major=1
-[gleisbildseite]
-page=2
-version
- .major=1
 element
  .id=0x20000
  .typ=bogen

@@ -90,15 +90,46 @@ The graph UI will show you which routes are active, which edges are locked, and 
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
 
+## Keyboard Commands / Key Mappings
+
+TrainControl's key mappings are designed to allow you to send any command nearly instantly
+
+* Letter keys (select a locomotive)
+* Up/down arrow (speed up/slow down) (hold Alt to double the increment)
+* Left/right arrow (change direction)
+* Escape (power off/emergency stop)
+* Alt+G (power on)
+* 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
+* Numpad 0/backquote/Alt+0 (toggle lights/F0)
+* F1-F24 (toggle functions F1-F24)
+* Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
+* Control+0-9 (toggle functions F10-F19)
+* Control+Alt+0-9 (toggle functions F20-F19)
+* Shift (slow stop)
+* Spacebar (instant stop)
+* Enter (stop all locs)
+* Comma/period, Alt+Left/right arrow (cycle to previous/next loc page)
+* Backspace/Alt+backspace (cycle through tabs)
+* Plus/minus (cycle through keyboards and layout pages)
+* Slash/question mark (cycle through function tabs on the loc panel)
+* Alt+P (apply saved function preset for current loc)
+* Alt+O (turn off all functions for current loc)
+* Alt+S (save current functions as a preset for current loc)
+* Alt+U (save current speed as a preset for current loc)
+* Alt+V (apply saved speed preset for current loc)
+
+![Key mapping](assets/keyboard.png?raw=true)
+
 **Requirements:**
 
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (a warning will be shown after 15 seconds if this is not enabled)
+* For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
 
 **Limitations:**
 
-* Automatic layout download only works with CS2, not CS3 (local layout files can be used with a CS3 if desired)
+* Central Station track diagrams can only be downloaded from the CS2, not CS3 (complete local layout files can be used with a CS3 if desired)
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
 
 **Layouts and the CS3**
@@ -144,39 +175,9 @@ Examples:
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
-## Keyboard Commands / Key Mappings
-
-TrainControl's key mappings are designed to allow you to send any command nearly instantly
-
-* Letter keys (select a locomotive)
-* Up/down arrow (speed up/slow down) (hold Alt to double the increment)
-* Left/right arrow (change direction)
-* Escape (power off/emergency stop)
-* Alt+G (power on)
-* 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
-* Numpad 0/backquote/Alt+0 (toggle lights/F0)
-* F1-F24 (toggle functions F1-F24)
-* Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
-* Control+0-9 (toggle functions F10-F19)
-* Control+Alt+0-9 (toggle functions F20-F19)
-* Shift (slow stop)
-* Spacebar (instant stop)
-* Enter (stop all locs)
-* Comma/period, Alt+Left/right arrow (cycle to previous/next loc page)
-* Backspace/Alt+backspace (cycle through tabs)
-* Plus/minus (cycle through keyboards and layout pages)
-* Slash/question mark (cycle through function tabs on the loc panel)
-* Alt+P (apply saved function preset for current loc)
-* Alt+O (turn off all functions for current loc)
-* Alt+S (save current functions as a preset for current loc)
-* Alt+U (save current speed as a preset for current loc)
-* Alt+V (apply saved speed preset for current loc)
-
-![Key mapping](assets/keyboard.png?raw=true)
-
 ## Changelog
 
-* v2.0.0 [Beta] (This version adds a few missing features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
+* v2.0.0 [Beta] (This version adds a few important features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
     - Integrated a layout editor app [(TrackDiagramEditor)](https://github.com/bob123456678/TrackDiagramEditor) to allow for the editing of track diagrams (Windows only)
         - Added an edit button to each layout page; this automatically opens the editor
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified
