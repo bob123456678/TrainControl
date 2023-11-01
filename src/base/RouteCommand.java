@@ -4,7 +4,11 @@ import static base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
 import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static base.RouteCommand.commandType.TYPE_STOP;
+import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
+import java.util.Map.Entry;
+import java.util.Objects;
+import org.json.JSONObject;
 
 /**
  * Individual route command
@@ -183,6 +187,15 @@ public class RouteCommand implements java.io.Serializable
         
         return this.type == rc.getType() && this.commandConfig.equals(rc.getCommandConfig());
     }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        hash = 37 * hash + Objects.hashCode(this.type);
+        hash = 37 * hash + Objects.hashCode(this.commandConfig);
+        return hash;
+    }
     
     public void setDelay(int delay)
     {
@@ -212,5 +225,32 @@ public class RouteCommand implements java.io.Serializable
         }
         
         return typeString + ": " + this.commandConfig.toString();
+    }
+    
+    public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {		
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+        
+        jsonObj.put("type", this.getType().toString());
+
+        JSONObject configObj = new JSONObject();
+            
+        map = configObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(configObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+        
+        for (Entry<String, String> e: this.getCommandConfig().entrySet())
+        {
+            configObj.put(e.getKey(), e.getValue());
+        }
+            
+        jsonObj.put("state", configObj);
+  
+        return jsonObj;
     }
 }

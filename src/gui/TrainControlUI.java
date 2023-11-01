@@ -57,7 +57,9 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -1904,6 +1906,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BulkEnable = new javax.swing.JButton();
         BulkDisable = new javax.swing.JButton();
         jSeparator2 = new javax.swing.JSeparator();
+        exportAllRoutes = new javax.swing.JButton();
+        jSeparator7 = new javax.swing.JSeparator();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
@@ -3939,6 +3943,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator2.setMinimumSize(new java.awt.Dimension(10, 10));
         jSeparator2.setPreferredSize(new java.awt.Dimension(30, 10));
 
+        exportAllRoutes.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        exportAllRoutes.setText("Export All");
+        exportAllRoutes.setFocusable(false);
+        exportAllRoutes.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportAllRoutesActionPerformed(evt);
+            }
+        });
+
+        jSeparator7.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator7.setMinimumSize(new java.awt.Dimension(10, 10));
+        jSeparator7.setPreferredSize(new java.awt.Dimension(30, 10));
+
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
         RoutePanelLayout.setHorizontalGroup(
@@ -3958,6 +3975,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(BulkEnable)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(BulkDisable)
+                        .addGap(12, 12, 12)
+                        .addComponent(jSeparator7, javax.swing.GroupLayout.PREFERRED_SIZE, 12, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, 0)
+                        .addComponent(exportAllRoutes)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(sortByName)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -3966,19 +3987,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
         RoutePanelLayout.setVerticalGroup(
             RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(RoutePanelLayout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 460, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(BulkEnable)
                         .addComponent(BulkDisable)
-                        .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(exportAllRoutes))
                     .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
@@ -9061,6 +9084,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
         } catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_aboutLabelActionPerformed
+
+    private void exportAllRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAllRoutesActionPerformed
+        new Thread(() -> 
+        {
+            JTextArea textArea = new JTextArea();
+            textArea.setColumns(50);
+            textArea.setRows(30);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+
+            try
+            {
+                textArea.setText(this.getModel().exportRoutes());
+                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "Back up routes", JOptionPane.PLAIN_MESSAGE);   
+                
+                // Place in clipboard
+                StringSelection selection = new StringSelection(textArea.getText());
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            }
+            catch (Exception e)
+            {
+                if (this.getModel().isDebug())
+                {
+                    e.printStackTrace();
+                }
+
+                this.model.log("JSON error: " + e.getMessage());
+
+                JOptionPane.showMessageDialog(this, "Failed to generate JSON.  Check log for details.");
+            }
+        }).start();
+    }//GEN-LAST:event_exportAllRoutesActionPerformed
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
@@ -9996,6 +10052,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton editLayoutButton;
+    private javax.swing.JButton exportAllRoutes;
     private javax.swing.JButton exportJSON;
     private javax.swing.JLabel f0Label;
     private javax.swing.JLabel f10Label;
@@ -10073,6 +10130,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
+    private javax.swing.JSeparator jSeparator7;
     private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;

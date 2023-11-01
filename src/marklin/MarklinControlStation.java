@@ -31,6 +31,7 @@ import marklin.udp.NetworkProxy;
 import model.ModelListener;
 import model.View;
 import model.ViewListener;
+import org.json.JSONArray;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.
@@ -43,7 +44,7 @@ import model.ViewListener;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 49) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 50) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1684,6 +1685,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public static MarklinControlStation init() throws UnknownHostException, IOException
     {
         return init(null, false, true, true, false);
+    }
+    
+    /**
+     * Export all routes to a JSON string
+     */
+    @Override
+    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
+        JSONArray configObj = new JSONArray();
+        
+        for (MarklinRoute r : this.routeDB.getItems())
+        {
+            configObj.put(r.toJSON());
+        }
+        
+        return configObj.toString(4);
     }
     
     /**

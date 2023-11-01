@@ -62,4 +62,5 @@ public interface ViewListener
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);
     public void clearLayouts();
+    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException;
 }

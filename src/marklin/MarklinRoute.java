@@ -3,14 +3,17 @@ package marklin;
 import base.Route;
 import base.RouteCommand;
 import gui.LayoutLabel;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.json.JSONObject;
 
 /**
  * Simple route representation
@@ -408,5 +411,48 @@ public class MarklinRoute extends Route
                 " | Trigger Type: " + (this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED ? "CLEAR_THEN_OCCUPIED" : "OCCUPIED_THEN_CLEAR") +
                 " | Auto: " + (this.enabled ? "Yes": "No") +
                 ")";
+    }
+    
+    public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {		
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+        
+        jsonObj.put("name", this.getName());
+        jsonObj.put("id", this.getId());
+        
+        if (this.hasS88())
+        {
+            jsonObj.put("s88", this.getS88());
+        }
+        
+        if (this.hasConditionS88())
+        {
+            jsonObj.put("conditionS88", this.getConditionS88String());
+        }
+        
+        jsonObj.put("auto", this.enabled);
+        
+        if (this.triggerType != null)
+        {
+            jsonObj.put("triggerType", this.triggerType.toString());
+        }
+        
+        // Use simple representation for now
+        /*JSONArray configObj = new JSONArray();
+
+        for (RouteCommand rc : this.getRoute())
+        {
+            configObj.put(rc.toJSON());
+        }
+            
+        jsonObj.put("state", configObj);*/
+        
+        jsonObj.put("commands", this.toCSV());
+  
+        return jsonObj;
     }
 }
