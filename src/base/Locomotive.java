@@ -267,6 +267,7 @@ public abstract class Locomotive
      * @param name
      * @param speed
      * @param direction
+     * @param numF
      * @param functionState 
      * @param functionTypes 
      * @param preferredFunctions 

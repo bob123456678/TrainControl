@@ -183,6 +183,22 @@ public class MarklinLocomotive extends Locomotive
             
         return 0;
     }
+    
+    /**
+     * Ensures that the function icon type is within a valid range (0-112)
+     * @param fType
+     * @return 
+     */
+    public static int sanitizeFIconIndex(int fType)
+    {
+        // > 128 just means it's a pulse function.  While loop in case this is 224-255
+        while (fType > NUM_FN_ICONS)
+        {
+            fType = fType % Math.min(128, fType); // icons 113-127 do not exist
+        }
+        
+        return fType;
+    }
         
     /**
      * Returns the image URL for a function icon, if any
@@ -196,11 +212,7 @@ public class MarklinLocomotive extends Locomotive
         int index = active ? 1 : 0;
         String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
         
-        // > 128 just means it's a pulse function.  While loop in case this is 224-255
-        while (fType > NUM_FN_ICONS)
-        {
-            fType = fType % Math.min(128, fType); // icons 113-127 do not exist
-        }
+        fType = sanitizeFIconIndex(fType);
 
         String iconName = "FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
         
@@ -229,7 +241,7 @@ public class MarklinLocomotive extends Locomotive
      */
     public boolean isFunctionPulse(int fNo)
     {
-        return this.getFunctionType(fNo) > 128;
+        return this.getFunctionType(fNo) >= 128;
     }
     
     /**
