@@ -464,8 +464,8 @@ public class MarklinRoute extends Route
     public static MarklinRoute fromJSON(JSONObject jsonObject, MarklinControlStation network)
     {
         String name = jsonObject.getString("name");
-        int id = jsonObject.getInt("id");
-        int s88 = jsonObject.optInt("s88", 0);
+        int id = Math.abs(jsonObject.getInt("id"));
+        int s88 = Math.abs(jsonObject.optInt("s88", 0));
         boolean enabled = jsonObject.getBoolean("auto");
 
         MarklinRoute.s88Triggers triggerType = null;
@@ -483,7 +483,7 @@ public class MarklinRoute extends Route
             for (String pair : conditionS88Pairs)
             {
                 String[] parts = pair.split(",");
-                conditionS88s.put(Integer.valueOf(parts[0]), parts[1].equals("1"));
+                conditionS88s.put(Math.abs(Integer.valueOf(parts[0])), parts[1].equals("1"));
             }
         }
 
@@ -493,7 +493,7 @@ public class MarklinRoute extends Route
             JSONArray commandsArray = jsonObject.getJSONArray("commands");
             for (int i = 0; i < commandsArray.length(); i++)
             {
-                routeCommands.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i).toString()));
+                routeCommands.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
             }
         }
 

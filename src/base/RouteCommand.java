@@ -254,9 +254,8 @@ public class RouteCommand implements java.io.Serializable
         return jsonObj;
     }
     
-    public static RouteCommand fromJSON(String json) throws IllegalArgumentException
+    public static RouteCommand fromJSON(JSONObject jsonObject) throws IllegalArgumentException
     {
-        JSONObject jsonObject = new JSONObject(json);
         RouteCommand.commandType type = RouteCommand.commandType.valueOf(jsonObject.getString("type"));
         RouteCommand routeCommand;
 
