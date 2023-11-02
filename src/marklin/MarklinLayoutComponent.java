@@ -18,8 +18,9 @@ public class MarklinLayoutComponent
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
         SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK_DOUBLE_CURVE, FEEDBACK, END, TUNNEL, 
-        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK};
-    
+        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK, CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y
+    };
+        
     private final String resourcePath = "/gui/resources/icons";
     
     // Rotation of the component
@@ -374,6 +375,11 @@ public class MarklinLayoutComponent
                 return "route";
             case LINK:
                 return "link";
+            // Custom components - filename is the same but in lowercase
+            case CUSTOM_PERM_LEFT:
+            case CUSTOM_PERM_RIGHT:
+            case CUSTOM_PERM_Y:
+                return this.type.toString().toLowerCase();
         }
         
         return "";

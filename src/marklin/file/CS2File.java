@@ -875,11 +875,17 @@ public final class CS2File
                 return MarklinLayoutComponent.componentType.LAMP;
             case "fahrstrasse": // Route
                 return MarklinLayoutComponent.componentType.ROUTE;
-            case "text":
+            case "text":        // Standalone text
                 return MarklinLayoutComponent.componentType.TEXT;
-            // Unsupported components
             case "pfeil":       // Link to another page
                 return MarklinLayoutComponent.componentType.LINK;
+            // Custom (non-CS2) components
+            case "custom_perm_left":
+                return MarklinLayoutComponent.componentType.CUSTOM_PERM_LEFT;
+            case "custom_perm_right":
+                return MarklinLayoutComponent.componentType.CUSTOM_PERM_RIGHT;
+            case "custom_perm_y":
+                return MarklinLayoutComponent.componentType.CUSTOM_PERM_Y;
             default:
                 this.control.log("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");

@@ -892,6 +892,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
+        
+        /*List<Image> icons = new ArrayList<Image>();
+        icons.add(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
+        this.setIconImages(icons);*/
     }
     
     /**

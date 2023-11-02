@@ -135,6 +135,31 @@ element
  .artikel=8
  .deviceId=0xc
 element
+ .id=0x10719
+ .typ=custom_perm_left
+ .drehung=1
+ .artikel=-1
+ .text=left
+element
+ .id=0x1071a
+ .typ=custom_perm_left
+ .drehung=3
+ .artikel=-1
+ .text=left
+
+element
+ .id=0x1071d
+ .typ=custom_perm_right
+ .drehung=1
+ .artikel=-1
+ .text=right
+element
+ .id=0x1071e
+ .typ=custom_perm_right
+ .drehung=3
+ .artikel=-1
+ .text=right
+element
  .id=0x10803
  .typ=rechtsweiche
  .drehung=3
@@ -158,6 +183,18 @@ element
  .typ=s88kontakt
  .artikel=1006
  .deviceId=0xc
+element
+ .id=0x10919
+ .typ=custom_perm_y
+ .drehung=1
+ .artikel=-1
+ .text=y
+element
+ .id=0x1091a
+ .typ=custom_perm_y
+ .drehung=3
+ .artikel=-1
+ .text=y
 element
  .id=0x10a03
  .typ=s88kontakt
