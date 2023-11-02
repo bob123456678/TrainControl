@@ -6079,6 +6079,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F3.setMaximumSize(new java.awt.Dimension(75, 35));
         F3.setMinimumSize(new java.awt.Dimension(75, 35));
         F3.setPreferredSize(new java.awt.Dimension(65, 35));
+        F3.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
