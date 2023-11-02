@@ -13,8 +13,7 @@ import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive;
 
 /**
- *
- * @author adamo
+ * UI for changing locomotive functions
  */
 public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
@@ -54,6 +53,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             catch (Exception e)
             {
                 iconModel.add(Integer.toString(i));
+                this.parent.getModel().log("Error loading function icon " + i);
             }
         }
 

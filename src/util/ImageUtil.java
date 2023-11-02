@@ -14,8 +14,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
 /**
- *
- * @author adamo
+ * Image manipulation utility functions
  */
 public class ImageUtil
 {
