@@ -5743,6 +5743,9 @@
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
           </Properties>
+          <Events>
+            <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="locIconMouseReleased"/>
+          </Events>
         </Component>
         <Container class="javax.swing.JTabbedPane" name="FunctionTabs">
           <Properties>
@@ -5989,6 +5992,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6009,6 +6013,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6029,6 +6034,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6049,6 +6055,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6069,6 +6076,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6090,6 +6098,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6130,6 +6139,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6150,6 +6160,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6170,6 +6181,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6190,6 +6202,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6210,6 +6223,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6347,6 +6361,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6376,6 +6391,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6405,6 +6421,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6434,6 +6451,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6454,6 +6472,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6474,6 +6493,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6494,6 +6514,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6541,6 +6562,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6727,6 +6749,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6747,6 +6770,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6785,6 +6809,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6805,6 +6830,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6843,6 +6869,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6872,6 +6899,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6910,6 +6938,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6930,6 +6959,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6950,6 +6980,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -6979,6 +7010,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -7008,6 +7040,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>
@@ -7037,6 +7070,7 @@
                     </Property>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="EditFunction"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ProcessFunction"/>
                   </Events>
                 </Component>

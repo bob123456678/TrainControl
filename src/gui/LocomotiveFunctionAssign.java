@@ -25,8 +25,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
      * Creates new form LocomotiveFunctionAssign
      * @param l
      * @param parent
+     * @param functionIndex // function to start at
+     * @param standalone
      */
-    public LocomotiveFunctionAssign(Locomotive l, TrainControlUI parent)
+    public LocomotiveFunctionAssign(Locomotive l, TrainControlUI parent, int functionIndex, boolean standalone)
     {
         this.loc = l;
         this.parent = parent;
@@ -65,6 +67,47 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         
         // Display current icon
         fNoItemStateChanged(null);
+        
+        // Snap to a specific function
+        if (functionIndex < fNo.getModel().getSize())
+        {
+            fNo.setSelectedIndex(functionIndex);
+        }
+        
+        if (standalone)
+        {
+            this.applyButton.setVisible(false);
+            this.jSeparator1.setVisible(false);
+            this.fNo.setVisible(false);
+            this.fNoLabel.setVisible(false);
+            this.fIconlabel.setText("Function " + functionIndex + " Icon");
+        }
+        else
+        {
+            this.applyButton.setVisible(true);
+            this.jSeparator1.setVisible(true);
+            this.fNo.setVisible(true);
+            this.fNoLabel.setVisible(true);
+            this.fIconlabel.setText("Function Icon");
+        }
+    }
+    
+    public void focusFno()
+    {
+        this.fNo.requestFocus();
+    }
+    
+    public void focusImages()
+    {
+        this.fIcon.requestFocus();
+    }
+    
+    /**
+     * External call to apply shown values
+     */
+    public void doApply()
+    {
+        applyButtonActionPerformed(null);
     }
     
     public Integer getFIcon()
@@ -91,19 +134,19 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jLabel1 = new javax.swing.JLabel();
+        fNoLabel = new javax.swing.JLabel();
         fNo = new javax.swing.JComboBox<>();
         fIcon = new javax.swing.JComboBox<>();
         momentary = new javax.swing.JCheckBox();
-        jLabel2 = new javax.swing.JLabel();
+        fIconlabel = new javax.swing.JLabel();
         applyButton = new javax.swing.JButton();
         resetButton = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JSeparator();
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
-        jLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel1.setText("Function Number");
+        fNoLabel.setForeground(new java.awt.Color(0, 0, 115));
+        fNoLabel.setText("Function Number");
 
         fNo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         fNo.setMinimumSize(new java.awt.Dimension(100, 27));
@@ -120,8 +163,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         momentary.setText("Momentary");
 
-        jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Function Icon");
+        fIconlabel.setForeground(new java.awt.Color(0, 0, 115));
+        fIconlabel.setText("Function Icon");
 
         applyButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         applyButton.setText("Apply");
@@ -151,8 +194,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                     .addComponent(applyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2)
-                            .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(fIconlabel)
+                            .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(fNo, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -166,12 +209,12 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
+                    .addComponent(fNoLabel)
                     .addComponent(fNo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(fIcon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2))
+                    .addComponent(fIconlabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(momentary)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -216,9 +259,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton applyButton;
     private javax.swing.JComboBox<String> fIcon;
+    private javax.swing.JLabel fIconlabel;
     private javax.swing.JComboBox<String> fNo;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel fNoLabel;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JCheckBox momentary;
     private javax.swing.JButton resetButton;

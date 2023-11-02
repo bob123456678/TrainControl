@@ -5962,6 +5962,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        locIcon.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                locIconMouseReleased(evt);
+            }
+        });
 
         FunctionTabs.setBackground(new java.awt.Color(255, 255, 255));
         FunctionTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
@@ -5977,6 +5982,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F8.setMaximumSize(new java.awt.Dimension(75, 35));
         F8.setMinimumSize(new java.awt.Dimension(75, 35));
         F8.setPreferredSize(new java.awt.Dimension(65, 35));
+        F8.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -5988,6 +5998,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F9.setMaximumSize(new java.awt.Dimension(75, 35));
         F9.setMinimumSize(new java.awt.Dimension(75, 35));
         F9.setPreferredSize(new java.awt.Dimension(65, 35));
+        F9.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F9.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -5999,6 +6014,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F7.setMaximumSize(new java.awt.Dimension(75, 35));
         F7.setMinimumSize(new java.awt.Dimension(75, 35));
         F7.setPreferredSize(new java.awt.Dimension(65, 35));
+        F7.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6010,6 +6030,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F10.setMaximumSize(new java.awt.Dimension(75, 35));
         F10.setMinimumSize(new java.awt.Dimension(75, 35));
         F10.setPreferredSize(new java.awt.Dimension(65, 35));
+        F10.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F10.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6021,6 +6046,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F11.setMaximumSize(new java.awt.Dimension(75, 35));
         F11.setMinimumSize(new java.awt.Dimension(75, 35));
         F11.setPreferredSize(new java.awt.Dimension(65, 35));
+        F11.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F11.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6033,6 +6063,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F0.setMaximumSize(new java.awt.Dimension(75, 35));
         F0.setMinimumSize(new java.awt.Dimension(75, 35));
         F0.setPreferredSize(new java.awt.Dimension(65, 35));
+        F0.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F0.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6055,6 +6090,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F1.setMaximumSize(new java.awt.Dimension(75, 35));
         F1.setMinimumSize(new java.awt.Dimension(75, 35));
         F1.setPreferredSize(new java.awt.Dimension(65, 35));
+        F1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6066,6 +6106,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F2.setMaximumSize(new java.awt.Dimension(75, 35));
         F2.setMinimumSize(new java.awt.Dimension(75, 35));
         F2.setPreferredSize(new java.awt.Dimension(65, 35));
+        F2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6077,6 +6122,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F4.setMaximumSize(new java.awt.Dimension(75, 35));
         F4.setMinimumSize(new java.awt.Dimension(75, 35));
         F4.setPreferredSize(new java.awt.Dimension(65, 35));
+        F4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6088,6 +6138,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F5.setMaximumSize(new java.awt.Dimension(75, 35));
         F5.setMinimumSize(new java.awt.Dimension(75, 35));
         F5.setPreferredSize(new java.awt.Dimension(65, 35));
+        F5.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6099,6 +6154,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F6.setMaximumSize(new java.awt.Dimension(75, 35));
         F6.setMinimumSize(new java.awt.Dimension(75, 35));
         F6.setPreferredSize(new java.awt.Dimension(65, 35));
+        F6.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6162,6 +6222,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F12.setMaximumSize(new java.awt.Dimension(75, 35));
         F12.setMinimumSize(new java.awt.Dimension(75, 35));
         F12.setPreferredSize(new java.awt.Dimension(65, 35));
+        F12.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F12.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6177,6 +6242,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F13.setMaximumSize(new java.awt.Dimension(75, 35));
         F13.setMinimumSize(new java.awt.Dimension(75, 35));
         F13.setPreferredSize(new java.awt.Dimension(65, 35));
+        F13.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F13.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6192,6 +6262,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F14.setMaximumSize(new java.awt.Dimension(75, 35));
         F14.setMinimumSize(new java.awt.Dimension(75, 35));
         F14.setPreferredSize(new java.awt.Dimension(65, 35));
+        F14.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F14.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6207,6 +6282,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F15.setMaximumSize(new java.awt.Dimension(75, 35));
         F15.setMinimumSize(new java.awt.Dimension(75, 35));
         F15.setPreferredSize(new java.awt.Dimension(65, 35));
+        F15.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F15.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6218,6 +6298,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F16.setMaximumSize(new java.awt.Dimension(75, 35));
         F16.setMinimumSize(new java.awt.Dimension(75, 35));
         F16.setPreferredSize(new java.awt.Dimension(65, 35));
+        F16.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F16.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6229,6 +6314,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F17.setMaximumSize(new java.awt.Dimension(75, 35));
         F17.setMinimumSize(new java.awt.Dimension(75, 35));
         F17.setPreferredSize(new java.awt.Dimension(65, 35));
+        F17.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F17.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6240,6 +6330,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F18.setMaximumSize(new java.awt.Dimension(75, 35));
         F18.setMinimumSize(new java.awt.Dimension(75, 35));
         F18.setPreferredSize(new java.awt.Dimension(65, 35));
+        F18.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F18.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6263,6 +6358,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F19.setMaximumSize(new java.awt.Dimension(75, 35));
         F19.setMinimumSize(new java.awt.Dimension(75, 35));
         F19.setPreferredSize(new java.awt.Dimension(65, 35));
+        F19.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F19.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6446,6 +6546,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F22.setMaximumSize(new java.awt.Dimension(75, 35));
         F22.setMinimumSize(new java.awt.Dimension(75, 35));
         F22.setPreferredSize(new java.awt.Dimension(65, 35));
+        F22.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F22.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6457,6 +6562,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F23.setMaximumSize(new java.awt.Dimension(75, 35));
         F23.setMinimumSize(new java.awt.Dimension(75, 35));
         F23.setPreferredSize(new java.awt.Dimension(65, 35));
+        F23.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F23.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6476,6 +6586,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F20.setMaximumSize(new java.awt.Dimension(75, 35));
         F20.setMinimumSize(new java.awt.Dimension(75, 35));
         F20.setPreferredSize(new java.awt.Dimension(65, 35));
+        F20.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F20.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6487,6 +6602,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F21.setMaximumSize(new java.awt.Dimension(75, 35));
         F21.setMinimumSize(new java.awt.Dimension(75, 35));
         F21.setPreferredSize(new java.awt.Dimension(65, 35));
+        F21.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F21.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6506,6 +6626,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F24.setMaximumSize(new java.awt.Dimension(75, 35));
         F24.setMinimumSize(new java.awt.Dimension(75, 35));
         F24.setPreferredSize(new java.awt.Dimension(65, 35));
+        F24.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F24.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6521,6 +6646,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F27.setMaximumSize(new java.awt.Dimension(75, 35));
         F27.setMinimumSize(new java.awt.Dimension(75, 35));
         F27.setPreferredSize(new java.awt.Dimension(65, 35));
+        F27.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F27.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6540,6 +6670,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F25.setMaximumSize(new java.awt.Dimension(75, 35));
         F25.setMinimumSize(new java.awt.Dimension(75, 35));
         F25.setPreferredSize(new java.awt.Dimension(65, 35));
+        F25.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F25.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6551,6 +6686,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F26.setMaximumSize(new java.awt.Dimension(75, 35));
         F26.setMinimumSize(new java.awt.Dimension(75, 35));
         F26.setPreferredSize(new java.awt.Dimension(65, 35));
+        F26.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F26.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6562,6 +6702,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F28.setMaximumSize(new java.awt.Dimension(75, 35));
         F28.setMinimumSize(new java.awt.Dimension(75, 35));
         F28.setPreferredSize(new java.awt.Dimension(65, 35));
+        F28.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F28.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6577,6 +6722,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F29.setMaximumSize(new java.awt.Dimension(75, 35));
         F29.setMinimumSize(new java.awt.Dimension(75, 35));
         F29.setPreferredSize(new java.awt.Dimension(65, 35));
+        F29.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F29.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6592,6 +6742,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F30.setMaximumSize(new java.awt.Dimension(75, 35));
         F30.setMinimumSize(new java.awt.Dimension(75, 35));
         F30.setPreferredSize(new java.awt.Dimension(65, 35));
+        F30.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F30.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -6607,6 +6762,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F31.setMaximumSize(new java.awt.Dimension(75, 35));
         F31.setMinimumSize(new java.awt.Dimension(75, 35));
         F31.setPreferredSize(new java.awt.Dimension(65, 35));
+        F31.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                EditFunction(evt);
+            }
+        });
         F31.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ProcessFunction(evt);
@@ -7267,7 +7427,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             popup.render();
         }));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
-
+    
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
         javax.swing.JToggleButton b =
         (javax.swing.JToggleButton) evt.getSource();
@@ -9175,14 +9335,45 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }).start();
     }//GEN-LAST:event_importRoutesActionPerformed
+
+    private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
+
+        if(SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
+        {
+            javax.swing.JToggleButton b =
+            (javax.swing.JToggleButton) evt.getSource();
+            
+            if (b.isEnabled())
+            {
+                Integer fNumber = this.functionMapping.get(b);
+
+                LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
+                int result = JOptionPane.showConfirmDialog(this, edit, "Edit " + this.activeLoc.getName() + " Functions", JOptionPane.OK_CANCEL_OPTION);
+                edit.focusImages();
+                
+                if (result == JOptionPane.OK_OPTION)
+                {
+                    edit.doApply();
+                }
+            }
+        }
+    }//GEN-LAST:event_EditFunction
+
+    private void locIconMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locIconMouseReleased
+        if(SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
+        {
+            this.setLocIcon(this.activeLoc);
+        }
+    }//GEN-LAST:event_locIconMouseReleased
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
-        LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this);
+        LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
         // Select the locomotive
         source.doClick();
         
         JOptionPane.showMessageDialog(this, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
+        edit.focusFno();
     }
     
     public void clearLocIcon(Locomotive l)
