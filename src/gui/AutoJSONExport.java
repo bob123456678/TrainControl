@@ -21,17 +21,22 @@ import javax.swing.JOptionPane;
 public class AutoJSONExport extends javax.swing.JPanel {
 
     TrainControlUI tcui;
+    String prefix;
     
     /**
      * Creates new form AutoJSONExport
      * @param text
      */
-    public AutoJSONExport(String text, TrainControlUI tcui) {
+    public AutoJSONExport(String text, TrainControlUI tcui, String prefix) {
         initComponents();
         this.jsonTextArea.setText(text);
         jsonTextArea.setLineWrap(true);
         jsonTextArea.setWrapStyleWord(true);
         this.tcui = tcui;
+        this.prefix = prefix;
+        
+        // Automatically save
+        jsonSaveAsActionPerformed(null);
     }
 
     /**
@@ -89,7 +94,7 @@ public class AutoJSONExport extends javax.swing.JPanel {
             try
             {
                 JFileChooser fc = this.tcui.getJSONFileChooser(JFileChooser.FILES_ONLY);
-                fc.setSelectedFile(new File("TC_autonomy_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".json"));
+                fc.setSelectedFile(new File("TC_" + prefix + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".json"));
                 int i = fc.showSaveDialog(this);
 
                 if (i == JFileChooser.APPROVE_OPTION)

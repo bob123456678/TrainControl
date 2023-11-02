@@ -2182,7 +2182,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         jLabel5.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel5.setText("Locomotive Mapping");
+        jLabel5.setText("Locomotive Mapping (Right-click for options)");
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -5960,6 +5960,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CurrentKeyLabel.setToolTipText(null);
         CurrentKeyLabel.setFocusable(false);
 
+        locIcon.setToolTipText("Locomotive icon.  Right-click to change.");
         locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         locIcon.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -8903,29 +8904,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
 
         new Thread(() ->
+        {
+            try
             {
-                try
+                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy"),
+                    "JSON for current state", JOptionPane.PLAIN_MESSAGE
+                );
+
+                // Place in clipboard
+                StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            }
+            catch (Exception e)
+            {
+                if (this.getModel().isDebug())
                 {
-                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this),
-                        "JSON for current state", JOptionPane.PLAIN_MESSAGE
-                    );
-
-                    // Place in clipboard
-                    StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
-                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+                    e.printStackTrace();
                 }
-                catch (Exception e)
-                {
-                    if (this.getModel().isDebug())
-                    {
-                        e.printStackTrace();
-                    }
 
-                    this.model.log("JSON error: " + e.getMessage());
+                this.model.log("JSON error: " + e.getMessage());
 
-                    JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
-                }
-            }).start();
+                JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
+            }
+        }).start();
     }//GEN-LAST:event_exportJSONActionPerformed
 
     private void autonomyJSONKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_autonomyJSONKeyReleased
@@ -9268,22 +9269,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_aboutLabelActionPerformed
 
     private void exportAllRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAllRoutesActionPerformed
-        new Thread(() -> 
+        
+        new Thread(() ->
         {
-            JTextArea textArea = new JTextArea();
-            textArea.setColumns(50);
-            textArea.setRows(30);
-            textArea.setLineWrap(true);
-            textArea.setWrapStyleWord(true);
-            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-
             try
             {
-                textArea.setText(this.getModel().exportRoutes());
-                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "Back up routes", JOptionPane.PLAIN_MESSAGE);   
-                
+                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "route"),
+                    "Export route data", JOptionPane.PLAIN_MESSAGE
+                );
+
                 // Place in clipboard
-                StringSelection selection = new StringSelection(textArea.getText());
+                StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
             }
             catch (Exception e)
@@ -9295,50 +9291,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 this.model.log("JSON error: " + e.getMessage());
 
-                JOptionPane.showMessageDialog(this, "Failed to generate JSON.  Check log for details.");
+                JOptionPane.showMessageDialog(this, "Failed to generate/export route JSON.  Check log for details.");
             }
         }).start();
     }//GEN-LAST:event_exportAllRoutesActionPerformed
 
     private void importRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importRoutesActionPerformed
-        new Thread(() -> 
+        
+        this.importRoutes.setEnabled(false);
+        
+        try
         {
-            JTextArea textArea = new JTextArea();
-            textArea.setColumns(50);
-            textArea.setRows(30);
-            textArea.setLineWrap(true);
-            textArea.setWrapStyleWord(true);
-            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+            JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+            int i = fc.showOpenDialog(this);
 
-            try
+            if (i == JFileChooser.APPROVE_OPTION)
             {
-                textArea.setText("");
-                int result = JOptionPane.showConfirmDialog(this, new JScrollPane(textArea), "Input route JSON", JOptionPane.OK_CANCEL_OPTION);   
+                File f = fc.getSelectedFile();
+
+                this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
                 
-                if (result == JOptionPane.YES_OPTION)
-                {
-                    this.model.importRoutes(textArea.getText());
-                    
-                    refreshRouteList();
+                prefs.put(LAST_USED_FOLDER, f.getParent());
+       
+                refreshRouteList();
 
-                    // Ensure route changes are synced
-                    this.model.syncWithCS2();
-                    this.repaintLayout();
-                    this.repaintLoc();
-                }
+                // Ensure route changes are synced
+                this.model.syncWithCS2();
+                this.repaintLayout();
+                this.repaintLoc();
             }
-            catch (Exception e)
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
+            
+            this.model.log("Route import error: " + e.getMessage());
+
+            if (this.model.isDebug())
             {
-                if (this.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
-
-                this.model.log("JSON error: " + e.getMessage());
-
-                JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
+                e.printStackTrace();
             }
-        }).start();
+        }
+        
+        this.importRoutes.setEnabled(true);
     }//GEN-LAST:event_importRoutesActionPerformed
 
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
@@ -9353,7 +9348,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 Integer fNumber = this.functionMapping.get(b);
 
                 LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
-                int result = JOptionPane.showConfirmDialog(this, edit, "Edit " + this.activeLoc.getName() + " Functions", JOptionPane.OK_CANCEL_OPTION);
+                int result = JOptionPane.showConfirmDialog(this, edit, "Edit " + this.activeLoc.getName() + " Functions", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                 edit.focusImages();
                 
                 if (result == JOptionPane.OK_OPTION)
