@@ -415,9 +415,7 @@ public class MarklinLocomotive extends Locomotive
     
     @Override
     synchronized public Locomotive stop()
-    {
-        //this._setSpeed(0);
-        
+    {        
         // Send stop command
         this.network.exec(new CS2Message(
             CS2Message.CMD_SYSTEM,

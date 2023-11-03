@@ -3,18 +3,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/EmptyTestNGTest.java to edit this template
  */
 
-import base.RouteCommand;
-import static base.RouteCommand.commandType.TYPE_ACCESSORY;
-import static base.RouteCommand.commandType.TYPE_STOP;
-import java.util.ArrayList;
+import base.Locomotive;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 import marklin.MarklinLocomotive;
-import marklin.MarklinRoute;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -24,7 +17,6 @@ import org.testng.annotations.Test;
 
 /**
  *
- * @author adamo
  */
 public class testLocomotive {
     
@@ -35,15 +27,11 @@ public class testLocomotive {
     {
     }
 
-   
     /**
-     * Exporting route to JSON
-     * @throws IllegalArgumentException
-     * @throws IllegalAccessException
-     * @throws NoSuchFieldException 
+     * Test locomotive class functionality
      */
     @Test
-    public void testLocomotiveConstructor() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    public void testLocomotiveConstructor()
     {   
         l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
                 MarklinLocomotive.locDirection.DIR_FORWARD,
@@ -55,12 +43,15 @@ public class testLocomotive {
                 3, //arival F
                 true, //reversible
                 4, // length
-                new HashMap<String, Long>() // total runtime
+                new HashMap<>() // total runtime
         );
         
         assertEquals(128, l.getFunctionType(0));
+        assertEquals(true, l.isFunctionPulse(0));
         assertEquals(10, l.getFunctionType(1));
+        assertEquals(false, l.isFunctionPulse(1));
         assertEquals(240, l.getFunctionType(2));
+        assertEquals(true, l.isFunctionPulse(2));
         assertEquals(112, MarklinLocomotive.sanitizeFIconIndex(l.getFunctionType(2)));
         assertEquals(0, MarklinLocomotive.sanitizeFIconIndex(l.getFunctionType(3)));
         assertEquals(0, l.getFunctionType(4));
@@ -89,14 +80,12 @@ public class testLocomotive {
         assertEquals(true, l.getF(3));
         assertEquals(false, l.getF(4));
         
-        
         l.setDepartureFunc(100);
         assertEquals((long) 2, (long) l.getDepartureFunc());
         
         l.applyPreferredSpeed();
         assertEquals((long) 99, (long) l.getSpeed());
 
-        
         l.setSpeed(50);
         assertEquals((long) 50, (long) l.getSpeed());
 
@@ -119,9 +108,16 @@ public class testLocomotive {
         
         l.setSpeed(10).delay(50).setSpeed(0);
         assert l.getTotalRuntime() > 0;
-        
+        assertEquals(Locomotive.getDate(System.currentTimeMillis()), l.getOperatingDate(true));
+
         l.functionsOff();
         assertEquals(false, l.getF(3));
+        assertEquals(false, l.getF(0));
+
+        l.lightsOn();
+        assertEquals(true, l.getF(0));
+        l.lightsOff();
+        assertEquals(false, l.getF(0));
     }
         
     @BeforeClass

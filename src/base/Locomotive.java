@@ -207,7 +207,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.historicalOperatingTime = new HashMap<>();;
+        this.historicalOperatingTime = new HashMap<>();
     }
     
     /**

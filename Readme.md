@@ -200,6 +200,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Custom icons from your PC can now be chosen for locomotives, even if no icon is selected in the Central Station
         - Function icons can now be assigned to locomotive functions, even if no icon is selected in the Central Station
         - Locally configured icons will get priority over Central Station icons
+        - Accessible by right-clicking any locomotive button, or the icons themselves
     - Autonomy graph: Points can now be marked as active or inactive
         - Inactive points will never be chosen within paths in autonomous operation
         - Locomotives on inactive stations will now be greyed out in the semi-autonomous operation UI
