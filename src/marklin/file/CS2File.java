@@ -83,7 +83,21 @@ public final class CS2File
      */
     public String sanitizeURL(String URL)
     {
-        return URLEncoder.encode(URL).replace("+", "%20");
+        try
+        {
+            return URLEncoder.encode(URL, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+            this.control.log("URL encoding error: " + ex.getMessage());
+            
+            if (this.control.isDebug())
+            {
+                ex.printStackTrace();
+            }
+            
+            return URL.replace(" ", "%20");
+        }
     }
     
     /**
