@@ -231,6 +231,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
     - Increased size of the active locomotive icon
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
+    - Fixed bug where special characters in locomotive names would sometimes be read incorrectly
 
 * v1.10.11 [10/15/23]
     - New graph nodes are now created near the cursor instead of the lower-left corner of the window

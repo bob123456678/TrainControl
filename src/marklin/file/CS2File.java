@@ -6,6 +6,7 @@ import base.Accessory;
 import base.Locomotive;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -245,7 +246,8 @@ public final class CS2File
         URLConnection connection = website.openConnection();
         return new BufferedReader(
             new InputStreamReader(
-                connection.getInputStream()));
+                connection.getInputStream(), StandardCharsets.UTF_8)
+        );
     }
 
     /**
