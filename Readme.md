@@ -65,6 +65,12 @@ The graph UI will show you which routes are active, which edges are locked, and 
 
 <img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
 
+**Statistics**
+
+Monitor the usage of different locomotives.
+
+![UI screenshot: locomotive statistics](assets/stats.png?raw=true)
+
 ## Features
 
 * Easily control locomotives (MM2, MFX, DCC), signals, switches, and routes
