@@ -89,6 +89,7 @@ The graph UI will show you which routes are active, which edges are locked, and 
     * Full UI for editing autonomy graph models
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
+* Track locomotive usage stats
 
 ## Keyboard Commands / Key Mappings
 
@@ -216,6 +217,9 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Conditional routes now support stop commands to enable basic collision detection
         - Added buttons to export/import all routes (useful for backups)
         - Added warnings if route buttons on a layout do not correspond to a valid route
+    - Improved locomotive usage statistics
+        - New UI viewer
+        - Track the number of days each locomotive was run
     - Improved the image quality of locomotive and function icons (they will be less pixelated)
     - Increased size of the active locomotive icon
     - Different instances of TrainControl will now use unique track diagram and IP preferences

@@ -55,8 +55,7 @@ public class testLocomotive {
                 3, //arival F
                 true, //reversible
                 4, // length
-                10, // total runtime
-                0 // last run
+                new HashMap<String, Long>() // total runtime
         );
         
         assertEquals(128, l.getFunctionType(0));
@@ -68,7 +67,7 @@ public class testLocomotive {
 
         assertEquals(true, l.isReversible());
         assertEquals((long) 4, (long) l.getTrainLength());
-        assertEquals(10, l.getTotalRuntime());
+        assertEquals(0, l.getTotalRuntime());
         assertEquals((long) 3, (long) l.getArrivalFunc());
         assertEquals((long) 2, (long) l.getDepartureFunc());
         assertEquals((long) 99, (long) l.getPreferredSpeed());
@@ -119,7 +118,7 @@ public class testLocomotive {
         assertEquals(80, l.getAddress());
         
         l.setSpeed(10).delay(50).setSpeed(0);
-        assert l.getTotalRuntime() > 10;
+        assert l.getTotalRuntime() > 0;
         
         l.functionsOff();
         assertEquals(false, l.getF(3));

@@ -1,5 +1,6 @@
 package marklin;
 
+import base.Locomotive;
 import base.RouteCommand;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -31,10 +32,14 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private Integer arrivalFunction;
     private boolean reversible;
     private Integer trainLength;
-    private long totalRuntime;
-    private long historicalOperatingTime;
+    private Map<String, Long> historicalOperatingTimeNew;
     private String localImageURL;
     private boolean customFunctions;
+    
+    // TODO - deprecate
+    private long totalRuntime; // deprecated
+    private long historicalOperatingTime; // deprecated
+    // TODO - end deprecate
     
     // Route state
     private int s88;
@@ -142,8 +147,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.arrivalFunction = l.getArrivalFunc();
         this.reversible = l.isReversible();
         this.trainLength = l.getTrainLength();
-        this.totalRuntime = l.getTotalRuntime();
-        this.historicalOperatingTime = l.getHistoricalOperatingTime();
+        // this.totalRuntime = l.getTotalRuntime(); // deprecated
+        this.historicalOperatingTimeNew = l.getHistoricalOperatingTime();
         this.localImageURL = l.getLocalImageURL();
         this.customFunctions = l.isCustomFunctions();
     }
@@ -266,14 +271,25 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return this.reversible;
     }
     
-    public long getTotalRuntime()
+    public Map<String, Long> getHistoricalOperatingTime()
     {
-        return this.totalRuntime;
-    }
-    
-    public long getHistoricalOperatingTime()
-    {
-        return this.historicalOperatingTime;
+        // TODO - deprecate, Legacy compatibility
+        if (this.historicalOperatingTime != 0)
+        {
+            Map<String, Long> data = new HashMap<>();
+            data.put(Locomotive.getDate(this.historicalOperatingTime), this.totalRuntime);
+            
+            return data;
+        }
+        else if (this.historicalOperatingTimeNew == null)
+        {
+            return new HashMap<>();
+        }
+        // TODO - end deprecate
+        else
+        {
+            return (Map<String, Long>) this.historicalOperatingTimeNew;
+        }
     }
     
     public Integer getTrainLength()

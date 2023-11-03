@@ -3,6 +3,7 @@ package marklin;
 import base.Locomotive;
 import base.RemoteDevice;
 import java.net.URL;
+import java.util.Map;
 import java.util.Objects;
 import marklin.udp.CS2Message;
 import util.Conversion;
@@ -105,14 +106,13 @@ public class MarklinLocomotive extends Locomotive
      * @param arrivalFunc
      * @param reversible
      * @param trainLength
-     * @param totalRuntime
      * @param historicalOperatingTime
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed,
-        Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, long totalRuntime, long historicalOperatingTime)
+        Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, Map<String, Long> historicalOperatingTime)
     {
-        super(name, 0, dir, getMaxNumF(type), functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, totalRuntime, historicalOperatingTime);
+        super(name, 0, dir, getMaxNumF(type), functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, historicalOperatingTime);
 
         this.network = network;
         this.type = type;

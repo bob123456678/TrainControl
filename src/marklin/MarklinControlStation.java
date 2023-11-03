@@ -1412,7 +1412,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinLocomotive newLoc = new MarklinLocomotive(this, c.getAddress(), c.getLocType(), c.getName(),
                 c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
                 c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
-            c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getTotalRuntime(), c.getHistoricalOperatingTime());
+            c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getHistoricalOperatingTime());
         
         newLoc.setLocalImageURL(c.getLocalImageURL());
         newLoc.setCustomFunctions(c.getCustomFunctions());

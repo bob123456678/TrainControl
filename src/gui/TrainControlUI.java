@@ -8357,59 +8357,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             BulkEnableOrDisable(false);
         }).start();
     }//GEN-LAST:event_BulkDisableActionPerformed
-    
-    private String convertSecondsToHMmSs(long ms)
-    {
-        long seconds = ms / 1000;
         
-        long s = seconds % 60;
-        long m = (seconds / 60) % 60;
-        long h = (seconds / (60 * 60)) % 24;
-        
-        return String.format("%d:%02d:%02d", h,m,s);
-    }
-    
-    private String convertSecondsToDate(long timestamp)
-    {
-        if (timestamp == 0) return "Never";
-        
-        Instant i = Instant.ofEpochMilli( timestamp );
-         
-        return i.toString().split("T")[0];
-    }
-    
     public void generateLocUsageReport()
     {
         new Thread(()->
         {   
-            List<Locomotive> sortedLocs = new ArrayList();
-
-            for (String s : this.model.getLocList())
-            {
-                if (this.model.getLocByName(s).getTotalRuntime() > 0)
-                {
-                    sortedLocs.add(this.model.getLocByName(s));
-                }
-            }
-            
-            if (!sortedLocs.isEmpty())
-            {               
-                sortedLocs.sort((Locomotive l1, Locomotive l2) -> Long.valueOf(l1.getTotalRuntime()).compareTo(l2.getTotalRuntime()));
-
-                this.model.log("-----------------------");
-                
-                for (Locomotive l : sortedLocs)
-                {
-                    this.model.log("  " + l.getName() + " [" + (convertSecondsToHMmSs(l.getTotalRuntime())) + "] Last run: " + convertSecondsToDate(l.getHistoricalOperatingTime()));   
-                }   
-
-                this.model.log("Locomotive runtime report:");
-            }
-            else
-            {
-                this.model.log("No data recorded.");
-            }
-
+            JOptionPane.showMessageDialog(this, new LocomotiveStats(this),
+                "Locomotive Usage Stats", JOptionPane.PLAIN_MESSAGE
+            );
         }).start();
     }
     
@@ -8805,12 +8760,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             this.generateLocUsageReport();
-
-            // Switch to next (Tools) tab
-            this.KeyboardTab.setSelectedIndex(
-                (this.KeyboardTab.getSelectedIndex() + 1) 
-                    % this.KeyboardTab.getComponentCount()
-            );
         }));
     }//GEN-LAST:event_LocUsageReportActionPerformed
 

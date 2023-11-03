@@ -1,7 +1,11 @@
 package base;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -63,12 +67,11 @@ public abstract class Locomotive
     protected Integer numPaths = 0;
     protected long lastPathTime = System.currentTimeMillis();
     
-    // Cumulative time of operation
-    protected long totalRuntime;
+    // Cumulative time of operation, by date
+    protected Map<String, Long> historicalOperatingTime;
     
     // When this locomotive was last run this session and overall, respectively
     protected long lastStartTime = 0;
-    protected long historicalOperatingTime = 0;
  
     /**
      * Constructor with name and all functions off
@@ -85,11 +88,11 @@ public abstract class Locomotive
         this.functionTypes = new int[numFunctions];
         
         this.callbacks = new HashMap<>();
+        this.historicalOperatingTime = new HashMap<>();
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.totalRuntime = 0;
     }
     
     /**
@@ -204,8 +207,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.totalRuntime = 0;
-        this.historicalOperatingTime = 0;
+        this.historicalOperatingTime = new HashMap<>();;
     }
     
     /**
@@ -276,13 +278,12 @@ public abstract class Locomotive
      * @param arrivalFunc 
      * @param trainLength
      * @param reversible 
-     * @param totalRuntime 
      * @param historicalOperatingTime 
      */
     public Locomotive(String name, int speed, locDirection direction, int numF,
         boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
-        int trainLength, long totalRuntime, long historicalOperatingTime
+        int trainLength, Map<String, Long> historicalOperatingTime
     )
     {
         this.name = name;
@@ -301,7 +302,6 @@ public abstract class Locomotive
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
         this.trainLength = trainLength;
-        this.totalRuntime = totalRuntime;
         this.historicalOperatingTime = historicalOperatingTime;
     }
 
@@ -319,11 +319,15 @@ public abstract class Locomotive
             if (speed > 0 && this.speed == 0)
             {
                 this.lastStartTime = System.currentTimeMillis();
-                this.historicalOperatingTime = this.lastStartTime;
             }
             else if (speed == 0 && this.speed > 0 && this.lastStartTime > 0)
             {
-                this.totalRuntime = this.totalRuntime + (System.currentTimeMillis() - this.lastStartTime);
+                String key = Locomotive.getDate();
+                
+                this.historicalOperatingTime.put(key, 
+                    this.historicalOperatingTime.getOrDefault(key, 0L) +
+                    (System.currentTimeMillis() - this.lastStartTime)
+                );                      
             }
             
             this.speed = speed;            
@@ -950,13 +954,56 @@ public abstract class Locomotive
         this.trainLength = trainLength;
     }
     
+    /**
+     * Total amount of time the locomotive was run
+     * @return 
+     */
     public long getTotalRuntime()
     {
-        return this.totalRuntime;
+        return this.historicalOperatingTime.values().stream().reduce(0L, Long::sum);
     }
     
-    public long getHistoricalOperatingTime()
+    /**
+     * On how many different days was the locomotive run
+     * @return 
+     */
+    public int getNumDaysRun()
     {
-        return this.historicalOperatingTime;
+        return this.historicalOperatingTime.keySet().size();
+    }
+    
+    /**
+     * The most recent date the locomotive was run
+     * @param mostRecent
+     * @return 
+     */
+    public String getOperatingDate(boolean mostRecent)
+    {
+        if (!this.historicalOperatingTime.isEmpty())
+        {
+            List<String> sortedList = new ArrayList<>(this.historicalOperatingTime.keySet());
+            Collections.sort(sortedList);
+
+            return sortedList.get(mostRecent ? sortedList.size() - 1 : 0);
+        }
+        else
+        {
+            return "(Never)";
+        }
     }   
+    
+    public Map<String, Long> getHistoricalOperatingTime()
+    {
+        return historicalOperatingTime;
+    }
+       
+    public static String getDate()
+    {
+        return getDate(System.currentTimeMillis());
+    }
+    
+    public static String getDate(long ts)
+    {
+        return new SimpleDateFormat("yyyy-MM-dd").format(ts);
+    }
 }
