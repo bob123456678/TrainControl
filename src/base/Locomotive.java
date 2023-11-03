@@ -319,9 +319,17 @@ public abstract class Locomotive
             if (speed > 0 && this.speed == 0)
             {
                 this.lastStartTime = System.currentTimeMillis();
+                
+                // Add a placeholder record to track the date
+                String key = Locomotive.getDate();
+
+                this.historicalOperatingTime.put(key, 
+                    this.historicalOperatingTime.getOrDefault(key, 0L)
+                ); 
             }
             else if (speed == 0 && this.speed > 0 && this.lastStartTime > 0)
             {
+                // Now add the number of seconds to the running total
                 String key = Locomotive.getDate();
                 
                 this.historicalOperatingTime.put(key, 
