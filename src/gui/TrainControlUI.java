@@ -96,7 +96,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Constants
     // Width of locomotive images
-    public static final Integer LOC_ICON_WIDTH = 290;
+    public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
     public static final Integer LOC_ICON_HEIGHT = 103;
@@ -6932,7 +6932,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocFunctionsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(ActiveLocLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocFunctionsPanelLayout.createSequentialGroup()
@@ -6941,6 +6940,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(OnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocFunctionsPanelLayout.createSequentialGroup()
                         .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(locIcon, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                                 .addComponent(Backward, javax.swing.GroupLayout.DEFAULT_SIZE, 141, Short.MAX_VALUE)
                                 .addGap(18, 18, 18)
