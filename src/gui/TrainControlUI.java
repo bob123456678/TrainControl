@@ -30,7 +30,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -57,9 +57,7 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
 import javax.swing.JSlider;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -98,7 +96,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Constants
     // Width of locomotive images
-    public static final Integer LOC_ICON_WIDTH = 284;
+    public static final Integer LOC_ICON_WIDTH = 290;
+    
+    // Max height of locomotive images
+    public static final Integer LOC_ICON_HEIGHT = 103;
+    
+    // Width of button images
+    public static final Integer BUTTON_ICON_WIDTH = 35;
+
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
     // Minimum between possible route repainting in semi-autonmous mode
@@ -189,6 +194,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Locomotive selector
     private LocomotiveSelector selector;
+    
+    // Popup references
+    private List<LayoutPopupUI> popups = new ArrayList<>();
         
     /**
      * Creates new form MarklinUI
@@ -1395,6 +1403,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Returns a scaled locomotive image
+     * @param url
+     * @param size
+     * @param maxHeight
+     * @return
+     * @throws IOException 
+     */
+    public Image getLocImageMaxHeight(String url, int size, int maxHeight) throws IOException
+    {
+        String key = url + Integer.toString(size);
+        
+        if (!TrainControlUI.getImageCache().containsKey(key))
+        {
+            Image img = ImageIO.read(new URL(url));
+            
+            if (img != null)
+            {
+                float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
+                
+                // Limit maximum height
+                if (size * aspect > maxHeight)
+                {
+                    size = (int) (size * (maxHeight / (size * aspect)));
+                }
+                
+                TrainControlUI.getImageCache().put(key, 
+                    // img.getScaledInstance(size, (int) (size * aspect), 1)
+                    // Higher quality scaling
+                    ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
+                );
+            }
+        }
+
+        return TrainControlUI.getImageCache().get(key);        
+    }
+    
+    /**
      * Repaints a locomotive button
      * @param b
      * @param l 
@@ -1487,7 +1532,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         try 
                         {
                             locIcon.setIcon(new javax.swing.ImageIcon(
-                                getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
+                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
+                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
                             ));      
                             locIcon.setText("");
                             locIcon.setVisible(true);
@@ -1529,7 +1575,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         {
                             if (functionType > 0 && LOAD_IMAGES)
                             {
-                                Image icon = getLocImage(targetURL, 35);
+                                Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
 
                                 if (icon != null)
                                 {
@@ -5960,6 +6006,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CurrentKeyLabel.setToolTipText(null);
         CurrentKeyLabel.setFocusable(false);
 
+        locIcon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         locIcon.setToolTipText("Locomotive icon.  Right-click to change.");
         locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -6885,6 +6932,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocFunctionsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(ActiveLocLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocFunctionsPanelLayout.createSequentialGroup()
@@ -6899,10 +6947,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(Forward, javax.swing.GroupLayout.PREFERRED_SIZE, 137, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(SpeedSlider, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(FunctionTabs, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         LocFunctionsPanelLayout.setVerticalGroup(
@@ -7423,14 +7468,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
             LayoutPopupUI popup = new LayoutPopupUI(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
                     this.layoutSizes.get("Large"),
-                    this
+                    this,
+                    this.LayoutList.getSelectedIndex()
             );
 
             popup.render();
+            popups.add(popup);
+            updatePopups(false);
         }));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
     
@@ -7474,14 +7523,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
         
-        new Thread(() -> {
+        new Thread(() ->
+        {
             LayoutPopupUI popup = new LayoutPopupUI(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
                     this.layoutSizes.get("Small"),
-                    this
+                    this,
+                    this.LayoutList.getSelectedIndex()
             );
 
             popup.render();
+            popups.add(popup);
+            updatePopups(false);
         }).start();
     }//GEN-LAST:event_smallButtonActionPerformed
 
@@ -7492,15 +7545,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             String layoutName = LayoutList.getItemAt(i).toString();
 
-            new Thread(() -> {
-  
+            new Thread(() ->
+            {
                 LayoutPopupUI popup = new LayoutPopupUI(
                     this.model.getLayout(layoutName),
                     this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                    this
+                    this,
+                    this.LayoutList.getSelectedIndex()
                 );
 
                 popup.render();
+                popups.add(popup);
+                updatePopups(false);
             }).start();
         } 
     }//GEN-LAST:event_allButtonActionPerformed
@@ -9059,6 +9115,35 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Updates the list of popups, and optionally refreshes the diagrams
+     */
+    private void updatePopups(boolean doRefresh)
+    {
+        ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
+        while(iter.hasNext())
+        {
+            LayoutPopupUI currentPopup = iter.next();
+            
+            if (currentPopup.isVisible())
+            {
+                if (doRefresh)
+                {
+                    currentPopup.refreshDiagram();
+                }
+            }
+            else
+            {
+                iter.remove();
+            }
+        }
+        
+        if (this.model.isDebug())
+        {
+            this.model.log("Currently active popups: " + this.popups.size());
+        }
+    }
+    
+    /**
      * Opens the layout editor app for the current layout
      * @param evt 
      */
@@ -9139,6 +9224,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 this.repaintLayout(); 
+                
+                this.updatePopups(true);
             }
             catch (Exception ex)
             {

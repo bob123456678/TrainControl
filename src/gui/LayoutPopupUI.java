@@ -22,6 +22,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
     TrainControlUI parent;
     int size;
     MarklinLayout layout;
+    int pageIndex;
     
     /**
      * Popup window showing train layouts
@@ -29,7 +30,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
      * @param size size of each tile, in pixels
      * @param ui
      */
-    public LayoutPopupUI(MarklinLayout l, int size, TrainControlUI ui)
+    public LayoutPopupUI(MarklinLayout l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
         
@@ -37,6 +38,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         this.parent = ui;
         this.size = size;
         this.layout = l;
+        this.pageIndex = pageIndex;
     }
     
     private void drawGrid()
@@ -76,6 +78,14 @@ public class LayoutPopupUI extends javax.swing.JFrame {
     }
     
     /**
+     * Refreshes the contents of the layout
+     */
+    public void refreshDiagram()
+    {
+        this.goToLayoutPage(this.pageIndex);
+    }
+    
+    /**
      * Updates the layout page
      * @param index
      */
@@ -85,16 +95,19 @@ public class LayoutPopupUI extends javax.swing.JFrame {
      
         if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
         {
-            this.parent.getModel().log("Popup layout jumping to page " + page);
+            this.parent.getModel().log("Popup layout: updating or jumping to page " + page);
 
             this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
-            
+                        
             drawGrid();  
             this.repaint();
+            
+            // Update saved index
+            this.pageIndex = index;
         }
         else
         {
-            this.parent.getModel().log("Popup layout page " + page + " does not exist");
+            this.parent.getModel().log("Popup layout: page " + page + " does not exist");
         }
     }
     
