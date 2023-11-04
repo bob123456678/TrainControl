@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import marklin.MarklinAccessory;
+import marklin.MarklinLocomotive;
 import model.ViewListener;
 import org.json.JSONObject;
 
@@ -1916,15 +1917,20 @@ public class Layout
             }
         }); 
 
-        // Optionally disable the arrival functions
-        if (this.turnOffFunctionsOnArrival)
+        l.setCallback(Layout.CB_ROUTE_END, (lc) ->
         {
-            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);});
-        }
-        else
-        {
-            l.setCallback(Layout.CB_ROUTE_END, (lc) -> {lc.delay(minDelay, maxDelay);});
-        }
+            // Optionally disable the arrival functions
+            Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
+            
+            if (layout != null && layout.isTurnOffFunctionsOnArrival())
+            {
+                lc.delay(minDelay, maxDelay).functionsOff().delay(minDelay, maxDelay);
+            }
+            else
+            {
+                lc.delay(minDelay, maxDelay);
+            }
+        });
     }
     
     /**

@@ -45,7 +45,7 @@ public class MarklinLocomotive extends Locomotive
     
     // Reference to the network
     private final MarklinControlStation network;    
-    
+
     // Local function icons
     private final String resourcePath = "/gui/resources/functions";
     public static final int NUM_FN_ICONS = 112;
@@ -676,5 +676,14 @@ public class MarklinLocomotive extends Locomotive
         hash = 73 * hash + Objects.hashCode(this.getName());
 
         return hash;
+    }
+    
+    /**
+     * Returns a reference to the model.  Useful for callbacks
+     * @return 
+     */
+    public MarklinControlStation getModel()
+    {
+        return network;
     }
 }

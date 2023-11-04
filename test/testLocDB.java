@@ -3,6 +3,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/EmptyTestNGTest.java to edit this template
  */
 
+import base.Locomotive;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 import static org.testng.Assert.*;
@@ -66,6 +70,34 @@ public class testLocDB {
         assert model.getLocByName(locName) == null;
         assert model.getLocByName(locName2) != null;
         assert locName2.equals(model.getLocByName(locName2).getName());
+    }
+    
+    /**
+     * Test the lists of locomotives
+     */
+    @Test
+    public void testLocList()
+    {   
+        String locName = "New locomotive test 2";
+        
+        model.newMFXLocomotive(locName, 20);
+        
+        List<String> locNames = model.getLocList();
+        
+        List<String> locNames2 = new ArrayList<>();
+        
+        for (Locomotive l : model.getLocomotives())
+        {
+            locNames2.add(l.getName());
+        }
+               
+        assertEquals(locNames.containsAll(locNames2), true);
+        assertEquals(locNames2.containsAll(locNames), true);
+        assertEquals(locNames2.size(), locNames.size());
+        
+        model.deleteLoc(locName);
+        
+        assertEquals(model.getLocByName(locName), null);
     }
     
     @BeforeClass

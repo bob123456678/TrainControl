@@ -46,7 +46,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 57) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 58) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1409,17 +1409,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private MarklinLocomotive newLocomotive(MarklinSimpleComponent c)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, c.getAddress(), c.getLocType(), c.getName(),
-                c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
-            c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getHistoricalOperatingTime());
-        
-        newLoc.setLocalImageURL(c.getLocalImageURL());
-        newLoc.setCustomFunctions(c.getCustomFunctions());
-        
-        this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
-        
-        return newLoc; 
+        if (this.locDB.getByName(c.getName()) == null)
+        {
+            MarklinLocomotive newLoc = new MarklinLocomotive(this, c.getAddress(), c.getLocType(), c.getName(),
+                    c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
+                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
+                c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getHistoricalOperatingTime());
+
+            newLoc.setLocalImageURL(c.getLocalImageURL());
+            newLoc.setCustomFunctions(c.getCustomFunctions());
+
+            this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
+            
+            return newLoc; 
+        }
+        else
+        {
+            // This is a sanity check for corrupt versions of the database from older versions of TrainControl
+            this.log("Saved locomotive " + c.getName() + " is a duplicate.  Skipping.");
+            return null;
+        }
     }
     
     /**
@@ -1439,7 +1448,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Returns the locomotives that exist in the database
+     * Returns the names of the locomotives that exist in the database
      * @return 
      */
     @Override
@@ -1449,6 +1458,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         Collections.sort(l);
                 
         return l;
+    }
+    
+    /**
+     * Returns the names of the locomotives that exist in the database
+     * @return 
+     */
+    @Override
+    public List<MarklinLocomotive> getLocomotives()
+    {
+        return this.locDB.getItems();
     }
     
     /**

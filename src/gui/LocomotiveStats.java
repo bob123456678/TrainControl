@@ -29,11 +29,11 @@ public class LocomotiveStats extends javax.swing.JPanel {
         
         List<Locomotive> sortedLocs = new ArrayList();
 
-        for (String s : tcui.getModel().getLocList())
+        for (Locomotive l : tcui.getModel().getLocomotives())
         {
-            //if (tcui.getModel().getLocByName(s).getTotalRuntime() > 0)
+            //if (l.getTotalRuntime() > 0)
             //{
-                sortedLocs.add( tcui.getModel().getLocByName(s));
+                sortedLocs.add( l);
             //}
         }
 

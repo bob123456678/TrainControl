@@ -11,6 +11,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import javax.swing.JOptionPane;
+import marklin.MarklinLocomotive;
 import model.ViewListener;
 
 /**
@@ -62,9 +63,9 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
             this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING));
 
-            for (String s : model.getLocList())
+            for (MarklinLocomotive l : this.model.getLocomotives())
             {
-                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(model.getLocByName(s), parent, this.MainLocList);
+                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(l, parent, this.MainLocList);
 
                 this.MainLocList.add(loc);
                 loc.setVisible(true);

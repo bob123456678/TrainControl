@@ -64,4 +64,5 @@ public interface ViewListener
     public void clearLayouts();
     public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException;
     public void importRoutes(String json);
+    public List<MarklinLocomotive> getLocomotives();
 }

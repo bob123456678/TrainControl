@@ -9310,7 +9310,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             try
             {
-                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "route"),
+                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "routes"),
                     "Export route data", JOptionPane.PLAIN_MESSAGE
                 );
 
@@ -9422,7 +9422,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.repaintMappings(l);
         }));
     }
-    
     
     /**
      * Allows a local image to be set for a locomotive
