@@ -91,7 +91,15 @@ public class MarklinRoute extends Route
         this.s88 = s88;
         this.triggerType = triggerType;
         this.enabled = enabled;
-        this.conditionS88s = conditionS88s;
+        
+        if (conditionS88s != null)
+        {
+            this.conditionS88s = conditionS88s;
+        }
+        else
+        {
+            this.conditionS88s = new HashMap<>();
+        }
         
         // Execute the automatic route
         if (this.enabled && this.hasS88())
@@ -344,7 +352,7 @@ public class MarklinRoute extends Route
     }
     
     /**
-     * Returns whether this route has an s88 sensor
+     * Returns whether this route has s88 conditions
      * @return 
      */
     public final boolean hasConditionS88()
