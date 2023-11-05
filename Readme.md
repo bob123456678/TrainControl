@@ -1,6 +1,6 @@
 # TrainControl for Marklin Central Station 2 and 3
 
-This powerful cross-platform Java program allows you to use your computer to easily control your entire Marklin / Trix / DCC digital layout.
+This powerful, free, cross-platform Java program allows you to use your computer to *easily* control your entire Marklin / Trix / DCC digital layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout and many locomotives, as
 the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
@@ -9,7 +9,7 @@ enabling functions, smooth deceleration, emergency stop, etc.  You can also open
 
 As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
 operating your layout, with the Central Station serving solely as the track interface
-and MFX locomotive database.
+and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to programmatically control the entire layout ([see API](src/examples/Readme.md)).  Layout and locomotive information is automatically
@@ -17,7 +17,8 @@ downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (
 
 TrainControl also provides a UI for creating a graph model of your layout, 
 which enables tracking train locations for *fully autonomous* operation at the push of a single button,
-as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes.
+as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
+automate switches while operating trains manually.
 
 ## Overview
 
