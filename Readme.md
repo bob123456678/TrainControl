@@ -130,6 +130,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 **Requirements:**
 
+* Install Java 8 on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (a warning will be shown after 15 seconds if this is not enabled)
