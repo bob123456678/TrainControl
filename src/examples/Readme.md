@@ -92,7 +92,7 @@ Instead, each locomotive will figure out what route to follow, and it will conti
 Before we can use this class, we first need to come up with a graph representation of the layout.  The graph below corresponds to the sample layout from the previous example.
 We define a point for each station and for every other S88 feedback sensor, and then we connect them with edges.
 
-Notice the shared edge from "Main Track" to "Pre Arrival": this design ensures that the routes are mutually exclusive (the two trains won't be able to run simultaneously, and therefore can't crash).
+Notice the shared edge from "Main Track" to "Pre Arrival": this design ensures that the routes are mutually exclusive (the two trains won't be able to run simultaneously, and therefore can't crash).  Conceptually (and perhaps more commonly), edges can also be referred to as "Blocks".
 
 ![Sample layout represented as a graph](../../assets/graph.png?raw=true)
 

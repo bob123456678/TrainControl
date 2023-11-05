@@ -150,7 +150,7 @@ However, even when using a CS3, you can view CS2 layouts in this program as foll
 - Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
 - The static local layout will now be shown in the Layout tab
 
-If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program (Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
+If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
 
 If you change the local files, clicking on "Sync with CS2" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
 
@@ -181,6 +181,19 @@ Examples:
 * ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
+
+## License & Contact
+
+TrainControl was created and is maintained by Adam Oest.
+
+To support development, pleae feel free to [make a donation via Buy Me a Coffee](
+https://www.buymeacoffee.com/traincontrol).
+
+Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
+
+This is free software released under the GNU General Public License v3.
+
+No copyright claim is made to any Central Station icons rendered during the use of this program.
 
 ## Changelog
 
@@ -217,6 +230,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
         - Fixed a bug where a shadow copy of a locomotive with the same name (but a different address) could exist in TrainControl's database
         - The "Sync w/ Central Station" right-click option will now also update the locomotive's address/functions/icon
         - The manual "Add locomotive" option under Tools now accepts MFX addresses as integer or hex
+    - Locomotive addresses can now be manually changed in TrainControl (useful for MM2/DCC decoders, does not propagate to Central Station)
     - Improved the autonomy JSON UI
         - Added option to load graph JSON from a file (to make managing presets easier)
         - Added option to save graph JSON to a file

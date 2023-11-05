@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
+import marklin.MarklinLocomotive;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -45,12 +46,50 @@ public class testLocDB {
         assert model.getLocByName(locName).getAddress() == address;
         assert model.getLocByName(locName).getName().equals(locName);
         assert model.getLocList().contains(locName);
+        assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, address), true);
         
         model.deleteLoc(locName);
      
         assert model.getLocByName(locName) == null;
         assert model.getLocList().size() == numLocs;
         assert !model.getLocList().contains(locName);
+    }
+    
+    /**
+     * Adding and deleting a locomotive from the database
+     */
+    @Test
+    public void testChangeAddress() throws Exception
+    {   
+        String locName = "New locomotive test 2";
+        int address = 12;
+        int newAddress = 14;
+        
+        model.newMFXLocomotive(locName, address);
+
+        assertEquals(model.getLocList().contains(locName), true);
+        
+        MarklinLocomotive loc = model.getLocByName(locName);
+        
+        assertNotEquals(loc, null);
+        
+        int currentAddress = loc.getAddress();
+        
+        assertEquals(currentAddress, address);
+        
+        model.changeLocAddress(locName, newAddress);
+        
+        assertEquals(model.getLocList().contains(locName), true);
+        
+        MarklinLocomotive locAgain = model.getLocByName(locName);
+        
+        assertEquals(locAgain, loc);
+        assertEquals(locAgain.getAddress(), newAddress);
+
+        assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, address), true);
+        assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, newAddress), true);
+
+        model.deleteLoc(locName);
     }
     
     /**

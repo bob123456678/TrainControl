@@ -150,34 +150,49 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * Validates a proposed address for the locomotive
+     * @param newType
+     * @param newAddress
+     * @return 
+     */
+    public static boolean validateNewAddress(decoderType newType, int newAddress)
+    {
+        switch (newType)
+        { 
+            case MM2:
+                return newAddress > 0 && newAddress <= MM2_MAX_ADDR;
+            case MFX:
+                return newAddress > 0 && newAddress <= MFX_MAX_ADDR;
+            case DCC:
+                return newAddress > 0 && newAddress <= DCC_MAX_ADDR;
+            case MULTI_UNIT:
+                return newAddress <= MFX_BASE && newAddress > MM2_MAX_ADDR;
+            default:
+                return false;
+        }
+    }
+    
+    /**
      * Determines the Marklin UID based on address and protocol
      */
     private int calculateUID()
     {
         // Verify MM2 address range
         if (this.type == decoderType.MM2)
-        {
-            assert this.address <= MM2_MAX_ADDR;
-            
+        {            
             return this.address;
         } 
         // Verify MFX address range
         else if (this.type == decoderType.MFX)
         {
-            assert this.address <= MFX_MAX_ADDR;
-
             return this.address + MFX_BASE;            
         }  
         else if (this.type == decoderType.DCC)
         {
-            assert this.address <= DCC_MAX_ADDR;
-
             return this.address + DCC_BASE;            
         }
         else if (this.type == decoderType.MULTI_UNIT)
         {
-            assert this.address <= MFX_BASE && this.address > MM2_MAX_ADDR;
-
             return this.address;
         }    
             

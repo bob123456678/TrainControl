@@ -69,6 +69,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
+import marklin.MarklinLocomotive.decoderType;
 import marklin.MarklinRoute;
 import model.View;
 import model.ViewListener;
@@ -103,6 +104,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
+    
+    // Maximum allowed length of locomotive names (in characters)
+    public static final Integer MAX_LOC_NAME_DATABASE = 30;
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
@@ -7717,7 +7721,45 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    public void renameLocomotive (String s)
+    public void changeLocAddress(String s)
+    {
+        try
+        {
+            MarklinLocomotive l = this.model.getLocByName(s);
+
+            if (l != null)
+            {
+                String newAddress = JOptionPane.showInputDialog(this, "Enter new address:", l.getAddress());
+                Integer proposedAddress;
+                
+                if (newAddress != null && !"".equals(newAddress.trim()))
+                {           
+                    if (l.getDecoderType() == decoderType.MFX && newAddress.contains("0x"))
+                    {
+                        proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
+                    }
+                    else
+                    {
+                        proposedAddress = Integer.valueOf(newAddress);
+                    }
+
+                    if (proposedAddress != l.getAddress())
+                    {
+                        this.model.changeLocAddress(l.getName(), proposedAddress);
+                        this.repaintLoc(true);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+    
+    public void renameLocomotive(String s)
     {
         Locomotive l = this.model.getLocByName(s);
 
@@ -7734,10 +7776,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     return;
                 }
 
-                if (newName.length() >= 30)
+                if (newName.length() >= MAX_LOC_NAME_DATABASE)
                 {
                     JOptionPane.showMessageDialog(this,
-                        "Please enter a locomotive name under 30 characters");
+                        "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
                     return;
                 }
 
@@ -7873,15 +7915,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         switchDirection();
     }//GEN-LAST:event_RightArrowLetterButtonPressed
 
-    private void DownArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt) {                                              
-        
+    private void DownArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt)
+    {                                                  
         if (this.activeLoc != null)
         {
             setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP * 2, 0));
         }
     } 
     
-    private void UpArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt) {                                            
+    private void UpArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt)
+    {                                            
         if (this.activeLoc != null)
         {
             setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP * 2, 100));
@@ -7921,7 +7964,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (l != null)
                 {                    
-                    // System.out.println(l.getName() + " switch dir");
                     l.setSpeed(0);
                     l.switchDirection();
                     
@@ -7950,9 +7992,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Locomotive l = this.currentLocMapping().get(b);
 
             if (l != null)
-            {
-                // System.out.println(l.getName() + " setting speed " + slider.getValue());
-               
+            {               
                 if (l.getSpeed() != slider.getValue())
                 {
                     l.setSpeed(slider.getValue());
@@ -8011,10 +8051,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 return;
             }
 
-            if (locName.length() >= 30)
+            if (locName.length() >= MAX_LOC_NAME_DATABASE)
             {
                 JOptionPane.showMessageDialog(this,
-                    "Please enter a locomotive name under 30 characters");
+                    "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
                 return;
             }
 
@@ -8044,16 +8084,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             try
             {
-                if (this.LocTypeMFX.isSelected())
+                if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
                 {
-                    if (this.LocAddressInput.getText().contains("0x"))
-                    {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                    }
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
                 }
                 else
                 {

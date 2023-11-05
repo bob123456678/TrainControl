@@ -4,7 +4,9 @@
  */
 
 import base.Locomotive;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 import marklin.MarklinLocomotive;
@@ -119,7 +121,53 @@ public class testLocomotive {
         l.lightsOff();
         assertEquals(false, l.getF(0));
     }
+       
+    /**
+     * Test locomotive address validation
+     */
+    @Test
+    public void testLocomotiveAddressRanges()
+    {  
+        List<Integer> invalidMM2Addresses = Arrays.asList(0, -1, 81, 82, 99, 100);
+        List<Integer> validMM2Addresses = Arrays.asList(1, 2, 50, 79, 80);
         
+        for (int i : invalidMM2Addresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MM2, i), false);
+        }
+        
+        for (int i : validMM2Addresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MM2, i), true);
+        }
+        
+        List<Integer> invalidDCCAddresses = Arrays.asList(0, -1, 2049, 2050, 3000);
+        List<Integer> validDCCAddresses = Arrays.asList(1, 2, 50, 79, 80, 1000, 2048, 2047);
+        
+        for (int i : invalidDCCAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.DCC, i), false);
+        }
+        
+        for (int i : validDCCAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.DCC, i), true);
+        }    
+        
+        List<Integer> invalidMFXAddresses = Arrays.asList(0, -1, 100000);
+        List<Integer> validMFXAddresses = Arrays.asList(1, 2, 10, 100, 1000);
+        
+        for (int i : invalidMFXAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, i), false);
+        }
+        
+        for (int i : validMFXAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, i), true);
+        } 
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {

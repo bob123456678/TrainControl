@@ -46,7 +46,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 58) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 59) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1458,6 +1458,36 @@ public class MarklinControlStation implements ViewListener, ModelListener
         Collections.sort(l);
                 
         return l;
+    }
+    
+    /**
+     * Changes the address of a locomotive
+     * @param locName
+     * @param newAddress
+     * @throws Exception 
+     */
+    @Override
+    public void changeLocAddress(String locName, int newAddress) throws Exception
+    {
+        MarklinLocomotive l = this.locDB.getByName(locName);
+        
+        if (l == null) throw new Exception("Locomotive " + locName + " does not exist");
+        
+        if (!MarklinLocomotive.validateNewAddress(l.getDecoderType(), newAddress))
+        {
+            throw new Exception("Address " + newAddress + " is outside of the allowed range.");
+        }
+        
+        // Execute the change
+        this.deleteLoc(l.getName());
+        
+        l.setAddress(newAddress);
+        
+        this.locDB.add(l, l.getName(), l.getUID());
+        
+        this.rebuildLocIdCache();
+        
+        this.log("Changed address of " + l.getName() + " to " + newAddress);
     }
     
     /**
