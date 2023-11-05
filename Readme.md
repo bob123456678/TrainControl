@@ -137,27 +137,21 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 **Limitations:**
 
-* Central Station track diagrams can only be downloaded from the CS2, not CS3 (complete local layout files can be used with a CS3 if desired)
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
+* Central Station track diagrams can only be downloaded from the CS2, not CS3 (local layout files can be created/used with a CS3 if desired)
 
-**Layouts and the CS3**
+## License & Contact
 
-This program was originally written to import and display layouts created/configured from within the CS2.
-Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.
+TrainControl was created and is maintained by Adam Oest.
 
-However, even when using a CS3, you can view CS2 layouts in this program as follows:
-- Create an empty folder on your PC
-- From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
-- Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
-- The static local layout will now be shown in the Layout tab
+To support development, please feel free to [make a donation via Buy Me a Coffee](
+https://www.buymeacoffee.com/traincontrol).
 
-If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
+Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
 
-If you change the local files, clicking on "Sync with CS2" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
+This is free software released under the GNU General Public License v3.
 
-Some sample files are included in the `cs2_sample_layout` folder.
-
-As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
+No copyright claim is made to any Central Station icons rendered during the use of this program.
 
 ## Running TrainControl
 
@@ -183,18 +177,24 @@ Examples:
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
-## License & Contact
+## Layouts and the CS3
 
-TrainControl was created and is maintained by Adam Oest.
+This program was originally written to import and display layouts created/configured from within the CS2.
+Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.
 
-To support development, please feel free to [make a donation via Buy Me a Coffee](
-https://www.buymeacoffee.com/traincontrol).
+However, even when using a CS3, you can view CS2 layouts in this program as follows:
+- Create an empty folder on your PC
+- From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+- Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
+- The static local layout will now be shown in the Layout tab
 
-Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
+If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
 
-This is free software released under the GNU General Public License v3.
+If you change the local files, clicking on "Sync with CS2" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
 
-No copyright claim is made to any Central Station icons rendered during the use of this program.
+Some sample files are included in the `cs2_sample_layout` folder.
+
+As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ## Changelog
 
