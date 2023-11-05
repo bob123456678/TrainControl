@@ -186,7 +186,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 TrainControl was created and is maintained by Adam Oest.
 
-To support development, pleae feel free to [make a donation via Buy Me a Coffee](
+To support development, please feel free to [make a donation via Buy Me a Coffee](
 https://www.buymeacoffee.com/traincontrol).
 
 Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
