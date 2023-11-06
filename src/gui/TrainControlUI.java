@@ -1506,7 +1506,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         repaintLoc(false);
     }
     
-    public void repaintLoc(boolean force)
+    synchronized public void repaintLoc(boolean force)
     {     
         if (this.activeLoc != null)
         {            
@@ -1661,10 +1661,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
             
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                this.repaintMappings();
-            }));
+            this.repaintMappings();
         }
         else
         {

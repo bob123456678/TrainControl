@@ -1105,7 +1105,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (message.getResponse())
                     {
-                        if (this.view != null) this.view.repaintLoc();
+                        new Thread(() ->
+                        {
+                            if (this.view != null) this.view.repaintLoc();
+                        }).start();
                     }
                 }
                 else if (locs.isEmpty())
