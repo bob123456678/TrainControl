@@ -43,8 +43,8 @@ public class MarklinRoute extends Route
     private boolean enabled;
     private s88Triggers triggerType;
     private int s88;
-    private Map<Integer, Boolean> conditionS88s;
-    private List<RouteCommand> conditionAccessories;
+    private final Map<Integer, Boolean> conditionS88s;
+    private final List<RouteCommand> conditionAccessories;
     
     /**
      * Simple constructor
@@ -120,7 +120,7 @@ public class MarklinRoute extends Route
     /**
      * Monitors the route conditions and executes the route when appropriate
      */
-    public final void executeAutoRoute()
+    public final boolean executeAutoRoute()
     {
         // Execute the automatic route
         if (this.enabled && this.hasS88())
@@ -181,7 +181,11 @@ public class MarklinRoute extends Route
                     this.execRoute(); 
                 }
             }).start();
+            
+            return true;
         }
+        
+        return false;
     }
     
     /**
