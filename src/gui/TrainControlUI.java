@@ -1653,14 +1653,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
             }
+            
             for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
             {
-
                 this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
             }
 
             this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
-            this.repaintMappings();
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                this.repaintMappings();
+            }));
         }
         else
         {
