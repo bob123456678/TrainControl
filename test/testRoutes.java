@@ -48,7 +48,7 @@ public class testRoutes {
         Map<Integer, Boolean> conditionS88s = new HashMap<>(); // Generate random values for conditionS88s
         conditionS88s.put(random.nextInt(100), random.nextBoolean());
         
-         List<RouteCommand> routeCommands = new ArrayList<>();
+        List<RouteCommand> routeCommands = new ArrayList<>();
 
         // Populate the list with random RouteCommand objects
         for (int i = 0; i < random.nextInt(20); i++) {
@@ -67,7 +67,19 @@ public class testRoutes {
                     break;
             }
         }
-        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, conditionS88s);
+        
+        List<RouteCommand> conditionAccessories = new ArrayList<>();
+        
+        for (int i = 0; i < random.nextInt(20); i++)
+        {
+            int address = random.nextInt(100);
+            boolean setting = random.nextBoolean();
+            RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, setting);
+            conditionAccessories.add(accessoryCommand);
+        }
+        
+        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, conditionS88s,
+        conditionAccessories);
         
         return route;
     }
@@ -100,6 +112,7 @@ public class testRoutes {
             }
         }
         
+        System.out.println(newRoute.toVerboseString());
         model.newRoute(newRoute);
         
         assert newRoute.equals(model.getRoute(newRoute.getName()));

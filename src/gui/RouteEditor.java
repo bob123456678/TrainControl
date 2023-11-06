@@ -27,9 +27,11 @@ public class RouteEditor extends javax.swing.JPanel {
                     + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
                     + "\n(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
-                    + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.";
+                    + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
+                    + "Conditional Accessories behave just like S88 conditions: if specified, all accessory state must also match\n"
+                    + "the specified values in order for the route to fire.";
     
-    public static final String TURNOUT = "Turnout (1)";
+    public static final String TURNOUT = "Switched (1)";
     public static final String STRAIGHT = "Straight (0)";
     public static final String RED = "Red (1)";
     public static final String GREEN = "Green (0)";
@@ -45,8 +47,9 @@ public class RouteEditor extends javax.swing.JPanel {
      * @param s88
      * @param triggerType
      * @param conditionS88s
+     * @param conditionAccString
      */
-    public RouteEditor(String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s) {
+    public RouteEditor(String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, String conditionAccString) {
         initComponents();
         
         boolean edit = !"".equals(routeContent);
@@ -65,6 +68,7 @@ public class RouteEditor extends javax.swing.JPanel {
         
         this.s88.setText(Integer.toString(s88));
         this.conditionS88.setText(conditionS88s);
+        this.conditionAccs.setText(conditionAccString);
 
         if (triggerType == MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED)
         {
@@ -111,6 +115,11 @@ public class RouteEditor extends javax.swing.JPanel {
         
         this.updateSettingSelections();
         this.accState.setPrototypeDisplayValue("XXXXXXXXXXXXXX");
+    }
+    
+    public JTextArea getConditionAccs()
+    {
+        return conditionAccs;
     }
 
     public JRadioButton getExecutionAuto() {
@@ -175,6 +184,9 @@ public class RouteEditor extends javax.swing.JPanel {
         conditionS88 = new javax.swing.JTextArea();
         jSeparator1 = new javax.swing.JSeparator();
         addStopCommand = new javax.swing.JButton();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        conditionAccs = new javax.swing.JTextArea();
+        jLabel13 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         jPanel5 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -191,6 +203,7 @@ public class RouteEditor extends javax.swing.JPanel {
         accTypeSignal = new javax.swing.JRadioButton();
         jLabel12 = new javax.swing.JLabel();
         delay = new javax.swing.JTextField();
+        addToRouteButton1 = new javax.swing.JButton();
         jLabel7 = new javax.swing.JLabel();
         Help = new javax.swing.JButton();
 
@@ -265,10 +278,10 @@ public class RouteEditor extends javax.swing.JPanel {
         });
 
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Additional S88 Conditions");
+        jLabel9.setText("Optional S88 Conditions");
 
-        conditionS88.setColumns(13);
-        conditionS88.setRows(5);
+        conditionS88.setColumns(11);
+        conditionS88.setRows(3);
         conditionS88.setWrapStyleWord(true);
         jScrollPane2.setViewportView(conditionS88);
 
@@ -283,6 +296,14 @@ public class RouteEditor extends javax.swing.JPanel {
                 addStopCommandActionPerformed(evt);
             }
         });
+
+        conditionAccs.setColumns(11);
+        conditionAccs.setRows(3);
+        conditionAccs.setWrapStyleWord(true);
+        jScrollPane3.setViewportView(conditionAccs);
+
+        jLabel13.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel13.setText("Optional Accessory Conditions");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -306,13 +327,15 @@ public class RouteEditor extends javax.swing.JPanel {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(executionAuto))
                             .addComponent(addStopCommand))
-                        .addGap(0, 2, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addGap(18, 18, 18)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 186, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel9))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel9)
+                    .addComponent(jLabel13, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2)
+                    .addComponent(jScrollPane3))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -327,8 +350,8 @@ public class RouteEditor extends javax.swing.JPanel {
                                 .addComponent(jLabel4)
                                 .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(jLabel9))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addGap(0, 0, 0)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(jLabel3)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -343,7 +366,12 @@ public class RouteEditor extends javax.swing.JPanel {
                                     .addComponent(executionAuto))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(addStopCommand))
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 187, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jLabel13)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addContainerGap())
         );
 
@@ -464,6 +492,15 @@ public class RouteEditor extends javax.swing.JPanel {
             }
         });
 
+        addToRouteButton1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addToRouteButton1.setText("Add as Condition");
+        addToRouteButton1.setFocusable(false);
+        addToRouteButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addToRouteButton1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -493,7 +530,9 @@ public class RouteEditor extends javax.swing.JPanel {
                         .addComponent(delay))
                     .addComponent(jLabel12))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(addToRouteButton)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(addToRouteButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(addToRouteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
@@ -504,7 +543,8 @@ public class RouteEditor extends javax.swing.JPanel {
                     .addComponent(jLabel8)
                     .addComponent(jLabel10)
                     .addComponent(jLabel11)
-                    .addComponent(jLabel12))
+                    .addComponent(jLabel12)
+                    .addComponent(addToRouteButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -573,7 +613,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 72, Short.MAX_VALUE))
+                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 78, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -593,8 +633,8 @@ public class RouteEditor extends javax.swing.JPanel {
         JOptionPane.showMessageDialog(this, this.helpMessage);        // TODO add your handling code here:
     }//GEN-LAST:event_HelpActionPerformed
 
-    private void addToRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButtonActionPerformed
-        
+    private void addAcc(boolean isConditional)
+    {
         String newEntry = "\n";
         
         if (!"".equals(this.accAddr.getText()))
@@ -605,7 +645,7 @@ public class RouteEditor extends javax.swing.JPanel {
                 
                 String delayString = "";
                 
-                if (!"".equals(this.delay.getText()))
+                if (!"".equals(this.delay.getText()) && !isConditional)
                 {
                     int delayVal = Math.abs(Integer.parseInt(this.delay.getText()));
 
@@ -656,7 +696,15 @@ public class RouteEditor extends javax.swing.JPanel {
                     }
                 }
                 
-                this.routeContents.setText((this.routeContents.getText() + newEntry).trim());
+                if (!isConditional)
+                {
+                    this.routeContents.setText((this.routeContents.getText() + newEntry).trim());
+                }
+                else
+                {
+                    this.conditionAccs.setText((this.conditionAccs.getText() + newEntry).trim());
+                }
+                
                 this.accAddr.setText("");
             }
             catch (Exception e)
@@ -665,6 +713,11 @@ public class RouteEditor extends javax.swing.JPanel {
                 this.accAddr.setText("");
             }
         }
+    }
+    
+    private void addToRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButtonActionPerformed
+        
+        addAcc(false);
     }//GEN-LAST:event_addToRouteButtonActionPerformed
 
     private void accTypeTurnoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accTypeTurnoutActionPerformed
@@ -748,6 +801,10 @@ public class RouteEditor extends javax.swing.JPanel {
         this.routeContents.setText((this.routeContents.getText() + "\nstop").trim());
     }//GEN-LAST:event_addStopCommandActionPerformed
 
+    private void addToRouteButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButton1ActionPerformed
+        addAcc(true);
+    }//GEN-LAST:event_addToRouteButton1ActionPerformed
+
     private void updateSettingSelections()
     {
         if (this.accType3Way.isSelected())
@@ -773,10 +830,12 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.JRadioButton accTypeTurnout;
     private javax.swing.JButton addStopCommand;
     private javax.swing.JButton addToRouteButton;
+    private javax.swing.JButton addToRouteButton1;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
+    private javax.swing.JTextArea conditionAccs;
     private javax.swing.JTextArea conditionS88;
     private javax.swing.JTextField delay;
     private javax.swing.JRadioButton executionAuto;
@@ -785,6 +844,7 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -798,6 +858,7 @@ public class RouteEditor extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTextArea routeContents;
     private javax.swing.JTextField routeName;

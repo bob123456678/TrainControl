@@ -46,6 +46,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled;
     private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
+    private List<RouteCommand> conditionAccessoroes;
     
     // Route state
     private Object route; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
@@ -89,6 +90,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
         this.conditionS88s = r.getConditionS88s();
+        this.conditionAccessoroes = r.getConditionAccessories();
     }
     
     /**
@@ -160,7 +162,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
             List<RouteCommand> rcs = new LinkedList<>();
             
             LinkedHashMap<Integer, Boolean> tempRoute = (LinkedHashMap<Integer, Boolean>) this.route;
-            for (Integer key : tempRoute.keySet() )
+            for (Integer key : tempRoute.keySet())
             {
                 rcs.add(RouteCommand.RouteCommandAccessory(key, tempRoute.get(key)));
             }
@@ -312,5 +314,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public boolean getCustomFunctions()
     {
         return this.customFunctions;
+    }
+    
+    public List<RouteCommand> getConditionAccessories()
+    {
+        return this.conditionAccessoroes;
     }
 }

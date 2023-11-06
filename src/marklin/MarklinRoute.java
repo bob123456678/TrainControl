@@ -44,6 +44,7 @@ public class MarklinRoute extends Route
     private s88Triggers triggerType;
     private int s88;
     private Map<Integer, Boolean> conditionS88s;
+    private List<RouteCommand> conditionAccessories;
     
     /**
      * Simple constructor
@@ -63,6 +64,7 @@ public class MarklinRoute extends Route
         this.s88 = 0;
         
         this.conditionS88s = new HashMap<>();
+        this.conditionAccessories = new ArrayList<>();
 
         this.enabled = false;
         this.triggerType = s88Triggers.CLEAR_THEN_OCCUPIED;
@@ -78,9 +80,10 @@ public class MarklinRoute extends Route
      * @param triggerType 
      * @param enabled 
      * @param conditionS88s
+     * @param conditionAccessories
      */
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
-            Map<Integer, Boolean> conditionS88s)
+            Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories)
     { 
         super(name, route);
         
@@ -99,6 +102,15 @@ public class MarklinRoute extends Route
         else
         {
             this.conditionS88s = new HashMap<>();
+        }
+        
+        if (conditionAccessories != null)
+        {
+            this.conditionAccessories = conditionAccessories;
+        }
+        else
+        {
+            this.conditionAccessories = new ArrayList<>();
         }
         
         // Execute the automatic route
@@ -132,7 +144,16 @@ public class MarklinRoute extends Route
                         
                         for (int key : this.conditionS88s.keySet())
                         {
-                            if(this.network.getFeedbackState(Integer.toString(key)) != this.conditionS88s.get(key))
+                            if (this.network.getFeedbackState(Integer.toString(key)) != this.conditionS88s.get(key))
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                        
+                        for (RouteCommand rc : this.conditionAccessories)
+                        {
+                            if (this.network.getAccessoryState(rc.getAddress()) != rc.getSetting())
                             {
                                 skip = true;
                                 break;
@@ -180,6 +201,21 @@ public class MarklinRoute extends Route
                 i.remove();
             }
         }
+    }
+
+    public List<RouteCommand> getConditionAccessories()
+    {
+        return conditionAccessories;
+    }
+    
+    /**
+     * Adds an accessory condition to the route
+     * @param address
+     * @param setting
+     */
+    public void addConditionAccessory(int address, boolean setting)
+    {
+        this.conditionAccessories.add(RouteCommand.RouteCommandAccessory(address, setting));
     }
     
     /**
@@ -408,6 +444,11 @@ public class MarklinRoute extends Route
         this.id = id;
     }
     
+    public boolean hasConditionAccessories()
+    {
+        return !this.conditionAccessories.isEmpty();
+    }
+    
     @Override
     public String toString()
     {
@@ -420,6 +461,8 @@ public class MarklinRoute extends Route
                 " | S88: " + this.s88 + 
                 " | Trigger Type: " + (this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED ? "CLEAR_THEN_OCCUPIED" : "OCCUPIED_THEN_CLEAR") +
                 " | Auto: " + (this.enabled ? "Yes": "No") +
+                " | Condition S88: " + this.conditionS88s +
+                " | Condition Accessories: " + this.getConditionAccessoryCSV() + 
                 ")";
     }
     
@@ -460,6 +503,18 @@ public class MarklinRoute extends Route
         }
                     
         jsonObj.put("commands", configObj);
+        
+        if (this.hasConditionAccessories())
+        {
+            JSONArray conditionAcc = new JSONArray();
+
+            for (RouteCommand rc : this.conditionAccessories)
+            {
+                conditionAcc.put(rc.toJSON());
+            }
+
+            jsonObj.put("conditionAcc", conditionAcc);
+        }
   
         return jsonObj;
     }
@@ -505,8 +560,38 @@ public class MarklinRoute extends Route
                 routeCommands.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
             }
         }
+        
+        List<RouteCommand> conditionAcc = new ArrayList<>();
+        if (jsonObject.has("conditionAcc"))
+        {
+            JSONArray commandsArray = jsonObject.getJSONArray("conditionAcc");
+            for (int i = 0; i < commandsArray.length(); i++)
+            {
+                conditionAcc.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
+            }
+        }
 
-        return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionS88s);
+        return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionS88s, conditionAcc);
+    }
+    
+    /**
+     * Returns a CSV representation of the route
+     * @return 
+     */
+    public String getConditionAccessoryCSV()
+    {
+        String out = "";
+        
+        for (RouteCommand r : this.conditionAccessories)
+        {
+            // TODO others not yet supported
+            if (r.isAccessory())
+            {
+                out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
+            }
+        }
+        
+        return out.trim();
     }
     
     @Override
@@ -521,6 +606,7 @@ public class MarklinRoute extends Route
                 enabled == other.enabled &&
                 triggerType == other.triggerType &&
                 this.conditionS88s.equals(other.getConditionS88s())
+                && this.conditionAccessories.equals(other.getConditionAccessories())
                 && this.getRoute().equals(other.getRoute());
     }
 

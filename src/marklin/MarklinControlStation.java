@@ -46,7 +46,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 61) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 62) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -161,7 +161,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
-                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s());
+                newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s(), c.getConditionAccessories());
             }
         }
         
@@ -757,10 +757,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @param conditionAccessories 
      */
     @Override
     public final void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            Map<Integer, Boolean> conditionS88s)
+            Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories)
     {
         Integer id = this.routeDB.getByName(name).getId();
         
@@ -769,7 +770,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.deleteRoute(name);
         
-        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s);
+        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionAccessories);
     }
     
     /**
@@ -838,16 +839,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @param conditionAccessories 
      * @return  
      */
     public final boolean newRoute(String name, int id, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            Map<Integer, Boolean> conditionS88s)
+            Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories)
     {
         name = name.trim();
         
         if (!this.routeDB.hasId(id) && !this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s), name, id);    
+            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionAccessories), name, id);    
             return true;
         }
         else
@@ -865,11 +867,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param s88Trigger 
      * @param routeEnabled 
      * @param conditionS88s 
+     * @param conditionAccessories 
      * @return creation status
      */
     @Override
     public final boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-        Map<Integer, Boolean> conditionS88s)
+        Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories)
     {
         int newId = 1;
         if (!this.routeDB.getItemIds().isEmpty())
@@ -881,7 +884,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s), name, newId);  
+            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditionS88s, conditionAccessories), name, newId);  
                         
             return true;
         }
