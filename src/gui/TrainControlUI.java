@@ -1506,7 +1506,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         repaintLoc(false);
     }
     
-    synchronized public void repaintLoc(boolean force)
+    public void repaintLoc(boolean force)
     {     
         if (this.activeLoc != null)
         {            

@@ -1105,10 +1105,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (message.getResponse())
                     {
-                        new Thread(() ->
-                        {
-                            if (this.view != null) this.view.repaintLoc();
-                        }).start();
+                        if (this.view != null) this.view.repaintLoc();
                     }
                 }
                 else if (locs.isEmpty())
@@ -1306,7 +1303,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
         
-        this.view.repaintLoc();
+        if (this.view != null) this.view.repaintLoc();
     }
     
     /**
