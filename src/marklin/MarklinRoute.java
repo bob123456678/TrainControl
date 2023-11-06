@@ -113,6 +113,15 @@ public class MarklinRoute extends Route
             this.conditionAccessories = new ArrayList<>();
         }
         
+        // Starts the execution of the automated route
+        this.executeAutoRoute();
+    }
+    
+    /**
+     * Monitors the route conditions and executes the route when appropriate
+     */
+    public final void executeAutoRoute()
+    {
         // Execute the automatic route
         if (this.enabled && this.hasS88())
         {
@@ -269,9 +278,17 @@ public class MarklinRoute extends Route
                         }
                     }
                     else if (rc.isStop())
-                    {
-                        this.network.log("Power turned off due to route condition");
-                        this.network.stop();
+                    {                        
+                        // Only send stop command once
+                        if (!this.network.getPowerState())
+                        {
+                            this.network.log("Power turned off due to route condition");
+                            this.network.stop();
+                        }
+                        else
+                        {
+                            this.network.log("Route condition fired but power was already off");
+                        }
                     }
                 }
 
