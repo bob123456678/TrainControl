@@ -46,7 +46,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 60) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 61) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1105,7 +1105,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (message.getResponse())
                     {
-                        if (this.view != null) this.view.repaintLoc();
+                        new Thread(() ->
+                        {
+                            if (this.view != null) this.view.repaintLoc();
+                        }).start();
                     }
                 }
                 else if (locs.isEmpty())
@@ -1123,7 +1126,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.accDB.getById(id).parseMessage(message);
                 
-                 if (this.view != null) this.view.repaintSwitches();
+                new Thread(() ->
+                {
+                    if (this.view != null) this.view.repaintSwitches();
+                }).start();
             }
         }
         else if (message.isFeedbackCommand())
@@ -1145,12 +1151,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.powerState = true;
                 
-                 if (this.view != null) this.view.updatePowerState();
+                // For correctly tracking locomotive stats
+                for (MarklinLocomotive l : this.locDB.getItems())
+                {
+                    l.notifyOfPowerStateChange(true);
+                }
+                
+                if (this.view != null) this.view.updatePowerState();
                 this.log("Power On");
             }
             else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
             {
                 this.powerState = false;
+                
+                // For correctly tracking locomotive stats
+                for (MarklinLocomotive l : this.locDB.getItems())
+                {
+                    l.notifyOfPowerStateChange(false);   
+                }
                 
                 if (this.view != null) this.view.updatePowerState();
                 this.log("Power Off");
@@ -1344,7 +1362,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
               (byte) UID,
               CS2Message.CMD_SYSSUB_STOP
             }
-        ));	    
+        ));
     }
 
     /**
@@ -1363,7 +1381,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
               (byte) UID,
               CS2Message.CMD_SYSSUB_GO
             }
-        ));	    
+        ));
     }
     
     /**

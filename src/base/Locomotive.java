@@ -72,6 +72,9 @@ public abstract class Locomotive
     
     // When this locomotive was last run this session and overall, respectively
     protected long lastStartTime = 0;
+    
+    // Track power state to ensure correct timings
+    private boolean powerState = true;
  
     /**
      * Constructor with name and all functions off
@@ -304,6 +307,40 @@ public abstract class Locomotive
         this.trainLength = trainLength;
         this.historicalOperatingTime = historicalOperatingTime;
     }
+    
+    /**
+     * Callback used to pause tracking running times when the power is turned off/on
+     * @param powerOn 
+     */
+    synchronized public void notifyOfPowerStateChange(boolean powerOn)
+    {
+        powerState = powerOn;
+        
+        // Locomotive was runnning - we need to stop the timer
+        if (this.speed > 0)
+        {
+            String key = Locomotive.getDate();
+            
+            // Power on - reset the timer
+            if (powerOn)
+            {
+                this.lastStartTime = System.currentTimeMillis();
+            }
+            // Power off - stop the timer and store result
+            else
+            {
+                if (this.lastStartTime > 0)
+                {
+                    this.historicalOperatingTime.put(key, 
+                        this.historicalOperatingTime.getOrDefault(key, 0L) +
+                        (System.currentTimeMillis() - this.lastStartTime)
+                    );    
+
+                    this.lastStartTime = 0;
+                }
+            }
+        }
+    }
 
     /* Internal functionality */
     
@@ -332,10 +369,13 @@ public abstract class Locomotive
                 // Now add the number of seconds to the running total
                 String key = Locomotive.getDate();
                 
-                this.historicalOperatingTime.put(key, 
-                    this.historicalOperatingTime.getOrDefault(key, 0L) +
-                    (System.currentTimeMillis() - this.lastStartTime)
-                );                      
+                if (powerState)
+                {
+                    this.historicalOperatingTime.put(key, 
+                        this.historicalOperatingTime.getOrDefault(key, 0L) +
+                        (System.currentTimeMillis() - this.lastStartTime)
+                    );
+                }
             }
             
             this.speed = speed;            
