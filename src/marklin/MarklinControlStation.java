@@ -1126,10 +1126,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.accDB.getById(id).parseMessage(message);
                 
-                new Thread(() ->
-                {
-                    if (this.view != null) this.view.repaintSwitches();
-                }).start();
+                if (this.view != null) this.view.repaintSwitches();
             }
         }
         else if (message.isFeedbackCommand())
