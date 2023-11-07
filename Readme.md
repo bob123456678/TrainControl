@@ -238,6 +238,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Added option to save graph JSON to a file
     - Route UI features
         - Conditional routes now support stop commands to enable basic collision detection
+        - Added optional conditional accessory criteria to expand route possibilities
         - Added buttons to export/import all routes (useful for backups)
         - Added warnings if route buttons on a layout do not correspond to a valid route
     - Improved locomotive usage statistics
