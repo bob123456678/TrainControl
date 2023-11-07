@@ -5567,7 +5567,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        LocAddressInput.setColumns(5);
         LocAddressInput.setInheritsPopupMenu(true);
+        LocAddressInput.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                LocAddressInputKeyReleased(evt);
+            }
+        });
 
         jLabel3.setText("Locomotive Address");
         jLabel3.setToolTipText("Enter as integer or hex for MFX, and integer to DCC/MM2.");
@@ -5577,6 +5583,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel1.setFocusable(false);
 
         LocNameInput.setInheritsPopupMenu(true);
+        LocNameInput.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                LocNameInputKeyReleased(evt);
+            }
+        });
 
         buttonGroup1.add(LocTypeMFX);
         LocTypeMFX.setText("MFX");
@@ -5614,17 +5625,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(LocNameInput)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(LocAddressInput, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(LocTypeMM2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addComponent(LocTypeMFX)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(LocTypeDCC)
-                                        .addGap(0, 0, Short.MAX_VALUE))
-                                    .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
+                                .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(LocTypeMM2)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(LocTypeMFX)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(LocTypeDCC)
+                                .addGap(0, 0, Short.MAX_VALUE)))))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -8280,6 +8290,51 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         return true;
     }
     
+    /**
+     * Validates that a component's value is an integer
+     * @param evt 
+     * @param hex 
+     */
+    public static void validateInt(java.awt.event.KeyEvent evt, boolean hex)
+    {
+        JTextField field = (JTextField) evt.getSource();
+        
+        try
+        {
+            int addr = Integer.parseInt(field.getText());
+            
+            if (addr < 0)
+            {
+                field.setText(field.getText().replaceAll("[^0-9]", ""));    
+            }
+        }
+        catch (Exception e)
+        {            
+            if (field.getText() != null)
+            {
+                String candidate = field.getText().replaceAll("[^0-9" + (hex ? "A-Fa-fx" : "") + "]", "");
+
+                if (!candidate.equals(field.getText())) field.setText(candidate);
+            }
+        }
+    }
+    
+    /**
+     * Validates that a component's value is an integer
+     * @param evt 
+     * @param maxLength 
+     */
+    public static void limitLength(java.awt.event.KeyEvent evt, int maxLength)
+    {
+        JTextField field = (JTextField) evt.getSource();
+        
+        // Trim if needed
+        if (field.getText() != null && field.getText().length() > maxLength)
+        {
+            field.setText(field.getText().substring(0, maxLength));
+        }
+    }
+    
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
 
         new Thread(()->
@@ -9367,7 +9422,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 );
 
                 // Place in clipboard
-                StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
+                StringSelection selection = new StringSelection(this.model.exportRoutes());
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
             }
             catch (Exception e)
@@ -9453,6 +9508,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.setLocIcon(this.activeLoc);
         }
     }//GEN-LAST:event_locIconMouseReleased
+
+    private void LocAddressInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocAddressInputKeyReleased
+        TrainControlUI.validateInt(evt, true);
+        TrainControlUI.limitLength(evt, 6);
+    }//GEN-LAST:event_LocAddressInputKeyReleased
+
+    private void LocNameInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocNameInputKeyReleased
+        limitLength(evt, TrainControlUI.MAX_LOC_NAME_DATABASE);
+    }//GEN-LAST:event_LocNameInputKeyReleased
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {

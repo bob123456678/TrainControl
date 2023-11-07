@@ -1153,6 +1153,14 @@ element
  .artikel=148
  .zustand=1
 element
+ .id=0xd02
+ .typ=fahrstrasse
+ .artikel=51
+element
+ .id=0xd03
+ .artikel=-1
+ .text=Turn off parking
+element
  .id=0xd0b
  .typ=bogen
  .drehung=1

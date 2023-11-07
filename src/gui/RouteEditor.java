@@ -217,6 +217,11 @@ public class RouteEditor extends javax.swing.JPanel
 
         routeName.setText("jTextField1");
         routeName.setMinimumSize(new java.awt.Dimension(159, 26));
+        routeName.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                routeNameKeyReleased(evt);
+            }
+        });
 
         jLabel1.setForeground(new java.awt.Color(0, 0, 115));
         jLabel1.setText("Route Name");
@@ -861,11 +866,13 @@ public class RouteEditor extends javax.swing.JPanel
     }//GEN-LAST:event_triggerOccupiedThenClearActionPerformed
 
     private void accAddrKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_accAddrKeyReleased
-         validateInt(evt);
+        TrainControlUI.validateInt(evt, false);
+        TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_accAddrKeyReleased
 
     private void s88KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_s88KeyReleased
-         validateInt(evt);
+        TrainControlUI.validateInt(evt, false);
+        TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_s88KeyReleased
 
     private void delayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delayActionPerformed
@@ -873,7 +880,8 @@ public class RouteEditor extends javax.swing.JPanel
     }//GEN-LAST:event_delayActionPerformed
 
     private void delayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_delayKeyReleased
-         validateInt(evt);
+         TrainControlUI.validateInt(evt, false);
+         TrainControlUI.limitLength(evt, 6);
     }//GEN-LAST:event_delayKeyReleased
 
     private void addStopCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addStopCommandActionPerformed
@@ -888,31 +896,9 @@ public class RouteEditor extends javax.swing.JPanel
         // TODO add your handling code here:
     }//GEN-LAST:event_s88CondAddrActionPerformed
 
-    /**
-     * Validates that a component's value is an integer
-     * @param evt 
-     */
-    private void validateInt(java.awt.event.KeyEvent evt)
-    {
-        JTextField field = (JTextField) evt.getSource();
-        
-        try
-        {
-            int addr = Integer.parseInt(field.getText());
-            
-            if (addr < 0)
-            {
-                field.setText(field.getText().replaceAll("[^0-9]", ""));    
-            }
-        }
-        catch (Exception e)
-        {
-            field.setText(field.getText().replaceAll("[^0-9]", ""));
-        }
-    }
-    
     private void s88CondAddrKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_s88CondAddrKeyReleased
-        validateInt(evt);
+        TrainControlUI.validateInt(evt, false);
+        TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_s88CondAddrKeyReleased
 
     private void s88OccupiedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s88OccupiedActionPerformed
@@ -947,6 +933,10 @@ public class RouteEditor extends javax.swing.JPanel
         }
         
     }//GEN-LAST:event_addS88ConditionActionPerformed
+
+    private void routeNameKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_routeNameKeyReleased
+        TrainControlUI.limitLength(evt, 60);
+    }//GEN-LAST:event_routeNameKeyReleased
 
     private void updateSettingSelections()
     {

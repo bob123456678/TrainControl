@@ -5048,20 +5048,17 @@
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="LocNameInput" alignment="0" max="32767" attributes="0"/>
                                       <Group type="102" alignment="0" attributes="0">
-                                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                              <Component id="LocAddressInput" alignment="0" max="32767" attributes="0"/>
-                                              <Component id="LocTypeMM2" alignment="0" max="32767" attributes="0"/>
-                                          </Group>
+                                          <Component id="LocAddressInput" min="-2" max="-2" attributes="0"/>
                                           <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" attributes="0">
-                                              <Group type="102" attributes="0">
-                                                  <Component id="LocTypeMFX" min="-2" max="-2" attributes="0"/>
-                                                  <EmptySpace max="-2" attributes="0"/>
-                                                  <Component id="LocTypeDCC" min="-2" max="-2" attributes="0"/>
-                                                  <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                                              </Group>
-                                              <Component id="checkDuplicates" max="32767" attributes="0"/>
-                                          </Group>
+                                          <Component id="checkDuplicates" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Group type="102" alignment="0" attributes="0">
+                                          <Component id="LocTypeMM2" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="LocTypeMFX" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="LocTypeDCC" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                       </Group>
                                   </Group>
                               </Group>
@@ -5130,8 +5127,12 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="LocAddressInput">
                   <Properties>
+                    <Property name="columns" type="int" value="5"/>
                     <Property name="inheritsPopupMenu" type="boolean" value="true"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="LocAddressInputKeyReleased"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel3">
                   <Properties>
@@ -5150,6 +5151,9 @@
                   <Properties>
                     <Property name="inheritsPopupMenu" type="boolean" value="true"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="LocNameInputKeyReleased"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JRadioButton" name="LocTypeMFX">
                   <Properties>
