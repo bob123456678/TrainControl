@@ -5,16 +5,28 @@
 package gui;
 
 import base.Locomotive;
+import java.awt.HeadlessException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import marklin.MarklinLocomotive;
 
 /**
  *
  */
 public class LocomotiveStats extends javax.swing.JPanel {
 
+    TrainControlUI tcui;
+    
     /**
      * Creates new form LocomotiveStats
      * @param tcui
@@ -22,6 +34,7 @@ public class LocomotiveStats extends javax.swing.JPanel {
     public LocomotiveStats(TrainControlUI tcui)
     {
         initComponents();
+        this.tcui = tcui;
         
         String col[] = {"Locomotive", "Total Runtime", "Last Run", "First Run", "Days Run"};
 
@@ -84,6 +97,7 @@ public class LocomotiveStats extends javax.swing.JPanel {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        exportData = new javax.swing.JButton();
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -98,26 +112,83 @@ public class LocomotiveStats extends javax.swing.JPanel {
         ));
         jScrollPane1.setViewportView(jTable1);
 
+        exportData.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        exportData.setText("Export Raw Data");
+        exportData.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportDataActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 669, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 669, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(exportData)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 367, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 394, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(exportData)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void exportDataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportDataActionPerformed
+        this.exportData.setEnabled(false);
+        new Thread(() ->
+        {
+            try
+            {
+                JFileChooser fc = new JFileChooser(tcui.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
+                fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".txt"));
+                int i = fc.showSaveDialog(this);
+
+                if (i == JFileChooser.APPROVE_OPTION)
+                {
+                    File f = fc.getSelectedFile();
+                    
+                    String data = "";
+                    
+                    for (MarklinLocomotive l : this.tcui.getModel().getLocomotives())
+                    {
+                        for (Entry<String, Long> e : l.getHistoricalOperatingTime().entrySet())
+                        {
+                            data += "\"" + l.getName() + "\"," + e.getKey() + "," + e.getValue() + "\n";
+                        }
+                    }
+
+                    Files.write(Paths.get(f.getPath()), data.trim().getBytes());
+                    tcui.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                }
+            }
+            catch (HeadlessException | IOException e)
+            {
+                JOptionPane.showMessageDialog(this, "Error writing file.");
+
+                if (this.tcui.getModel().isDebug())
+                {
+                    e.printStackTrace();
+                }
+            }
+            
+            this.exportData.setEnabled(true);
+        }).start();
+    }//GEN-LAST:event_exportDataActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton exportData;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables
