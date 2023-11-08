@@ -116,10 +116,10 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * Shift (slow stop)
 * Spacebar (instant stop)
 * Enter (stop all locs)
-* Comma/period, Alt+Left/right arrow (cycle to previous/next loc page)
+* Comma/period, semicolon/colon, Alt+left/right arrow (cycle to previous/next loc page)
 * Backspace/Alt+backspace (cycle through tabs)
-* Plus/minus (cycle through keyboards and layout pages)
-* Slash/question mark (cycle through function tabs on the loc panel)
+* Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
+* Slash/question mark, < (cycle through function tabs on the loc panel)
 * Alt+P (apply saved function preset for current loc)
 * Alt+O (turn off all functions for current loc)
 * Alt+S (save current functions as a preset for current loc)
@@ -246,6 +246,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Track the number of days each locomotive was run
     - Improved the image quality of locomotive and function icons (they will be less pixelated)
     - Increased size of the active locomotive icon
+    - Added support for QWERTZ and AZERTY keyboards
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
     - Fixed bug where special characters in locomotive names would sometimes be read incorrectly
