@@ -214,6 +214,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Expanded locomotive customization options
         - Custom icons from your PC can now be chosen for locomotives, even if no icon is selected in the Central Station
         - Function icons can now be assigned to locomotive functions, even if no icon is selected in the Central Station
+        - Duration functions are now supported (in addition to toggle/momentary)
         - Locally configured icons will get priority over Central Station icons
         - Accessible by right-clicking any locomotive button, or the icons themselves
     - Autonomy graph: Points can now be marked as active or inactive

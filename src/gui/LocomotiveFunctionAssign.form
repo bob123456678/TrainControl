@@ -21,12 +21,12 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" alignment="1" attributes="0">
+          <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="1" attributes="0">
-                  <Component id="jSeparator1" max="32767" attributes="0"/>
-                  <Component id="resetButton" max="32767" attributes="0"/>
-                  <Component id="applyButton" max="32767" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Component id="jSeparator1" alignment="1" max="32767" attributes="0"/>
+                  <Component id="resetButton" alignment="1" max="32767" attributes="0"/>
+                  <Component id="applyButton" alignment="1" max="32767" attributes="0"/>
                   <Group type="102" alignment="0" attributes="0">
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="fIconlabel" min="-2" max="-2" attributes="0"/>
@@ -39,8 +39,9 @@
                       </Group>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
-                      <Component id="momentary" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                      <Component id="fIconlabel1" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
+                      <Component id="functionTriggerType" min="-2" pref="100" max="-2" attributes="0"/>
                   </Group>
               </Group>
               <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
@@ -60,14 +61,17 @@
                   <Component id="fIconlabel" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="momentary" min="-2" max="-2" attributes="0"/>
-              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Component id="fIconlabel1" min="-2" max="-2" attributes="0"/>
+                  <Component id="functionTriggerType" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="applyButton" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="jSeparator1" min="-2" max="-2" attributes="0"/>
               <EmptySpace min="-2" pref="13" max="-2" attributes="0"/>
               <Component id="resetButton" min="-2" max="-2" attributes="0"/>
-              <EmptySpace min="0" pref="9" max="32767" attributes="0"/>
+              <EmptySpace max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -126,11 +130,6 @@
         <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
       </AuxValues>
     </Component>
-    <Component class="javax.swing.JCheckBox" name="momentary">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Momentary"/>
-      </Properties>
-    </Component>
     <Component class="javax.swing.JLabel" name="fIconlabel">
       <Properties>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
@@ -162,6 +161,47 @@
       </Events>
     </Component>
     <Component class="javax.swing.JSeparator" name="jSeparator1">
+    </Component>
+    <Component class="javax.swing.JLabel" name="fIconlabel1">
+      <Properties>
+        <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+          <Color blue="73" green="0" red="0" type="rgb"/>
+        </Property>
+        <Property name="text" type="java.lang.String" value="Duration"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JComboBox" name="functionTriggerType">
+      <Properties>
+        <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+          <StringArray count="22">
+            <StringItem index="0" value="Toggle"/>
+            <StringItem index="1" value="Momentary"/>
+            <StringItem index="2" value="1s"/>
+            <StringItem index="3" value="2s"/>
+            <StringItem index="4" value="3s"/>
+            <StringItem index="5" value="4s"/>
+            <StringItem index="6" value="5s"/>
+            <StringItem index="7" value="6s"/>
+            <StringItem index="8" value="7s"/>
+            <StringItem index="9" value="8s"/>
+            <StringItem index="10" value="9s"/>
+            <StringItem index="11" value="10s"/>
+            <StringItem index="12" value="11s"/>
+            <StringItem index="13" value="12s"/>
+            <StringItem index="14" value="13s"/>
+            <StringItem index="15" value="14s"/>
+            <StringItem index="16" value="15s"/>
+            <StringItem index="17" value="16s"/>
+            <StringItem index="18" value="17s"/>
+            <StringItem index="19" value="18s"/>
+            <StringItem index="20" value="19s"/>
+            <StringItem index="21" value="20s"/>
+          </StringArray>
+        </Property>
+      </Properties>
+      <AuxValues>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+      </AuxValues>
     </Component>
   </SubComponents>
 </Form>

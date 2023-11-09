@@ -54,8 +54,8 @@ public abstract class Locomotive
     
     // Directly store how the function is to be triggered
     protected int[] functionTriggerTypes;
-    public static final int FUNCTION_TOGGLE = 0;
-    public static final int FUNCTION_PULSE = 1;
+    public static final int FUNCTION_TOGGLE = -1;
+    public static final int FUNCTION_PULSE = -2;
     
     // Custom event callbacks
     protected Map<String, Consumer<Locomotive>> callbacks;

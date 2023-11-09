@@ -653,9 +653,18 @@ public final class CS2File
 
                     Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));                                          
                     Boolean isMoment = fInfo.getBoolean("isMoment");
+                    Integer duration = fInfo.getInt("dauer");
 
                     functionTypes.add(fType);
-                    functionTriggerTypes.add(isMoment ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE);
+                    
+                    if (duration > 0)
+                    {
+                        functionTriggerTypes.add(duration);
+                    }
+                    else
+                    {
+                        functionTriggerTypes.add(isMoment ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE);
+                    }
                 }
                 
                 MarklinLocomotive newLoc = new MarklinLocomotive(

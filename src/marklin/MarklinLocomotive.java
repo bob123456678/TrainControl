@@ -129,15 +129,15 @@ public class MarklinLocomotive extends Locomotive
      * Changes the function type for a single function
      * @param fNo
      * @param type 
-     * @param momentary 
+     * @param triggerType 
      */
-    public void setFunctionType(int fNo, int type, boolean momentary)
+    public void setFunctionType(int fNo, int type, int triggerType)
     {
         if (this.validF(fNo))
         {
             this.functionTypes[fNo] = type;
             
-            this.functionTriggerTypes[fNo] = momentary ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE;
+            this.functionTriggerTypes[fNo] = triggerType;
         }
         
         this.customFunctions = true;
@@ -266,6 +266,24 @@ public class MarklinLocomotive extends Locomotive
         }
         
         return false;
+    }
+    
+    /**
+     * Checks if the given function is supposed to only stay on for a short period
+     * @param fNo
+     * @return 
+     */
+    public int isFunctionTimed(int fNo)
+    {
+        if (this.validF(fNo))
+        {
+            if (this.functionTriggerTypes[fNo] > 0)
+            {
+                return this.functionTriggerTypes[fNo];
+            }
+        }
+        
+        return 0;
     }
     
     /**

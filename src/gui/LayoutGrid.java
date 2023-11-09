@@ -8,14 +8,10 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import marklin.MarklinLayout;
 import marklin.MarklinLayoutComponent;
-import util.ImageUtil;
 
 /**
  *

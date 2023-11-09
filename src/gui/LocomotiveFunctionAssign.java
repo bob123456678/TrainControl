@@ -17,7 +17,7 @@ import marklin.MarklinLocomotive;
  */
 public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
-    Locomotive loc;
+    MarklinLocomotive loc;
     TrainControlUI parent;
     
     /**
@@ -29,7 +29,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
      */
     public LocomotiveFunctionAssign(Locomotive l, TrainControlUI parent, int functionIndex, boolean standalone)
     {
-        this.loc = l;
+        this.loc = (MarklinLocomotive) l;
         this.parent = parent;
         initComponents();
         
@@ -46,7 +46,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             try
             {
-                String targetURL = ((MarklinLocomotive) loc).getFunctionIconUrl(i, false, true);
+                String targetURL = loc.getFunctionIconUrl(i, false, true);
                 Image icon = parent.getLocImage(targetURL, 35);
                 iconModel.add(new ImageIcon(icon));
             }
@@ -119,11 +119,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     {
         return this.fNo.getSelectedIndex();
     }
-    
-    public boolean isMomentary()
-    {
-        return this.momentary.isSelected();
-    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -137,11 +132,12 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         fNoLabel = new javax.swing.JLabel();
         fNo = new javax.swing.JComboBox<>();
         fIcon = new javax.swing.JComboBox<>();
-        momentary = new javax.swing.JCheckBox();
         fIconlabel = new javax.swing.JLabel();
         applyButton = new javax.swing.JButton();
         resetButton = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JSeparator();
+        fIconlabel1 = new javax.swing.JLabel();
+        functionTriggerType = new javax.swing.JComboBox<>();
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
@@ -160,8 +156,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         fIcon.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         fIcon.setMinimumSize(new java.awt.Dimension(100, 27));
         fIcon.setPreferredSize(new java.awt.Dimension(100, 27));
-
-        momentary.setText("Momentary");
 
         fIconlabel.setForeground(new java.awt.Color(0, 0, 115));
         fIconlabel.setText("Function Icon");
@@ -182,17 +176,22 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
+        fIconlabel1.setForeground(new java.awt.Color(0, 0, 115));
+        fIconlabel1.setText("Duration");
+
+        functionTriggerType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Toggle", "Momentary", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s", "16s", "17s", "18s", "19s", "20s" }));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jSeparator1)
-                    .addComponent(resetButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(applyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(resetButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(applyButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(fIconlabel)
                             .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -200,9 +199,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(fNo, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(fIcon, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(momentary)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(fIconlabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(functionTriggerType, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(14, 14, 14))
         );
         layout.setVerticalGroup(
@@ -216,22 +216,39 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                     .addComponent(fIcon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(fIconlabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(momentary)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fIconlabel1)
+                    .addComponent(functionTriggerType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(applyButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(13, 13, 13)
                 .addComponent(resetButton)
-                .addGap(0, 9, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
     private void applyButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_applyButtonActionPerformed
-       ((MarklinLocomotive) loc).setFunctionType(getFNo(), getFIcon(), isMomentary());
-       parent.repaintLoc(true);
+       
+        int fTriggerType;
+        if (this.functionTriggerType.getSelectedIndex() == 0)
+        {
+            fTriggerType = Locomotive.FUNCTION_TOGGLE;
+        }
+        else if (this.functionTriggerType.getSelectedIndex() == 1)
+        {
+            fTriggerType = Locomotive.FUNCTION_PULSE;
+        }
+        else
+        {
+            fTriggerType = this.functionTriggerType.getSelectedIndex() - 1;
+        } 
+        
+        loc.setFunctionType(getFNo(), getFIcon(), fTriggerType);
+        parent.repaintLoc(true);
             
-       this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());  
+        this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());  
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
@@ -243,7 +260,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
             {
-                ((MarklinLocomotive) this.loc).setCustomFunctions(false);
+                this.loc.setCustomFunctions(false);
                 this.parent.getModel().syncWithCS2();
                 this.parent.repaintLoc(true);
             }));
@@ -251,8 +268,24 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     }//GEN-LAST:event_resetButtonActionPerformed
 
     private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
-        this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(this.fNo.getSelectedIndex())));
-        this.momentary.setSelected(((MarklinLocomotive) this.loc).isFunctionPulse(this.fNo.getSelectedIndex()));
+        
+        int fNo = this.fNo.getSelectedIndex();
+
+        this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(fNo)));
+        
+        
+        if (loc.isFunctionTimed(fNo) > 0)
+        {
+            this.functionTriggerType.setSelectedIndex(Math.min(loc.isFunctionTimed(fNo) + 1, this.functionTriggerType.getItemCount() - 1));
+        }
+        else if (loc.isFunctionPulse(fNo))
+        {
+            this.functionTriggerType.setSelectedIndex(1);
+        }
+        else
+        {
+            this.functionTriggerType.setSelectedIndex(0);
+        }        
     }//GEN-LAST:event_fNoItemStateChanged
 
 
@@ -260,10 +293,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     private javax.swing.JButton applyButton;
     private javax.swing.JComboBox<String> fIcon;
     private javax.swing.JLabel fIconlabel;
+    private javax.swing.JLabel fIconlabel1;
     private javax.swing.JComboBox<String> fNo;
     private javax.swing.JLabel fNoLabel;
+    private javax.swing.JComboBox<String> functionTriggerType;
     private javax.swing.JSeparator jSeparator1;
-    private javax.swing.JCheckBox momentary;
     private javax.swing.JButton resetButton;
     // End of variables declaration//GEN-END:variables
 }

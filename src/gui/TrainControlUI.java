@@ -1129,7 +1129,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {        
         if (this.activeLoc != null)
         {            
-            if (this.activeLoc.isFunctionPulse(fn))
+            if (this.activeLoc.isFunctionTimed(fn) > 0)
+            {
+                new Thread(() -> {
+                    this.activeLoc.toggleF(fn, this.activeLoc.isFunctionTimed(fn) * 1000);
+                }).start();
+            }
+            else if (this.activeLoc.isFunctionPulse(fn))
             {
                 new Thread(() -> {
                     this.activeLoc.toggleF(fn, MarklinLocomotive.PULSE_FUNCTION_DURATION);
