@@ -39,7 +39,7 @@ public class testLocomotive {
                 MarklinLocomotive.locDirection.DIR_FORWARD,
                 new boolean[] {false,false,true,false,false}, // function state
                 new int[] {128,10,240,241,0}, // function types
-                new int[] {1,0,1,1,0},
+                new int[] {Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_TOGGLE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_PULSE,10},
                 new boolean[] {true,true,false,true,false}, // preferred functions
                 99,// preferred speed
                 2, //departure F
@@ -49,6 +49,7 @@ public class testLocomotive {
                 new HashMap<>() // total runtime
         );
         
+        assertEquals(10, l.isFunctionTimed(4));
         assertEquals(128, l.getFunctionType(0));
         assertEquals(true, l.isFunctionPulse(0));
         assertEquals(10, l.getFunctionType(1));
