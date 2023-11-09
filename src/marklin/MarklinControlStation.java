@@ -553,7 +553,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             + " from Central Station"
                         );
 
-                        newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes());
+                        newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(), l.getFunctionTriggerTypes());
                         num++;
                     }
                 }
@@ -584,7 +584,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else
                     {
-                        this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes());
+                        this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes(), l.getFunctionTriggerTypes());
 
                         this.log("Updated function types for " + l.getName());
                     }
@@ -1443,9 +1443,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
-        MarklinLocomotive.decoderType type, int[] functionTypes)
+        MarklinLocomotive.decoderType type, int[] functionTypes, int[] functionTriggerTypes)
     {
-        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, functionTypes);
+        MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, functionTypes, functionTriggerTypes);
         
         this.locDB.add(newLoc, name, newLoc.getUID());
         
@@ -1463,7 +1463,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             MarklinLocomotive newLoc = new MarklinLocomotive(this, c.getAddress(), c.getLocType(), c.getName(),
                     c.getState() ? MarklinLocomotive.locDirection.DIR_FORWARD : MarklinLocomotive.locDirection.DIR_BACKWARD,
-                    c.getFunctions(), c.getFunctionTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
+                    c.getFunctions(), c.getFunctionTypes(), c.getFunctionTriggerTypes(), c.getPreferredFunctions(), c.getPreferredSpeed(),
                 c.getDepartureFunction(), c.getArrivalFunction(), c.getReversible(), c.getTrainLength(), c.getHistoricalOperatingTime());
 
             newLoc.setLocalImageURL(c.getLocalImageURL());

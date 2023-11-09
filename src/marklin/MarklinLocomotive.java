@@ -77,11 +77,12 @@ public class MarklinLocomotive extends Locomotive
      * @param type
      * @param name
      * @param functionTypes
+     * @param functionTriggerTypes
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
-        decoderType type, String name, int[] functionTypes)
+        decoderType type, String name, int[] functionTypes, int[] functionTriggerTypes)
     {        
-        super(name, getMaxNumF(type), functionTypes);
+        super(name, getMaxNumF(type), functionTypes, functionTriggerTypes);
 
         this.network = network;
         this.type = type;
@@ -100,6 +101,7 @@ public class MarklinLocomotive extends Locomotive
      * @param name
      * @param functions
      * @param functionTypes
+     * @param functionTriggerTypes
      * @param preferredFunctions
      * @param preferredSpeed
      * @param departureFunc
@@ -109,10 +111,10 @@ public class MarklinLocomotive extends Locomotive
      * @param historicalOperatingTime
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
-        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, boolean[] preferredFunctions, int preferredSpeed,
+        decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, int[] functionTriggerTypes, boolean[] preferredFunctions, int preferredSpeed,
         Integer departureFunc, Integer arrivalFunc, boolean reversible, Integer trainLength, Map<String, Long> historicalOperatingTime)
     {
-        super(name, 0, dir, getMaxNumF(type), functions, functionTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, historicalOperatingTime);
+        super(name, 0, dir, getMaxNumF(type), functions, functionTypes, functionTriggerTypes, preferredFunctions, preferredSpeed, departureFunc, arrivalFunc, reversible, trainLength, historicalOperatingTime);
 
         this.network = network;
         this.type = type;
@@ -133,7 +135,9 @@ public class MarklinLocomotive extends Locomotive
     {
         if (this.validF(fNo))
         {
-            this.functionTypes[fNo] = type + (momentary ? 128 : 0);
+            this.functionTypes[fNo] = type;
+            
+            this.functionTriggerTypes[fNo] = momentary ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE;
         }
         
         this.customFunctions = true;
@@ -256,7 +260,12 @@ public class MarklinLocomotive extends Locomotive
      */
     public boolean isFunctionPulse(int fNo)
     {
-        return this.getFunctionType(fNo) >= 128;
+        if (this.validF(fNo))
+        {
+            return this.functionTriggerTypes[fNo] == Locomotive.FUNCTION_PULSE;
+        }
+        
+        return false;
     }
     
     /**

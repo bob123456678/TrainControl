@@ -39,6 +39,7 @@ public class testLocomotive {
                 MarklinLocomotive.locDirection.DIR_FORWARD,
                 new boolean[] {false,false,true,false,false}, // function state
                 new int[] {128,10,240,241,0}, // function types
+                new int[] {1,0,1,1,0},
                 new boolean[] {true,true,false,true,false}, // preferred functions
                 99,// preferred speed
                 2, //departure F

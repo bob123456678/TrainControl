@@ -52,6 +52,11 @@ public abstract class Locomotive
     // Types of functions
     protected int[] functionTypes;
     
+    // Directly store how the function is to be triggered
+    protected int[] functionTriggerTypes;
+    public static final int FUNCTION_TOGGLE = 0;
+    public static final int FUNCTION_PULSE = 1;
+    
     // Custom event callbacks
     protected Map<String, Consumer<Locomotive>> callbacks;
     
@@ -89,6 +94,7 @@ public abstract class Locomotive
         this.numF = numFunctions;
         this._setSpeed(0);
         this.functionTypes = new int[numFunctions];
+        this.functionTriggerTypes = new int[numFunctions];
         
         this.callbacks = new HashMap<>();
         this.historicalOperatingTime = new HashMap<>();
@@ -113,6 +119,15 @@ public abstract class Locomotive
     public boolean[] getPreferredFunctions()
     {
         return this.preferredFunctions;
+    }
+    
+    /**
+     * Retrieves the function trigger types
+     * @return 
+     */
+    public int[] getFunctionTriggerTypes()
+    {
+        return this.functionTriggerTypes;
     }
     
     /**
@@ -194,8 +209,9 @@ public abstract class Locomotive
      * @param name
      * @param numFunctions 
      * @param functionTypes 
+     * @param functionTriggerTypes 
      */
-    public Locomotive(String name, int numFunctions, int[] functionTypes)
+    public Locomotive(String name, int numFunctions, int[] functionTypes, int[] functionTriggerTypes)
     {
         this.name = name;
         this.direction = locDirection.DIR_FORWARD;
@@ -203,7 +219,7 @@ public abstract class Locomotive
         this.numF = numFunctions;
         this._setSpeed(0);
         
-        this.setFunctionTypes(functionTypes);
+        this.setFunctionTypes(functionTypes, functionTriggerTypes);
   
         this.callbacks = new HashMap<>();
         
@@ -216,15 +232,22 @@ public abstract class Locomotive
     /**
      * Safely sets the function types
      * @param functionTypes 
+     * @param functionTriggerTypes 
      */
-    public final void setFunctionTypes(int[] functionTypes)
+    public final void setFunctionTypes(int[] functionTypes, int[] functionTriggerTypes)
     {
         this.functionTypes = new int[this.numF];
+        this.functionTriggerTypes = new int[this.numF];
         
         // Safely copy function types - raw data is often shorter or longer than needed
         for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
         { 
             this.functionTypes[i] = functionTypes[i];
+        }
+        
+        for (int i = 0; i < functionTriggerTypes.length && i < this.functionTriggerTypes.length; i++)
+        { 
+            this.functionTriggerTypes[i] = functionTriggerTypes[i];
         }
     }
     
@@ -275,6 +298,7 @@ public abstract class Locomotive
      * @param numF
      * @param functionState 
      * @param functionTypes 
+     * @param functionTriggerTypes 
      * @param preferredFunctions 
      * @param preferredSpeed 
      * @param departureFunc 
@@ -284,7 +308,7 @@ public abstract class Locomotive
      * @param historicalOperatingTime 
      */
     public Locomotive(String name, int speed, locDirection direction, int numF,
-        boolean[] functionState, int[] functionTypes, boolean[] preferredFunctions, 
+        boolean[] functionState, int[] functionTypes, int[] functionTriggerTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
         int trainLength, Map<String, Long> historicalOperatingTime
     )
@@ -294,7 +318,7 @@ public abstract class Locomotive
         this.numF = numF;
         this._setSpeed(speed);
         this.setFunctionState(functionState);
-        this.setFunctionTypes(functionTypes);
+        this.setFunctionTypes(functionTypes, functionTriggerTypes);
       
         this.callbacks = new HashMap<>();
         

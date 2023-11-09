@@ -560,6 +560,30 @@ public final class CS2File
         return output;
     }
     
+    public static int[] extractFunctionTriggerTypes(int[] functionTypes)
+    {
+        int[] output = new int[functionTypes.length];
+        
+        for (int i = 0; i < functionTypes.length; i++)
+        {
+            output[i] = functionTypes[i] >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE;
+        }
+        
+        return output;
+    }
+    
+    public static int[] extractFunctionTypes(int[] functionTypes)
+    {
+        int[] output = new int[functionTypes.length];
+        
+        for (int i = 0; i < functionTypes.length; i++)
+        {
+            output[i] = functionTypes[i] % 128;
+        }
+        
+        return output;
+    }
+ 
     /**
      * Parses locomotives from the CS3 API
      * @param locomotiveList
@@ -621,15 +645,17 @@ public final class CS2File
 
                 // Parse functions
                 List<Integer> functionTypes = new ArrayList<>();
+                List<Integer> functionTriggerTypes = new ArrayList<>();
 
                 for (Object readArr : loc.getJSONArray("funktionen"))
                 {                
                     JSONObject fInfo = (JSONObject) readArr;
 
-                    Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));
+                    Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));                                          
                     Boolean isMoment = fInfo.getBoolean("isMoment");
 
-                    functionTypes.add(fType + (isMoment ? 128 : 0));                    
+                    functionTypes.add(fType);
+                    functionTriggerTypes.add(isMoment ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE);
                 }
                 
                 MarklinLocomotive newLoc = new MarklinLocomotive(
@@ -637,7 +663,8 @@ public final class CS2File
                     uid, 
                     decoderType,
                     name,
-                    functionTypes.stream().mapToInt(k -> k).toArray()
+                    functionTypes.stream().mapToInt(k -> k).toArray(),
+                    functionTriggerTypes.stream().mapToInt(k -> k).toArray()
                 );
                 
                 if (icon != null)
@@ -745,7 +772,8 @@ public final class CS2File
                     address, 
                     type,
                     name,
-                    functionTypes
+                    extractFunctionTypes(functionTypes),
+                    extractFunctionTriggerTypes(functionTypes)
                 );
                 
                 if (m.get("icon") != null)

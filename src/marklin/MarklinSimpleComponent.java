@@ -27,6 +27,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean[] functions;
     private boolean[] preferredFunctions;
     private int[] functionTypes;
+    private int[] functionTriggerTypes;
     private int preferredSpeed;
     private Integer departureFunction;
     private Integer arrivalFunction;
@@ -143,6 +144,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.state = l.goingForward();
         this.functions = l.getFunctionState();
         this.functionTypes = l.getFunctionTypes();
+        this.functionTriggerTypes = l.getFunctionTriggerTypes();
         this.preferredFunctions = l.getPreferredFunctions();
         this.preferredSpeed = l.getPreferredSpeed();
         this.departureFunction = l.getDepartureFunc();
@@ -195,6 +197,13 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public int[] getFunctionTypes()
     {
         return functionTypes;
+    }
+    
+    public int[] getFunctionTriggerTypes()
+    {
+        if (functionTriggerTypes == null) return new int[0];
+        
+        return functionTriggerTypes;
     }
     
     public boolean getState()

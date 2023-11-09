@@ -247,6 +247,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Improved the image quality of locomotive and function icons (they will be less pixelated)
     - Increased size of the active locomotive icon
     - Added support for QWERTZ and AZERTY keyboards
+    - Added network latency monitoring
     - Different instances of TrainControl will now use unique track diagram and IP preferences
     - Fixed bug where orphan feedback IDs could become undeletable in TrainControl's database
     - Fixed bug where special characters in locomotive names would sometimes be read incorrectly
