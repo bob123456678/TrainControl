@@ -36,7 +36,7 @@ public class DummyUI implements model.View
     }
     
     @Override
-    public void updateLatency(long latency)
+    public void updateLatency(double latency)
     {
         
     }

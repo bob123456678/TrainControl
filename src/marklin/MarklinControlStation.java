@@ -116,7 +116,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Ping metrics
     private long pingStart;
-    private long lastLatency;
+    private double lastLatency;
             
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
@@ -1186,7 +1186,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Track latency
             if (this.pingStart > 0 && message.getResponse())
             {
-                this.lastLatency = System.currentTimeMillis() - this.pingStart;
+                this.lastLatency = ((double) (System.nanoTime() - this.pingStart)) / 1000000.0;
                 this.pingStart = 0;
                 
                 if (this.view != null)
@@ -1218,7 +1218,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Returns the last measured latency.  Should be preceded by a call to sendPing
      * @return 
      */
-    public long getLastLatency()
+    public double getLastLatency()
     {
         return this.lastLatency;
     }
@@ -1310,7 +1310,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         if (this.pingStart == 0 || force)
         {
-            this.pingStart = System.currentTimeMillis();
+            this.pingStart = System.nanoTime();
         
             this.exec(new CS2Message(
                 CS2Message.CAN_CMD_PING,

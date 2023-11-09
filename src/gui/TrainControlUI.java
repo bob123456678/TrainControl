@@ -1002,13 +1002,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param latency
      */
     @Override
-    public void updateLatency(long latency)
+    public void updateLatency(double latency)
     { 
         if (PING_INTERVAL > 0)
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                this.latencyLabel.setText("Network Latency: " + latency + "ms");
+                this.latencyLabel.setText("Network Latency: " + String.format("%.1f", latency) + "ms");
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
             }));

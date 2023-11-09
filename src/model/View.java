@@ -36,5 +36,5 @@ public interface View
      * Callback with latency info
      * @param latency 
      */
-    public void updateLatency(long latency);
+    public void updateLatency(double latency);
 }
