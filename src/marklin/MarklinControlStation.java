@@ -46,7 +46,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.0 (Beta 66) for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.0 (Beta 67) for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -113,6 +113,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Number of network messages processed
     private int numMessagesProcessed = 0;
+    
+    // Ping metrics
+    private long pingStart;
+    private long lastLatency;
             
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
@@ -174,7 +178,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Turn on network communication and turn on the power
             this.on = true;
             
-            this.sendPing();
+            this.sendPing(false);
             
             if (autoPowerOn) this.go(); 
         }
@@ -1176,6 +1180,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else if (message.isPingCommand())
         {
+            // Track latency
+            if (this.pingStart > 0 && message.getResponse())
+            {
+                this.lastLatency = System.currentTimeMillis() - this.pingStart;
+                this.pingStart = 0;
+                
+                if (this.view != null)
+                {
+                    this.view.updateLatency(this.lastLatency);
+                }
+            }
+            
             // Set the serial number if it is not already set
             if (this.UID == 0 && message.getResponse() && message.getLength() == 8)
             {
@@ -1195,6 +1211,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
         
+    /**
+     * Returns the last measured latency.  Should be preceded by a call to sendPing
+     * @return 
+     */
+    public long getLastLatency()
+    {
+        return this.lastLatency;
+    }
+    
     /**
      * Executes a command
      * @param m 
@@ -1271,16 +1296,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         System.out.print(message);   
     }
-    
+        
     /**
      * Pings the Central Station so that we can discover its UID
+     * @param force - send the ping even if no response previously?
      */
-    private void sendPing()
+    @Override
+    public final void sendPing(boolean force)
     {        
-        this.exec(new CS2Message(
-            CS2Message.CAN_CMD_PING,
-            new byte[0]
-        ));
+        if (this.pingStart == 0 || force)
+        {
+            this.pingStart = System.currentTimeMillis();
+        
+            this.exec(new CS2Message(
+                CS2Message.CAN_CMD_PING,
+                new byte[0]
+            ));
+        }
     }
     
     /**

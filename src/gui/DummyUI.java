@@ -34,4 +34,10 @@ public class DummyUI implements model.View
     {
         System.out.println(message);
     }
+    
+    @Override
+    public void updateLatency(long latency)
+    {
+        
+    }
 }

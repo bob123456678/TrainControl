@@ -66,4 +66,5 @@ public interface ViewListener
     public void importRoutes(String json);
     public List<MarklinLocomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress) throws Exception;
+    public void sendPing(boolean force);
 }

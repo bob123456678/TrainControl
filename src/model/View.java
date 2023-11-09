@@ -31,4 +31,10 @@ public interface View
      * @param message 
      */
     public void log(String message);
+    
+    /**
+     * Callback with latency info
+     * @param latency 
+     */
+    public void updateLatency(long latency);
 }

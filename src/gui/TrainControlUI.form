@@ -150,7 +150,11 @@
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="sliderSetting" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="PrimaryControls" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="PrimaryControls" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="latencyLabel" min="-2" max="-2" attributes="0"/>
+                          </Group>
                           <Component id="jPanel6" alignment="0" max="32767" attributes="0"/>
                           <Component id="LocContainer" alignment="0" pref="0" max="32767" attributes="0"/>
                       </Group>
@@ -171,7 +175,10 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="LocContainer" min="-2" pref="338" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="PrimaryControls" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="PrimaryControls" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="latencyLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel6" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
@@ -2526,6 +2533,12 @@
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
               </AuxValues>
+            </Component>
+            <Component class="javax.swing.JLabel" name="latencyLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Latency:"/>
+                <Property name="toolTipText" type="java.lang.String" value="This value should consistently be low to ensure a stable connection."/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>

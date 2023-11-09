@@ -42,6 +42,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -103,6 +105,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String KEYBOARD_AZERTY = "AZERTY";
 
     public static final String[] KEYBOARD_TYPES = {KEYBOARD_QWERTY, KEYBOARD_QWERTZ, KEYBOARD_AZERTY};
+    
+    // How often we measure latency.  0 to disable
+    public static final Integer PING_INTERVAL = 5000;
+    
+    // Thresholds at which ping is highlighted
+    public static final Integer PING_ORANGE = 150;
+    public static final Integer PING_RED = 500;
     
     // Constants
     // Width of locomotive images
@@ -927,7 +936,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
-                        
+             
+        this.latencyLabel.setText("");
+
         // Show window        
         this.setVisible(true); 
 
@@ -959,10 +970,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
-        
-        /*List<Image> icons = new ArrayList<Image>();
-        icons.add(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        this.setIconImages(icons);*/
+                
+        // Monitor latency
+        if (this.model != null && model.getNetworkCommState() && PING_INTERVAL > 0)
+        {            
+            model.sendPing(true);
+            
+            (new Timer()).scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    try
+                    {
+                        model.sendPing(false);
+                    }
+                    catch (Exception e)
+                    {
+                        model.log("Error sending ping: " + e.getMessage());
+                        
+                        if (model.isDebug())
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+             }, 0, PING_INTERVAL);
+        }
+    }
+    
+    /**
+     *
+     * @param latency
+     */
+    @Override
+    public void updateLatency(long latency)
+    { 
+        if (PING_INTERVAL > 0)
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                this.latencyLabel.setText("Network Latency: " + latency + "ms");
+
+                this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
+            }));
+        }        
     }
     
     /**
@@ -1994,6 +2044,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         sliderSetting = new javax.swing.JCheckBox();
         alwaysOnTopCheckbox = new javax.swing.JCheckBox();
         keyboardType = new javax.swing.JComboBox<>();
+        latencyLabel = new javax.swing.JLabel();
         layoutPanel = new javax.swing.JPanel();
         LayoutList = new javax.swing.JComboBox();
         layoutListLabel = new javax.swing.JLabel();
@@ -3802,6 +3853,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        latencyLabel.setText("Latency:");
+        latencyLabel.setToolTipText("This value should consistently be low to ensure a stable connection.");
+
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
         LocControlPanelLayout.setHorizontalGroup(
@@ -3817,7 +3871,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(alwaysOnTopCheckbox)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sliderSetting))
-                    .addComponent(PrimaryControls)
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                        .addComponent(PrimaryControls)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(latencyLabel))
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addContainerGap(44, Short.MAX_VALUE))
@@ -3834,7 +3891,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(PrimaryControls)
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(PrimaryControls)
+                    .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -10611,6 +10670,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator7;
     private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JComboBox<String> keyboardType;
+    private javax.swing.JLabel latencyLabel;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
