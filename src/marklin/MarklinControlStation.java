@@ -1320,6 +1320,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Returns the timestamp (ms) of the last ping request
+     * @return 
+     */
+    @Override
+    public long getTimeSinceLastPing()
+    {
+        if (this.pingStart > 0)
+        {
+            return  (System.nanoTime() - this.pingStart) / 1000000;
+        }
+        
+        return 0;
+    }
+    
+    /**
      * Stops all locomotives / system halt
      */
     @Override

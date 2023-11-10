@@ -67,4 +67,5 @@ public interface ViewListener
     public List<MarklinLocomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress) throws Exception;
     public void sendPing(boolean force);
+    public long getTimeSinceLastPing();
 }

@@ -991,6 +991,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 public void run() {
                     try
                     {
+                        if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
+                        {
+                            latencyLabel.setText("Latency: No response");
+                            latencyLabel.setForeground(Color.red);
+                        }
+                                                
                         model.sendPing(false);
                     }
                     catch (Exception e)
