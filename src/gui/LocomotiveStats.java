@@ -36,34 +36,42 @@ public class LocomotiveStats extends javax.swing.JPanel {
         initComponents();
         this.tcui = tcui;
         
-        String col[] = {"Locomotive", "Total Runtime", "Last Run", "First Run", "Days Run"};
-
-        DefaultTableModel tableModel = new DefaultTableModel(col, 0);
-        
-        List<Locomotive> sortedLocs = new ArrayList();
-
-        for (Locomotive l : tcui.getModel().getLocomotives())
+        refresh();
+    }
+    
+    public final void refresh()
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            //if (l.getTotalRuntime() > 0)
-            //{
-                sortedLocs.add( l);
-            //}
-        }
+            String col[] = {"Locomotive", "Total Runtime", "Last Run", "First Run", "Days Run"};
 
-        if (!sortedLocs.isEmpty())
-        {               
-            sortedLocs.sort((Locomotive l1, Locomotive l2) -> Long.valueOf(l2.getTotalRuntime()).compareTo(l1.getTotalRuntime()));
-        }
-        
-        for (Locomotive l : sortedLocs)
-        {            
-            Object[] data = {l.getName(), convertSecondsToHMmSs(l.getTotalRuntime()), l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
-            
-            tableModel.addRow(data);
-        }
-        
-        this.jTable1.setModel(tableModel);
-        this.jTable1.setAutoCreateRowSorter(true);
+            DefaultTableModel tableModel = new DefaultTableModel(col, 0);
+
+            List<Locomotive> sortedLocs = new ArrayList();
+
+            for (Locomotive l : tcui.getModel().getLocomotives())
+            {
+                //if (l.getTotalRuntime() > 0)
+                //{
+                    sortedLocs.add( l);
+                //}
+            }
+
+            if (!sortedLocs.isEmpty())
+            {               
+                sortedLocs.sort((Locomotive l1, Locomotive l2) -> Long.valueOf(l2.getTotalRuntime()).compareTo(l1.getTotalRuntime()));
+            }
+
+            for (Locomotive l : sortedLocs)
+            {            
+                Object[] data = {l.getName(), convertSecondsToHMmSs(l.getTotalRuntime()), l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
+
+                tableModel.addRow(data);
+            }
+
+            this.statsTable.setModel(tableModel);
+            this.statsTable.setAutoCreateRowSorter(true);
+        }));
     }
     
     private String convertSecondsToHMmSs(long ms)
@@ -96,10 +104,13 @@ public class LocomotiveStats extends javax.swing.JPanel {
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        statsTable = new javax.swing.JTable();
         exportData = new javax.swing.JButton();
+        refresh = new javax.swing.JButton();
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        setBackground(new java.awt.Color(238, 238, 238));
+
+        statsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -110,13 +121,23 @@ public class LocomotiveStats extends javax.swing.JPanel {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(statsTable);
 
         exportData.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         exportData.setText("Export Raw Data");
+        exportData.setFocusable(false);
         exportData.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exportDataActionPerformed(evt);
+            }
+        });
+
+        refresh.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        refresh.setText("Refresh");
+        refresh.setFocusable(false);
+        refresh.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                refreshActionPerformed(evt);
             }
         });
 
@@ -130,17 +151,20 @@ public class LocomotiveStats extends javax.swing.JPanel {
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 669, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(exportData)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(refresh)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 394, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 449, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(exportData)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(exportData)
+                    .addComponent(refresh))
+                .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -186,10 +210,15 @@ public class LocomotiveStats extends javax.swing.JPanel {
         }).start();
     }//GEN-LAST:event_exportDataActionPerformed
 
+    private void refreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_refreshActionPerformed
+        this.refresh();
+    }//GEN-LAST:event_refreshActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton exportData;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
+    private javax.swing.JButton refresh;
+    private javax.swing.JTable statsTable;
     // End of variables declaration//GEN-END:variables
 }

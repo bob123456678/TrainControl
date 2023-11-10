@@ -219,6 +219,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
      
+    // Stats UI
+    private LocomotiveStats stats;
+    
     /**
      * Creates new form MarklinUI
      */
@@ -814,39 +817,42 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void switchKeyboard(int keyboardNum)
     {
-        if (keyboardNum <= TrainControlUI.NUM_KEYBOARDS && keyboardNum >= 1)
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            this.keyboardNumber = keyboardNum;
-        }
-        
-        if (this.keyboardNumber == 1)
-        {
-            this.PrevKeyboard.setEnabled(false);
-        }
-        else
-        {
-            this.PrevKeyboard.setEnabled(true);
-        }
-        
-        if (this.keyboardNumber == TrainControlUI.NUM_KEYBOARDS)
-        {
-            this.NextKeyboard.setEnabled(false);
-        }
-        else
-        {
-            this.NextKeyboard.setEnabled(true);
-        }
-        
-        this.KeyboardNumberLabel.setText("Keyboard " + this.keyboardNumber);
-        
-        Integer offset = this.getKeyboardOffset();
-        
-        for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
-        {
-            this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
-        }
-        
-        repaintSwitches();
+            if (keyboardNum <= TrainControlUI.NUM_KEYBOARDS && keyboardNum >= 1)
+            {
+                this.keyboardNumber = keyboardNum;
+            }
+
+            if (this.keyboardNumber == 1)
+            {
+                this.PrevKeyboard.setEnabled(false);
+            }
+            else
+            {
+                this.PrevKeyboard.setEnabled(true);
+            }
+
+            if (this.keyboardNumber == TrainControlUI.NUM_KEYBOARDS)
+            {
+                this.NextKeyboard.setEnabled(false);
+            }
+            else
+            {
+                this.NextKeyboard.setEnabled(true);
+            }
+
+            this.KeyboardNumberLabel.setText("Keyboard " + this.keyboardNumber);
+
+            Integer offset = this.getKeyboardOffset();
+
+            for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
+            {
+                this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
+            }
+
+            repaintSwitches();
+        }));
     }
     
     public void setViewListener(ViewListener listener) throws IOException
@@ -952,6 +958,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, true);
         }
+        
+        // Populate statistics tab
+        this.stats = new LocomotiveStats(this);
+        this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
                 
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
@@ -1588,7 +1598,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                         b.setHorizontalTextPosition(SwingConstants.CENTER);
 
-                        b.setForeground(new java.awt.Color(255, 255, 255));
+                        b.setForeground(new java.awt.Color(238, 238, 238));
                         b.setContentAreaFilled(false);
                     } 
                     catch (IOException | NullPointerException e)
@@ -2210,7 +2220,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TurnOffFnButton = new javax.swing.JButton();
         TurnOnLightsButton = new javax.swing.JButton();
         syncLocStateButton = new javax.swing.JButton();
-        LocUsageReport = new javax.swing.JButton();
         jPanel12 = new javax.swing.JPanel();
         jLabel32 = new javax.swing.JLabel();
         LayoutPathLabel = new javax.swing.JLabel();
@@ -2329,6 +2338,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.setBackground(new java.awt.Color(255, 255, 255));
         KeyboardTab.setToolTipText(null);
+        KeyboardTab.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                KeyboardTabStateChanged(evt);
+            }
+        });
         KeyboardTab.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 LocControlPanelKeyPressed(evt);
@@ -2353,7 +2367,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
         LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
-        CButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        CButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         CButton.setText("C");
         CButton.setFocusable(false);
         CButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2362,7 +2376,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        VButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        VButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         VButton.setText("V");
         VButton.setFocusable(false);
         VButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2371,7 +2385,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ZButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ZButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         ZButton.setText("Z");
         ZButton.setFocusable(false);
         ZButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2380,7 +2394,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        XButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        XButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         XButton.setText("X");
         XButton.setFocusable(false);
         XButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2389,7 +2403,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        MButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        MButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         MButton.setText("M");
         MButton.setFocusable(false);
         MButton.setMaximumSize(new java.awt.Dimension(39, 23));
@@ -2400,7 +2414,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         BButton.setText("B");
         BButton.setFocusable(false);
         BButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2409,7 +2423,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        NButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        NButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         NButton.setText("N");
         NButton.setFocusable(false);
         NButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2418,7 +2432,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        OButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        OButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         OButton.setText("O");
         OButton.setFocusable(false);
         OButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2427,7 +2441,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        PButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        PButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         PButton.setText("P");
         PButton.setFocusable(false);
         PButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2436,7 +2450,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        AButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        AButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         AButton.setText("A");
         AButton.setFocusable(false);
         AButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2445,7 +2459,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SButton.setText("S");
         SButton.setFocusable(false);
         SButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2454,7 +2468,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        DButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        DButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         DButton.setText("D");
         DButton.setFocusable(false);
         DButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2463,7 +2477,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        FButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        FButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         FButton.setText("F");
         FButton.setFocusable(false);
         FButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2472,7 +2486,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        GButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        GButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         GButton.setText("G");
         GButton.setFocusable(false);
         GButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2481,7 +2495,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        HButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        HButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         HButton.setText("H");
         HButton.setFocusable(false);
         HButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2490,7 +2504,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        JButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        JButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         JButton.setText("J");
         JButton.setFocusable(false);
         JButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2499,7 +2513,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        LButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         LButton.setText("L");
         LButton.setFocusable(false);
         LButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2508,7 +2522,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        KButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        KButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         KButton.setText("K");
         KButton.setFocusable(false);
         KButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2517,7 +2531,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        YButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        YButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         YButton.setText("Y");
         YButton.setFocusable(false);
         YButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2526,7 +2540,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        RButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        RButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         RButton.setText("R");
         RButton.setFocusable(false);
         RButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2535,7 +2549,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        TButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        TButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         TButton.setText("T");
         TButton.setFocusable(false);
         TButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2544,7 +2558,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        WButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        WButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         WButton.setText("W");
         WButton.setFocusable(false);
         WButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2553,7 +2567,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        EButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        EButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         EButton.setText("E");
         EButton.setFocusable(false);
         EButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2562,7 +2576,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        QButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        QButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         QButton.setText("Q");
         QButton.setFocusable(false);
         QButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2571,7 +2585,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        IButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        IButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         IButton.setText("I");
         IButton.setFocusable(false);
         IButton.addActionListener(new java.awt.event.ActionListener() {
@@ -2580,7 +2594,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        UButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        UButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         UButton.setText("U");
         UButton.setFocusable(false);
         UButton.addActionListener(new java.awt.event.ActionListener() {
@@ -5846,15 +5860,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LocUsageReport.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        LocUsageReport.setText("Locomotive Usage Report");
-        LocUsageReport.setFocusable(false);
-        LocUsageReport.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LocUsageReportActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
@@ -5862,14 +5867,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LocUsageReport, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(clearButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
-                        .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(TurnOffFnButton, javax.swing.GroupLayout.PREFERRED_SIZE, 178, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.PREFERRED_SIZE, 370, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
@@ -5882,12 +5886,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(syncLocStateButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(TurnOnLightsButton)
-                    .addComponent(TurnOffFnButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(LocUsageReport)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(TurnOnLightsButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(TurnOffFnButton)
+                .addContainerGap())
         );
 
         jPanel12.setBackground(new java.awt.Color(245, 245, 245));
@@ -7795,7 +7797,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
         
-        new Thread(() ->
+        doSync(ManageLocPanel);
+    }//GEN-LAST:event_SyncButtonActionPerformed
+
+    public void doSync(Component c)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             Integer r = this.model.syncWithCS2();
             refreshRouteList();
@@ -7805,15 +7812,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if ("-1".equals(r.toString()))
             {
-                JOptionPane.showMessageDialog(ManageLocPanel, "Sync failed.  See log.");
+                JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
             }
             else
             {
-                JOptionPane.showMessageDialog(ManageLocPanel, "Sync complete.  Items added: " + r.toString());
+                JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
             }
-        }).start();
-    }//GEN-LAST:event_SyncButtonActionPerformed
-
+        }));
+    }
+    
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
         
         new Thread(() ->
@@ -9047,13 +9054,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_hideReversingMouseReleased
 
-    private void LocUsageReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LocUsageReportActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            this.generateLocUsageReport();
-        }));
-    }//GEN-LAST:event_LocUsageReportActionPerformed
-
     private void clearNonParkedLocsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearNonParkedLocsActionPerformed
         
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -9660,6 +9660,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_keyboardTypeItemStateChanged
+
+    private void KeyboardTabStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_KeyboardTabStateChanged
+        if (KeyboardTab.getSelectedIndex() == KeyboardTab.getTabCount() - 2 && this.model != null && this.stats != null)
+        {
+            this.stats.refresh();
+        }
+    }//GEN-LAST:event_KeyboardTabStateChanged
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
@@ -10285,51 +10292,54 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     private void refreshRouteList()
-    {        
-        DefaultTableModel tableModel = new DefaultTableModel() {
+    {   
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            DefaultTableModel tableModel = new DefaultTableModel() {
 
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-         };
-        
-        tableModel.setColumnCount(4);
-        
-        String[] items = new String[4];
-        
-        List<String> names = this.model.getRouteList();
-        
-        if (this.prefs.getBoolean(ROUTE_SORT_PREF, false))
-        {
-            Collections.sort(names);
-        }
- 
-        int i = 0;
-        while (!names.isEmpty())
-        {
-            items[i++] = names.get(0);
-            names.remove(0);
-                    
-            if (i == 4 || names.isEmpty())
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+             };
+
+            tableModel.setColumnCount(4);
+
+            String[] items = new String[4];
+
+            List<String> names = this.model.getRouteList();
+
+            if (this.prefs.getBoolean(ROUTE_SORT_PREF, false))
             {
-                i = 0;
-                
-                tableModel.addRow(items);
-               
-                items = new String[4];
+                Collections.sort(names);
             }
-        }
-        
-        this.RouteList.setModel(tableModel);
-        this.RouteList.setShowGrid(true);     
-               
-        this.RouteList.getColumnModel().getColumn(0).setCellRenderer(new CustomTableRenderer());
-        this.RouteList.getColumnModel().getColumn(1).setCellRenderer(new CustomTableRenderer());
-        this.RouteList.getColumnModel().getColumn(2).setCellRenderer(new CustomTableRenderer());
-        this.RouteList.getColumnModel().getColumn(3).setCellRenderer(new CustomTableRenderer());
-        
-        // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
+
+            int i = 0;
+            while (!names.isEmpty())
+            {
+                items[i++] = names.get(0);
+                names.remove(0);
+
+                if (i == 4 || names.isEmpty())
+                {
+                    i = 0;
+
+                    tableModel.addRow(items);
+
+                    items = new String[4];
+                }
+            }
+
+            this.RouteList.setModel(tableModel);
+            this.RouteList.setShowGrid(true);     
+
+            this.RouteList.getColumnModel().getColumn(0).setCellRenderer(new CustomTableRenderer());
+            this.RouteList.getColumnModel().getColumn(1).setCellRenderer(new CustomTableRenderer());
+            this.RouteList.getColumnModel().getColumn(2).setCellRenderer(new CustomTableRenderer());
+            this.RouteList.getColumnModel().getColumn(3).setCellRenderer(new CustomTableRenderer());
+
+            // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
+        }));
     }
         
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -10440,7 +10450,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButton LocTypeDCC;
     private javax.swing.JRadioButton LocTypeMFX;
     private javax.swing.JRadioButton LocTypeMM2;
-    private javax.swing.JButton LocUsageReport;
     private javax.swing.JButton MButton;
     private javax.swing.JTextField MLabel;
     private javax.swing.JSlider MSlider;

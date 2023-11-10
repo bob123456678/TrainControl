@@ -289,14 +289,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
     private void SyncWithCSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncWithCSActionPerformed
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            Integer r = this.model.syncWithCS2();
-            this.refreshLocSelectorList();
-            this.parent.repaintLoc();
-
-            JOptionPane.showMessageDialog(this, "Sync complete.  Items added: " + r.toString());
-        }));
+        this.parent.doSync(this);
     }//GEN-LAST:event_SyncWithCSActionPerformed
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown

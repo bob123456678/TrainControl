@@ -104,6 +104,7 @@
         <Property name="AccessibleContext.accessibleName" type="java.lang.String" value=""/>
       </AccessibilityProperties>
       <Events>
+        <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="KeyboardTabStateChanged"/>
         <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="LocControlPanelKeyPressed"/>
       </Events>
 
@@ -575,7 +576,7 @@
                 <Component class="javax.swing.JButton" name="CButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="C"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -587,7 +588,7 @@
                 <Component class="javax.swing.JButton" name="VButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="V"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -599,7 +600,7 @@
                 <Component class="javax.swing.JButton" name="ZButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Z"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -611,7 +612,7 @@
                 <Component class="javax.swing.JButton" name="XButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="X"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -623,7 +624,7 @@
                 <Component class="javax.swing.JButton" name="MButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="M"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -641,7 +642,7 @@
                 <Component class="javax.swing.JButton" name="BButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="B"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -653,7 +654,7 @@
                 <Component class="javax.swing.JButton" name="NButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="N"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -665,7 +666,7 @@
                 <Component class="javax.swing.JButton" name="OButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="O"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -677,7 +678,7 @@
                 <Component class="javax.swing.JButton" name="PButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="P"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -689,7 +690,7 @@
                 <Component class="javax.swing.JButton" name="AButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="A"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -701,7 +702,7 @@
                 <Component class="javax.swing.JButton" name="SButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="S"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -713,7 +714,7 @@
                 <Component class="javax.swing.JButton" name="DButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="D"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -725,7 +726,7 @@
                 <Component class="javax.swing.JButton" name="FButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="F"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -737,7 +738,7 @@
                 <Component class="javax.swing.JButton" name="GButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="G"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -749,7 +750,7 @@
                 <Component class="javax.swing.JButton" name="HButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="H"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -761,7 +762,7 @@
                 <Component class="javax.swing.JButton" name="JButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="J"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -773,7 +774,7 @@
                 <Component class="javax.swing.JButton" name="LButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="L"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -785,7 +786,7 @@
                 <Component class="javax.swing.JButton" name="KButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="K"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -797,7 +798,7 @@
                 <Component class="javax.swing.JButton" name="YButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Y"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -809,7 +810,7 @@
                 <Component class="javax.swing.JButton" name="RButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="R"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -821,7 +822,7 @@
                 <Component class="javax.swing.JButton" name="TButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="T"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -833,7 +834,7 @@
                 <Component class="javax.swing.JButton" name="WButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="W"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -845,7 +846,7 @@
                 <Component class="javax.swing.JButton" name="EButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="E"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -857,7 +858,7 @@
                 <Component class="javax.swing.JButton" name="QButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Q"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -869,7 +870,7 @@
                 <Component class="javax.swing.JButton" name="IButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="I"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -881,7 +882,7 @@
                 <Component class="javax.swing.JButton" name="UButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="U"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5246,14 +5247,13 @@
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <Component id="LocUsageReport" max="32767" attributes="0"/>
+                              <Component id="TurnOffFnButton" max="32767" attributes="0"/>
                               <Component id="clearButton" max="32767" attributes="0"/>
                               <Component id="SyncButton" alignment="0" max="32767" attributes="0"/>
                               <Component id="syncLocStateButton" alignment="0" max="32767" attributes="0"/>
                               <Group type="102" alignment="1" attributes="0">
-                                  <Component id="TurnOnLightsButton" min="-2" pref="180" max="-2" attributes="0"/>
-                                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                  <Component id="TurnOffFnButton" min="-2" pref="178" max="-2" attributes="0"/>
+                                  <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                  <Component id="TurnOnLightsButton" min="-2" pref="370" max="-2" attributes="0"/>
                               </Group>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
@@ -5270,13 +5270,10 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="syncLocStateButton" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="TurnOnLightsButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="TurnOffFnButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                          <EmptySpace min="-2" max="-2" attributes="0"/>
-                          <Component id="LocUsageReport" min="-2" max="-2" attributes="0"/>
+                          <Component id="TurnOnLightsButton" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="32767" attributes="0"/>
+                          <Component id="TurnOffFnButton" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -5340,18 +5337,6 @@
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncLocStateButtonActionPerformed"/>
-                  </Events>
-                </Component>
-                <Component class="javax.swing.JButton" name="LocUsageReport">
-                  <Properties>
-                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
-                    </Property>
-                    <Property name="text" type="java.lang.String" value="Locomotive Usage Report"/>
-                    <Property name="focusable" type="boolean" value="false"/>
-                  </Properties>
-                  <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LocUsageReportActionPerformed"/>
                   </Events>
                 </Component>
               </SubComponents>
