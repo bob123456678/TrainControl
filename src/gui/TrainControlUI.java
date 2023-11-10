@@ -993,7 +993,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     {
                         if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
                         {
-                            latencyLabel.setText("Latency: No response");
+                            latencyLabel.setText("Latency: Lost connection");
                             latencyLabel.setForeground(Color.red);
                         }
                                                 
