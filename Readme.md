@@ -26,7 +26,7 @@ automate switches while operating trains manually.
 
 You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.
 
-![UI screenshot: locomotive control](assets/ui_v2.png?raw=true)
+![UI screenshot: locomotive control](assets/ui_v4.png?raw=true)
 
 Right-click a locomotive or function icon to change it or set additional options, such as preferred speed or function presets.
 

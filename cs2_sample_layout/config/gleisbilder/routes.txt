@@ -1412,6 +1412,13 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
                     "ADDRESS": "80",
                     "SETTING": "true"
                 }
