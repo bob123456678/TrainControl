@@ -669,13 +669,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             try 
             {
+                this.model.log("Saving autonomy JSON to: " + new File(TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
+
                 ObjectOutputStream obj_out = new ObjectOutputStream(
                     new FileOutputStream(TrainControlUI.AUTONOMY_FILE_NAME));
 
                 // Write object out to disk
-                obj_out.writeObject(this.autonomyJSON.getText());
-                
-                this.model.log("Saved autonomy JSON to: " + new File(TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
+                obj_out.writeObject(this.autonomyJSON.getText());                
             }
             catch (IOException iOException)
             {
@@ -8783,6 +8783,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
 
+    public void resetFocus()
+    {
+        this.KeyboardTab.requestFocus();
+    }
+    
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         new Thread( () ->

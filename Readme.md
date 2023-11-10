@@ -199,7 +199,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.0 [Beta] (This version adds a few important features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
+* v2.0.0 [11/10/23] (This version adds a few important features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
     - Integrated a layout editor app [(TrackDiagramEditor)](https://github.com/bob123456678/TrackDiagramEditor) to allow for the editing of track diagrams (Windows only)
         - Added an edit button to each layout page; this automatically opens the editor
         - A basic starting layout will automatically be loaded if no CS2 is detected and no layout path has been manually specified

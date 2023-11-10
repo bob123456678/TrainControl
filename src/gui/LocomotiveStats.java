@@ -17,14 +17,17 @@ import java.util.List;
 import java.util.Map.Entry;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.RowFilter;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import marklin.MarklinLocomotive;
 
 /**
  *
  */
-public class LocomotiveStats extends javax.swing.JPanel {
-
+public class LocomotiveStats extends javax.swing.JPanel
+{
     TrainControlUI tcui;
     
     /**
@@ -53,7 +56,7 @@ public class LocomotiveStats extends javax.swing.JPanel {
             {
                 //if (l.getTotalRuntime() > 0)
                 //{
-                    sortedLocs.add( l);
+                    sortedLocs.add(l);
                 //}
             }
 
@@ -72,6 +75,20 @@ public class LocomotiveStats extends javax.swing.JPanel {
             this.statsTable.setModel(tableModel);
             this.statsTable.setAutoCreateRowSorter(true);
         }));
+    }
+    
+    private void filterTable()
+    {
+        String text = this.filterField.getText();
+        
+        if (text.trim().length() == 0)
+        {
+            ((TableRowSorter<TableModel>) statsTable.getRowSorter()).setRowFilter(null);
+        }
+        else
+        {
+            ((TableRowSorter<TableModel>) statsTable.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text));
+        }
     }
     
     private String convertSecondsToHMmSs(long ms)
@@ -107,8 +124,15 @@ public class LocomotiveStats extends javax.swing.JPanel {
         statsTable = new javax.swing.JTable();
         exportData = new javax.swing.JButton();
         refresh = new javax.swing.JButton();
+        filterLabel = new javax.swing.JLabel();
+        filterField = new javax.swing.JTextField();
 
         setBackground(new java.awt.Color(238, 238, 238));
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                formMouseClicked(evt);
+            }
+        });
 
         statsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -141,6 +165,18 @@ public class LocomotiveStats extends javax.swing.JPanel {
             }
         });
 
+        filterLabel.setForeground(new java.awt.Color(0, 0, 115));
+        filterLabel.setText("Filter List:");
+
+        filterField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                filterFieldKeyReleased(evt);
+            }
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                filterFieldKeyTyped(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -150,8 +186,12 @@ public class LocomotiveStats extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 669, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(exportData)
+                        .addComponent(filterLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(exportData)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(refresh)))
                 .addContainerGap())
         );
@@ -159,11 +199,13 @@ public class LocomotiveStats extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 449, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 442, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(exportData)
-                    .addComponent(refresh))
+                    .addComponent(refresh)
+                    .addComponent(filterLabel)
+                    .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -207,16 +249,31 @@ public class LocomotiveStats extends javax.swing.JPanel {
             }
             
             this.exportData.setEnabled(true);
+            this.tcui.resetFocus();
         }).start();
     }//GEN-LAST:event_exportDataActionPerformed
 
     private void refreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_refreshActionPerformed
         this.refresh();
+        this.tcui.resetFocus();
     }//GEN-LAST:event_refreshActionPerformed
 
+    private void filterFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_filterFieldKeyReleased
+        filterTable();
+    }//GEN-LAST:event_filterFieldKeyReleased
+
+    private void filterFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_filterFieldKeyTyped
+        filterTable();
+    }//GEN-LAST:event_filterFieldKeyTyped
+
+    private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
+        this.tcui.resetFocus();
+    }//GEN-LAST:event_formMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton exportData;
+    private javax.swing.JTextField filterField;
+    private javax.swing.JLabel filterLabel;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton refresh;
     private javax.swing.JTable statsTable;

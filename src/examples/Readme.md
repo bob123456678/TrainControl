@@ -190,8 +190,8 @@ This functionality is essential when your layout includes crossings, since these
 
 # Running and Visualizing via TrainControl UI
 
-From v1.8.0, to make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
-Moreover, to make it easier to create graphs, from v1.9.0, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  From v1.10.5, all settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
+To make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
+Moreover, to make it easier to create graphs, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  All locomotive settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
 
 The following example JSON corresponds to the above code/layout and edge locking.
 
@@ -366,7 +366,7 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 
 # Terminus Stations
 
-Basic support for terminus stations has been added as of v1.8.0.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
+TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
 also specify `"terminus" : "true"`.  For the corresponding point/locomotive, set `"locReversible" : "true"`.  Only such reversible locomotives can travel to a terminus and they will automatically change direction after arrival.
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
@@ -374,7 +374,7 @@ If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` corres
 
 # Reversing stations and parking
 
-As of v1.9.6, reversing stations are available.  These will never be chosen in autonomous operation, rather only semi-autonomous operation where you pick the route for the locomotive to follow.
+Stations can optionally be designated as "reversing" by setting `"reversing": true` on the corresponding `Point`. These will never be chosen in autonomous operation, rather only semi-autonomous operation where you pick the route for the locomotive to follow.
 
 Reversing stations are intended for parking/shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.  The train will automatically be reversed at each reversing station it reaches.
 
@@ -388,11 +388,11 @@ Remember that everything described below can now be fully edited via TrainContro
 
 ## Train lengths and non-atomic routes
 
-From v1.8.10, you can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
+You can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
 This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
 A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
 
-From v1.9.5, if `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
+If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
 This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
 To ensure that potential collisions are avoided, each edge must be configured with a length.  
 Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
@@ -403,16 +403,16 @@ Note that lock edges, which should be used for any overlapping/crossing tracks, 
 Paths are selected at random from among the possible stations reachable by any given locomotive, with the following conditions:
     - The shortest path is preferred unless it is occupied or locked
     - A path with conflicting accessory commands will never be chosen 
-    - From v1.10.0, you can specify an integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
+    - You can specify an optional integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
-From v2.0.0, you can mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
+You can optionally mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
 
 ## Pace of operation
 
 `minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
 The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. 
 
-From v1.9.6, locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
+Locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
 
 ## Functions (sounds / lighting)
 
@@ -421,7 +421,6 @@ TrainControl will enable/disable each locomotive's preferred functions, if any, 
 These preferred functons are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
 However, if you want to avoid turning off the functions on arrival you can set `turnOffFunctionsOnArrival` to `false`.  A good reason to use this is to keep operating sounds / lights on between paths.
 
-From v1.10.0, all locomotive configuration is nested within the `loc` array (on the stationed point) for better semantics and readability, so variables are no longer prefixed by "loc".
-
-Unless the `speed` is specified, each locomotive's preferred speed will be used (as set in the Locomotive Control UI).  If neither is set, the program will revert to `defaultLocSpeed`.
-The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.
+Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
+The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
+by right-clicking on any point within the graph UI.
