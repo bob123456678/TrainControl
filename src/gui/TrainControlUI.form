@@ -2537,8 +2537,11 @@
             </Component>
             <Component class="javax.swing.JLabel" name="latencyLabel">
               <Properties>
+                <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                  <Color blue="0" green="0" red="ff" type="rgb"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Latency:"/>
-                <Property name="toolTipText" type="java.lang.String" value="This value should consistently be low to ensure a stable connection."/>
+                <Property name="toolTipText" type="java.lang.String" value="Network latency should consistently be low to ensure a stable connection."/>
               </Properties>
             </Component>
           </SubComponents>
@@ -3326,7 +3329,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton1">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="1"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3338,7 +3341,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton2">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="2"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3350,7 +3353,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton3">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3362,7 +3365,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton4">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3374,7 +3377,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton5">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3386,7 +3389,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton6">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3398,7 +3401,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton7">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3410,7 +3413,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton8">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3422,7 +3425,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton9">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3434,7 +3437,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton10">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3446,7 +3449,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton11">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3458,7 +3461,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton12">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3470,7 +3473,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton13">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3482,7 +3485,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton14">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3494,7 +3497,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton15">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3506,7 +3509,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton16">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3518,7 +3521,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton17">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3530,7 +3533,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton18">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3542,7 +3545,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton19">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3554,7 +3557,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton21">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3566,7 +3569,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton22">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3578,7 +3581,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton23">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3590,7 +3593,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton24">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3602,7 +3605,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton26">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3614,7 +3617,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton27">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3626,7 +3629,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton29">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3638,7 +3641,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton28">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3650,7 +3653,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton30">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3662,7 +3665,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton31">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3674,7 +3677,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton32">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3686,7 +3689,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton33">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3698,7 +3701,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton34">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3710,7 +3713,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton35">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3722,7 +3725,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton36">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3734,7 +3737,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton37">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3746,7 +3749,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton38">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3758,7 +3761,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton39">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3770,7 +3773,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton40">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3782,7 +3785,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton41">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3794,7 +3797,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton42">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3806,7 +3809,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton43">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3818,7 +3821,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton44">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3830,7 +3833,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton45">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3842,7 +3845,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton46">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3854,7 +3857,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton47">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3866,7 +3869,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton48">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3878,7 +3881,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton49">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3890,7 +3893,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton50">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3902,7 +3905,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton51">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3914,7 +3917,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton52">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3926,7 +3929,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton53">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3938,7 +3941,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton54">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3950,7 +3953,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton55">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3962,7 +3965,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton57">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3974,7 +3977,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton58">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3986,7 +3989,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton59">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3998,7 +4001,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton60">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4010,7 +4013,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton61">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4022,7 +4025,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton62">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4034,7 +4037,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton63">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4046,7 +4049,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton20">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4058,7 +4061,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton56">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4070,7 +4073,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton25">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Tahoma" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>

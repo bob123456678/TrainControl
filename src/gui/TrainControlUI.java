@@ -943,7 +943,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
              
-        this.latencyLabel.setText("");
+        this.latencyLabel.setText("Not Connected to Central Station");
 
         // Show window        
         this.setVisible(true); 
@@ -3873,8 +3873,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        latencyLabel.setForeground(new java.awt.Color(255, 0, 0));
         latencyLabel.setText("Latency:");
-        latencyLabel.setToolTipText("This value should consistently be low to ensure a stable connection.");
+        latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
 
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
@@ -4234,7 +4235,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel9.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         jPanel9.setFocusable(false);
 
-        SwitchButton1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton1.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton1.setText("1");
         SwitchButton1.setFocusable(false);
         SwitchButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -4243,7 +4244,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton2.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton2.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton2.setText("2");
         SwitchButton2.setFocusable(false);
         SwitchButton2.addActionListener(new java.awt.event.ActionListener() {
@@ -4252,7 +4253,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton3.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton3.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton3.setText("3");
         SwitchButton3.setFocusable(false);
         SwitchButton3.addActionListener(new java.awt.event.ActionListener() {
@@ -4261,7 +4262,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton4.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton4.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton4.setText("3");
         SwitchButton4.setFocusable(false);
         SwitchButton4.addActionListener(new java.awt.event.ActionListener() {
@@ -4270,7 +4271,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton5.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton5.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton5.setText("3");
         SwitchButton5.setFocusable(false);
         SwitchButton5.addActionListener(new java.awt.event.ActionListener() {
@@ -4279,7 +4280,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton6.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton6.setText("3");
         SwitchButton6.setFocusable(false);
         SwitchButton6.addActionListener(new java.awt.event.ActionListener() {
@@ -4288,7 +4289,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton7.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton7.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton7.setText("3");
         SwitchButton7.setFocusable(false);
         SwitchButton7.addActionListener(new java.awt.event.ActionListener() {
@@ -4297,7 +4298,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton8.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton8.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton8.setText("3");
         SwitchButton8.setFocusable(false);
         SwitchButton8.addActionListener(new java.awt.event.ActionListener() {
@@ -4306,7 +4307,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton9.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton9.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton9.setText("3");
         SwitchButton9.setFocusable(false);
         SwitchButton9.addActionListener(new java.awt.event.ActionListener() {
@@ -4315,7 +4316,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton10.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton10.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton10.setText("3");
         SwitchButton10.setFocusable(false);
         SwitchButton10.addActionListener(new java.awt.event.ActionListener() {
@@ -4324,7 +4325,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton11.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton11.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton11.setText("3");
         SwitchButton11.setFocusable(false);
         SwitchButton11.addActionListener(new java.awt.event.ActionListener() {
@@ -4333,7 +4334,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton12.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton12.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton12.setText("3");
         SwitchButton12.setFocusable(false);
         SwitchButton12.addActionListener(new java.awt.event.ActionListener() {
@@ -4342,7 +4343,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton13.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton13.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton13.setText("3");
         SwitchButton13.setFocusable(false);
         SwitchButton13.addActionListener(new java.awt.event.ActionListener() {
@@ -4351,7 +4352,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton14.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton14.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton14.setText("3");
         SwitchButton14.setFocusable(false);
         SwitchButton14.addActionListener(new java.awt.event.ActionListener() {
@@ -4360,7 +4361,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton15.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton15.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton15.setText("3");
         SwitchButton15.setFocusable(false);
         SwitchButton15.addActionListener(new java.awt.event.ActionListener() {
@@ -4369,7 +4370,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton16.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton16.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton16.setText("3");
         SwitchButton16.setFocusable(false);
         SwitchButton16.addActionListener(new java.awt.event.ActionListener() {
@@ -4378,7 +4379,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton17.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton17.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton17.setText("3");
         SwitchButton17.setFocusable(false);
         SwitchButton17.addActionListener(new java.awt.event.ActionListener() {
@@ -4387,7 +4388,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton18.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton18.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton18.setText("3");
         SwitchButton18.setFocusable(false);
         SwitchButton18.addActionListener(new java.awt.event.ActionListener() {
@@ -4396,7 +4397,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton19.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton19.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton19.setText("3");
         SwitchButton19.setFocusable(false);
         SwitchButton19.addActionListener(new java.awt.event.ActionListener() {
@@ -4405,7 +4406,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton21.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton21.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton21.setText("3");
         SwitchButton21.setFocusable(false);
         SwitchButton21.addActionListener(new java.awt.event.ActionListener() {
@@ -4414,7 +4415,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton22.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton22.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton22.setText("3");
         SwitchButton22.setFocusable(false);
         SwitchButton22.addActionListener(new java.awt.event.ActionListener() {
@@ -4423,7 +4424,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton23.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton23.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton23.setText("3");
         SwitchButton23.setFocusable(false);
         SwitchButton23.addActionListener(new java.awt.event.ActionListener() {
@@ -4432,7 +4433,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton24.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton24.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton24.setText("3");
         SwitchButton24.setFocusable(false);
         SwitchButton24.addActionListener(new java.awt.event.ActionListener() {
@@ -4441,7 +4442,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton26.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton26.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton26.setText("3");
         SwitchButton26.setFocusable(false);
         SwitchButton26.addActionListener(new java.awt.event.ActionListener() {
@@ -4450,7 +4451,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton27.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton27.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton27.setText("3");
         SwitchButton27.setFocusable(false);
         SwitchButton27.addActionListener(new java.awt.event.ActionListener() {
@@ -4459,7 +4460,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton29.setText("3");
         SwitchButton29.setFocusable(false);
         SwitchButton29.addActionListener(new java.awt.event.ActionListener() {
@@ -4468,7 +4469,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton28.setText("3");
         SwitchButton28.setFocusable(false);
         SwitchButton28.addActionListener(new java.awt.event.ActionListener() {
@@ -4477,7 +4478,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton30.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton30.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton30.setText("3");
         SwitchButton30.setFocusable(false);
         SwitchButton30.addActionListener(new java.awt.event.ActionListener() {
@@ -4486,7 +4487,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton31.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton31.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton31.setText("3");
         SwitchButton31.setFocusable(false);
         SwitchButton31.addActionListener(new java.awt.event.ActionListener() {
@@ -4495,7 +4496,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton32.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton32.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton32.setText("3");
         SwitchButton32.setFocusable(false);
         SwitchButton32.addActionListener(new java.awt.event.ActionListener() {
@@ -4504,7 +4505,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton33.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton33.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton33.setText("3");
         SwitchButton33.setFocusable(false);
         SwitchButton33.addActionListener(new java.awt.event.ActionListener() {
@@ -4513,7 +4514,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton34.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton34.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton34.setText("3");
         SwitchButton34.setFocusable(false);
         SwitchButton34.addActionListener(new java.awt.event.ActionListener() {
@@ -4522,7 +4523,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton35.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton35.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton35.setText("3");
         SwitchButton35.setFocusable(false);
         SwitchButton35.addActionListener(new java.awt.event.ActionListener() {
@@ -4531,7 +4532,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton36.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton36.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton36.setText("3");
         SwitchButton36.setFocusable(false);
         SwitchButton36.addActionListener(new java.awt.event.ActionListener() {
@@ -4540,7 +4541,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton37.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton37.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton37.setText("3");
         SwitchButton37.setFocusable(false);
         SwitchButton37.addActionListener(new java.awt.event.ActionListener() {
@@ -4549,7 +4550,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton38.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton38.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton38.setText("3");
         SwitchButton38.setFocusable(false);
         SwitchButton38.addActionListener(new java.awt.event.ActionListener() {
@@ -4558,7 +4559,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton39.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton39.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton39.setText("3");
         SwitchButton39.setFocusable(false);
         SwitchButton39.addActionListener(new java.awt.event.ActionListener() {
@@ -4567,7 +4568,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton40.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton40.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton40.setText("3");
         SwitchButton40.setFocusable(false);
         SwitchButton40.addActionListener(new java.awt.event.ActionListener() {
@@ -4576,7 +4577,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton41.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton41.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton41.setText("3");
         SwitchButton41.setFocusable(false);
         SwitchButton41.addActionListener(new java.awt.event.ActionListener() {
@@ -4585,7 +4586,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton42.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton42.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton42.setText("3");
         SwitchButton42.setFocusable(false);
         SwitchButton42.addActionListener(new java.awt.event.ActionListener() {
@@ -4594,7 +4595,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton43.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton43.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton43.setText("3");
         SwitchButton43.setFocusable(false);
         SwitchButton43.addActionListener(new java.awt.event.ActionListener() {
@@ -4603,7 +4604,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton44.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton44.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton44.setText("3");
         SwitchButton44.setFocusable(false);
         SwitchButton44.addActionListener(new java.awt.event.ActionListener() {
@@ -4612,7 +4613,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton45.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton45.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton45.setText("3");
         SwitchButton45.setFocusable(false);
         SwitchButton45.addActionListener(new java.awt.event.ActionListener() {
@@ -4621,7 +4622,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton46.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton46.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton46.setText("3");
         SwitchButton46.setFocusable(false);
         SwitchButton46.addActionListener(new java.awt.event.ActionListener() {
@@ -4630,7 +4631,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton47.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton47.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton47.setText("3");
         SwitchButton47.setFocusable(false);
         SwitchButton47.addActionListener(new java.awt.event.ActionListener() {
@@ -4639,7 +4640,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton48.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton48.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton48.setText("3");
         SwitchButton48.setFocusable(false);
         SwitchButton48.addActionListener(new java.awt.event.ActionListener() {
@@ -4648,7 +4649,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton49.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton49.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton49.setText("3");
         SwitchButton49.setFocusable(false);
         SwitchButton49.addActionListener(new java.awt.event.ActionListener() {
@@ -4657,7 +4658,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton50.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton50.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton50.setText("3");
         SwitchButton50.setFocusable(false);
         SwitchButton50.addActionListener(new java.awt.event.ActionListener() {
@@ -4666,7 +4667,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton51.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton51.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton51.setText("3");
         SwitchButton51.setFocusable(false);
         SwitchButton51.addActionListener(new java.awt.event.ActionListener() {
@@ -4675,7 +4676,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton52.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton52.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton52.setText("3");
         SwitchButton52.setFocusable(false);
         SwitchButton52.addActionListener(new java.awt.event.ActionListener() {
@@ -4684,7 +4685,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton53.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton53.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton53.setText("3");
         SwitchButton53.setFocusable(false);
         SwitchButton53.addActionListener(new java.awt.event.ActionListener() {
@@ -4693,7 +4694,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton54.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton54.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton54.setText("3");
         SwitchButton54.setFocusable(false);
         SwitchButton54.addActionListener(new java.awt.event.ActionListener() {
@@ -4702,7 +4703,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton55.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton55.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton55.setText("3");
         SwitchButton55.setFocusable(false);
         SwitchButton55.addActionListener(new java.awt.event.ActionListener() {
@@ -4711,7 +4712,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton57.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton57.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton57.setText("3");
         SwitchButton57.setFocusable(false);
         SwitchButton57.addActionListener(new java.awt.event.ActionListener() {
@@ -4720,7 +4721,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton58.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton58.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton58.setText("3");
         SwitchButton58.setFocusable(false);
         SwitchButton58.addActionListener(new java.awt.event.ActionListener() {
@@ -4729,7 +4730,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton59.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton59.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton59.setText("3");
         SwitchButton59.setFocusable(false);
         SwitchButton59.addActionListener(new java.awt.event.ActionListener() {
@@ -4738,7 +4739,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton60.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton60.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton60.setText("3");
         SwitchButton60.setFocusable(false);
         SwitchButton60.addActionListener(new java.awt.event.ActionListener() {
@@ -4747,7 +4748,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton61.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton61.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton61.setText("3");
         SwitchButton61.setFocusable(false);
         SwitchButton61.addActionListener(new java.awt.event.ActionListener() {
@@ -4756,7 +4757,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton62.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton62.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton62.setText("3");
         SwitchButton62.setFocusable(false);
         SwitchButton62.addActionListener(new java.awt.event.ActionListener() {
@@ -4765,7 +4766,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton63.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton63.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton63.setText("3");
         SwitchButton63.setFocusable(false);
         SwitchButton63.addActionListener(new java.awt.event.ActionListener() {
@@ -4774,7 +4775,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton20.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton20.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton20.setText("3");
         SwitchButton20.setFocusable(false);
         SwitchButton20.addActionListener(new java.awt.event.ActionListener() {
@@ -4783,7 +4784,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton56.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton56.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton56.setText("3");
         SwitchButton56.setFocusable(false);
         SwitchButton56.addActionListener(new java.awt.event.ActionListener() {
@@ -4792,7 +4793,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton25.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SwitchButton25.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton25.setText("3");
         SwitchButton25.setFocusable(false);
         SwitchButton25.addActionListener(new java.awt.event.ActionListener() {
