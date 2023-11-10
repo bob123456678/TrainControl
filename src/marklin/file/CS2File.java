@@ -547,8 +547,7 @@ public final class CS2File
                 {
                     fn = Integer.parseInt(item[1]);
                 }
-                
-                if ("typ".equals(item[0]))
+                else if ("typ".equals(item[0]))
                 {
                     type = Integer.parseInt(item[1]);
                 }
@@ -560,13 +559,40 @@ public final class CS2File
         return output;
     }
     
-    public static int[] extractFunctionTriggerTypes(int[] functionTypes)
+    public static int[] parseFunctionTriggerTypes(String functionList)
     {
-        int[] output = new int[functionTypes.length];
+        String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
         
-        for (int i = 0; i < functionTypes.length; i++)
+        int[] output = new int[data.length];
+        
+        // TODO - improve the original parsing approach to make this unnecessary
+        // Loop through each function
+        for (String functionInfo : data)
         {
-            output[i] = functionTypes[i] >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE;
+            int fn = 0;
+            int type = 0;
+            int dauer = 0;
+            
+            // Loop through the keys in each function
+            for (String functionItem : functionInfo.split(","))
+            {
+                String[] item = functionItem.split("=");
+                
+                if ("nr".equals(item[0]))
+                {
+                    fn = Integer.parseInt(item[1]);
+                }
+                else if ("typ".equals(item[0]))
+                {
+                    type = Integer.parseInt(item[1]);
+                }
+                else if ("dauer".equals(item[0]))
+                {
+                    dauer = Integer.parseInt(item[1]);
+                }
+            }
+            
+            output[fn] = dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE);
         }
         
         return output;
@@ -773,16 +799,14 @@ public final class CS2File
                         type = MarklinLocomotive.decoderType.MM2;
                     }
                 }
-                
-                int[] functionTypes = parseLocomotiveFunctions(m.get("funktionen"));
-                                
+                                 
                 MarklinLocomotive loc = new MarklinLocomotive(
                     control, 
                     address, 
                     type,
                     name,
-                    extractFunctionTypes(functionTypes),
-                    extractFunctionTriggerTypes(functionTypes)
+                    extractFunctionTypes(parseLocomotiveFunctions(m.get("funktionen"))),
+                    parseFunctionTriggerTypes(m.get("funktionen"))
                 );
                 
                 if (m.get("icon") != null)

@@ -173,7 +173,7 @@
     <Component class="javax.swing.JComboBox" name="functionTriggerType">
       <Properties>
         <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-          <StringArray count="22">
+          <StringArray count="32">
             <StringItem index="0" value="Toggle"/>
             <StringItem index="1" value="Momentary"/>
             <StringItem index="2" value="1s"/>
@@ -196,6 +196,16 @@
             <StringItem index="19" value="18s"/>
             <StringItem index="20" value="19s"/>
             <StringItem index="21" value="20s"/>
+            <StringItem index="22" value="21s"/>
+            <StringItem index="23" value="22s"/>
+            <StringItem index="24" value="23s"/>
+            <StringItem index="25" value="24s"/>
+            <StringItem index="26" value="25s"/>
+            <StringItem index="27" value="26s"/>
+            <StringItem index="28" value="27s"/>
+            <StringItem index="29" value="28s"/>
+            <StringItem index="30" value="29s"/>
+            <StringItem index="31" value="30s"/>
           </StringArray>
         </Property>
       </Properties>
