@@ -583,7 +583,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.getById(l.getUID()).isCustomFunctions())
                     {
-                        this.log("Function types for " + l.getName() + " do not match central station, but this will be ignored becaues the locomotive was customized via the UI.");
+                        this.log("Function types for " + l.getName() + " do not match Central Station, but this will be ignored because the locomotive was customized via the UI.");
                     }
                     else
                     {
