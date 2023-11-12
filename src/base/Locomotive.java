@@ -1027,6 +1027,15 @@ public abstract class Locomotive
     }
     
     /**
+     * Amount of time the locomotive was today
+     * @return 
+     */
+    public long getTotalRuntimeToday()
+    {
+        return this.historicalOperatingTime.getOrDefault(Locomotive.getDate(), 0L);
+    }
+    
+    /**
      * Total amount of time the locomotive was run
      * @return 
      */

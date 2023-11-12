@@ -46,7 +46,7 @@ public class LocomotiveStats extends javax.swing.JPanel
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            String col[] = {"Locomotive", "Total Runtime", "Last Run", "First Run", "Days Run"};
+            String col[] = {"Locomotive", "Overall Runtime", "Today's Runtime", "Last Run", "First Run", "Days Run"};
 
             DefaultTableModel tableModel = new DefaultTableModel(col, 0);
 
@@ -67,7 +67,8 @@ public class LocomotiveStats extends javax.swing.JPanel
 
             for (Locomotive l : sortedLocs)
             {            
-                Object[] data = {l.getName(), convertSecondsToHMmSs(l.getTotalRuntime()), l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
+                Object[] data = {l.getName(), convertSecondsToHMmSs(l.getTotalRuntime()), convertSecondsToHMmSs(l.getTotalRuntimeToday()), 
+                    l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
                 tableModel.addRow(data);
             }
