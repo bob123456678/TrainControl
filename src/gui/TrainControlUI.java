@@ -15,6 +15,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1590,8 +1591,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     try 
                     {
+                        BufferedImage locImage = (BufferedImage) getLocImage(l.getImageURL(), 66);
+                      
+                        // Genrate shadow images
+                        BufferedImage textImage = ImageUtil.generateImageWithText(b.getText(), Color.BLACK, b.getFont(), 
+                            locImage.getWidth(null), locImage.getHeight(null), 2, 1);
+                        
+                        BufferedImage textImage2 = ImageUtil.generateImageWithText(b.getText(), Color.BLACK, b.getFont(), 
+                            locImage.getWidth(null), locImage.getHeight(null), 1, -1);
+                        
                         ImageIcon ic = new javax.swing.ImageIcon(
-                            getLocImage(l.getImageURL(), 66)
+                            ImageUtil.mergeImages(ImageUtil.mergeImages(locImage, textImage), textImage2)
                         );
                         
                         // The active page has changed since this thread was called.  No need to update the UI.
@@ -1604,7 +1614,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                         b.setHorizontalTextPosition(SwingConstants.CENTER);
 
-                        b.setForeground(new java.awt.Color(238, 238, 238));
+                        b.setForeground(Color.WHITE);
                         b.setContentAreaFilled(false);
                     } 
                     catch (IOException | NullPointerException e)
@@ -2329,7 +2339,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMinimumSize(new java.awt.Dimension(1078, 572));
+        setMinimumSize(new java.awt.Dimension(1090, 619));
+        setPreferredSize(new java.awt.Dimension(1090, 619));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -3902,8 +3913,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(PrimaryControls)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(latencyLabel))
-                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(44, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -9698,6 +9709,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.model.syncWithCS2();
             this.repaintLoc(true);
             this.repaintMappings(l);
+            this.selector.refreshLocSelectorList();
         }));
     }
     
@@ -9744,7 +9756,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 this.repaintLoc(true);
                 this.repaintMappings(l);
-                
+                this.selector.refreshLocSelectorList();
                 // TODO - clear icon setting if load failed
             } 
         }));

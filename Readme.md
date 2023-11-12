@@ -199,8 +199,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.1 [Beta]
+* v2.0.1 [11/12/23]
     - Within the Stats tab, added a column with today's runtime for each locomotive
+    - Added a shadow to button labels (letters) to make them easier to see against locomotive icons with light backgrounds
+    - Fixed minor bug where icons in the locomotive selector window would not immediately reflect local locomotive icons
+    - Fixed minor bug where the main UI could shrink below its minimum size
 
 * v2.0.0 [11/10/23] (This version adds a few important features to make it an all-in-one layout controller. Also includes numerous stability enhancements.)
     - Integrated a layout editor app [(TrackDiagramEditor)](https://github.com/bob123456678/TrackDiagramEditor) to allow for the editing of track diagrams (Windows only)

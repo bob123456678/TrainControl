@@ -10,7 +10,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
-import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive;
 import model.ViewListener;
 

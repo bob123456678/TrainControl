@@ -1,7 +1,9 @@
 package util;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
@@ -152,5 +154,106 @@ public class ImageUtil
 
         // Return the buffered image
         return bimage;
+    }
+    
+    /**
+     * Generates an image with a rectangle matching the size of the string
+     * @param text
+     * @param textColor
+     * @param font
+     * @param width
+     * @param height
+     * @param xOffset
+     * @param yOffset
+     * @param widthAdjust
+     * @param heightAdjust
+     * @return 
+     */
+    public static BufferedImage generateImageWithRect(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset,
+            int widthAdjust, int heightAdjust)
+    {
+        // Create a BufferedImage with transparency
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = image.createGraphics();
+
+        // Set the background to be transparent
+        g2d.setComposite(AlphaComposite.Clear);
+        g2d.fillRect(0, 0, width, height);
+
+        g2d.setComposite(AlphaComposite.Src);
+        g2d.setColor(textColor);
+        g2d.setFont(font);
+
+        // Calculate the position to center the text
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        int x = (width - fontMetrics.stringWidth(text)) / 2 + xOffset;
+        int y = (height - fontMetrics.getHeight()) / 2 + fontMetrics.getAscent() + yOffset;
+
+        g2d.fillRect(x, y - fontMetrics.getAscent(), fontMetrics.stringWidth(text) + widthAdjust, fontMetrics.getHeight() + heightAdjust);
+
+        g2d.dispose();
+
+        return image;
+    }
+    
+    /**
+     * Generates an image with text with the passed font and offset relative to the center of the canvas
+     * @param text
+     * @param textColor
+     * @param font
+     * @param width
+     * @param height
+     * @param xOffset
+     * @param yOffset
+     * @return 
+     */
+    public static BufferedImage generateImageWithText(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset)
+    {
+        // Create a BufferedImage with transparency
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = image.createGraphics();
+
+        // Set the background to be transparent
+        g2d.setComposite(AlphaComposite.Clear);
+        g2d.fillRect(0, 0, width, height);
+
+        g2d.setComposite(AlphaComposite.Src);
+        g2d.setColor(textColor);
+        g2d.setFont(font);
+
+        // Calculate the position to center the text
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        int x = (width - fontMetrics.stringWidth(text)) / 2 + xOffset;
+        int y = (height - fontMetrics.getHeight()) / 2 + fontMetrics.getAscent() + yOffset;
+
+        g2d.drawString(text, x, y);
+
+        g2d.dispose();
+
+        return image;
+    }
+    
+    /**
+     * Combines two images
+     * @param image1
+     * @param image2
+     * @return 
+     */
+    public static BufferedImage mergeImages(BufferedImage image1, BufferedImage image2)
+    {
+        BufferedImage mergedImage = new BufferedImage(image1.getWidth(), image1.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = mergedImage.createGraphics();
+
+        g2d.drawImage(image1, 0, 0, null);
+
+        //g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        g2d.drawImage(image2, 0, 0, null);
+
+        g2d.dispose();
+
+        return mergedImage;
     }
 }

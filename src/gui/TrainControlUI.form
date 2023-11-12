@@ -49,7 +49,10 @@
       <Connection code="Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource(&quot;resources/locicon.png&quot;))" type="code"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[1078, 572]"/>
+      <Dimension value="[1090, 619]"/>
+    </Property>
+    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+      <Dimension value="[1090, 619]"/>
     </Property>
     <Property name="resizable" type="boolean" value="false"/>
   </Properties>
@@ -156,8 +159,8 @@
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="latencyLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="jPanel6" alignment="0" max="32767" attributes="0"/>
                           <Component id="LocContainer" alignment="0" pref="0" max="32767" attributes="0"/>
+                          <Component id="jPanel6" alignment="0" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace pref="44" max="32767" attributes="0"/>
                   </Group>
