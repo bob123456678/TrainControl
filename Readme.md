@@ -199,6 +199,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.2 [Beta]
+    - The locomotive selector window will now close upon pressing escape
+
 * v2.0.1 [11/12/23]
     - Within the Stats tab, added a column with today's runtime for each locomotive
     - Added a shadow to button labels (letters) to make them easier to see against locomotive icons with light backgrounds

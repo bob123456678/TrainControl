@@ -10,6 +10,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 import marklin.MarklinLocomotive;
 import model.ViewListener;
 
@@ -258,19 +259,47 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
-        parent.childWindowKeyEvent(evt);
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
+        else
+        {
+            parent.childWindowKeyEvent(evt);
+        }
     }//GEN-LAST:event_formKeyPressed
 
     private void MainLocListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_MainLocListKeyPressed
-        parent.childWindowKeyEvent(evt);
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
+        else
+        {
+            parent.childWindowKeyEvent(evt);
+        }
     }//GEN-LAST:event_MainLocListKeyPressed
 
     private void LocFilterBoxKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyReleased
-        filterLocList();
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
+        else
+        {
+            filterLocList();
+        }
     }//GEN-LAST:event_LocFilterBoxKeyReleased
 
     private void LocFilterBoxKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyTyped
-        filterLocList();
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
+        else
+        {
+            filterLocList();
+        }
     }//GEN-LAST:event_LocFilterBoxKeyTyped
 
     private void LocFilterBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LocFilterBoxActionPerformed
