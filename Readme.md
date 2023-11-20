@@ -199,7 +199,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.2 [Beta]
+* v2.0.2 [11/20/23]
     - The locomotive selector window will now close upon pressing escape
     - Locomotive icons will now appear more consistently on slower networks
 
