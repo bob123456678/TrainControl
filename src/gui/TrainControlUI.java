@@ -1579,6 +1579,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private void repaintIcon(JButton b, Locomotive l, Integer correspondingLocMappingNumber)
     {
+        noImageButton(b); // makes icons appear consistent on slow networks
+        
         ImageLoader.submit(new Thread(() -> 
         {
             if (b != null)
