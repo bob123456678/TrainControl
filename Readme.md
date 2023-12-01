@@ -199,6 +199,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.3 [11/30/23]
+    - Added cumulative runtime statistics to the stats tab
+    - Updated the track diagram editor version to v2.2.0 (new feature: merging layout pages & view addresses in use)
+
 * v2.0.2 [11/20/23]
     - The locomotive selector window will now close upon pressing escape
     - Locomotive icons will now appear more consistently on slower networks

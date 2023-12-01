@@ -46,6 +46,12 @@ public class LocomotiveStats extends javax.swing.JPanel
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
+            // Aggregate stats
+            Long todaysTotalRuntime = 0L;
+            int todaysLocsRun = 0;
+            Long totalRuntime = 0L;
+            int totalLocsRun = 0;
+
             String col[] = {"Locomotive", "Overall Runtime", "Today's Runtime", "Last Run", "First Run", "Days Run"};
 
             DefaultTableModel tableModel = new DefaultTableModel(col, 0);
@@ -71,8 +77,23 @@ public class LocomotiveStats extends javax.swing.JPanel
                     l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
                 tableModel.addRow(data);
+                
+                // Populate stats
+                todaysTotalRuntime += l.getTotalRuntimeToday();
+                if (l.getTotalRuntimeToday() > 0) todaysLocsRun +=1;
+                
+                totalRuntime += l.getTotalRuntime();
+                if (l.getTotalRuntime() > 0) totalLocsRun +=1;
             }
 
+            this.todaysRuntimeVal.setText(convertSecondsToHMmSs(todaysTotalRuntime));
+            this.locCountVal.setText(Integer.toString(todaysLocsRun));
+            this.locomotivesLabel.setText(todaysLocsRun == 1 ? "locomotive" : "locomotives");
+            
+            this.cumulativeRuntimeVal.setText(convertSecondsToHMmSs(totalRuntime));
+            this.locCountCumulativeVal.setText(Integer.toString(totalLocsRun));
+            this.locomotivesCumulativeLabel.setText(totalLocsRun == 1 ? "locomotive" : "locomotives");
+            
             this.statsTable.setModel(tableModel);
             this.statsTable.setAutoCreateRowSorter(true);
         }));
@@ -127,6 +148,17 @@ public class LocomotiveStats extends javax.swing.JPanel
         refresh = new javax.swing.JButton();
         filterLabel = new javax.swing.JLabel();
         filterField = new javax.swing.JTextField();
+        todaysRuntimeVal = new javax.swing.JLabel();
+        todaysRuntimeLabel = new javax.swing.JLabel();
+        cumulativeRuntimeLabel = new javax.swing.JLabel();
+        cumulativeRuntimeVal = new javax.swing.JLabel();
+        byLabel = new javax.swing.JLabel();
+        locCountVal = new javax.swing.JLabel();
+        locomotivesLabel = new javax.swing.JLabel();
+        byLabel1 = new javax.swing.JLabel();
+        locCountCumulativeVal = new javax.swing.JLabel();
+        locomotivesCumulativeLabel = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
 
         setBackground(new java.awt.Color(238, 238, 238));
         addMouseListener(new java.awt.event.MouseAdapter() {
@@ -178,6 +210,36 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
         });
 
+        todaysRuntimeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        todaysRuntimeVal.setText("jLabel2");
+
+        todaysRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
+        todaysRuntimeLabel.setText("Today's runtime:");
+
+        cumulativeRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
+        cumulativeRuntimeLabel.setText("Cumulative runtime:");
+
+        cumulativeRuntimeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        cumulativeRuntimeVal.setText("jLabel5");
+
+        byLabel.setForeground(new java.awt.Color(0, 0, 115));
+        byLabel.setText("by");
+
+        locCountVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        locCountVal.setText("jLabel2");
+
+        locomotivesLabel.setForeground(new java.awt.Color(0, 0, 115));
+        locomotivesLabel.setText("locomotives");
+
+        byLabel1.setForeground(new java.awt.Color(0, 0, 115));
+        byLabel1.setText("by");
+
+        locCountCumulativeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        locCountCumulativeVal.setText("jLabel2");
+
+        locomotivesCumulativeLabel.setForeground(new java.awt.Color(0, 0, 115));
+        locomotivesCumulativeLabel.setText("locomotives");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -185,7 +247,8 @@ public class LocomotiveStats extends javax.swing.JPanel
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 669, Short.MAX_VALUE)
+                    .addComponent(jSeparator1)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 753, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(filterLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -193,14 +256,48 @@ public class LocomotiveStats extends javax.swing.JPanel
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(exportData)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(refresh)))
+                        .addComponent(refresh))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(todaysRuntimeLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(todaysRuntimeVal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(byLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locCountVal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locomotivesLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(cumulativeRuntimeLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(cumulativeRuntimeVal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(byLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locCountCumulativeVal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locomotivesCumulativeLabel)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 442, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 405, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(todaysRuntimeLabel)
+                    .addComponent(todaysRuntimeVal)
+                    .addComponent(byLabel)
+                    .addComponent(locCountVal)
+                    .addComponent(locomotivesLabel)
+                    .addComponent(cumulativeRuntimeLabel)
+                    .addComponent(cumulativeRuntimeVal)
+                    .addComponent(byLabel1)
+                    .addComponent(locCountCumulativeVal)
+                    .addComponent(locomotivesCumulativeLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(exportData)
@@ -272,11 +369,22 @@ public class LocomotiveStats extends javax.swing.JPanel
     }//GEN-LAST:event_formMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel byLabel;
+    private javax.swing.JLabel byLabel1;
+    private javax.swing.JLabel cumulativeRuntimeLabel;
+    private javax.swing.JLabel cumulativeRuntimeVal;
     private javax.swing.JButton exportData;
     private javax.swing.JTextField filterField;
     private javax.swing.JLabel filterLabel;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JLabel locCountCumulativeVal;
+    private javax.swing.JLabel locCountVal;
+    private javax.swing.JLabel locomotivesCumulativeLabel;
+    private javax.swing.JLabel locomotivesLabel;
     private javax.swing.JButton refresh;
     private javax.swing.JTable statsTable;
+    private javax.swing.JLabel todaysRuntimeLabel;
+    private javax.swing.JLabel todaysRuntimeVal;
     // End of variables declaration//GEN-END:variables
 }
