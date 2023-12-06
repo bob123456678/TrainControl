@@ -1646,7 +1646,7 @@
         "id": 30,
         "s88": 2015,
         "conditionS88": "1009,0",
-        "auto": false,
+        "auto": true,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -2167,6 +2167,321 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainA",
+        "id": 52,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainB",
+        "id": 53,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "38",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainC",
+        "id": 54,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "TopMainR1",
+        "id": 55,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "63",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "TopMainR2",
+        "id": 56,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomSecondary",
+        "id": 57,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "62",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "58",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "104",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomInner",
+        "id": 58,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "103",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "90",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "59",
                     "SETTING": "true"
                 }
             }

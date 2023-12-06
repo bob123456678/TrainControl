@@ -588,9 +588,8 @@ element
  .artikel=-1
 element
  .id=0x605
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=56
 element
  .id=0x606
  .typ=s88kontakt
@@ -669,16 +668,13 @@ element
  .artikel=-1
 element
  .id=0x704
- .typ=s88kontakt
- .drehung=1
- .artikel=1012
- .deviceId=0xc
+ .typ=fahrstrasse
+ .artikel=55
 element
  .id=0x705
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1013
- .deviceId=0xc
+ .artikel=-1
 element
  .id=0x706
  .typ=rechtsweiche
@@ -743,28 +739,21 @@ element
  .artikel=-1
 element
  .id=0x801
- .typ=s88bogen
+ .typ=gerade
  .drehung=1
- .artikel=1015
- .deviceId=0xc
-element
- .id=0x802
- .typ=gerade
- .artikel=-1
-element
- .id=0x803
- .typ=gerade
  .artikel=-1
 element
  .id=0x804
- .typ=bogen
- .drehung=2
- .artikel=-1
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1012
+ .deviceId=0xc
 element
  .id=0x805
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1013
+ .deviceId=0xc
 element
  .id=0x806
  .typ=gerade
@@ -820,14 +809,15 @@ element
  .artikel=-1
 element
  .id=0x900
- .typ=s88bogen
+ .typ=gerade
  .drehung=1
- .artikel=1016
- .deviceId=0xc
+ .artikel=-1
 element
  .id=0x901
- .typ=gerade
- .artikel=-1
+ .typ=s88bogen
+ .drehung=1
+ .artikel=1015
+ .deviceId=0xc
 element
  .id=0x902
  .typ=gerade
@@ -838,12 +828,13 @@ element
  .artikel=-1
 element
  .id=0x904
- .typ=gerade
+ .typ=bogen
+ .drehung=2
  .artikel=-1
 element
  .id=0x905
- .typ=bogen
- .drehung=2
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
  .id=0x906
@@ -881,8 +872,8 @@ element
  .artikel=-1
 element
  .id=0x90e
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=58
 element
  .id=0x90f
  .typ=entkuppler
@@ -916,6 +907,33 @@ element
  .drehung=2
  .artikel=22
  .zustand=1
+element
+ .id=0xa00
+ .typ=s88bogen
+ .drehung=1
+ .artikel=1016
+ .deviceId=0xc
+element
+ .id=0xa01
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xa02
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xa03
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xa04
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xa05
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
 element
  .id=0xa06
  .typ=gerade
@@ -953,8 +971,8 @@ element
  .deviceId=0xc
 element
  .id=0xa0d
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=57
 element
  .id=0xa0e
  .typ=linksweiche
@@ -1044,8 +1062,8 @@ element
  .artikel=-1
 element
  .id=0xb10
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=52
 element
  .id=0xb11
  .typ=gerade
@@ -1122,8 +1140,8 @@ element
  .artikel=-1
 element
  .id=0xc0f
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=53
 element
  .id=0xc10
  .typ=gerade
@@ -1175,8 +1193,8 @@ element
  .artikel=-1
 element
  .id=0xd0e
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=54
 element
  .id=0xd0f
  .typ=gerade

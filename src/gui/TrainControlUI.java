@@ -8766,9 +8766,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (r.isEnabled())
                 {
-                    this.model.log(r.toString());
-                    JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
-                    return;
+                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+                    
+                    int dialogResult = JOptionPane.showConfirmDialog(this, 
+                            "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+                    
+                    if(dialogResult == JOptionPane.NO_OPTION)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
 
