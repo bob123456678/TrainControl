@@ -1166,8 +1166,9 @@ element
  .artikel=-1
 element
  .id=0x20a07
- .typ=gerade
- .artikel=-1
+ .typ=signal
+ .drehung=2
+ .artikel=214
 element
  .id=0x20a08
  .typ=gerade
@@ -1296,8 +1297,9 @@ element
  .artikel=-1
 element
  .id=0x20b08
- .typ=gerade
- .artikel=-1
+ .typ=signal
+ .drehung=2
+ .artikel=216
 element
  .id=0x20b09
  .typ=gerade

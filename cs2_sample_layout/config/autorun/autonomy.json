@@ -4,7 +4,7 @@
             "name": "BottomCrossover",
             "station": false,
             "s88": 14,
-            "x": 506,
+            "x": 505,
             "y": 255
         },
         {
@@ -22,6 +22,14 @@
             "s88": 2011,
             "maxTrainLength": 3,
             "priority": -2,
+            "loc": {
+                "name": "ET22-678",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 13,
+                "departureFunc": 17,
+                "trainLength": 3
+            },
             "x": 612,
             "y": 298
         },
@@ -77,14 +85,6 @@
             "station": true,
             "s88": 1009,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EP08-009",
-                "reversible": false,
-                "speed": 74,
-                "arrivalFunc": 4,
-                "departureFunc": 10,
-                "trainLength": 3
-            },
             "x": 561,
             "y": 126
         },
@@ -377,6 +377,13 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
+            "loc": {
+                "name": "ET41-149",
+                "reversible": false,
+                "speed": 36,
+                "arrivalFunc": 2,
+                "departureFunc": 10
+            },
             "x": 401,
             "y": 406
         },
@@ -497,7 +504,7 @@
             "maxTrainLength": 0,
             "reversing": true,
             "loc": {
-                "name": "SM42 926",
+                "name": "SM42-926",
                 "reversible": false,
                 "speed": 20,
                 "trainLength": 2
@@ -531,7 +538,7 @@
             "maxTrainLength": 0,
             "reversing": true,
             "loc": {
-                "name": "SU 46-035",
+                "name": "SU46-035",
                 "reversible": false,
                 "speed": 52,
                 "arrivalFunc": 3,
@@ -1894,7 +1901,11 @@
         {
             "start": "TopMainR1Inter",
             "end": "TopMainR1Pre",
-            "length": 2
+            "length": 2,
+            "commands": [{
+                "acc": "Signal 107",
+                "state": "green"
+            }]
         },
         {
             "start": "TopMainR1Pre",
@@ -1939,7 +1950,11 @@
         {
             "start": "TopMainR2Inter",
             "end": "TopMainR2Pre",
-            "length": 2
+            "length": 2,
+            "commands": [{
+                "acc": "Signal 108",
+                "state": "green"
+            }]
         },
         {
             "start": "TopMainR2Pre",
@@ -2453,7 +2468,7 @@
     "maxDelay": 6,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
-    "turnOffFunctionsOnArrival": true,
+    "turnOffFunctionsOnArrival": false,
     "atomicRoutes": false,
     "maxLocInactiveSeconds": 120
 }

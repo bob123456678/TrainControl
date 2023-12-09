@@ -824,8 +824,9 @@ element
  .artikel=-1
 element
  .id=0x903
- .typ=gerade
- .artikel=-1
+ .typ=signal
+ .drehung=2
+ .artikel=214
 element
  .id=0x904
  .typ=bogen
@@ -927,8 +928,9 @@ element
  .artikel=-1
 element
  .id=0xa04
- .typ=gerade
- .artikel=-1
+ .typ=signal
+ .drehung=2
+ .artikel=216
 element
  .id=0xa05
  .typ=bogen
@@ -1103,19 +1105,19 @@ element
  .artikel=-1
 element
  .id=0xc07
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xc08
  .typ=signal
  .drehung=2
  .artikel=174
  .zustand=1
 element
- .id=0xc08
+ .id=0xc09
  .typ=s88kontakt
  .artikel=1006
  .deviceId=0xc
-element
- .id=0xc09
- .typ=gerade
- .artikel=-1
 element
  .id=0xc0a
  .typ=gerade

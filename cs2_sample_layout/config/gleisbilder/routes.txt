@@ -1335,6 +1335,20 @@
                     "ADDRESS": "36",
                     "SETTING": "false"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
             }
         ]
     },
@@ -1646,7 +1660,7 @@
         "id": 30,
         "s88": 2015,
         "conditionS88": "1009,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -2486,5 +2500,140 @@
                 }
             }
         ]
+    },
+    {
+        "name": "SigReset Main A Post",
+        "id": 59,
+        "s88": 2013,
+        "conditionS88": "9,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "40",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset Main B Post",
+        "id": 60,
+        "s88": 2013,
+        "conditionS88": "10,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "38",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset R1",
+        "id": 61,
+        "s88": 1022,
+        "conditionS88": "2015,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "107",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset R2",
+        "id": 62,
+        "s88": 1023,
+        "conditionS88": "2015,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "108",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset Main A",
+        "id": 63,
+        "s88": 9,
+        "conditionS88": "2013,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "86",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset Main B",
+        "id": 64,
+        "s88": 10,
+        "conditionS88": "2013,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "87",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset R1 Post",
+        "id": 65,
+        "s88": 2015,
+        "conditionS88": "1022,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "63",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset R2 Post",
+        "id": 66,
+        "s88": 2015,
+        "conditionS88": "1023,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "64",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset Secondary",
+        "id": 67,
+        "s88": 1009,
+        "conditionS88": "1030,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "39",
+                "SETTING": "true"
+            }
+        }]
     }
 ]}
