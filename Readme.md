@@ -199,7 +199,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.4 [Beta]
+* v2.0.4 [12/8/23]
     - Conditional routes may now be active while autonomous operation is running; a warning will be shown instead
 
 * v2.0.3 [11/30/23]
