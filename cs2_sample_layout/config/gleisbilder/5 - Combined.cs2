@@ -747,9 +747,8 @@ element
  .artikel=-1
 element
  .id=0x2060d
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=56
 element
  .id=0x2060e
  .typ=gerade
@@ -872,9 +871,8 @@ element
  .artikel=-1
 element
  .id=0x2070c
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=55
 element
  .id=0x2070d
  .typ=gerade
@@ -1230,8 +1228,8 @@ element
  .artikel=-1
 element
  .id=0x20a16
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=58
 element
  .id=0x20a17
  .typ=entkuppler
@@ -1354,8 +1352,8 @@ element
  .deviceId=0xc
 element
  .id=0x20b15
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=57
 element
  .id=0x20b16
  .typ=linksweiche
@@ -1445,8 +1443,8 @@ element
  .artikel=-1
 element
  .id=0x20c18
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=52
 element
  .id=0x20c19
  .typ=gerade
@@ -1471,6 +1469,14 @@ element
  .drehung=2
  .artikel=144
  .zustand=1
+element
+ .id=0x20d04
+ .typ=fahrstrasse
+ .artikel=51
+element
+ .id=0x20d05
+ .artikel=-1
+ .text=Turn off parking
 element
  .id=0x20d0e
  .typ=bogen
@@ -1515,8 +1521,8 @@ element
  .artikel=-1
 element
  .id=0x20d17
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=53
 element
  .id=0x20d18
  .typ=gerade
@@ -1560,8 +1566,8 @@ element
  .artikel=-1
 element
  .id=0x20e16
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=54
 element
  .id=0x20e17
  .typ=gerade
@@ -1585,8 +1591,8 @@ element
  .deviceId=0xc
 element
  .id=0x20e1c
- .typ=entkuppler
- .artikel=-1
+ .typ=signal
+ .artikel=188
 element
  .id=0x20e1d
  .typ=linksweiche

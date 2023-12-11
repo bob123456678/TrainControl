@@ -2362,6 +2362,13 @@
                     "ADDRESS": "63",
                     "SETTING": "false"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
             }
         ]
     },
@@ -2389,6 +2396,13 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "64",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
                     "SETTING": "false"
                 }
             }

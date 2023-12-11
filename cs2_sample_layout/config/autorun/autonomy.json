@@ -967,10 +967,6 @@
             ],
             "lockedges": [
                 {
-                    "start": "BottomMainBCPre",
-                    "end": "BottomMainB"
-                },
-                {
                     "start": "BottomMainCPre",
                     "end": "BottomMainC"
                 },
