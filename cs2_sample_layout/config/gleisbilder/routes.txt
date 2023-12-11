@@ -2635,5 +2635,35 @@
                 "SETTING": "true"
             }
         }]
+    },
+    {
+        "name": "SigReset Main C Post",
+        "id": 68,
+        "s88": 2013,
+        "conditionS88": "4,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "94",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "SigReset Main C",
+        "id": 69,
+        "s88": 4,
+        "conditionS88": "2013,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "87",
+                "SETTING": "true"
+            }
+        }]
     }
 ]}
