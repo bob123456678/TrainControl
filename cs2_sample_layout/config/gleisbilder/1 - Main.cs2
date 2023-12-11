@@ -1220,8 +1220,8 @@ element
  .deviceId=0xc
 element
  .id=0xd14
- .typ=entkuppler
- .artikel=-1
+ .typ=signal
+ .artikel=188
 element
  .id=0xd15
  .typ=linksweiche

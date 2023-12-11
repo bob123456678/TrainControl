@@ -231,7 +231,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         
         JList list = (JList) evt.getSource();
         
-        if (evt.getClickCount() == 2) {
+        if (evt.getClickCount() == 2)
+        {
             // Double-click detected
             int index = list.locationToIndex(evt.getPoint());
                         
@@ -244,7 +245,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 }
                 
                 // Ensure there are no automatic routes
-                for (String routeName : this.control.getRouteList())
+                /* for (String routeName : this.control.getRouteList())
                 {
                     MarklinRoute r = this.control.getRoute(routeName);
 
@@ -254,9 +255,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                         JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
                         return;
                     }
-                }
+                }*/
                 
-                new Thread( () -> {
+                new Thread(() ->
+                {
                     boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed());
                     
                     if (!success)

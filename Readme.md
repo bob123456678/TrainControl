@@ -199,6 +199,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.4b [12/10/23]
+    - Bugfix: Semi-autonomous operation is now also possible with conditional routes enabled
+
 * v2.0.4 [12/8/23]
     - Conditional routes may now be active while autonomous operation is running; a warning will be shown instead
 
