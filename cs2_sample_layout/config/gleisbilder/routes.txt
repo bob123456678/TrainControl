@@ -2601,7 +2601,7 @@
     {
         "name": "SigReset R1 Post",
         "id": 65,
-        "s88": 2015,
+        "s88": 2012,
         "conditionS88": "1022,0",
         "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
@@ -2616,7 +2616,7 @@
     {
         "name": "SigReset R2 Post",
         "id": 66,
-        "s88": 2015,
+        "s88": 2012,
         "conditionS88": "1023,0",
         "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
