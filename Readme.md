@@ -105,6 +105,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * Letter keys (select a locomotive)
 * Up/down arrow (speed up/slow down) (hold Alt to double the increment)
 * Left/right arrow (change direction)
+* Control+Left/right arrow (set direction as reverse / set direction as forward)
 * Escape (power off/emergency stop)
 * Alt+G (power on)
 * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
@@ -199,8 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.4b [12/10/23]
+* v2.0.5 [12/10/23]
     - Bugfix: Semi-autonomous operation is now also possible with conditional routes enabled
+    - Control + left/right arrow can now be used to specify reverse or forward direction
 
 * v2.0.4 [12/8/23]
     - Conditional routes may now be active while autonomous operation is running; a warning will be shown instead

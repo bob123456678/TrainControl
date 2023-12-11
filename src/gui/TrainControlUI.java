@@ -7225,11 +7225,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
         {
-            this.RightArrowLetterButtonPressed(null);
+            if (controlPressed)
+            {
+                this.forwardLoc();
+            }
+            else
+            {
+                this.RightArrowLetterButtonPressed(null);
+            }
         }
         else if (keyCode == KeyEvent.VK_LEFT && !altPressed)
         {
-            this.LeftArrowLetterButtonPressed(null);
+            if (controlPressed)
+            {
+                this.backwardLoc();
+            }
+            else
+            {
+               this.LeftArrowLetterButtonPressed(null); 
+            }
         }
         else if (keyCode == KeyEvent.VK_SPACE)
         {
