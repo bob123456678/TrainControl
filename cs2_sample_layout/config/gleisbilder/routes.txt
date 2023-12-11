@@ -2319,6 +2319,13 @@
                     "ADDRESS": "86",
                     "SETTING": "true"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
             }
         ]
     },
