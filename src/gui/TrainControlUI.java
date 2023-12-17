@@ -7910,12 +7910,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (l != null)
             {
-                String newAddress = JOptionPane.showInputDialog(this, "Enter new address:", l.getAddress());
+                LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
+                int result = JOptionPane.showConfirmDialog(
+                    this, edit, "Change address for " + l.getName(),
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+                );
+                
+                String newAddress = edit.getAddress();
+                decoderType newDecoderType = edit.getDecoderType();
                 Integer proposedAddress;
                 
-                if (newAddress != null && !"".equals(newAddress.trim()))
+                if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
                 {           
-                    if (l.getDecoderType() == decoderType.MFX && newAddress.contains("0x"))
+                    if (newDecoderType == decoderType.MFX && newAddress.contains("0x"))
                     {
                         proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
                     }
@@ -7924,9 +7931,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         proposedAddress = Integer.valueOf(newAddress);
                     }
 
-                    if (proposedAddress != l.getAddress())
+                    if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                     {
-                        this.model.changeLocAddress(l.getName(), proposedAddress);
+                        this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
                         this.repaintLoc(true);
                     }
                 }
@@ -7934,7 +7941,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            if (this.model.isDebug())
+            {
+                e.printStackTrace();
+            }
             
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }

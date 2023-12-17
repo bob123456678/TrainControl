@@ -8,6 +8,7 @@ import java.util.Set;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
+import marklin.MarklinLocomotive.decoderType;
 import marklin.MarklinRoute;
 
 /**
@@ -65,7 +66,7 @@ public interface ViewListener
     public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException;
     public void importRoutes(String json);
     public List<MarklinLocomotive> getLocomotives();
-    public void changeLocAddress(String locName, int newAddress) throws Exception;
+    public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);
     public long getTimeSinceLastPing();
 }

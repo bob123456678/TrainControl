@@ -200,6 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.6 [12/16/23]
+    - The decoder type can now be changed when editing the address of an existing locomotive in the database.  This is useful when swapping decoders and you want to keep your locomotive settings.
+
 * v2.0.5 [12/10/23]
     - Bugfix: Semi-autonomous operation is now also possible with conditional routes enabled
     - Control + left/right arrow can now be used to specify reverse or forward direction

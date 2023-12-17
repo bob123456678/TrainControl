@@ -10,6 +10,7 @@ import java.util.List;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 import marklin.MarklinLocomotive;
+import marklin.MarklinLocomotive.decoderType;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -77,9 +78,18 @@ public class testLocDB {
         
         assertEquals(currentAddress, address);
         
-        model.changeLocAddress(locName, newAddress);
+        model.changeLocAddress(locName, address, loc.getDecoderType());
         
         assertEquals(model.getLocList().contains(locName), true);
+
+        model.changeLocAddress(locName, address, decoderType.MM2);
+        
+        assertEquals(model.getLocByName(locName).getDecoderType(), decoderType.MM2);
+        assertEquals(model.getLocByName(locName).getAddress(), address);
+
+        model.changeLocAddress(locName, newAddress, decoderType.MFX);
+        
+        assertEquals(model.getLocByName(locName).getDecoderType(), decoderType.MFX);
         
         MarklinLocomotive locAgain = model.getLocByName(locName);
         

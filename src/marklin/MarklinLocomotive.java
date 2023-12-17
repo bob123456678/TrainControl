@@ -41,7 +41,7 @@ public class MarklinLocomotive extends Locomotive
     private int UID;
     
     // The locomotive's decoder
-    private final decoderType type;
+    private decoderType type;
     
     // Reference to the network
     private final MarklinControlStation network;    
@@ -336,9 +336,11 @@ public class MarklinLocomotive extends Locomotive
      * Sets the raw locomotive address
      * Should only be called when updating state from CS2/CS3
      * @param newAddress
+     * @param newDecoderType
      */
-    public void setAddress(int newAddress)
+    public void setAddress(int newAddress, decoderType newDecoderType)
     {
+        this.type = newDecoderType;
         this.address = newAddress;
         this.UID = calculateUID();
     }
@@ -685,7 +687,7 @@ public class MarklinLocomotive extends Locomotive
                 return type.name();    
         }
     }
-    
+        
     @Override
     public String toString()
     {        

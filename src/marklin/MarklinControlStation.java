@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
+import marklin.MarklinLocomotive.decoderType;
 import marklin.file.CS2File;
 import marklin.udp.CS2Message;
 import marklin.udp.NetworkProxy;
@@ -46,7 +47,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.5 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.6 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -565,7 +566,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 )
                 {
                     String oldAddr = this.getLocAddress(l.getName());
-                    this.locDB.getByName(l.getName()).setAddress(l.getAddress());
+                    this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
                     
                     // Update DB entry
                     MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
@@ -1530,19 +1531,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Changes the address of a locomotive
+     * Changes the address / decoder type of a locomotive
      * @param locName
      * @param newAddress
+     * @param newDecoderType
      * @throws Exception 
      */
     @Override
-    public void changeLocAddress(String locName, int newAddress) throws Exception
+    synchronized public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception
     {
         MarklinLocomotive l = this.locDB.getByName(locName);
         
         if (l == null) throw new Exception("Locomotive " + locName + " does not exist");
         
-        if (!MarklinLocomotive.validateNewAddress(l.getDecoderType(), newAddress))
+        if (!MarklinLocomotive.validateNewAddress(newDecoderType, newAddress))
         {
             throw new Exception("Address " + newAddress + " is outside of the allowed range.");
         }
@@ -1550,13 +1552,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Execute the change
         this.deleteLoc(l.getName());
         
-        l.setAddress(newAddress);
+        l.setAddress(newAddress, newDecoderType);
         
         this.locDB.add(l, l.getName(), l.getUID());
         
         this.rebuildLocIdCache();
         
-        this.log("Changed address of " + l.getName() + " to " + newAddress);
+        this.log("Changed address of " + l.getName() + " to " + newAddress + " (" + newDecoderType.name() + ")");
     }
     
     /**

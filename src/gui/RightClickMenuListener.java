@@ -187,7 +187,7 @@ public class RightClickMenuListener extends MouseAdapter {
                 
                 add(menuItem);
                 
-                menuItem = new JMenuItem("Change Address");
+                menuItem = new JMenuItem("Change Address/Type");
 
                 menuItem.addActionListener(event -> {ui.changeLocAddress(ui.getButtonLocomotive(source).getName());});
                 
