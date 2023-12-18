@@ -119,6 +119,7 @@ public class MarklinRoute extends Route
     
     /**
      * Monitors the route conditions and executes the route when appropriate
+     * @return 
      */
     public final boolean executeAutoRoute()
     {
@@ -257,18 +258,60 @@ public class MarklinRoute extends Route
 
                 for (RouteCommand rc : this.route)
                 {
-                    if (rc.isAccessory())
+                    if (rc != null)
                     {
-                        int idd = rc.getAddress();
-                        boolean state = rc.getSetting();
+                        if (rc.isAccessory())
+                        {
+                            int idd = rc.getAddress();
+                            boolean state = rc.getSetting();
 
-                        this.network.setAccessoryState(idd, state);
+                            this.network.setAccessoryState(idd, state);
+                        }
+                        else if (rc.isStop())
+                        {                        
+                            // Only send stop command once
+                            if (!this.network.getPowerState())
+                            {
+                                this.network.log("Power turned off due to route condition");
+                                this.network.stop();
+                            }
+                            else
+                            {
+                                this.network.log("Route condition fired but power was already off");
+                            }
+                        }
+                        else if (rc.isLocomotive())
+                        {
+                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                            if (loc != null)
+                            {
+                                loc.setSpeed(rc.getSpeed());
+                            }
+                            else
+                            {
+                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                            }
+                        }
+                        else if (rc.isFunction())
+                        {
+                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                            if (loc != null)
+                            {
+                                loc.setF(rc.getFunction(), rc.getSetting());
+                            }
+                            else
+                            {
+                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                            }
+                        }
 
                         try
                         {
                             if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
                             {
-                                this.network.log("Delay for accessory " + idd + " is " + rc.getDelay());
+                                this.network.log("Route delay " + rc.getDelay() + "ms");
                                 Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
                             }
                             else
@@ -279,19 +322,6 @@ public class MarklinRoute extends Route
                         catch (InterruptedException ex)
                         {
 
-                        }
-                    }
-                    else if (rc.isStop())
-                    {                        
-                        // Only send stop command once
-                        if (!this.network.getPowerState())
-                        {
-                            this.network.log("Power turned off due to route condition");
-                            this.network.stop();
-                        }
-                        else
-                        {
-                            this.network.log("Route condition fired but power was already off");
                         }
                     }
                 }

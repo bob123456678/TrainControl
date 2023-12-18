@@ -29,7 +29,10 @@ public class RouteEditor extends javax.swing.JPanel
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
                     + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
                     + "Conditional Accessories behave just like S88 conditions: if specified, all accessory state must also match\n"
-                    + "the specified values in order for the route to fire.";
+                    + "the specified values in order for the route to fire.\n\n" 
+                    + "In addition to accessories, you can set commands for locomotives and functions. Examples:" + "\n"
+                    + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
+                    + "locfunc,Locomotive name,20,1 (toggles F20)";
     
     public static final String TURNOUT = "Switched (1)";
     public static final String STRAIGHT = "Straight (0)";

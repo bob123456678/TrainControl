@@ -8384,22 +8384,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             for (String line : routeContent.split("\n"))
             {
-                if ("stop".equals(line.trim()))
+                RouteCommand rc = RouteCommand.fromLine(line);
+                
+                if (rc != null)
                 {
-                    newRoute.add(RouteCommand.RouteCommandStop());
-                }
-                else if (line.trim().length() > 0)
-                {
-                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    boolean state = line.split(",")[1].trim().equals("1");
-                    
-                    RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
-                    
-                    if (line.split(",").length > 2)
-                    {
-                        rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[2].trim())));     
-                    }
-
                     newRoute.add(rc);
                 }
             }
@@ -8408,7 +8396,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             for (String line : conditionAccs.split("\n"))
             {
-                 if (line.trim().length() > 0)
+                if (line.trim().length() > 0)
                 {
                     int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
                     boolean state = line.split(",")[1].trim().equals("1");
@@ -8466,6 +8454,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         catch (Exception e)
         {
             JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
+        
+            if (this.model.isDebug())
+            {
+                e.printStackTrace();
+            }
         }
         
         return true;

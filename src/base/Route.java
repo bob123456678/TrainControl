@@ -9,7 +9,7 @@ import java.util.List;
  * @author Adam
  */
 abstract public class Route
-{
+{    
     // Name of this route
     private final String name;
     
@@ -152,15 +152,7 @@ abstract public class Route
         
         for (RouteCommand r : this.route)
         {
-            // TODO others not yet supported
-            if (r.isAccessory())
-            {
-                out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + (r.getDelay() > 0 ? "," + r.getDelay() : "") + "\n";
-            }
-            else if (r.isStop())
-            {
-                out += r.toString() + "\n";
-            }
+            out += r.toLine();
         }
         
         return out.trim();

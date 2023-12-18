@@ -19,6 +19,9 @@ public class RouteCommand implements java.io.Serializable
 {    
     public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP};
 
+    public static final String LOC_SPEED_PREFIX = "locspeed";
+    public static final String LOC_FUNC_PREFIX = "locfunc";
+    
     public static String KEY_NAME = "NAME";
     public static String KEY_ADDRESS = "ADDRESS";
     public static String KEY_FUNCTION = "FUNCTION";
@@ -113,7 +116,7 @@ public class RouteCommand implements java.io.Serializable
         return this.type == TYPE_STOP;
     }
     
-    protected boolean isLocomotive()
+    public boolean isLocomotive()
     {
         return this.type == TYPE_LOCOMOTIVE;
     }
@@ -136,6 +139,11 @@ public class RouteCommand implements java.io.Serializable
     public LinkedHashMap<String, String> getCommandConfig()
     {
         return commandConfig;
+    }
+    
+    public String getName()
+    {
+        return this.commandConfig.get(KEY_NAME);
     }
     
     public boolean getSetting()
@@ -296,5 +304,90 @@ public class RouteCommand implements java.io.Serializable
         }
 
         return routeCommand;
+    }
+    
+    
+    /**
+     * Returns a simple string representation of this command
+     * @return 
+     */
+    public String toLine()
+    {
+        if (this.isAccessory())
+        {
+            return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+        }
+        else if (this.isStop())
+        {
+            return this.toString() + "\n";
+        }
+        else if (this.isLocomotive())
+        {
+            return LOC_SPEED_PREFIX + "," + this.getName() + "," + this.getSpeed() + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+        }
+        else if (this.isFunction())
+        {
+            return LOC_FUNC_PREFIX + "," + this.getName() + "," + this.getFunction() + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+        }
+        
+        return "invalid command";
+    }
+    
+    /**
+     * Parses a simple string representation of the route (equivalent to Route.toCSV)
+     * @param line
+     * @return 
+     */
+    public static RouteCommand fromLine(String line)
+    {
+        if ("stop".equals(line.trim()))
+        {
+            return RouteCommand.RouteCommandStop();
+        }
+        else if (line.trim().startsWith(LOC_SPEED_PREFIX + ","))
+        {
+            String name = line.split(",")[1].trim();
+            int speed = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
+
+            RouteCommand rc = RouteCommand.RouteCommandLocomotive(name, speed);
+
+            if (line.split(",").length > 3)
+            {
+                rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[3].trim())));     
+            }
+
+            return rc;
+        }
+        else if (line.trim().startsWith(LOC_FUNC_PREFIX + ","))
+        {
+            String name = line.split(",")[1].trim();
+            int fno = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
+            boolean state = line.split(",")[3].trim().equals("1");
+
+            RouteCommand rc = RouteCommand.RouteCommandFunction(name, fno, state);
+
+            if (line.split(",").length > 4)
+            {
+                rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[4].trim())));     
+            }
+
+            return rc;
+        }
+        else if (line.trim().length() > 0)
+        {
+            int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+            boolean state = line.split(",")[1].trim().equals("1");
+
+            RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
+
+            if (line.split(",").length > 2)
+            {
+                rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[2].trim())));     
+            }
+
+            return rc;
+        }
+        
+        return null;
     }
 }

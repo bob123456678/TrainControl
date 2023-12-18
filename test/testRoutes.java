@@ -5,6 +5,8 @@
 
 import base.RouteCommand;
 import static base.RouteCommand.commandType.TYPE_ACCESSORY;
+import static base.RouteCommand.commandType.TYPE_FUNCTION;
+import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static base.RouteCommand.commandType.TYPE_STOP;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,19 +53,54 @@ public class testRoutes {
         List<RouteCommand> routeCommands = new ArrayList<>();
 
         // Populate the list with random RouteCommand objects
-        for (int i = 0; i < random.nextInt(20); i++) {
-            RouteCommand.commandType randomType = random.nextBoolean() ? TYPE_ACCESSORY : TYPE_STOP;
-
+        for (int i = 0; i < random.nextInt(20); i++)
+        {    
+            RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE};
+            RouteCommand.commandType randomType = types[random.nextInt(4)];
+            
             switch (randomType) {
                 case TYPE_ACCESSORY:
                     int address = random.nextInt(100);
                     boolean setting = random.nextBoolean();
                     RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, setting);
-                    routeCommands.add(accessoryCommand);
+                    
+                    if (random.nextBoolean())
+                    {
+                        accessoryCommand.setDelay(random.nextInt(1000));
+                    }
+                    
+                    routeCommands.add(accessoryCommand);                    
                     break;
                 case TYPE_STOP:
                     RouteCommand stopCommand = RouteCommand.RouteCommandStop();
                     routeCommands.add(stopCommand);
+                    break;
+                case TYPE_LOCOMOTIVE:
+                    String locName = model.getLocList().get(random.nextInt(model.getLocList().size()));
+                    int speed = random.nextInt(101);
+                    
+                    RouteCommand locCommand = RouteCommand.RouteCommandLocomotive(locName, speed);
+                    
+                    if (random.nextBoolean())
+                    {
+                        locCommand.setDelay(random.nextInt(1000));
+                    }
+                    
+                    routeCommands.add(locCommand);
+                    break;
+                case TYPE_FUNCTION:
+                    String flocName = model.getLocList().get(random.nextInt(model.getLocList().size()));
+                    boolean state = random.nextBoolean();
+                    int function = random.nextInt(33);
+                    
+                    RouteCommand funcCommand = RouteCommand.RouteCommandFunction(flocName, function, state);
+                    
+                    if (random.nextBoolean())
+                    {
+                        funcCommand.setDelay(random.nextInt(1000));
+                    }
+                    
+                    routeCommands.add(funcCommand);
                     break;
             }
         }
@@ -163,11 +200,13 @@ public class testRoutes {
         
         List<MarklinRoute> newRoutes = new ArrayList();
         
-        while (newRoutes.size() < (new Random()).nextInt(10)) 
+        while (newRoutes.size() < (new Random()).nextInt(10) + 1) 
         {
             MarklinRoute newRouteCandidate = generateRandomRoute();
             
-            if (!currentIds.contains(newRouteCandidate.getId()) && !currentRouteNames.contains(newRouteCandidate.getName()))
+            if (!currentIds.contains(newRouteCandidate.getId()) && !currentRouteNames.contains(newRouteCandidate.getName())
+                    && model.getRoute(newRouteCandidate.getName()) == null
+            )
             {
                 newRoutes.add(newRouteCandidate);
                 model.newRoute(newRouteCandidate);
@@ -193,6 +232,15 @@ public class testRoutes {
             
             assert r.equals(model.getRoute(r.getName()));
         }        
+        
+        // Line export
+        for (MarklinRoute r : newRoutes)
+        {
+            for (RouteCommand rc : r.getRoute())
+            {
+                assertEquals(rc, RouteCommand.fromLine(rc.toLine()));
+            }
+        }
         
         // Cleanup
         for (MarklinRoute r : newRoutes)
