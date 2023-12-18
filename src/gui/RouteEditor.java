@@ -5,8 +5,12 @@
  */
 package gui;
 
+import base.RouteCommand;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
@@ -44,6 +48,7 @@ public class RouteEditor extends javax.swing.JPanel
 
     /**
      * Creates new form RouteEditor
+     * @param parent
      * @param routeName
      * @param routeContent
      * @param isEnabled
@@ -52,7 +57,7 @@ public class RouteEditor extends javax.swing.JPanel
      * @param conditionS88s
      * @param conditionAccString
      */
-    public RouteEditor(String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, String conditionAccString) {
+    public RouteEditor(TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, String conditionAccString) {
         initComponents();
         
         boolean edit = !"".equals(routeContent);
@@ -81,6 +86,17 @@ public class RouteEditor extends javax.swing.JPanel
         {
             this.triggerOccupiedThenClear.setSelected(true);
         }
+        
+        // Set locomotive list
+        List<String> locs = new LinkedList<>(parent.getModel().getLocList());
+     
+        Collections.sort(locs);
+        
+        locNameList.setModel(
+            new DefaultComboBoxModel(locs.toArray())
+        );
+        
+        commandTypeListItemStateChanged(null);
         
         if (!edit)
         {
@@ -207,6 +223,7 @@ public class RouteEditor extends javax.swing.JPanel
         jLabel12 = new javax.swing.JLabel();
         delay = new javax.swing.JTextField();
         addToRouteButton1 = new javax.swing.JButton();
+        jSeparator3 = new javax.swing.JSeparator();
         jLabel7 = new javax.swing.JLabel();
         Help = new javax.swing.JButton();
         jLabel14 = new javax.swing.JLabel();
@@ -217,6 +234,20 @@ public class RouteEditor extends javax.swing.JPanel
         s88Occupied = new javax.swing.JRadioButton();
         s88Clear = new javax.swing.JRadioButton();
         addS88Condition = new javax.swing.JButton();
+        jLabel17 = new javax.swing.JLabel();
+        s88Panel1 = new javax.swing.JPanel();
+        jLabel18 = new javax.swing.JLabel();
+        addLocCommand = new javax.swing.JButton();
+        commandTypeList = new javax.swing.JComboBox<>();
+        locFuncStateLabel = new javax.swing.JLabel();
+        locNameList = new javax.swing.JComboBox<>();
+        locDelay = new javax.swing.JTextField();
+        locFuncOn = new javax.swing.JRadioButton();
+        locFuncOff = new javax.swing.JRadioButton();
+        jLabel21 = new javax.swing.JLabel();
+        locSpeedSlider = new javax.swing.JSlider();
+        jSeparator2 = new javax.swing.JSeparator();
+        jLabel19 = new javax.swing.JLabel();
 
         routeName.setText("jTextField1");
         routeName.setMinimumSize(new java.awt.Dimension(159, 26));
@@ -230,7 +261,7 @@ public class RouteEditor extends javax.swing.JPanel
         jLabel1.setText("Route Name");
 
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Route Editing Wizard");
+        jLabel2.setText("Accessory Command Wizard");
 
         jPanel2.setBackground(new java.awt.Color(245, 245, 245));
         jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -522,6 +553,8 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -540,42 +573,51 @@ public class RouteEditor extends javax.swing.JPanel
                         .addComponent(accTypeSignal)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(accType3Way)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel11))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(jLabel11)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(accState, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 12, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel12)
+                    .addComponent(delay, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGap(3, 3, 3)
-                        .addComponent(delay))
-                    .addComponent(jLabel12))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(addToRouteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(addToRouteButton1, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE))
+                    .addComponent(addToRouteButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(addToRouteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel8)
-                    .addComponent(jLabel10)
-                    .addComponent(jLabel11)
-                    .addComponent(jLabel12)
-                    .addComponent(addToRouteButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(accTypeTurnout)
-                    .addComponent(accType3Way)
-                    .addComponent(accTypeSignal)
-                    .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(delay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(addToRouteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel12)
+                            .addComponent(addToRouteButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(addToRouteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(delay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel8)
+                            .addComponent(jLabel10)
+                            .addComponent(jLabel11))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(accTypeTurnout)
+                            .addComponent(accType3Way)
+                            .addComponent(accTypeSignal)
+                            .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jSeparator3))
+                .addGap(36, 36, 36))
         );
 
         jLabel7.setForeground(new java.awt.Color(0, 0, 115));
@@ -683,6 +725,150 @@ public class RouteEditor extends javax.swing.JPanel
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        jLabel17.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel17.setText("Locomotive Command Wizard");
+
+        s88Panel1.setBackground(new java.awt.Color(245, 245, 245));
+        s88Panel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        jLabel18.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel18.setText("Locomotive Name");
+
+        addLocCommand.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addLocCommand.setText("Add to Route");
+        addLocCommand.setFocusable(false);
+        addLocCommand.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addLocCommandActionPerformed(evt);
+            }
+        });
+
+        commandTypeList.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Speed", "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", "F28", "F29", "F30", "F31" }));
+        commandTypeList.setMaximumSize(new java.awt.Dimension(136, 26));
+        commandTypeList.setName(""); // NOI18N
+        commandTypeList.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                commandTypeListItemStateChanged(evt);
+            }
+        });
+        commandTypeList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                commandTypeListActionPerformed(evt);
+            }
+        });
+
+        locFuncStateLabel.setForeground(new java.awt.Color(0, 0, 115));
+        locFuncStateLabel.setText("Function State");
+
+        locNameList.setMaximumSize(new java.awt.Dimension(136, 26));
+        locNameList.setName(""); // NOI18N
+        locNameList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                locNameListActionPerformed(evt);
+            }
+        });
+
+        locDelay.setText("0");
+        locDelay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                locDelayActionPerformed(evt);
+            }
+        });
+        locDelay.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                locDelayKeyReleased(evt);
+            }
+        });
+
+        buttonGroup3.add(locFuncOn);
+        locFuncOn.setSelected(true);
+        locFuncOn.setText("On");
+        locFuncOn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                locFuncOnActionPerformed(evt);
+            }
+        });
+
+        buttonGroup3.add(locFuncOff);
+        locFuncOff.setText("Off");
+        locFuncOff.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                locFuncOffActionPerformed(evt);
+            }
+        });
+
+        jLabel21.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel21.setText("Command Type");
+
+        locSpeedSlider.setMajorTickSpacing(20);
+        locSpeedSlider.setMinorTickSpacing(10);
+        locSpeedSlider.setPaintLabels(true);
+        locSpeedSlider.setPaintTicks(true);
+
+        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jLabel19.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel19.setText("Delay (ms)");
+
+        javax.swing.GroupLayout s88Panel1Layout = new javax.swing.GroupLayout(s88Panel1);
+        s88Panel1.setLayout(s88Panel1Layout);
+        s88Panel1Layout.setHorizontalGroup(
+            s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(s88Panel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(locNameList, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel21, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(commandTypeList, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(s88Panel1Layout.createSequentialGroup()
+                        .addComponent(locFuncOn)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locFuncOff))
+                    .addComponent(locFuncStateLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(locSpeedSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 12, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(s88Panel1Layout.createSequentialGroup()
+                        .addComponent(locDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(addLocCommand, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel19))
+                .addContainerGap())
+        );
+        s88Panel1Layout.setVerticalGroup(
+            s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(s88Panel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(locSpeedSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(s88Panel1Layout.createSequentialGroup()
+                        .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel18, javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(locFuncStateLabel)
+                                    .addComponent(jLabel21)))
+                            .addComponent(jLabel19))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(s88Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(commandTypeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(locNameList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(locFuncOn)
+                            .addComponent(locFuncOff)
+                            .addComponent(locDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(addLocCommand, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jSeparator2))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -703,15 +889,18 @@ public class RouteEditor extends javax.swing.JPanel
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel6)
                     .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jLabel14)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(s88Panel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel2)
                     .addComponent(jLabel1))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addComponent(s88Panel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel17)
+                    .addComponent(jLabel14))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -733,6 +922,10 @@ public class RouteEditor extends javax.swing.JPanel
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel17)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(s88Panel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel14)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -941,6 +1134,76 @@ public class RouteEditor extends javax.swing.JPanel
         TrainControlUI.limitLength(evt, 60);
     }//GEN-LAST:event_routeNameKeyReleased
 
+    private void addLocCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocCommandActionPerformed
+        
+        if (locNameList.getModel().getSize() > 0)
+        {
+            RouteCommand rc;
+            if (commandTypeList.getSelectedIndex() == 0)
+            {
+                rc = RouteCommand.RouteCommandLocomotive((String) locNameList.getSelectedItem(), locSpeedSlider.getValue());
+            }
+            else
+            {
+                rc = RouteCommand.RouteCommandFunction((String) locNameList.getSelectedItem(), commandTypeList.getSelectedIndex() - 1, locFuncOn.isSelected());
+            }
+            
+            try
+            {
+                if (!"".equals(locDelay.getText().trim()))
+                {
+                    rc.setDelay(Math.abs(Integer.parseInt(locDelay.getText())));
+                }
+                
+                this.routeContents.setText((this.routeContents.getText() + "\n" + rc.toLine()).trim());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, "Invalid delay specified - must be an integer");
+            }
+        }
+    }//GEN-LAST:event_addLocCommandActionPerformed
+
+    private void commandTypeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_commandTypeListActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_commandTypeListActionPerformed
+
+    private void locNameListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locNameListActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_locNameListActionPerformed
+
+    private void locDelayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locDelayActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_locDelayActionPerformed
+
+    private void locDelayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locDelayKeyReleased
+        TrainControlUI.validateInt(evt, false);
+        TrainControlUI.limitLength(evt, 6);
+    }//GEN-LAST:event_locDelayKeyReleased
+
+    private void locFuncOnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locFuncOnActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_locFuncOnActionPerformed
+
+    private void locFuncOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locFuncOffActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_locFuncOffActionPerformed
+
+    private void commandTypeListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_commandTypeListItemStateChanged
+        if (commandTypeList.getSelectedIndex() == 0)
+        {
+            this.locSpeedSlider.setEnabled(true);
+            this.locFuncOff.setEnabled(false);
+            this.locFuncOn.setEnabled(false);
+        }
+        else
+        {
+            this.locSpeedSlider.setEnabled(false);
+            this.locFuncOff.setEnabled(true);
+            this.locFuncOn.setEnabled(true);
+        }
+    }//GEN-LAST:event_commandTypeListItemStateChanged
+
     private void updateSettingSelections()
     {
         if (this.accType3Way.isSelected())
@@ -964,6 +1227,7 @@ public class RouteEditor extends javax.swing.JPanel
     private javax.swing.JRadioButton accType3Way;
     private javax.swing.JRadioButton accTypeSignal;
     private javax.swing.JRadioButton accTypeTurnout;
+    private javax.swing.JButton addLocCommand;
     private javax.swing.JButton addS88Condition;
     private javax.swing.JButton addStopCommand;
     private javax.swing.JButton addToRouteButton;
@@ -973,6 +1237,7 @@ public class RouteEditor extends javax.swing.JPanel
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.ButtonGroup buttonGroup5;
+    private javax.swing.JComboBox<String> commandTypeList;
     private javax.swing.JTextArea conditionAccs;
     private javax.swing.JTextArea conditionS88;
     private javax.swing.JTextField delay;
@@ -986,7 +1251,11 @@ public class RouteEditor extends javax.swing.JPanel
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1001,6 +1270,14 @@ public class RouteEditor extends javax.swing.JPanel
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JSeparator jSeparator3;
+    private javax.swing.JTextField locDelay;
+    private javax.swing.JRadioButton locFuncOff;
+    private javax.swing.JRadioButton locFuncOn;
+    private javax.swing.JLabel locFuncStateLabel;
+    private javax.swing.JComboBox<String> locNameList;
+    private javax.swing.JSlider locSpeedSlider;
     private javax.swing.JTextArea routeContents;
     private javax.swing.JTextField routeName;
     private javax.swing.JTextField s88;
@@ -1008,6 +1285,7 @@ public class RouteEditor extends javax.swing.JPanel
     private javax.swing.JTextField s88CondAddr;
     private javax.swing.JRadioButton s88Occupied;
     private javax.swing.JPanel s88Panel;
+    private javax.swing.JPanel s88Panel1;
     private javax.swing.JRadioButton triggerClearThenOccupied;
     private javax.swing.JRadioButton triggerOccupiedThenClear;
     // End of variables declaration//GEN-END:variables

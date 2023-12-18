@@ -8521,7 +8521,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 i++;
             }
 
-            RouteEditor edit = new RouteEditor(String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
+            RouteEditor edit = new RouteEditor(this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
 
             int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if(dialogResult == JOptionPane.OK_OPTION)
@@ -8545,7 +8545,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {          
                 MarklinRoute currentRoute = this.model.getRoute(route.toString());
 
-                RouteEditor edit = new RouteEditor(route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
+                RouteEditor edit = new RouteEditor(this, route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
                     currentRoute.getConditionS88String(), currentRoute.getConditionAccessoryCSV());
                 int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                 if(dialogResult == JOptionPane.OK_OPTION)
