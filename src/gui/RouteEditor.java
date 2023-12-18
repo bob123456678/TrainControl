@@ -8,6 +8,8 @@ package gui;
 import base.RouteCommand;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,6 +47,8 @@ public class RouteEditor extends javax.swing.JPanel
     public static final String LEFT = "Left (1,0)";
     public static final String STRAIGHT3 = "Straight (0,0)";
     public static final String RIGHT = "Right (0,1)";
+    
+    TrainControlUI parent;
 
     /**
      * Creates new form RouteEditor
@@ -59,6 +63,7 @@ public class RouteEditor extends javax.swing.JPanel
      */
     public RouteEditor(TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, String conditionAccString) {
         initComponents();
+        this.parent = parent;
         
         boolean edit = !"".equals(routeContent);
                 
@@ -96,7 +101,7 @@ public class RouteEditor extends javax.swing.JPanel
             new DefaultComboBoxModel(locs.toArray())
         );
         
-        commandTypeListItemStateChanged(null);
+        locNameListItemStateChanged(null);
         
         if (!edit)
         {
@@ -762,6 +767,11 @@ public class RouteEditor extends javax.swing.JPanel
 
         locNameList.setMaximumSize(new java.awt.Dimension(136, 26));
         locNameList.setName(""); // NOI18N
+        locNameList.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                locNameListItemStateChanged(evt);
+            }
+        });
         locNameList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 locNameListActionPerformed(evt);
@@ -1138,6 +1148,13 @@ public class RouteEditor extends javax.swing.JPanel
         
         if (locNameList.getModel().getSize() > 0)
         {
+            // Sanity check
+            if (((String) locNameList.getSelectedItem()).contains(","))
+            {
+                JOptionPane.showMessageDialog(this, "Locomotive names with commas are not supported.  Renamed the locomotive first.");
+                return;
+            }
+            
             RouteCommand rc;
             if (commandTypeList.getSelectedIndex() == 0)
             {
@@ -1203,6 +1220,31 @@ public class RouteEditor extends javax.swing.JPanel
             this.locFuncOn.setEnabled(true);
         }
     }//GEN-LAST:event_commandTypeListItemStateChanged
+
+    private void locNameListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_locNameListItemStateChanged
+        List<String> dropdownModel = new ArrayList<>(Arrays.asList("Speed"));
+            
+        if (this.locNameList.getModel().getSize() > 0)
+        {
+            for (int i = 0; i < this.parent.getModel().getLocByName((String) this.locNameList.getSelectedItem()).getNumF(); i++)
+            {
+                dropdownModel.add("F" + Integer.toString(i));
+            }
+            
+            int oldSelectedIndex = this.commandTypeList.getSelectedIndex();
+
+            commandTypeList.setModel(
+                new javax.swing.DefaultComboBoxModel<>(dropdownModel.toArray(new String[0])) 
+            );
+            
+            if (commandTypeList.getModel().getSize() > oldSelectedIndex)
+            {
+                commandTypeList.setSelectedIndex(oldSelectedIndex);
+            }
+        }
+        
+        commandTypeListItemStateChanged(null);
+    }//GEN-LAST:event_locNameListItemStateChanged
 
     private void updateSettingSelections()
     {
