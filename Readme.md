@@ -200,6 +200,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.7 [12/17/23]
+    - Locomotive speed and function commands are now fully supported in routes
+    - Added locomotive speed/function command fields to the route editing wizard
+
 * v2.0.6 [12/16/23]
     - The decoder type can now be changed when editing the address of an existing locomotive in the database.  This is useful when swapping decoders and you want to keep your locomotive settings.
 
