@@ -547,14 +547,13 @@ element
  .artikel=-1
 element
  .id=0x30802
- .typ=rechtsweiche
- .artikel=50
- .zustand=1
-element
- .id=0x30803
- .typ=kreuzung
+ .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x30803
+ .typ=rechtsweiche
+ .artikel=50
  .zustand=1
 element
  .id=0x30804
@@ -691,15 +690,18 @@ element
  .artikel=64
 element
  .id=0x30a02
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=9
 element
  .id=0x30a03
- .typ=gerade
- .drehung=1
+ .typ=linksweiche
+ .drehung=2
+ .artikel=84
+element
+ .id=0x30a04
+ .typ=bogen
+ .drehung=3
  .artikel=-1
- .zustand=1
 element
  .id=0x30a05
  .typ=gerade
@@ -782,8 +784,11 @@ element
  .artikel=-1
 element
  .id=0x30b03
- .typ=gerade
- .drehung=1
+ .typ=fahrstrasse
+ .artikel=70
+element
+ .id=0x30b04
+ .typ=prellbock
  .artikel=-1
 element
  .id=0x30b05
@@ -860,6 +865,10 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x30c04
+ .typ=fahrstrasse
+ .artikel=71
 element
  .id=0x30c05
  .typ=gerade
@@ -941,6 +950,10 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x30d04
+ .artikel=-1
+ .text=15
 element
  .id=0x30d05
  .typ=rechtsweiche

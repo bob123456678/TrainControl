@@ -629,6 +629,10 @@
                     "state": "straight"
                 },
                 {
+                    "acc": "Switch 41",
+                    "state": "turn"
+                },
+                {
                     "acc": "Switch 104",
                     "state": "straight"
                 }
@@ -713,6 +717,10 @@
             "commands": [
                 {
                     "acc": "Switch 10",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 41",
                     "state": "turn"
                 },
                 {
@@ -1066,6 +1074,10 @@
                 {
                     "acc": "Switch 99",
                     "state": "straight"
+                },
+                {
+                    "acc": "Switch 41",
+                    "state": "turn"
                 },
                 {
                     "acc": "Signal 62",
@@ -2470,18 +2482,20 @@
             "start": "TunnelReverse",
             "end": "BottomInnerOtherside",
             "length": 0,
-            "commands": [{
-                "acc": "Switch 10",
-                "state": "straight"
-            }],
-            "lockedges": [
+            "commands": [
                 {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
+                    "acc": "Switch 10",
+                    "state": "straight"
                 },
                 {
+                    "acc": "Switch 41",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
                     "start": "BottomInner",
-                    "end": "Tunnel"
+                    "end": "BottomCrossover"
                 },
                 {
                     "start": "BottomInner",
@@ -2489,7 +2503,11 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomCrossover"
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
                 }
             ]
         },

@@ -473,6 +473,13 @@
                     "ADDRESS": "83",
                     "SETTING": "false"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
             }
         ]
     },
@@ -1946,7 +1953,7 @@
         ]
     },
     {
-        "name": "Lower Parking 17",
+        "name": "Lower Parking 11",
         "id": 43,
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
@@ -2686,5 +2693,77 @@
                 "SETTING": "true"
             }
         }]
+    },
+    {
+        "name": "Lower Parking 17",
+        "id": 70,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 15",
+        "id": 71,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false"
+                }
+            }
+        ]
     }
 ]}
