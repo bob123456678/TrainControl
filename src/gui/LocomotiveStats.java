@@ -54,7 +54,21 @@ public class LocomotiveStats extends javax.swing.JPanel
 
             String col[] = {"Locomotive", "Overall Runtime", "Today's Runtime", "Last Run", "First Run", "Days Run"};
 
-            DefaultTableModel tableModel = new DefaultTableModel(col, 0);
+            // Ensure correct sorting
+            DefaultTableModel tableModel = new DefaultTableModel(col, 0)
+            {
+                @Override
+                public Class getColumnClass(int column)
+                {
+                    switch (column)
+                    {
+                        case 5:
+                            return Integer.class;
+                        default:
+                            return String.class;
+                    }
+                }
+            };
 
             List<Locomotive> sortedLocs = new ArrayList();
 

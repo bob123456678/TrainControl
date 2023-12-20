@@ -200,6 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.8 [Beta]
+    - Fixed bug where the number of days shown in the stats table was not sorted correctly
+
 * v2.0.7 [12/17/23]
     - Locomotive speed and function commands are now fully supported in routes
     - Added locomotive speed/function command fields to the route editing wizard
