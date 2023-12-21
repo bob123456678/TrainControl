@@ -112,6 +112,17 @@ public final class CS2File
     }
     
     /**
+     * Gets an image URL
+     * @param image
+     * @return 
+     */
+    public String getImageURLCS3(String image)
+    {
+        return "http://" + this.IP + "/app/assets/lok/" + 
+                this.sanitizeURL(image) + ".png";
+    }
+    
+    /**
      * Locomotive config file
      * @return 
      */
@@ -704,7 +715,7 @@ public final class CS2File
                 
                 if (icon != null)
                 {
-                    newLoc.setImageURL(this.getImageURL(icon));
+                    newLoc.setImageURL(this.getImageURLCS3(icon));
                 }
 
                 out.add(newLoc);
