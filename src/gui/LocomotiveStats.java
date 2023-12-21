@@ -42,6 +42,36 @@ public class LocomotiveStats extends javax.swing.JPanel
         refresh();
     }
     
+    /**
+     * Long wrapper to correctly sort timestamps in the table
+     */
+    private class TimestampString implements Comparable<TimestampString>
+    {
+        private final Long value;
+
+        public TimestampString(Long value)
+        {
+            this.value = value;
+        }
+
+        public Long getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return convertSecondsToHMmSs(value);
+        }
+
+        @Override
+        public int compareTo(TimestampString other)
+        {
+            return this.value.compareTo(other.getValue());
+        }
+    }
+
     public final void refresh()
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -62,6 +92,10 @@ public class LocomotiveStats extends javax.swing.JPanel
                 {
                     switch (column)
                     {
+                        case 1:
+                            return TimestampString.class;
+                        case 2:
+                            return TimestampString.class;
                         case 5:
                             return Integer.class;
                         default:
@@ -87,7 +121,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
             for (Locomotive l : sortedLocs)
             {            
-                Object[] data = {l.getName(), convertSecondsToHMmSs(l.getTotalRuntime()), convertSecondsToHMmSs(l.getTotalRuntimeToday()), 
+                Object[] data = {l.getName(), new TimestampString(l.getTotalRuntime()), new TimestampString(l.getTotalRuntimeToday()), 
                     l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
                 tableModel.addRow(data);
@@ -133,7 +167,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         
         long s = seconds % 60;
         long m = (seconds / 60) % 60;
-        long h = (seconds / (60 * 60)) % 24;
+        long h = (seconds / (60 * 60));
         
         return String.format("%d:%02d:%02d", h,m,s);
     }

@@ -200,8 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.8 [Beta]
+* v2.0.8 [12/21/23]
     - Fixed bug where the number of days shown in the stats table was not sorted correctly
+    - Fixed bug in the stats table where runtimes longer than 24 hours would be truncated
 
 * v2.0.7 [12/17/23]
     - Locomotive speed and function commands are now fully supported in routes

@@ -1356,6 +1356,20 @@
                     "ADDRESS": "108",
                     "SETTING": "false"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "41",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "false"
+                }
             }
         ]
     },
@@ -1871,6 +1885,13 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "92",
                     "SETTING": "true"
                 }
             }

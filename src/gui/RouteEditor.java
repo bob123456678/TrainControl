@@ -429,7 +429,7 @@ public class RouteEditor extends javax.swing.JPanel
         jScrollPane1.setViewportView(routeContents);
 
         addStopCommand.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        addStopCommand.setText("Add Stop Command");
+        addStopCommand.setText("Add \"Power Off\" Command");
         addStopCommand.setToolTipText("Useful if a conditional route is to be used as an emergency stop");
         addStopCommand.setFocusable(false);
         addStopCommand.addActionListener(new java.awt.event.ActionListener() {
