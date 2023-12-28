@@ -436,9 +436,8 @@ element
  .artikel=-1
 element
  .id=0x20713
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=56
 element
  .id=0x20804
  .typ=gerade
@@ -498,9 +497,8 @@ element
  .artikel=-1
 element
  .id=0x20812
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=55
 element
  .id=0x20813
  .typ=gerade

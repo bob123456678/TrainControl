@@ -667,7 +667,7 @@ element
  .id=0x20516
  .typ=pfeil
  .drehung=2
- .artikel=2
+ .artikel=1
 element
  .id=0x20517
  .typ=signal
@@ -1394,6 +1394,14 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+element
+ .id=0x20c03
+ .typ=fahrstrasse
+ .artikel=20
+element
+ .id=0x20c04
+ .artikel=-1
+ .text=Reset
 element
  .id=0x20c0e
  .typ=linksweiche

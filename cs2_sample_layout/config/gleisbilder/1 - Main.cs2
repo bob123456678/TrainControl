@@ -440,7 +440,7 @@ element
  .id=0x40e
  .typ=pfeil
  .drehung=2
- .artikel=2
+ .artikel=1
 element
  .id=0x40f
  .typ=signal
@@ -485,7 +485,7 @@ element
  .id=0x503
  .typ=pfeil
  .drehung=3
- .artikel=1
+ .artikel=2
 element
  .id=0x504
  .typ=gerade
