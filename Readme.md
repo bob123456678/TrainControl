@@ -78,7 +78,7 @@ Monitor the usage of different locomotives.
 * Download locomotive, layout, and route information from the CS2/CS3
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Powerful keyboard interface
-    * Configure up to 8 different key mappings for up to 208 locomotives
+    * Configure up to 10 different key mappings for up to 260 locomotives
     * Convenient hotkeys for power off, emergency stop, and smooth deceleration
     * Simultaneous operation across multiple PCs
 * Track diagrams
@@ -200,12 +200,18 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.9 [Beta]
-    - Added support for custom labels for each locomotive mapping page (right-click the page name to change)
+* v2.0.9 [12/28/23]
+    - Locomotive mapping convenience improvements
+        - Added support for custom labels for each locomotive mapping page (right-click the default page name to change)
+        - Added right-click menu option to copy a locomotive to the previous mapping page
+        - Added two additional locomotive mapping pages, for a total of 10
+        - The active mapping page number is now also shown in the tab title
+        - The active page is now remembered on exit
     - MFX locomotive addresses are no longer displayed in hex in the UI
     - Added addresses 253-256 to the keyboard
     - Keyboard buttons are now color-coded red/green based on the accessory state
     - The Autonomy/Route export windows will now be auto-closed when the JSON file is saved
+    - Fixed UI bug where a locomotive icon from another page could temporarily appear on the active page
 
 * v2.0.8 [12/21/23]
     - Fixed bug where the number of days shown in the stats table was not sorted correctly

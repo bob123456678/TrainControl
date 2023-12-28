@@ -103,6 +103,10 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem = new JMenuItem("Copy to next page");
                 menuItem.addActionListener(event -> ui.copyToNextPage(source));
                 add(menuItem);
+                
+                menuItem = new JMenuItem("Copy to previous page");
+                menuItem.addActionListener(event -> ui.copyToPrevPage(source));
+                add(menuItem);
             }
 
             if (ui.buttonHasLocomotive(source))
@@ -162,8 +166,6 @@ public class RightClickMenuListener extends MouseAdapter
                     add(menuItem);
                 }
                 
-                addSeparator();
-
                 menuItem = new JMenuItem("Customize Function Icons");
                 menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source));
 

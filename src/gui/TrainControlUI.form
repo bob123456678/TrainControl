@@ -2595,7 +2595,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="LayoutArea" pref="543" max="32767" attributes="0"/>
+                      <Component id="LayoutArea" pref="484" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="103" alignment="1" groupAlignment="3" attributes="0">
@@ -2812,7 +2812,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane5" pref="519" max="32767" attributes="0"/>
+                      <Component id="jScrollPane5" pref="460" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="jSeparator7" alignment="1" min="-2" pref="23" max="-2" attributes="0"/>
@@ -3073,9 +3073,9 @@
                               <Component id="SwitchButton1" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton9" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator9" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton18" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton26" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3086,9 +3086,9 @@
                               <Component id="SwitchButton2" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton10" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator10" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton19" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton27" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3099,9 +3099,9 @@
                               <Component id="SwitchButton3" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton11" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator11" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton20" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton28" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3112,9 +3112,9 @@
                               <Component id="SwitchButton4" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton12" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator12" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton21" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton29" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3125,9 +3125,9 @@
                               <Component id="SwitchButton5" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton13" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator14" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton22" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton30" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3138,9 +3138,9 @@
                               <Component id="SwitchButton6" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton14" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator13" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton23" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton31" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3151,9 +3151,9 @@
                               <Component id="SwitchButton7" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton15" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                           <Component id="jSeparator15" min="-2" pref="9" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="SwitchButton24" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
                               <Component id="SwitchButton32" alignment="0" min="-2" pref="63" max="-2" attributes="0"/>
@@ -3189,7 +3189,7 @@
                                           <Component id="SwitchButton7" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton8" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="SwitchButton9" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="3" attributes="0">
@@ -3202,7 +3202,7 @@
                                               <Component id="SwitchButton16" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           </Group>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton17" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton18" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3213,7 +3213,7 @@
                                           <Component id="SwitchButton24" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton20" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton25" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton26" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3224,7 +3224,7 @@
                                           <Component id="SwitchButton31" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton32" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton33" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton34" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3235,7 +3235,7 @@
                                           <Component id="SwitchButton39" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton40" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton41" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton42" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3246,7 +3246,7 @@
                                           <Component id="SwitchButton47" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton48" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton49" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton50" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3257,7 +3257,7 @@
                                           <Component id="SwitchButton55" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton56" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
                                           <Component id="SwitchButton57" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                           <Component id="SwitchButton58" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -4912,7 +4912,7 @@
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace min="-2" pref="34" max="-2" attributes="0"/>
                               <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace pref="489" max="32767" attributes="0"/>
+                              <EmptySpace pref="430" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -6097,7 +6097,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane3" pref="576" max="32767" attributes="0"/>
+                      <Component id="jScrollPane3" pref="517" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -7290,7 +7290,7 @@
                               </Group>
                               <Component id="f28Label" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="0" pref="150" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="91" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
