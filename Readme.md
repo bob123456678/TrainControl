@@ -203,6 +203,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 * v2.0.9 [Beta]
     - Added support for custom labels for each locomotive mapping page (right-click the page name to change)
     - MFX locomotive addresses are no longer displayed in hex in the UI
+    - Added addresses 253-256 to the keyboard
+    - Keyboard buttons are now color-coded red/green based on the accessory state
 
 * v2.0.8 [12/21/23]
     - Fixed bug where the number of days shown in the stats table was not sorted correctly

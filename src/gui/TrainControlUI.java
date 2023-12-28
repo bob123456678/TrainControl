@@ -184,8 +184,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private int lastLocMappingPainted = 0;
     
     // Number of keys per page
-    private static final int KEYBOARD_KEYS = 63;
-    
+    private static final int KEYBOARD_KEYS = 64;
+    private static final Color COLOR_SWITCH_RED = new Color(255,204,204);
+    private static final Color COLOR_SWITCH_GREEN = new Color(204,255,204);
+
     // Total number of keyboards >= 1
     private static final int NUM_KEYBOARDS = 4;
     
@@ -476,6 +478,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.switchMapping.put(61,SwitchButton61);
         this.switchMapping.put(62,SwitchButton62);
         this.switchMapping.put(63,SwitchButton63);
+        this.switchMapping.put(64,SwitchButton64);
         
         // Prevent the tabbed pane from being stupid
         this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED)
@@ -516,6 +519,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Support for changing page names
         this.LocMappingNumberLabel.addMouseListener(new RightClickPageMenu(this));
+        
+        // UI editor bugs out when this is too wide
+        this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");
     }
     
      /**
@@ -1570,10 +1576,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (this.model.getAccessoryState(i + offset))
                 {
                     this.switchMapping.get(i).setSelected(true);
+                    this.switchMapping.get(i).setBackground(COLOR_SWITCH_RED);        
                 }
                 else
                 {
                     this.switchMapping.get(i).setSelected(false);
+                    this.switchMapping.get(i).setBackground(COLOR_SWITCH_GREEN);
                 }
             }
         }));
@@ -2053,7 +2061,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         buttonGroup2 = new javax.swing.ButtonGroup();
         KeyboardTab = new javax.swing.JTabbedPane();
         LocControlPanel = new javax.swing.JPanel();
-        jLabel5 = new javax.swing.JLabel();
+        locMappingLabel = new javax.swing.JLabel();
         LocContainer = new javax.swing.JPanel();
         CButton = new javax.swing.JButton();
         VButton = new javax.swing.JButton();
@@ -2194,7 +2202,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         importRoutes = new javax.swing.JButton();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
-        jPanel9 = new javax.swing.JPanel();
+        keyboardButtonPanel = new javax.swing.JPanel();
         SwitchButton1 = new javax.swing.JToggleButton();
         SwitchButton2 = new javax.swing.JToggleButton();
         SwitchButton3 = new javax.swing.JToggleButton();
@@ -2258,6 +2266,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SwitchButton20 = new javax.swing.JToggleButton();
         SwitchButton56 = new javax.swing.JToggleButton();
         SwitchButton25 = new javax.swing.JToggleButton();
+        SwitchButton64 = new javax.swing.JToggleButton();
+        jSeparator9 = new javax.swing.JSeparator();
+        jSeparator10 = new javax.swing.JSeparator();
+        jSeparator11 = new javax.swing.JSeparator();
+        jSeparator12 = new javax.swing.JSeparator();
+        jSeparator13 = new javax.swing.JSeparator();
+        jSeparator14 = new javax.swing.JSeparator();
+        jSeparator15 = new javax.swing.JSeparator();
         jPanel10 = new javax.swing.JPanel();
         PrevKeyboard = new javax.swing.JButton();
         KeyboardNumberLabel = new javax.swing.JLabel();
@@ -2465,8 +2481,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        jLabel5.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel5.setText("Locomotive Mapping (Right-click for options)");
+        locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
+        locMappingLabel.setText("Locomotive Mapping");
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -3987,32 +4003,31 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocControlPanel.setLayout(LocControlPanelLayout);
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocControlPanelLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel5)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(locMappingLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(alwaysOnTopCheckbox)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sliderSetting))
-                    .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
-                            .addComponent(PrimaryControls)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(latencyLabel))
-                        .addComponent(jPanel6, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(LocContainer, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
-                .addContainerGap(12, Short.MAX_VALUE))
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                        .addComponent(PrimaryControls)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(latencyLabel))
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addGap(12, 12, 12))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
+                    .addComponent(locMappingLabel)
                     .addComponent(sliderSetting)
                     .addComponent(alwaysOnTopCheckbox)
                     .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -4155,7 +4170,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 543, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4312,7 +4327,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 510, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 519, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4338,13 +4353,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardLabel.setText("Signals and Switches");
         KeyboardLabel.setFocusable(false);
 
-        jPanel9.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel9.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-        jPanel9.setFocusable(false);
+        keyboardButtonPanel.setBackground(new java.awt.Color(245, 245, 245));
+        keyboardButtonPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        keyboardButtonPanel.setFocusable(false);
 
         SwitchButton1.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton1.setText("1");
         SwitchButton1.setFocusable(false);
+        SwitchButton1.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton1.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton1.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4354,6 +4372,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SwitchButton2.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton2.setText("2");
         SwitchButton2.setFocusable(false);
+        SwitchButton2.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton2.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton2.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4363,6 +4384,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SwitchButton3.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         SwitchButton3.setText("3");
         SwitchButton3.setFocusable(false);
+        SwitchButton3.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton3.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton3.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4370,8 +4394,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton4.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton4.setText("3");
+        SwitchButton4.setText("4");
         SwitchButton4.setFocusable(false);
+        SwitchButton4.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton4.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton4.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4379,8 +4406,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton5.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton5.setText("3");
+        SwitchButton5.setText("5");
         SwitchButton5.setFocusable(false);
+        SwitchButton5.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton5.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton5.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4388,8 +4418,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton6.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton6.setText("3");
+        SwitchButton6.setText("6");
         SwitchButton6.setFocusable(false);
+        SwitchButton6.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton6.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton6.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4397,8 +4430,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton7.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton7.setText("3");
+        SwitchButton7.setText("7");
         SwitchButton7.setFocusable(false);
+        SwitchButton7.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton7.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton7.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4406,8 +4442,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton8.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton8.setText("3");
+        SwitchButton8.setText("8");
         SwitchButton8.setFocusable(false);
+        SwitchButton8.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton8.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton8.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4415,8 +4454,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton9.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton9.setText("3");
+        SwitchButton9.setText("9");
         SwitchButton9.setFocusable(false);
+        SwitchButton9.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton9.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton9.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton9.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4424,8 +4466,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton10.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton10.setText("3");
+        SwitchButton10.setText("10");
         SwitchButton10.setFocusable(false);
+        SwitchButton10.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton10.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton10.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton10.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4433,8 +4478,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton11.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton11.setText("3");
+        SwitchButton11.setText("11");
         SwitchButton11.setFocusable(false);
+        SwitchButton11.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton11.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton11.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton11.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4442,8 +4490,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton12.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton12.setText("3");
+        SwitchButton12.setText("12");
         SwitchButton12.setFocusable(false);
+        SwitchButton12.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton12.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton12.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton12.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4451,8 +4502,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton13.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton13.setText("3");
+        SwitchButton13.setText("13");
         SwitchButton13.setFocusable(false);
+        SwitchButton13.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton13.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton13.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton13.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4460,8 +4514,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton14.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton14.setText("3");
+        SwitchButton14.setText("14");
         SwitchButton14.setFocusable(false);
+        SwitchButton14.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton14.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton14.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton14.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4469,8 +4526,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton15.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton15.setText("3");
+        SwitchButton15.setText("15");
         SwitchButton15.setFocusable(false);
+        SwitchButton15.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton15.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton15.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton15.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4478,8 +4538,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton16.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton16.setText("3");
+        SwitchButton16.setText("16");
         SwitchButton16.setFocusable(false);
+        SwitchButton16.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton16.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton16.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton16.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4487,8 +4550,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton17.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton17.setText("3");
+        SwitchButton17.setText("17");
         SwitchButton17.setFocusable(false);
+        SwitchButton17.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton17.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton17.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton17.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4496,8 +4562,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton18.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton18.setText("3");
+        SwitchButton18.setText("18");
         SwitchButton18.setFocusable(false);
+        SwitchButton18.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton18.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton18.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton18.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4505,8 +4574,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton19.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton19.setText("3");
+        SwitchButton19.setText("19");
         SwitchButton19.setFocusable(false);
+        SwitchButton19.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton19.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton19.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton19.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4514,8 +4586,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton21.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton21.setText("3");
+        SwitchButton21.setText("21");
         SwitchButton21.setFocusable(false);
+        SwitchButton21.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton21.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton21.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton21.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4523,8 +4598,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton22.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton22.setText("3");
+        SwitchButton22.setText("22");
         SwitchButton22.setFocusable(false);
+        SwitchButton22.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton22.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton22.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton22.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4532,8 +4610,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton23.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton23.setText("3");
+        SwitchButton23.setText("23");
         SwitchButton23.setFocusable(false);
+        SwitchButton23.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton23.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton23.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton23.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4541,8 +4622,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton24.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton24.setText("3");
+        SwitchButton24.setText("24");
         SwitchButton24.setFocusable(false);
+        SwitchButton24.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton24.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton24.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton24.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4550,8 +4634,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton26.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton26.setText("3");
+        SwitchButton26.setText("26");
         SwitchButton26.setFocusable(false);
+        SwitchButton26.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton26.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton26.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton26.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4559,8 +4646,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton27.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton27.setText("3");
+        SwitchButton27.setText("27");
         SwitchButton27.setFocusable(false);
+        SwitchButton27.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton27.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton27.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton27.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4568,8 +4658,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton29.setText("3");
+        SwitchButton29.setText("29");
         SwitchButton29.setFocusable(false);
+        SwitchButton29.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton29.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton29.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton29.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4577,8 +4670,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton28.setText("3");
+        SwitchButton28.setText("28");
         SwitchButton28.setFocusable(false);
+        SwitchButton28.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton28.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton28.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton28.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4586,8 +4682,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton30.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton30.setText("3");
+        SwitchButton30.setText("30");
         SwitchButton30.setFocusable(false);
+        SwitchButton30.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton30.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton30.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton30.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4595,8 +4694,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton31.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton31.setText("3");
+        SwitchButton31.setText("31");
         SwitchButton31.setFocusable(false);
+        SwitchButton31.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton31.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton31.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton31.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4604,8 +4706,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton32.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton32.setText("3");
+        SwitchButton32.setText("32");
         SwitchButton32.setFocusable(false);
+        SwitchButton32.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton32.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton32.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton32.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4613,8 +4718,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton33.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton33.setText("3");
+        SwitchButton33.setText("33");
         SwitchButton33.setFocusable(false);
+        SwitchButton33.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton33.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton33.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton33.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4622,8 +4730,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton34.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton34.setText("3");
+        SwitchButton34.setText("34");
         SwitchButton34.setFocusable(false);
+        SwitchButton34.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton34.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton34.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton34.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4631,8 +4742,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton35.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton35.setText("3");
+        SwitchButton35.setText("35");
         SwitchButton35.setFocusable(false);
+        SwitchButton35.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton35.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton35.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton35.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4640,8 +4754,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton36.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton36.setText("3");
+        SwitchButton36.setText("36");
         SwitchButton36.setFocusable(false);
+        SwitchButton36.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton36.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton36.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton36.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4649,8 +4766,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton37.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton37.setText("3");
+        SwitchButton37.setText("37");
         SwitchButton37.setFocusable(false);
+        SwitchButton37.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton37.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton37.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton37.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4658,8 +4778,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton38.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton38.setText("3");
+        SwitchButton38.setText("38");
         SwitchButton38.setFocusable(false);
+        SwitchButton38.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton38.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton38.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton38.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4667,8 +4790,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton39.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton39.setText("3");
+        SwitchButton39.setText("39");
         SwitchButton39.setFocusable(false);
+        SwitchButton39.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton39.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton39.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton39.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4676,8 +4802,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton40.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton40.setText("3");
+        SwitchButton40.setText("40");
         SwitchButton40.setFocusable(false);
+        SwitchButton40.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton40.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton40.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton40.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4685,8 +4814,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton41.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton41.setText("3");
+        SwitchButton41.setText("41");
         SwitchButton41.setFocusable(false);
+        SwitchButton41.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton41.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton41.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton41.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4694,8 +4826,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton42.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton42.setText("3");
+        SwitchButton42.setText("42");
         SwitchButton42.setFocusable(false);
+        SwitchButton42.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton42.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton42.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton42.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4703,8 +4838,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton43.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton43.setText("3");
+        SwitchButton43.setText("43");
         SwitchButton43.setFocusable(false);
+        SwitchButton43.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton43.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton43.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton43.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4712,8 +4850,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton44.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton44.setText("3");
+        SwitchButton44.setText("44");
         SwitchButton44.setFocusable(false);
+        SwitchButton44.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton44.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton44.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton44.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4721,8 +4862,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton45.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton45.setText("3");
+        SwitchButton45.setText("45");
         SwitchButton45.setFocusable(false);
+        SwitchButton45.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton45.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton45.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton45.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4730,8 +4874,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton46.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton46.setText("3");
+        SwitchButton46.setText("46");
         SwitchButton46.setFocusable(false);
+        SwitchButton46.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton46.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton46.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton46.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4739,8 +4886,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton47.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton47.setText("3");
+        SwitchButton47.setText("47");
         SwitchButton47.setFocusable(false);
+        SwitchButton47.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton47.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton47.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton47.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4748,8 +4898,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton48.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton48.setText("3");
+        SwitchButton48.setText("48");
         SwitchButton48.setFocusable(false);
+        SwitchButton48.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton48.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton48.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton48.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4757,8 +4910,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton49.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton49.setText("3");
+        SwitchButton49.setText("49");
         SwitchButton49.setFocusable(false);
+        SwitchButton49.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton49.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton49.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton49.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4766,8 +4922,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton50.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton50.setText("3");
+        SwitchButton50.setText("50");
         SwitchButton50.setFocusable(false);
+        SwitchButton50.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton50.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton50.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton50.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4775,8 +4934,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton51.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton51.setText("3");
+        SwitchButton51.setText("51");
         SwitchButton51.setFocusable(false);
+        SwitchButton51.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton51.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton51.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton51.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4784,8 +4946,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton52.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton52.setText("3");
+        SwitchButton52.setText("52");
         SwitchButton52.setFocusable(false);
+        SwitchButton52.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton52.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton52.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton52.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4793,8 +4958,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton53.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton53.setText("3");
+        SwitchButton53.setText("53");
         SwitchButton53.setFocusable(false);
+        SwitchButton53.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton53.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton53.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton53.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4802,8 +4970,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton54.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton54.setText("3");
+        SwitchButton54.setText("54");
         SwitchButton54.setFocusable(false);
+        SwitchButton54.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton54.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton54.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton54.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4811,8 +4982,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton55.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton55.setText("3");
+        SwitchButton55.setText("55");
         SwitchButton55.setFocusable(false);
+        SwitchButton55.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton55.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton55.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton55.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4820,8 +4994,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton57.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton57.setText("3");
+        SwitchButton57.setText("57");
         SwitchButton57.setFocusable(false);
+        SwitchButton57.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton57.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton57.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton57.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4829,8 +5006,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton58.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton58.setText("3");
+        SwitchButton58.setText("58");
         SwitchButton58.setFocusable(false);
+        SwitchButton58.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton58.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton58.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton58.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4838,8 +5018,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton59.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton59.setText("3");
+        SwitchButton59.setText("59");
         SwitchButton59.setFocusable(false);
+        SwitchButton59.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton59.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton59.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton59.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4847,8 +5030,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton60.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton60.setText("3");
+        SwitchButton60.setText("60");
         SwitchButton60.setFocusable(false);
+        SwitchButton60.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton60.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton60.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton60.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4856,8 +5042,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton61.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton61.setText("3");
+        SwitchButton61.setText("61");
         SwitchButton61.setFocusable(false);
+        SwitchButton61.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton61.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton61.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton61.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4865,8 +5054,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton62.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton62.setText("3");
+        SwitchButton62.setText("62");
         SwitchButton62.setFocusable(false);
+        SwitchButton62.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton62.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton62.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton62.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4874,8 +5066,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton63.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton63.setText("3");
+        SwitchButton63.setText("63");
         SwitchButton63.setFocusable(false);
+        SwitchButton63.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton63.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton63.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton63.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4883,8 +5078,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton20.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton20.setText("3");
+        SwitchButton20.setText("20");
         SwitchButton20.setFocusable(false);
+        SwitchButton20.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton20.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton20.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton20.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4892,8 +5090,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton56.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton56.setText("3");
+        SwitchButton56.setText("56");
         SwitchButton56.setFocusable(false);
+        SwitchButton56.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton56.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton56.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton56.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
@@ -4901,239 +5102,239 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         SwitchButton25.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        SwitchButton25.setText("3");
+        SwitchButton25.setText("25");
         SwitchButton25.setFocusable(false);
+        SwitchButton25.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton25.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton25.setPreferredSize(new java.awt.Dimension(24, 20));
         SwitchButton25.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 UpdateSwitchState(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
-        jPanel9.setLayout(jPanel9Layout);
-        jPanel9Layout.setHorizontalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
+        SwitchButton64.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton64.setText("64");
+        SwitchButton64.setFocusable(false);
+        SwitchButton64.setMaximumSize(new java.awt.Dimension(24, 20));
+        SwitchButton64.setMinimumSize(new java.awt.Dimension(24, 20));
+        SwitchButton64.setPreferredSize(new java.awt.Dimension(24, 20));
+        SwitchButton64.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                UpdateSwitchState(evt);
+            }
+        });
+
+        jSeparator9.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator9.setPreferredSize(new java.awt.Dimension(50, 9));
+
+        jSeparator10.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator11.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator12.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator13.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator14.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        jSeparator15.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        javax.swing.GroupLayout keyboardButtonPanelLayout = new javax.swing.GroupLayout(keyboardButtonPanel);
+        keyboardButtonPanel.setLayout(keyboardButtonPanelLayout);
+        keyboardButtonPanelLayout.setHorizontalGroup(
+            keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(keyboardButtonPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel9Layout.createSequentialGroup()
-                        .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel9Layout.createSequentialGroup()
-                        .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(jPanel9Layout.createSequentialGroup()
-                                    .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGap(18, 18, 18)
-                                    .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGroup(jPanel9Layout.createSequentialGroup()
-                                    .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGap(18, 18, 18)
-                                    .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel9Layout.createSequentialGroup()
-                                        .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(jPanel9Layout.createSequentialGroup()
-                                        .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addGroup(jPanel9Layout.createSequentialGroup()
-                                        .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(jPanel9Layout.createSequentialGroup()
-                                        .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                        .addGap(18, 18, Short.MAX_VALUE)
-                        .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel9Layout.createSequentialGroup()
-                        .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel9Layout.createSequentialGroup()
-                        .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel9Layout.createSequentialGroup()
-                                .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator9, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator10, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator11, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator12, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator14, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator13, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator15, javax.swing.GroupLayout.PREFERRED_SIZE, 9, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton64, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        jPanel9Layout.setVerticalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
+        keyboardButtonPanelLayout.setVerticalGroup(
+            keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(keyboardButtonPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jSeparator11)
+                    .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(jSeparator10, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(jSeparator14, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(jSeparator15, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, keyboardButtonPanelLayout.createSequentialGroup()
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton64, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jSeparator9, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jSeparator12, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(jSeparator13, javax.swing.GroupLayout.Alignment.LEADING)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -5199,7 +5400,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(KeyboardLabel)
-                    .addComponent(jPanel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(KeyboardLabel1)
                     .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -5210,7 +5411,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGap(9, 9, 9)
                 .addComponent(KeyboardLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(KeyboardLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -5377,7 +5578,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addContainerGap(471, Short.MAX_VALUE))
+                .addContainerGap(489, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
@@ -6165,7 +6366,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 568, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 576, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7173,7 +7374,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(f29Label)
                         .addComponent(f31Label))
                     .addComponent(f28Label))
-                .addGap(0, 138, Short.MAX_VALUE))
+                .addGap(0, 150, Short.MAX_VALUE))
         );
 
         FunctionTabs.addTab("F20-F31", F20AndUpPanel);
@@ -7663,6 +7864,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         int switchId = Integer.parseInt(b.getText());
 
+        if (b.isSelected())
+        {
+            b.setBackground(COLOR_SWITCH_RED);
+        }
+        else
+        {
+            b.setBackground(COLOR_SWITCH_GREEN);
+        }
+        
         new Thread(() -> {
             this.model.setAccessoryState(switchId, b.isSelected());
         }).start();
@@ -10694,6 +10904,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton SwitchButton61;
     private javax.swing.JToggleButton SwitchButton62;
     private javax.swing.JToggleButton SwitchButton63;
+    private javax.swing.JToggleButton SwitchButton64;
     private javax.swing.JToggleButton SwitchButton7;
     private javax.swing.JToggleButton SwitchButton8;
     private javax.swing.JToggleButton SwitchButton9;
@@ -10796,7 +11007,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel47;
     private javax.swing.JLabel jLabel48;
     private javax.swing.JLabel jLabel49;
-    private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel50;
     private javax.swing.JLabel jLabel51;
     private javax.swing.JLabel jLabel52;
@@ -10811,7 +11021,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
-    private javax.swing.JPanel jPanel9;
     private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
@@ -10819,13 +11028,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator10;
+    private javax.swing.JSeparator jSeparator11;
+    private javax.swing.JSeparator jSeparator12;
+    private javax.swing.JSeparator jSeparator13;
+    private javax.swing.JSeparator jSeparator14;
+    private javax.swing.JSeparator jSeparator15;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
     private javax.swing.JSeparator jSeparator7;
+    private javax.swing.JSeparator jSeparator9;
     private javax.swing.JButton jsonDocumentationButton;
+    private javax.swing.JPanel keyboardButtonPanel;
     private javax.swing.JComboBox<String> keyboardType;
     private javax.swing.JLabel latencyLabel;
     private javax.swing.JLabel layoutListLabel;
@@ -10836,6 +11053,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
+    private javax.swing.JLabel locMappingLabel;
     private javax.swing.JPanel logPanel;
     private javax.swing.JSlider maxDelay;
     private javax.swing.JSlider maxLocInactiveSeconds;
