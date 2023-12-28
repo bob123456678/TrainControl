@@ -11,11 +11,11 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
 /**
- * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
+ * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
  * @author Adam
  */
-public class RightClickRouteMenu extends MouseAdapter {
-    
+public class RightClickRouteMenu extends MouseAdapter
+{    
     protected TrainControlUI ui;
     
     public RightClickRouteMenu(TrainControlUI u)

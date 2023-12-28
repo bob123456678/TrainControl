@@ -200,6 +200,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.9 [Beta]
+    - Added support for custom labels for each locomotive mapping page (right-click the page name to change)
+    - MFX locomotive addresses are no longer displayed in hex in the UI
+
 * v2.0.8 [12/21/23]
     - Fixed bug where the number of days shown in the stats table was not sorted correctly
     - Fixed bug in the stats table where runtimes longer than 24 hours would be truncated

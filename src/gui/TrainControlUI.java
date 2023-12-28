@@ -127,6 +127,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Maximum allowed length of locomotive names (in characters)
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
 
+    // Maximum page name length
+    public static final Integer MAX_PAGE_NAME_LENGTH = 12;
+
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
     // Minimum between possible route repainting in semi-autonmous mode
@@ -161,6 +164,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
+    
+    // Custom labels for mapping pages
+    private Map<Integer, String> pageNames;
+
     private LayoutGrid trainGrid;
     private ExecutorService LayoutGridRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
@@ -263,6 +270,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.rFunctionMapping = new HashMap<>();
         this.sliderMapping = new HashMap<>();
         this.rSliderMapping = new HashMap<>();
+        this.pageNames = new HashMap<>();
         
         this.locMapping = new ArrayList<>();
     
@@ -502,8 +510,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Layout editing only supported on windows
         if (!this.isWindows())
         {
-            this.editLayoutButton.setVisible(false);
+            this.editLayoutButton.setEnabled(false);
+            this.editLayoutButton.setToolTipText("Layout editing is currently only supported on Windows");
         }
+        
+        // Support for changing page names
+        this.LocMappingNumberLabel.addMouseListener(new RightClickPageMenu(this));
     }
     
      /**
@@ -626,6 +638,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             l.add(newMap);
         }
+        
+        // Save page names
+        l.add(this.pageNames);
         
         try
         {
@@ -804,7 +819,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.NextLocMapping.setEnabled(true);
             }
             
-            this.LocMappingNumberLabel.setText("Page " + this.locMappingNumber);
+            this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false));
        }
        else 
        {
@@ -814,6 +829,71 @@ public class TrainControlUI extends javax.swing.JFrame implements View
        } 
         
        repaintMappings();        
+    }
+    
+    /**
+     * Sets the name of the currently active mapping page
+     * @param name 
+     */
+    private void setPageName(String name)
+    {
+        if (name == null || "".equals(name.trim()))
+        {
+            this.pageNames.remove(this.locMappingNumber);
+        }
+        else
+        {            
+            this.pageNames.put(this.locMappingNumber, name.trim());
+        }
+        
+        this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false));
+        this.repaintLoc(true);
+    }
+    
+    /**
+     * Gets the name of the specified mapping page
+     * @param mappingNumber
+     * @param raw - do we exclude the page number
+     * @return 
+     */
+    private String getPageName(int mappingNumber, boolean raw)
+    {
+        if (this.pageNames.containsKey(mappingNumber))
+        {
+            String name = this.pageNames.get(mappingNumber);
+
+            if (!raw)
+            {
+                if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH)
+                {
+                    name = name.substring(0, MAX_PAGE_NAME_LENGTH);
+                }
+                
+                name = name + " (" + mappingNumber + ")";
+            }
+            
+            return name;   
+        }
+        else
+        {
+            if (raw)
+            {
+                return "";
+            }
+            else
+            {
+                return "Page " + mappingNumber;
+            }
+        }
+    }
+    
+    /**
+     * Prompts the user for the name of the current page
+     */
+    public void renameCurrentPage()
+    {
+        String input = JOptionPane.showInputDialog(this, "Enter page name: ", this.getPageName(this.locMappingNumber, true));
+        this.setPageName(input);
     }
     
     private void switchKeyboard(int keyboardNum)
@@ -884,6 +964,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
         
+        // Restore page names, which are stored at the end
+        if (saveStates.size() > TrainControlUI.NUM_LOC_MAPPINGS)
+        {
+            this.pageNames = saveStates.get(saveStates.size() - 1);
+        }
+                
         // Add the first locomotive to the mapping if nothing was loaded
         if (!this.model.getLocList().isEmpty() && !locWasLoaded)
         {
@@ -1657,7 +1743,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             // Pre-compute this so we can check if it has changed
-            String locLabel = "Page " + this.currentButtonlocMappingNumber + " Button " 
+            // "Page " + this.currentButtonlocMappingNumber + " Button "
+            String locLabel = this.getPageName(currentButtonlocMappingNumber, false) + " Button " 
                 + this.currentButton.getText()
                 + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
                 + ")";
@@ -7842,7 +7929,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Integer r = this.model.syncWithCS2();
             refreshRouteList();
             this.selector.refreshLocSelectorList();
-            this.repaintLoc();
+            this.repaintLoc(true);
             this.repaintLayout();
 
             if ("-1".equals(r.toString()))

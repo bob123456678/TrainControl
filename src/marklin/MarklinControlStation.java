@@ -47,7 +47,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.0.8 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.0.9 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1587,20 +1587,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Returns a locomotive address
+     * Returns a locomotive address as a string
      * @param name
      * @return 
      */
     @Override
     public String getLocAddress(String name)
     {
-        MarklinLocomotive l = this.locDB.getByName(name);
+        MarklinLocomotive l = this.locDB.getByName(name); 
         String address;
         
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX 
                 || l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            address = Integer.toString(l.getAddress()) + " / 0x" + Integer.toHexString(l.getAddress());
+            //address = Integer.toString(l.getAddress()) + " / 0x" + Integer.toHexString(l.getAddress());
+            address = Integer.toString(l.getAddress());
         }
         else
         {
