@@ -372,8 +372,8 @@ element
  .zustand=1
 element
  .id=0x2030e
- .typ=bogen
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=82
 element
  .id=0x2030f
  .typ=gerade

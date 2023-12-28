@@ -24,12 +24,6 @@
         </Component>
       </SubComponents>
     </Container>
-    <Container class="javax.swing.JPopupMenu" name="jPopupMenu1">
-
-      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout">
-        <Property name="useNullLayout" type="boolean" value="true"/>
-      </Layout>
-    </Container>
     <Component class="javax.swing.ButtonGroup" name="buttonGroup1">
     </Component>
     <Component class="javax.swing.ButtonGroup" name="buttonGroup2">
@@ -2638,7 +2632,6 @@
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
               <Events>
-                <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="LayoutListMouseClicked"/>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LayoutListActionPerformed"/>
               </Events>
             </Component>
@@ -2700,7 +2693,6 @@
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
               <Events>
-                <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="SizeListMouseClicked"/>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SizeListActionPerformed"/>
               </Events>
             </Component>
@@ -4941,9 +4933,6 @@
                             </Property>
                             <Property name="rows" type="int" value="5"/>
                           </Properties>
-                          <Events>
-                            <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="autonomyJSONKeyReleased"/>
-                          </Events>
                         </Component>
                       </SubComponents>
                     </Container>
@@ -5321,7 +5310,6 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="maxLocInactiveSecondsStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="maxLocInactiveSecondsMouseReleased"/>
                           </Events>
                         </Component>
@@ -5345,7 +5333,6 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="maxDelayStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="maxDelayMouseReleased"/>
                           </Events>
                         </Component>
@@ -5368,7 +5355,6 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="defaultLocSpeedStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="defaultLocSpeedMouseReleased"/>
                           </Events>
                         </Component>
@@ -5392,7 +5378,6 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="preArrivalSpeedReductionStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="preArrivalSpeedReductionMouseReleased"/>
                           </Events>
                         </Component>
@@ -5412,9 +5397,7 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="atomicRoutesStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="atomicRoutesMouseReleased"/>
-                            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="atomicRoutesActionPerformed"/>
                           </Events>
                         </Component>
                         <Component class="javax.swing.JCheckBox" name="turnOffFunctionsOnArrival">
@@ -5424,9 +5407,7 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="turnOffFunctionsOnArrivalStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="turnOffFunctionsOnArrivalMouseReleased"/>
-                            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="turnOffFunctionsOnArrivalActionPerformed"/>
                           </Events>
                         </Component>
                         <Component class="javax.swing.JCheckBox" name="simulate">
@@ -5436,9 +5417,7 @@
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>
-                            <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="simulateStateChanged"/>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="simulateMouseReleased"/>
-                            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="simulateActionPerformed"/>
                           </Events>
                         </Component>
                       </SubComponents>
@@ -5523,7 +5502,7 @@
                         <Component class="javax.swing.JCheckBox" name="hideInactive">
                           <Properties>
                             <Property name="text" type="java.lang.String" value="Hide Inactive Points"/>
-                            <Property name="toolTipText" type="java.lang.String" value="Temporarily hides reversing stations from view in the graph."/>
+                            <Property name="toolTipText" type="java.lang.String" value="Temporarily hides manually deactivated points from view in the graph."/>
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>

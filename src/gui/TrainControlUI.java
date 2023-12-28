@@ -128,7 +128,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
 
     // Maximum page name length
-    public static final Integer MAX_PAGE_NAME_LENGTH = 12;
+    public static final Integer MAX_PAGE_NAME_LENGTH = 40;
+    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 10;
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
@@ -504,7 +505,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         // Keyboard layout preference
         this.keyboardType.setSelectedIndex(this.prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0));
-        this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
+        this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex() >= 0 ? this.keyboardType.getSelectedIndex() : 0]);
 
         // Hide initially
         locCommandPanels.remove(this.locCommandTab);
@@ -825,7 +826,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.NextLocMapping.setEnabled(true);
             }
             
-            this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false));
+            this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
        }
        else 
        {
@@ -852,8 +853,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.pageNames.put(this.locMappingNumber, name.trim());
         }
         
-        this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false));
+        this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
         this.repaintLoc(true);
+    }
+    
+    /**
+     * Optional 3rd argument...
+     * @param mappingNumber
+     * @param raw
+     * @return 
+     */
+    private String getPageName(int mappingNumber, boolean raw)
+    {
+        return getPageName(mappingNumber, raw, false);
     }
     
     /**
@@ -862,20 +874,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param raw - do we exclude the page number
      * @return 
      */
-    private String getPageName(int mappingNumber, boolean raw)
+    private String getPageName(int mappingNumber, boolean raw, boolean html)
     {
         if (this.pageNames.containsKey(mappingNumber))
         {
             String name = this.pageNames.get(mappingNumber);
 
             if (!raw)
-            {
-                if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH)
+            {                
+                if (html)
                 {
-                    name = name.substring(0, MAX_PAGE_NAME_LENGTH);
+                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH)
+                    {
+                        name = name.substring(0, MAX_PAGE_NAME_LENGTH);
+                    }
+                    
+                    name = "<html>" + name + "<br />Page " + mappingNumber + "</html>";
                 }
-                
-                name = name + " (" + mappingNumber + ")";
+                else
+                {
+                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
+                    {
+                        name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
+                    }
+                    
+                    name = "Page " + mappingNumber + " (" + name + ")";
+                }
             }
             
             return name;   
@@ -899,7 +923,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public void renameCurrentPage()
     {
         String input = JOptionPane.showInputDialog(this, "Enter page name: ", this.getPageName(this.locMappingNumber, true));
-        this.setPageName(input);
+        
+        if (input != null)
+        {
+            this.setPageName(input);
+        }
     }
     
     private void switchKeyboard(int keyboardNum)
@@ -1752,7 +1780,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             // Pre-compute this so we can check if it has changed
             // "Page " + this.currentButtonlocMappingNumber + " Button "
-            String locLabel = this.getPageName(currentButtonlocMappingNumber, false) + " Button " 
+            String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
                 + this.currentButton.getText()
                 + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
                 + ")";
@@ -2056,7 +2084,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList();
-        jPopupMenu1 = new javax.swing.JPopupMenu();
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
         KeyboardTab = new javax.swing.JTabbedPane();
@@ -4049,11 +4076,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         LayoutList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         LayoutList.setFocusable(false);
-        LayoutList.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                LayoutListMouseClicked(evt);
-            }
-        });
         LayoutList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LayoutListActionPerformed(evt);
@@ -4085,11 +4107,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Small", "Large" }));
         SizeList.setFocusable(false);
-        SizeList.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                SizeListMouseClicked(evt);
-            }
-        });
         SizeList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SizeListActionPerformed(evt);
@@ -5458,11 +5475,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autonomyJSON.setColumns(20);
         autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
         autonomyJSON.setRows(5);
-        autonomyJSON.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                autonomyJSONKeyReleased(evt);
-            }
-        });
         jScrollPane2.setViewportView(autonomyJSON);
 
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
@@ -5646,11 +5658,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         maxLocInactiveSeconds.setPaintTicks(true);
         maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
         maxLocInactiveSeconds.setFocusable(false);
-        maxLocInactiveSeconds.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                maxLocInactiveSecondsStateChanged(evt);
-            }
-        });
         maxLocInactiveSeconds.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 maxLocInactiveSecondsMouseReleased(evt);
@@ -5668,11 +5675,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         maxDelay.setPaintTicks(true);
         maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
         maxDelay.setFocusable(false);
-        maxDelay.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                maxDelayStateChanged(evt);
-            }
-        });
         maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 maxDelayMouseReleased(evt);
@@ -5689,11 +5691,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         defaultLocSpeed.setPaintTicks(true);
         defaultLocSpeed.setToolTipText("The speed at which locomotives will run at by defualt.");
         defaultLocSpeed.setFocusable(false);
-        defaultLocSpeed.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                defaultLocSpeedStateChanged(evt);
-            }
-        });
         defaultLocSpeed.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 defaultLocSpeedMouseReleased(evt);
@@ -5711,11 +5708,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         preArrivalSpeedReduction.setPaintTicks(true);
         preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
         preArrivalSpeedReduction.setFocusable(false);
-        preArrivalSpeedReduction.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                preArrivalSpeedReductionStateChanged(evt);
-            }
-        });
         preArrivalSpeedReduction.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 preArrivalSpeedReductionMouseReleased(evt);
@@ -5729,57 +5721,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         atomicRoutes.setText("Atomic Routes");
         atomicRoutes.setToolTipText("When unchecked, edges will unlock as trains pass them, for a more dynamic experience.  Edge and train lengths need to be set for best results.");
         atomicRoutes.setFocusable(false);
-        atomicRoutes.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                atomicRoutesStateChanged(evt);
-            }
-        });
         atomicRoutes.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 atomicRoutesMouseReleased(evt);
-            }
-        });
-        atomicRoutes.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                atomicRoutesActionPerformed(evt);
             }
         });
 
         turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
         turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
         turnOffFunctionsOnArrival.setFocusable(false);
-        turnOffFunctionsOnArrival.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                turnOffFunctionsOnArrivalStateChanged(evt);
-            }
-        });
         turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 turnOffFunctionsOnArrivalMouseReleased(evt);
-            }
-        });
-        turnOffFunctionsOnArrival.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                turnOffFunctionsOnArrivalActionPerformed(evt);
             }
         });
 
         simulate.setText("Simulate");
         simulate.setToolTipText("Enable simulation of routes in debug mode.");
         simulate.setFocusable(false);
-        simulate.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                simulateStateChanged(evt);
-            }
-        });
         simulate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 simulateMouseReleased(evt);
-            }
-        });
-        simulate.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                simulateActionPerformed(evt);
             }
         });
 
@@ -5877,7 +5839,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         hideInactive.setText("Hide Inactive Points");
-        hideInactive.setToolTipText("Temporarily hides reversing stations from view in the graph.");
+        hideInactive.setToolTipText("Temporarily hides manually deactivated points from view in the graph.");
         hideInactive.setFocusable(false);
         hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -7878,20 +7840,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_UpdateSwitchState
 
-    private void LayoutListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_LayoutListMouseClicked
-    {//GEN-HEADEREND:event_LayoutListMouseClicked
-        
-    }//GEN-LAST:event_LayoutListMouseClicked
-
     private void LayoutListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LayoutListActionPerformed
     {//GEN-HEADEREND:event_LayoutListActionPerformed
         repaintLayout();
     }//GEN-LAST:event_LayoutListActionPerformed
-
-    private void SizeListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_SizeListMouseClicked
-    {//GEN-HEADEREND:event_SizeListMouseClicked
-        // TODO add your handling code here:
-    }//GEN-LAST:event_SizeListMouseClicked
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SizeListActionPerformed
     {//GEN-HEADEREND:event_SizeListActionPerformed
@@ -9229,10 +9181,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
     }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
 
-    private void simulateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simulateActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_simulateActionPerformed
-
     private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
         if (!this.isAutoLayoutRunning())
         {
@@ -9247,14 +9195,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_simulateMouseReleased
-
-    private void simulateStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_simulateStateChanged
-
-    }//GEN-LAST:event_simulateStateChanged
-
-    private void turnOffFunctionsOnArrivalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalActionPerformed
 
     private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -9271,14 +9211,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
 
-    private void turnOffFunctionsOnArrivalStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalStateChanged
-
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalStateChanged
-
-    private void atomicRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_atomicRoutesActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_atomicRoutesActionPerformed
-
     private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
         if (!this.isAutoLayoutRunning())
         {
@@ -9293,10 +9225,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_atomicRoutesMouseReleased
-
-    private void atomicRoutesStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_atomicRoutesStateChanged
-
-    }//GEN-LAST:event_atomicRoutesStateChanged
 
     private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -9313,10 +9241,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
 
-    private void preArrivalSpeedReductionStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionStateChanged
-
-    }//GEN-LAST:event_preArrivalSpeedReductionStateChanged
-
     private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
         if (!this.isAutoLayoutRunning())
         {
@@ -9331,10 +9255,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_defaultLocSpeedMouseReleased
-
-    private void defaultLocSpeedStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_defaultLocSpeedStateChanged
-
-    }//GEN-LAST:event_defaultLocSpeedStateChanged
 
     private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -9351,10 +9271,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_maxDelayMouseReleased
 
-    private void maxDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxDelayStateChanged
-
-    }//GEN-LAST:event_maxDelayStateChanged
-
     private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
         if (!this.isAutoLayoutRunning())
         {
@@ -9369,10 +9285,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
-
-    private void maxLocInactiveSecondsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsStateChanged
-
-    }//GEN-LAST:event_maxLocInactiveSecondsStateChanged
 
     private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -9519,10 +9431,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }).start();
     }//GEN-LAST:event_exportJSONActionPerformed
-
-    private void autonomyJSONKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_autonomyJSONKeyReleased
-
-    }//GEN-LAST:event_autonomyJSONKeyReleased
 
     private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
        try
@@ -9999,7 +9907,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void keyboardTypeItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_keyboardTypeItemStateChanged
         
-        if (evt.getStateChange() == ItemEvent.SELECTED)
+        if (evt.getStateChange() == ItemEvent.SELECTED && this.keyboardType.getSelectedIndex() >= 0)
         {
             this.prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
             this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
@@ -11021,7 +10929,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
-    private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;

@@ -205,6 +205,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - MFX locomotive addresses are no longer displayed in hex in the UI
     - Added addresses 253-256 to the keyboard
     - Keyboard buttons are now color-coded red/green based on the accessory state
+    - The Autonomy/Route export windows will now be auto-closed when the JSON file is saved
 
 * v2.0.8 [12/21/23]
     - Fixed bug where the number of days shown in the stats table was not sorted correctly

@@ -4,7 +4,9 @@
  */
 package gui;
 
+import java.awt.Component;
 import java.awt.HeadlessException;
+import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,22 +14,26 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 
 /**
  *
  * @author adamo
  */
-public class AutoJSONExport extends javax.swing.JPanel {
-
+public class AutoJSONExport extends javax.swing.JPanel
+{
     TrainControlUI tcui;
     String prefix;
     
     /**
      * Creates new form AutoJSONExport
      * @param text
+     * @param tcui
+     * @param prefix
      */
-    public AutoJSONExport(String text, TrainControlUI tcui, String prefix) {
+    public AutoJSONExport(String text, TrainControlUI tcui, String prefix)
+    {
         initComponents();
         this.jsonTextArea.setText(text);
         jsonTextArea.setLineWrap(true);
@@ -105,6 +111,14 @@ public class AutoJSONExport extends javax.swing.JPanel {
 
                     Files.write(Paths.get(f.getPath()), json);
                     tcui.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                    
+                    // Close the popup
+                    Window w = SwingUtilities.getWindowAncestor(jsonSaveAs);
+
+                    if (w != null)
+                    {
+                        w.setVisible(false);
+                    }
                 }
             }
             catch (HeadlessException | IOException e)
