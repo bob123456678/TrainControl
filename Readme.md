@@ -206,7 +206,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Added right-click menu option to copy a locomotive to the previous mapping page
         - Added two additional locomotive mapping pages, for a total of 10
         - The active mapping page number is now also shown in the tab title
-        - The active page is now remembered on exit
+        - The active page and button is now remembered on exit
     - MFX locomotive addresses are no longer displayed in hex in the UI
     - Added addresses 253-256 to the keyboard
     - Keyboard buttons are now color-coded red/green based on the accessory state

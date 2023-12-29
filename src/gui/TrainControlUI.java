@@ -15,6 +15,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -204,7 +205,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Data save file name
     private static final String DATA_FILE_NAME = "UIState.data";
     public static final String AUTONOMY_FILE_NAME = "autonomy.json";
-
+    private static final int SAVE_KEY_ACTIVE_MAPPING_NUMBER = -1;
+    private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
+    
     // External resources
     public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
     public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
@@ -623,6 +626,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Returns the key code corresponding to the currently selected locomotive button
+     * @return 
+     */
+    private Integer getKeyForCurrentButton()
+    {
+        for (Entry<Integer, JButton> entry : this.buttonMapping.entrySet())
+        {
+            if (entry.getValue().equals(this.currentButton))
+            {
+                return entry.getKey();
+            }
+        }
+        
+        return -1;
+    }
+    
+    /**
      * Saves initialized component database to a file
      */
     public void saveState()
@@ -645,10 +665,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             l.add(newMap);
         }
-        
-        // Index -1 is the currently active page
-        this.pageNames.put(-1, Integer.toString(this.locMappingNumber));
-        
+                
+        // Index -1 is the currently active page, -2 is the currently active button
+        this.pageNames.put(SAVE_KEY_ACTIVE_MAPPING_NUMBER, Integer.toString(this.locMappingNumber));
+        this.pageNames.put(SAVE_KEY_ACTIVE_BUTTON, Integer.toString(this.getKeyForCurrentButton()));
+
         // Save page names
         l.add(this.pageNames);
         
@@ -1004,21 +1025,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
         
-        // Restore page names, which are stored at the end
+        boolean savedLocKey = false;
+        // Restore page names, active button, and page, which are stored at the end
         if (saveStates.size() > TrainControlUI.NUM_LOC_MAPPINGS)
         {
             this.pageNames = saveStates.get(saveStates.size() - 1);
             
             try
             {
-                if (this.pageNames.containsKey(-1))
+                if (this.pageNames.containsKey(SAVE_KEY_ACTIVE_MAPPING_NUMBER))
                 {
-                    this.switchLocMapping(Integer.parseInt(this.pageNames.get(-1)));
+                    this.switchLocMapping(Integer.parseInt(this.pageNames.get(SAVE_KEY_ACTIVE_MAPPING_NUMBER)));
+                } 
+
+                if (this.pageNames.containsKey(TrainControlUI.SAVE_KEY_ACTIVE_BUTTON) && 
+                        this.buttonMapping.containsKey(Integer.valueOf(this.pageNames.get(SAVE_KEY_ACTIVE_BUTTON))))
+                {
+                    this.displayCurrentButtonLoc(this.buttonMapping.get(Integer.valueOf(this.pageNames.get(SAVE_KEY_ACTIVE_BUTTON))));
+                    savedLocKey = true;
                 } 
             }
             catch (Exception e)
             {
-                this.model.log("Failed to parse stored mapping number.");
+                this.model.log("Failed to parse stored mapping number or active button.");
             }
         }
                 
@@ -1032,7 +1061,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         // Display the locomotive
-        displayCurrentButtonLoc(QButton);
+        if (!savedLocKey)
+        {
+            displayCurrentButtonLoc(QButton);
+        }
         
         // Display loc mapping page
         this.switchLocMapping(this.locMappingNumber);
@@ -1633,15 +1665,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
-                if (this.model.getAccessoryState(i + offset))
-                {
-                    this.switchMapping.get(i).setSelected(true);
-                    this.switchMapping.get(i).setBackground(COLOR_SWITCH_RED);        
-                }
-                else
-                {
-                    this.switchMapping.get(i).setSelected(false);
-                    this.switchMapping.get(i).setBackground(COLOR_SWITCH_GREEN);
+                JToggleButton key = this.switchMapping.get(i);
+                
+                if (key != null)
+                {           
+                    if (this.model.getAccessoryState(i + offset))
+                    {
+                        key.setSelected(true);
+                        key.setBackground(COLOR_SWITCH_RED);        
+                    }
+                    else
+                    {
+                        key.setSelected(false);
+                        key.setBackground(COLOR_SWITCH_GREEN);
+                    }
+
+                    // Underline when red
+                    Font font = this.switchMapping.get(i).getFont();
+                    Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+                    attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
+                    this.switchMapping.get(i).setFont(font.deriveFont(attributes));
                 }
             }
         }));
@@ -7871,6 +7914,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             b.setBackground(COLOR_SWITCH_GREEN);
         }
+        
+        // Underline when red
+        Font font = b.getFont();
+        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+        attributes.put(TextAttribute.UNDERLINE, b.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
+        b.setFont(font.deriveFont(attributes));
         
         new Thread(() -> {
             this.model.setAccessoryState(switchId, b.isSelected());
