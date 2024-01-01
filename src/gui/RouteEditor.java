@@ -1174,7 +1174,7 @@ public class RouteEditor extends javax.swing.JPanel
                 
                 this.routeContents.setText((this.routeContents.getText() + "\n" + rc.toLine()).trim());
             }
-            catch (Exception e)
+            catch (NumberFormatException e)
             {
                 JOptionPane.showMessageDialog(this, "Invalid delay specified - must be an integer");
             }

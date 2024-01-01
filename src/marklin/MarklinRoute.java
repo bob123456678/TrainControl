@@ -286,7 +286,14 @@ public class MarklinRoute extends Route
                             
                             if (loc != null)
                             {
-                                loc.setSpeed(rc.getSpeed());
+                                if (rc.getSpeed() < 0)
+                                {
+                                    loc.instantStop();
+                                }
+                                else
+                                {
+                                    loc.setSpeed(rc.getSpeed());
+                                }
                             }
                             else
                             {
