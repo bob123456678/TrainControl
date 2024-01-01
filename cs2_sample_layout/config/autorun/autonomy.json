@@ -30,13 +30,6 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "ET41-149",
-                "reversible": false,
-                "speed": 36,
-                "arrivalFunc": 2,
-                "departureFunc": 10
-            },
             "x": 836,
             "y": 51
         },
@@ -75,14 +68,6 @@
             "station": true,
             "s88": 4,
             "maxTrainLength": 2,
-            "loc": {
-                "name": "EN57-925",
-                "reversible": true,
-                "speed": 35,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 2
-            },
             "x": 1025,
             "y": -11
         },
@@ -99,6 +84,14 @@
             "maxTrainLength": 0,
             "terminus": true,
             "priority": 1,
+            "loc": {
+                "name": "EN57-925",
+                "reversible": true,
+                "speed": 35,
+                "arrivalFunc": 2,
+                "departureFunc": 15,
+                "trainLength": 2
+            },
             "x": 285,
             "y": 0
         },
@@ -406,6 +399,14 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
+            "loc": {
+                "name": "EB 3203 DSB",
+                "reversible": true,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 3,
+                "trainLength": 3
+            },
             "x": 401,
             "y": 406
         },
@@ -438,6 +439,13 @@
             "s88": 1023,
             "maxTrainLength": 0,
             "priority": 1,
+            "loc": {
+                "name": "ET41-149",
+                "reversible": false,
+                "speed": 36,
+                "arrivalFunc": 2,
+                "departureFunc": 10
+            },
             "x": 297,
             "y": 418
         },
@@ -498,14 +506,6 @@
             "s88": 1017,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EB 3203 DSB",
-                "reversible": true,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 3,
-                "trainLength": 3
-            },
             "x": 581,
             "y": 532
         },
@@ -629,10 +629,6 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Switch 41",
-                    "state": "turn"
-                },
-                {
                     "acc": "Switch 104",
                     "state": "straight"
                 }
@@ -717,10 +713,6 @@
             "commands": [
                 {
                     "acc": "Switch 10",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 41",
                     "state": "turn"
                 },
                 {
@@ -975,6 +967,10 @@
             ],
             "lockedges": [
                 {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainB"
+                },
+                {
                     "start": "BottomMainCPre",
                     "end": "BottomMainC"
                 },
@@ -1074,10 +1070,6 @@
                 {
                     "acc": "Switch 99",
                     "state": "straight"
-                },
-                {
-                    "acc": "Switch 41",
-                    "state": "turn"
                 },
                 {
                     "acc": "Signal 62",
@@ -2482,20 +2474,18 @@
             "start": "TunnelReverse",
             "end": "BottomInnerOtherside",
             "length": 0,
-            "commands": [
-                {
-                    "acc": "Switch 10",
-                    "state": "straight"
-                },
-                {
-                    "acc": "Switch 41",
-                    "state": "turn"
-                }
-            ],
+            "commands": [{
+                "acc": "Switch 10",
+                "state": "straight"
+            }],
             "lockedges": [
                 {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                },
+                {
                     "start": "BottomInner",
-                    "end": "BottomCrossover"
+                    "end": "Tunnel"
                 },
                 {
                     "start": "BottomInner",
@@ -2503,11 +2493,7 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "Tunnel"
-                },
-                {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
+                    "end": "BottomCrossover"
                 }
             ]
         },
