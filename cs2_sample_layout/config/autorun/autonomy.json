@@ -44,7 +44,7 @@
             "name": "BottomMainB",
             "station": true,
             "s88": 10,
-            "maxTrainLength": 3,
+            "maxTrainLength": 4,
             "loc": {
                 "name": "ET22-678",
                 "reversible": false,
@@ -81,7 +81,7 @@
             "name": "BottomMainCTerm",
             "station": true,
             "s88": 4,
-            "maxTrainLength": 0,
+            "maxTrainLength": 2,
             "terminus": true,
             "priority": 1,
             "loc": {
