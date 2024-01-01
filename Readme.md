@@ -200,6 +200,12 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.10 [Beta]
+    - In routes with locomotive speed commands, speed -1 will now trigger an instant stop
+    - When autonomous operation is started and conditional routes are active, the warning will now only be shown one time
+    - Fixed locomotive speed command validation bug
+    - Fixes for rare UI crashes on startup
+
 * v2.0.9 [12/28/23]
     - Locomotive mapping convenience improvements
         - Added support for custom labels for each locomotive mapping page (right-click the default page name to change)

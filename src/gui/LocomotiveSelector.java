@@ -150,11 +150,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         locListLabel.setForeground(new java.awt.Color(0, 0, 155));
         locListLabel.setText("Assign Locomotive to Active Button:");
 
-        LocFilterBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LocFilterBoxActionPerformed(evt);
-            }
-        });
         LocFilterBox.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 LocFilterBoxKeyReleased(evt);
@@ -212,11 +207,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         closeOnLocSel.setSelected(true);
         closeOnLocSel.setText("Close Window on Assignment");
         closeOnLocSel.setFocusPainted(false);
-        closeOnLocSel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                closeOnLocSelActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -302,10 +292,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_LocFilterBoxKeyTyped
 
-    private void LocFilterBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LocFilterBoxActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_LocFilterBoxActionPerformed
-
     private void MainLocListComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_MainLocListComponentResized
         
        
@@ -323,10 +309,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
         updateScrollArea();
     }//GEN-LAST:event_formComponentShown
-
-    private void closeOnLocSelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeOnLocSelActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_closeOnLocSelActionPerformed
 
     private void formWindowStateChanged(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowStateChanged
         updateScrollArea();

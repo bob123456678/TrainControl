@@ -173,6 +173,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private LayoutGrid trainGrid;
     private ExecutorService LayoutGridRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
+    private ExecutorService MappingRenderer = Executors.newFixedThreadPool(1);
+    private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
     private List<Future<?>> autonomyFutures = new LinkedList<>();
     
@@ -221,6 +223,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Preferences
     private final Preferences prefs;
+    private boolean conditionalRouteWarningShown = false;
     
     // Locomotive clipboard 
     private Locomotive copyTarget = null;
@@ -1585,60 +1588,66 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
-     * Which locomotive's button do we force refresh?
+     * Repaints the locomotive keyboard
      * @param forceUpdateLoc 
      */
     private synchronized void repaintMappings(Locomotive forceUpdateLoc)
-    {                 
-        // Only repaint a button if the locomotive has changed
-        for(JButton b : this.labelMapping.keySet())
-        {
-            // Grey out if the active page corresponds to the active loc
-            if (b.equals(this.currentButton) 
-                    && this.lastLocMappingPainted == this.locMappingNumber)
+    {         
+        this.MappingRenderer.submit(new Thread(() -> 
+        { 
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                b.setEnabled(false);
-                this.labelMapping.get(b).setForeground(Color.red);
-            }
-            else
-            {
-                b.setEnabled(true);
-                this.labelMapping.get(b).setForeground(Color.black);
-            }
-            
-            Locomotive l = this.currentLocMapping().get(b);  
-            
-            if (l != null)
-            {
-                String name = l.getName();
-                
-                if (name.length() > 9)
+                // Only repaint a button if the locomotive has changed
+                for(JButton b : this.labelMapping.keySet())
                 {
-                    name = name.substring(0,9);
-                }
-                
-                if (!this.labelMapping.get(b).getText().equals(name) || l.equals(forceUpdateLoc))
-                {
-                    this.labelMapping.get(b).setText(name); 
-                    this.labelMapping.get(b).setCaretPosition(0);
-                    repaintIcon(b, l, this.locMappingNumber);
-                }
-                
-                this.sliderMapping.get(b).setEnabled(true);
-                this.sliderMapping.get(b).setValue(l.getSpeed());      
-            }
-            else
-            {
-                if (!this.labelMapping.get(b).getText().equals("---"))
-                {
-                    this.labelMapping.get(b).setText("---");
-                    repaintIcon(b, l, this.locMappingNumber);
-                }
-                
-                this.sliderMapping.get(b).setValue(0);
-                this.sliderMapping.get(b).setEnabled(false);   
-            }
-        }        
+                    // Grey out if the active page corresponds to the active loc
+                    if (b.equals(this.currentButton) 
+                            && this.lastLocMappingPainted == this.locMappingNumber)
+                    {
+                        b.setEnabled(false);
+                        this.labelMapping.get(b).setForeground(Color.red);
+                    }
+                    else
+                    {
+                        b.setEnabled(true);
+                        this.labelMapping.get(b).setForeground(Color.black);
+                    }
+
+                    Locomotive l = this.currentLocMapping().get(b);  
+
+                    if (l != null)
+                    {
+                        String name = l.getName();
+
+                        if (name.length() > 9)
+                        {
+                            name = name.substring(0,9);
+                        }
+
+                        if (!this.labelMapping.get(b).getText().equals(name) || l.equals(forceUpdateLoc))
+                        {
+                            this.labelMapping.get(b).setText(name); 
+                            this.labelMapping.get(b).setCaretPosition(0);
+                            repaintIcon(b, l, this.locMappingNumber);
+                        }
+
+                        this.sliderMapping.get(b).setEnabled(true);
+                        this.sliderMapping.get(b).setValue(l.getSpeed());      
+                    }
+                    else
+                    {
+                        if (!this.labelMapping.get(b).getText().equals("---"))
+                        {
+                            this.labelMapping.get(b).setText("---");
+                            repaintIcon(b, l, this.locMappingNumber);
+                        }
+
+                        this.sliderMapping.get(b).setValue(0);
+                        this.sliderMapping.get(b).setEnabled(false);   
+                    }
+                }    
+            }));
+        }));
     }
     
     @Override
@@ -1844,183 +1853,189 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     synchronized public void repaintLoc(boolean force)
     {     
-        if (this.activeLoc != null)
-        {            
-            String name = this.activeLoc.getName();
-
-            if (name.length() > MAX_LOC_NAME)
+        this.LocRenderer.submit(new Thread(() -> 
+        { 
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                name = name.substring(0, MAX_LOC_NAME);
-            }
-            
-            // Pre-compute this so we can check if it has changed
-            // "Page " + this.currentButtonlocMappingNumber + " Button "
-            String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
-                + this.currentButton.getText()
-                + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
-                + ")";
+                if (this.activeLoc != null)
+                {            
+                    String name = this.activeLoc.getName();
 
-            // Only repaint icon if the locomotive is changed
-            // Visual stuff
-            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
-            {
-                ImageLoader.submit(new Thread(() -> 
-                {
-                    repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
-                    
-                    if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                    if (name.length() > MAX_LOC_NAME)
                     {
-                        try 
-                        {
-                            locIcon.setIcon(new javax.swing.ImageIcon(
-                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                            ));      
-                            locIcon.setText("");
-                            locIcon.setVisible(true);
-                        }
-                        catch (IOException e)
-                        {
-                            locIcon.setIcon(null);
-                            locIcon.setVisible(false);
-                        }
+                        name = name.substring(0, MAX_LOC_NAME);
                     }
-                    else
+
+                    // Pre-compute this so we can check if it has changed
+                    // "Page " + this.currentButtonlocMappingNumber + " Button "
+                    String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
+                        + this.currentButton.getText()
+                        + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
+                        + ")";
+
+                    // Only repaint icon if the locomotive is changed
+                    // Visual stuff
+                    if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
                     {
-                        locIcon.setIcon(null);
-                        locIcon.setVisible(false);
-                    }
-                    
-                }));
-
-                this.ActiveLocLabel.setText(name);
-
-                this.CurrentKeyLabel.setText(locLabel);
-                
-                for (int i = 0; i < this.activeLoc.getNumF(); i++)
-                {
-                    final JToggleButton bt = this.rFunctionMapping.get(i);
-                    final int functionType = this.activeLoc.getFunctionType(i);
-
-                    bt.setVisible(true);
-                    bt.setEnabled(true);
-                    
-                    String targetURL = this.activeLoc.getFunctionIconUrl(functionType, false, true);
-                    
-                    bt.setHorizontalTextPosition(JButton.CENTER);
-                    bt.setVerticalTextPosition(JButton.CENTER);
-                    
-                    ImageLoader.submit(new Thread(() -> 
-                    {
-                        try
+                        ImageLoader.submit(new Thread(() -> 
                         {
-                            if (functionType > 0 && LOAD_IMAGES)
+                            repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
+
+                            if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                             {
-                                Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
-
-                                if (icon != null)
+                                try 
                                 {
-                                    bt.setIcon(
-                                        new javax.swing.ImageIcon(
-                                            icon
-                                        )
-                                    );
-
-                                    bt.setText("");                                    
+                                    locIcon.setIcon(new javax.swing.ImageIcon(
+                                        getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
+                                        // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
+                                    ));      
+                                    locIcon.setText("");
+                                    locIcon.setVisible(true);
                                 }
-                                else
+                                catch (IOException e)
                                 {
-                                    //bt.setText("F" + Integer.toString(fNo));
+                                    locIcon.setIcon(null);
+                                    locIcon.setVisible(false);
                                 }
                             }
                             else
                             {
-                                bt.setIcon(null);
-                                bt.setText("");                                    
-                                //bt.setText("F" + Integer.toString(fNo));
+                                locIcon.setIcon(null);
+                                locIcon.setVisible(false);
                             }
-                        }
-                        catch (IOException e)
+
+                        }));
+
+                        this.ActiveLocLabel.setText(name);
+
+                        this.CurrentKeyLabel.setText(locLabel);
+
+                        for (int i = 0; i < this.activeLoc.getNumF(); i++)
                         {
-                            this.model.log("Icon not found: " + targetURL);
-                            //bt.setText("F" + Integer.toString(fNo));
-                        } 
-                    }));         
-                }
-                
-                for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
-                {
-                    this.rFunctionMapping.get(i).setVisible(true);
-                    this.rFunctionMapping.get(i).setEnabled(false);
-                    
-                    //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
-                    this.rFunctionMapping.get(i).setText("");                                    
-                    this.rFunctionMapping.get(i).setIcon(null);
-                }
-                
-                // Hide unnecessary function tabs
-                if (this.activeLoc.getNumF() < 20)
-                {
-                    FunctionTabs.remove(this.F20AndUpPanel);
+                            final JToggleButton bt = this.rFunctionMapping.get(i);
+                            final int functionType = this.activeLoc.getFunctionType(i);
+
+                            bt.setVisible(true);
+                            bt.setEnabled(true);
+
+                            String targetURL = this.activeLoc.getFunctionIconUrl(functionType, false, true);
+
+                            bt.setHorizontalTextPosition(JButton.CENTER);
+                            bt.setVerticalTextPosition(JButton.CENTER);
+
+                            ImageLoader.submit(new Thread(() -> 
+                            {
+                                try
+                                {
+                                    if (functionType > 0 && LOAD_IMAGES)
+                                    {
+                                        Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
+
+                                        if (icon != null)
+                                        {
+                                            bt.setIcon(
+                                                new javax.swing.ImageIcon(
+                                                    icon
+                                                )
+                                            );
+
+                                            bt.setText("");                                    
+                                        }
+                                        else
+                                        {
+                                            //bt.setText("F" + Integer.toString(fNo));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        bt.setIcon(null);
+                                        bt.setText("");                                    
+                                        //bt.setText("F" + Integer.toString(fNo));
+                                    }
+                                }
+                                catch (IOException e)
+                                {
+                                    this.model.log("Icon not found: " + targetURL);
+                                    //bt.setText("F" + Integer.toString(fNo));
+                                } 
+                            }));         
+                        }
+
+                        for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
+                        {
+                            this.rFunctionMapping.get(i).setVisible(true);
+                            this.rFunctionMapping.get(i).setEnabled(false);
+
+                            //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
+                            this.rFunctionMapping.get(i).setText("");                                    
+                            this.rFunctionMapping.get(i).setIcon(null);
+                        }
+
+                        // Hide unnecessary function tabs
+                        if (this.activeLoc.getNumF() < 20)
+                        {
+                            FunctionTabs.remove(this.F20AndUpPanel);
+                        }
+                        else
+                        {
+                            FunctionTabs.add("F20-F31", this.F20AndUpPanel);
+                        }
+
+                        this.Backward.setVisible(true);
+                        this.Forward.setVisible(true);
+                        this.SpeedSlider.setVisible(true);
+                        this.FunctionTabs.setVisible(true);
+                    }
+
+                    // Loc state
+                    if (this.activeLoc.goingForward())
+                    {
+                        this.Forward.setSelected(true);
+                        this.Backward.setSelected(false);
+                    }
+                    else
+                    {
+                        this.Backward.setSelected(true);
+                        this.Forward.setSelected(false);
+                    }
+
+                    for (int i = 0; i < this.activeLoc.getNumF(); i++)
+                    {
+                        this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
+                    }
+
+                    for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
+                    {
+                        this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
+                    }
+
+                    this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
+
+                    this.repaintMappings();
                 }
                 else
                 {
-                    FunctionTabs.add("F20-F31", this.F20AndUpPanel);
+                    locIcon.setIcon(null);
+                    locIcon.setText("");
+
+                    this.ActiveLocLabel.setText("No Locomotive (Right-click button)");
+
+                    this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
+                               + this.currentButton.getText()    
+                    );
+
+                    this.Backward.setVisible(false);
+                    this.Forward.setVisible(false);
+                    this.SpeedSlider.setVisible(false);
+                    this.FunctionTabs.setVisible(false);
+
+                    for (int i = 0; i < NUM_FN; i++)
+                    {
+                        this.rFunctionMapping.get(i).setVisible(false);
+                    }
                 }
-
-                this.Backward.setVisible(true);
-                this.Forward.setVisible(true);
-                this.SpeedSlider.setVisible(true);
-                this.FunctionTabs.setVisible(true);
-            }
-
-            // Loc state
-            if (this.activeLoc.goingForward())
-            {
-                this.Forward.setSelected(true);
-                this.Backward.setSelected(false);
-            }
-            else
-            {
-                this.Backward.setSelected(true);
-                this.Forward.setSelected(false);
-            }
-
-            for (int i = 0; i < this.activeLoc.getNumF(); i++)
-            {
-                this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-            }
-            
-            for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
-            {
-                this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-            }
-
-            this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
-            
-            this.repaintMappings();
-        }
-        else
-        {
-            locIcon.setIcon(null);
-            locIcon.setText("");
-
-            this.ActiveLocLabel.setText("No Locomotive (Right-click button)");
-
-            this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
-                       + this.currentButton.getText()    
-            );
-
-            this.Backward.setVisible(false);
-            this.Forward.setVisible(false);
-            this.SpeedSlider.setVisible(false);
-            this.FunctionTabs.setVisible(false);
-
-            for (int i = 0; i < NUM_FN; i++)
-            {
-                this.rFunctionMapping.get(i).setVisible(false);
-            }
-        }
+            }));
+        }));
     }
     
     private Map<JButton, Locomotive> nextLocMapping()
@@ -2040,37 +2055,54 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void displayCurrentButtonLoc(javax.swing.JButton b)
     {
-        if (this.currentButton != null)
+        displayCurrentButtonLoc(b, false);
+    }
+    
+    private void displayCurrentButtonLoc(javax.swing.JButton b, boolean showSelector)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            this.currentButton.setEnabled(true);
-            this.labelMapping.get(this.currentButton).setForeground(Color.black);
-        }
-        
-        if (b != null)
-        {
-            this.currentButton = b;
-            this.currentButtonlocMappingNumber = this.locMappingNumber;
-
-            this.currentButton.setEnabled(false);
-
-            Locomotive current = this.currentLocMapping().get(this.currentButton);
-            
-            if (current != null)
+            if (this.currentButton != null)
             {
-                this.activeLoc = this.model.getLocByName(current.getName());
+                this.currentButton.setEnabled(true);
+                this.labelMapping.get(this.currentButton).setForeground(Color.black);
             }
-            else
+
+            if (b != null)
             {
-                this.activeLoc = null;
+                this.currentButton = b;
+                this.currentButtonlocMappingNumber = this.locMappingNumber;
+
+                this.currentButton.setEnabled(false);
+
+                Locomotive current = this.currentLocMapping().get(this.currentButton);
+
+                if (current != null)
+                {
+                    this.activeLoc = this.model.getLocByName(current.getName());
+                }
+                else
+                {
+                    this.activeLoc = null;
+                }
+
+                this.labelMapping.get(this.currentButton).setForeground(Color.red);
             }
+
+            this.lastLocMappingPainted = this.locMappingNumber;
+
+            repaintLoc();  
+            repaintMappings();
             
-            this.labelMapping.get(this.currentButton).setForeground(Color.red);
-        }
-        
-        this.lastLocMappingPainted = this.locMappingNumber;
-        
-        repaintLoc();  
-        repaintMappings();
+            if (showSelector)
+            {
+                // Show selector if no locomotive is assigned
+                if (this.activeLoc == null)
+                {
+                    showLocSelector();
+                }
+            }
+        }));
     }
 
     private void setLocSpeed(int speed)
@@ -5344,94 +5376,93 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jSeparator11)
-                    .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(jSeparator10, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jSeparator14, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jSeparator15, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, keyboardButtonPanelLayout.createSequentialGroup()
+                    .addComponent(jSeparator10)
+                    .addComponent(jSeparator14)
+                    .addComponent(jSeparator15)
+                    .addGroup(keyboardButtonPanelLayout.createSequentialGroup()
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(14, 14, 14)
-                            .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(SwitchButton64, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addComponent(jSeparator9, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jSeparator12, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jSeparator13, javax.swing.GroupLayout.Alignment.LEADING)))
+                                .addComponent(SwitchButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton19, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton21, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton22, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton27, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton29, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton28, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton35, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton36, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton37, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton43, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton44, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton45, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton51, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton52, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton53, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(14, 14, 14)
+                        .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton59, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton60, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton61, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton62, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton63, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(SwitchButton64, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jSeparator9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jSeparator12)
+                    .addComponent(jSeparator13))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -7943,7 +7974,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void executeRoute(String route)
     {
-        new Thread(() -> {
+        new Thread(() ->
+        {
             this.model.execRoute(route);
             refreshRouteList();
         }).start();
@@ -8543,13 +8575,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_PrevLocMappingActionPerformed
 
     private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
-        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource());
-
-        // Show selector if no locomotive is assigned
-        if (this.activeLoc == null)
-        {
-            showLocSelector();
-        }
+        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource(), true);
     }//GEN-LAST:event_LetterButtonPressed
 
     private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
@@ -9120,16 +9146,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
                     
-                    int dialogResult = JOptionPane.showConfirmDialog(this, 
-                            "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+                    if (!conditionalRouteWarningShown)
+                    {
+                        conditionalRouteWarningShown = true;
                     
-                    if(dialogResult == JOptionPane.NO_OPTION)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        break;
+                        int dialogResult = JOptionPane.showConfirmDialog(this, 
+                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                        if (dialogResult == JOptionPane.NO_OPTION)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -10512,7 +10543,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (this.model.getAutoLayout().getPoints().isEmpty()) return;
                 if (this.model.getAutoLayout().isAutoRunning() && !this.model.getAutoLayout().getActiveLocomotives().isEmpty()) return;
                 
-                // Prevet concurrent calls
+                // Prevent concurrent calls
                 for (Future<?> f : this.autonomyFutures)
                 {
                     if (!f.isDone()) 
@@ -10549,11 +10580,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     synchronized private void repaintAutoLocListLite()
     { 
-        for (Object o : this.autoLocPanel.getComponents())
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-            status.updateState(null);
-        }
+            for (Object o : this.autoLocPanel.getComponents())
+            {
+                AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
+                status.updateState(null);
+            }
+        }));
     }
     
     /**
@@ -11086,40 +11120,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void repaintPathLabel()
     {
-        // Set UI label
-        if (!isLocalLayout())
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            LayoutPathLabel.setText("Central Station: " + this.prefs.get(IP_PREF, "(none loaded)"));
-            this.useCS2Layout.setVisible(false);
-        }
-        else
-        {
-            LayoutPathLabel.setText(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
-            this.useCS2Layout.setVisible(true);
-        }
+            // Set UI label
+            if (!isLocalLayout())
+            {
+                LayoutPathLabel.setText("Central Station: " + this.prefs.get(IP_PREF, "(none loaded)"));
+                this.useCS2Layout.setVisible(false);
+            }
+            else
+            {
+                LayoutPathLabel.setText(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+                this.useCS2Layout.setVisible(true);
+            }
+        }));
     }
     
     @Override
     public synchronized void repaintLayout()
     {    
-        repaintPathLabel();
-                
-        if (this.model.getLayoutList().isEmpty())
-        {
-            this.KeyboardTab.remove(this.layoutPanel);
-        }
-        else 
-        {
-            if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+        this.LayoutGridRenderer.submit(new Thread(() -> 
+        { 
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                this.KeyboardTab.add(this.layoutPanel, 1);
-                this.KeyboardTab.setTitleAt(1, "Layout");
-            }
-        
-            this.LayoutGridRenderer.submit(new Thread(() -> 
-            { 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                repaintPathLabel();
+
+                if (this.model.getLayoutList().isEmpty())
                 {
+                    this.KeyboardTab.remove(this.layoutPanel);
+                }
+                else 
+                {
+                    if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+                    {
+                        this.KeyboardTab.add(this.layoutPanel, 1);
+                        this.KeyboardTab.setTitleAt(1, "Layout");
+                    }
+
                     // TODO - Likely unnecessary
                     //this.KeyboardTab.repaint();
 
@@ -11136,8 +11173,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                     // Important!
                     this.KeyboardTab.repaint();
-                }));
+                }
             }));
-        }
+        }));
     }
 }
