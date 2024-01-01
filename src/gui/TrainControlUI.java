@@ -1160,9 +1160,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {            
             model.sendPing(true);
             
-            (new Timer()).scheduleAtFixedRate(new TimerTask() {
+            (new Timer()).scheduleAtFixedRate(new TimerTask()
+            {
                 @Override
-                public void run() {
+                public void run()
+                {
                     try
                     {
                         if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
@@ -1183,7 +1185,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         }
                     }
                 }
-             }, 0, PING_INTERVAL);
+            }, 0, PING_INTERVAL);
         }
     }
     
