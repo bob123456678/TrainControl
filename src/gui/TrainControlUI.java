@@ -537,37 +537,47 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private void applyKeyboardType(String type)
     {            
-        initButtonMapping();
-                   
-        switch (type)
-        {
-            case KEYBOARD_QWERTY:
-                
-                // Already handled by the call above
-                
-                break;
-            
-            case KEYBOARD_AZERTY:
-                
-                this.swapButton(KeyEvent.VK_A, KeyEvent.VK_Q);
-                this.swapButton(KeyEvent.VK_Z, KeyEvent.VK_W);
-                
-                break;
-                
-            case KEYBOARD_QWERTZ:
-                
-                this.swapButton(KeyEvent.VK_Z, KeyEvent.VK_Y);
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {    
+            initButtonMapping();
 
-                break;
-        }
-                
-        // Set text labels - letter of the mapping
-        for (Entry<Integer, JButton> entry : this.buttonMapping.entrySet())
-        {
-            entry.getValue().setText(KeyEvent.getKeyText(entry.getKey()).toUpperCase());
-        }
-        
-        this.repaintMappings();
+            switch (type)
+            {
+                case KEYBOARD_QWERTY:
+
+                    // Already handled by the call above
+
+                    break;
+
+                case KEYBOARD_AZERTY:
+
+                    this.swapButton(KeyEvent.VK_A, KeyEvent.VK_Q);
+                    this.swapButton(KeyEvent.VK_Z, KeyEvent.VK_W);
+
+                    break;
+
+                case KEYBOARD_QWERTZ:
+
+                    this.swapButton(KeyEvent.VK_Z, KeyEvent.VK_Y);
+
+                    break;
+            }
+                          
+            // Repaint to fix shadow bug - wouldn't be changed by repaintMappings b/c we are only changing the button labels
+            this.repaintIcon(AButton, this.getButtonLocomotive(AButton), this.locMappingNumber);
+            this.repaintIcon(ZButton, this.getButtonLocomotive(ZButton), this.locMappingNumber);
+            this.repaintIcon(WButton, this.getButtonLocomotive(WButton), this.locMappingNumber);
+            this.repaintIcon(YButton, this.getButtonLocomotive(YButton), this.locMappingNumber);
+            this.repaintIcon(QButton, this.getButtonLocomotive(QButton), this.locMappingNumber);
+
+            // Set text labels - letter of the mapping
+            for (Entry<Integer, JButton> entry : this.buttonMapping.entrySet())
+            {
+                entry.getValue().setText(KeyEvent.getKeyText(entry.getKey()).toUpperCase());
+            }
+
+            this.repaintMappings();
+        }));
     }
        
     /**
@@ -1803,7 +1813,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     {
                         BufferedImage locImage = (BufferedImage) getLocImage(l.getImageURL(), 66);
                       
-                        // Genrate shadow images
+                        // Generate shadow images
                         BufferedImage textImage = ImageUtil.generateImageWithText(b.getText(), Color.BLACK, b.getFont(), 
                             locImage.getWidth(null), locImage.getHeight(null), 2, 1);
                         
@@ -1832,6 +1842,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         noImageButton(b);
 
                         this.model.log("Failed to load image " + l.getImageURL());
+                        
+                        if (this.model.isDebug())
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
                 else
@@ -1879,10 +1894,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     // Visual stuff
                     if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
                     {
+                        // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
+                        repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
+                        
                         ImageLoader.submit(new Thread(() -> 
                         {
-                            repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
-
                             if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                             {
                                 try 
