@@ -262,6 +262,7 @@
         "name": "Cross Over",
         "id": 7,
         "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -310,6 +311,13 @@
                 "state": {
                     "ADDRESS": "10",
                     "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false"
                 }
             }
         ]
