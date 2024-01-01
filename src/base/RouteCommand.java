@@ -347,7 +347,11 @@ public class RouteCommand implements java.io.Serializable
         else if (line.trim().startsWith(LOC_SPEED_PREFIX + ","))
         {
             String name = line.split(",")[1].trim();
-            int speed = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
+            int speed = Integer.parseInt(line.split(",")[2].trim());
+            
+            // Validate speed, negative means instant stop
+            if (speed < 0) speed = -1;
+            if (speed > 100) speed = 100;
 
             RouteCommand rc = RouteCommand.RouteCommandLocomotive(name, speed);
 
