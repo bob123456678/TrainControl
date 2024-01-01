@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import marklin.MarklinAccessory;
 import static marklin.MarklinControlStation.init;
 import marklin.MarklinControlStation;
+import marklin.MarklinLocomotive;
 import marklin.MarklinRoute;
 
 /**
@@ -37,8 +38,16 @@ public class ProgrammaticControlExample
                 myLoc.lightsOn();
 
                 // Sets a speed (0-100%)
+                myLoc.setSpeed(50);
+                
+                // Slow deceleration
                 myLoc.setSpeed(0);
+                
+                // Instant stop for DCC/MFX, slow deceleration for MM2
                 myLoc.stop();
+                
+                // Instant stop for MM2 locomotives
+                ((MarklinLocomotive) myLoc).instantStop();
 
                 // Sets the direction
                 myLoc.setDirection(Locomotive.locDirection.DIR_FORWARD);
@@ -53,12 +62,42 @@ public class ProgrammaticControlExample
                 Locomotive myMM2Loc = data.newMM2Locomotive("BR 86", 60);
 
                 //
-                // Accessories
+                // Accessories by raw address
+                //
+                
+                // These commands are useful if the accessory does not already exist on any layout
+                // Retrieve the current state of an arbitrary accessory by address
+                boolean state = data.getAccessoryState(3);
+                
+                // Change the state
+                data.setAccessoryState(3, !state);
+                
+                // The accessory will now automatically be saved in the database
+                MarklinAccessory mySwitch3 = data.getAccessoryByName("Switch 3");
+                mySwitch3.setSwitched(true);
+                
+                // Manually add a new signal to the database so that it can be referenced by name
+                data.newSignal("4", 4, false);
+                MarklinAccessory mySignal4 = data.getAccessoryByName("Signal 4");
+                
+                // Send command to ensure the state is consistent
+                mySignal4.green();
+
+                // Manually add a new switch to the database so that it can be referenced by name
+                data.newSwitch("5", 5, false);
+                MarklinAccessory mySwitch5 = data.getAccessoryByName("Switch 5");
+                
+                // Send command to ensure the state is consistent
+                mySwitch5.turn();
+
+                //
+                // Accessories that are already on a layout
                 //
 
                 // Retrieve a signal by its MM2/DCC address (Note: everything but switches will always start with "Signal")
+                // This assumes that the signal exists within the layout
                 MarklinAccessory mySignal = data.getAccessoryByName("Signal 1");
-
+                
                 // These two are equivalent
                 mySignal.red();
                 mySignal.setSwitched(true);
@@ -72,7 +111,8 @@ public class ProgrammaticControlExample
                 myLoc.setAccessoryState(1, false);
 
 
-                // Retrieve a signal by its MM2/DCC address
+                // Retrieve a switch by its MM2/DCC address
+                // This assumes that the switch exists within the layout
                 MarklinAccessory mySwitch = data.getAccessoryByName("Switch 2");
 
                 // These two are equivalent
@@ -85,14 +125,19 @@ public class ProgrammaticControlExample
 
                 // = Set switch 2 to turnout via the Locomotive API
                 myLoc.setAccessoryState(2, true);
-
-
+                
+   
                 // 
                 // Feedback
                 //
 
                 // Query the status of S88 feedback with address 1
                 boolean feedbackStatus = data.getFeedbackState("1");
+                
+                if (feedbackStatus)
+                {
+                    System.out.println("Feedback 1 shows occupied");
+                } 
 
                 // = Query the status of S88 feedback via the Locomotive API
                 feedbackStatus = myLoc.isFeedbackSet("1");
@@ -109,11 +154,14 @@ public class ProgrammaticControlExample
                 // Lists all routes stored in the CS2/CS3
                 List<String> routes = data.getRouteList();
 
-                // Execute a route
+                // Execute a route by name
                 data.execRoute("SomeRoute");
 
                 // = Execute a route via the Locomotive API
                 myLoc.execRoute("SomeRoute");
+                
+                // Routes can be created via the CS2, via the TrainControl UI,
+                // or by creating a new MarklinRoute object and then calling data.newRoute
 
                 // 
                 // Chaining Commands

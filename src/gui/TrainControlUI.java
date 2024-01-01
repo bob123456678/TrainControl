@@ -7970,7 +7970,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         attributes.put(TextAttribute.UNDERLINE, b.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
         b.setFont(font.deriveFont(attributes));
         
-        new Thread(() -> {
+        new Thread(() ->
+        {
             this.model.setAccessoryState(switchId, b.isSelected());
         }).start();
     }//GEN-LAST:event_UpdateSwitchState
