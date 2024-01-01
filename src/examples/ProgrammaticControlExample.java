@@ -46,7 +46,7 @@ public class ProgrammaticControlExample
                 // Instant stop for DCC/MFX, slow deceleration for MM2
                 myLoc.stop();
                 
-                // Instant stop for MM2 locomotives
+                // Instant stop for all locomotives, including MM2
                 ((MarklinLocomotive) myLoc).instantStop();
 
                 // Sets the direction
