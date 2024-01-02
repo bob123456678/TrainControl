@@ -171,11 +171,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         MainLocList.setMaximumSize(null);
         MainLocList.setMinimumSize(new java.awt.Dimension(670, 600));
         MainLocList.setPreferredSize(new java.awt.Dimension(670, 600));
-        MainLocList.addComponentListener(new java.awt.event.ComponentAdapter() {
-            public void componentResized(java.awt.event.ComponentEvent evt) {
-                MainLocListComponentResized(evt);
-            }
-        });
         MainLocList.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 MainLocListKeyPressed(evt);
@@ -291,11 +286,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             filterLocList();
         }
     }//GEN-LAST:event_LocFilterBoxKeyTyped
-
-    private void MainLocListComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_MainLocListComponentResized
-        
-       
-    }//GEN-LAST:event_MainLocListComponentResized
 
     private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
         updateScrollArea();

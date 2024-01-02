@@ -119,9 +119,6 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         setMinimumSize(new java.awt.Dimension(140, 95));
         setPreferredSize(new java.awt.Dimension(140, 95));
         addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                formMouseEntered(evt);
-            }
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 formMouseReleased(evt);
             }
@@ -187,10 +184,6 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
     private void locIconMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locIconMouseReleased
         formMouseReleased(evt);
     }//GEN-LAST:event_locIconMouseReleased
-
-    private void formMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseEntered
-       
-    }//GEN-LAST:event_formMouseEntered
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel LocLabel;

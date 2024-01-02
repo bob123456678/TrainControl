@@ -6,6 +6,7 @@ package gui;
 
 import base.Locomotive;
 import java.awt.Image;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.ImageIcon;
@@ -50,7 +51,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 Image icon = parent.getLocImage(targetURL, 35);
                 iconModel.add(new ImageIcon(icon));
             }
-            catch (Exception e)
+            catch (IOException e)
             {
                 iconModel.add(Integer.toString(i));
                 this.parent.getModel().log("Error loading function icon " + i);
@@ -269,16 +270,15 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
     private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
         
-        int fNo = this.fNo.getSelectedIndex();
+        int targetFNo = this.fNo.getSelectedIndex();
 
-        this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(fNo)));
+        this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
         
-        
-        if (loc.isFunctionTimed(fNo) > 0)
+        if (loc.isFunctionTimed(targetFNo) > 0)
         {
-            this.functionTriggerType.setSelectedIndex(Math.min(loc.isFunctionTimed(fNo) + 1, this.functionTriggerType.getItemCount() - 1));
+            this.functionTriggerType.setSelectedIndex(Math.min(loc.isFunctionTimed(targetFNo) + 1, this.functionTriggerType.getItemCount() - 1));
         }
-        else if (loc.isFunctionPulse(fNo))
+        else if (loc.isFunctionPulse(targetFNo))
         {
             this.functionTriggerType.setSelectedIndex(1);
         }

@@ -59,9 +59,6 @@
               <Color blue="ff" green="ff" red="ff" type="rgb"/>
             </Property>
           </Properties>
-          <Events>
-            <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="ExtLayoutPanelKeyPressed"/>
-          </Events>
 
           <Layout>
             <DimensionLayout dim="0">

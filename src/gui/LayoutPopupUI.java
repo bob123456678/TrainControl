@@ -29,6 +29,7 @@ public class LayoutPopupUI extends javax.swing.JFrame {
      * @param l reference to the layout
      * @param size size of each tile, in pixels
      * @param ui
+     * @param pageIndex
      */
     public LayoutPopupUI(MarklinLayout l, int size, TrainControlUI ui, int pageIndex)
     {
@@ -137,11 +138,6 @@ public class LayoutPopupUI extends javax.swing.JFrame {
         });
 
         ExtLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
-        ExtLayoutPanel.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                ExtLayoutPanelKeyPressed(evt);
-            }
-        });
 
         javax.swing.GroupLayout ExtLayoutPanelLayout = new javax.swing.GroupLayout(ExtLayoutPanel);
         ExtLayoutPanel.setLayout(ExtLayoutPanelLayout);
@@ -175,10 +171,6 @@ public class LayoutPopupUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void ExtLayoutPanelKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_ExtLayoutPanelKeyPressed
-        
-    }//GEN-LAST:event_ExtLayoutPanelKeyPressed
 
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         parent.childWindowKeyEvent(evt);

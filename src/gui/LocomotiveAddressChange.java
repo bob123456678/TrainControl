@@ -5,11 +5,6 @@
 package gui;
 
 import base.Locomotive;
-import java.awt.Image;
-import java.util.ArrayList;
-import java.util.List;
-import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive;
 import marklin.MarklinLocomotive.decoderType;
 
@@ -105,7 +100,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(decoderTypeInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(decoderTypeLabel))
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 

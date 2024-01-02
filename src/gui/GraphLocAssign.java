@@ -262,11 +262,6 @@ public class GraphLocAssign extends javax.swing.JPanel
         });
 
         reversible.setText("Reversible");
-        reversible.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                reversibleActionPerformed(evt);
-            }
-        });
 
         arrivalFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31" }));
 
@@ -347,10 +342,6 @@ public class GraphLocAssign extends javax.swing.JPanel
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
-
-    private void reversibleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reversibleActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_reversibleActionPerformed
 
     private void locAssignActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locAssignActionPerformed
        updateValues();
