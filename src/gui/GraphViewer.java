@@ -8,8 +8,10 @@ package gui;
 import automation.Edge;
 import automation.Point;
 import java.awt.Component;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -22,6 +24,7 @@ import javax.swing.SwingUtilities;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.algorithm.Toolkit;
+import org.graphstream.ui.geom.Point2;
 import org.graphstream.ui.geom.Point3;
 import org.graphstream.ui.graphicGraph.GraphicElement;
 import org.graphstream.ui.graphicGraph.GraphicGraph;
@@ -30,6 +33,7 @@ import org.graphstream.ui.swing_viewer.util.DefaultMouseManager;
 import org.graphstream.ui.swing_viewer.util.DefaultShortcutManager;
 import org.graphstream.ui.view.Viewer;
 import org.graphstream.ui.view.View;
+import org.graphstream.ui.view.camera.Camera;
 import org.graphstream.ui.view.util.InteractiveElement;
 
 /**
@@ -766,6 +770,28 @@ final public class GraphViewer extends javax.swing.JFrame {
             swingViewer.disableAutoLayout();
         }
         
+        // Enable zooming with mouse wheel
+        // https://stackoverflow.com/questions/44675827/how-to-zoom-into-a-graphstream-view
+        // swingView.getCamera().setViewPercent(1);
+        ((Component) swingView).addMouseWheelListener((MouseWheelEvent e) -> {
+            e.consume();
+            int i = e.getWheelRotation();
+            double factor = Math.pow(1.25, i);
+            Camera cam = swingView.getCamera();
+            double zoom = cam.getViewPercent() * factor;
+            Point2 pxCenter  = cam.transformGuToPx(cam.getViewCenter().x, cam.getViewCenter().y, 0);
+            Point3 guClicked = cam.transformPxToGu(e.getX(), e.getY());
+            double newRatioPx2Gu = cam.getMetrics().ratioPx2Gu/factor;
+            double x1 = guClicked.x + (pxCenter.x - e.getX())/newRatioPx2Gu;
+            double y1 = guClicked.y - (pxCenter.y - e.getY())/newRatioPx2Gu;
+            cam.setViewCenter(x1, y1, 0);
+            cam.setViewPercent(zoom);
+        });
+                
+        // Improve quality
+        graph.setAttribute("ui.antialias");
+        graph.setAttribute("ui.quality");
+        
         // Disable the auto layout if a node gets dragged
         swingView.setMouseManager(new DefaultMouseManager()
         {
@@ -827,63 +853,76 @@ final public class GraphViewer extends javax.swing.JFrame {
             @Override
             public void mouseClicked(MouseEvent evt)
             {
-                if (!parent.getModel().getAutoLayout().isRunning())
+                // Reset view with middle button
+                if ((evt.getModifiers() & InputEvent.BUTTON2_MASK) != 0)
                 {
-                    // Special double-click functionality - directly edit the locomotive
-                    if (!SwingUtilities.isRightMouseButton(evt) && evt.getClickCount() == 2)
+                    swingView.getCamera().setViewPercent(1);
+                    swingView.getCamera().setViewCenter(
+                        swingView.getCamera().getMetrics().graphWidthGU() / 2 + 200, 
+                        swingView.getCamera().getMetrics().graphHeightGU() / 2 - 100, // based on padding
+                        0
+                    );
+                }
+                else
+                { 
+                    if (!parent.getModel().getAutoLayout().isRunning())
                     {
-                        GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
-
-                        if (element != null)
+                        // Special double-click functionality - directly edit the locomotive
+                        if (!SwingUtilities.isRightMouseButton(evt) && evt.getClickCount() == 2)
                         {
-                            Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
+                            GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
 
-                            if (p != null && p.isDestination())
-                            {    
-                                // Select the active locomotive
-                                GraphLocAssign edit = new GraphLocAssign(parent, p, 
-                                    // If no locs in list, add new
-                                    parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
-                                );
+                            if (element != null)
+                            {
+                                Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
 
-                                int dialogResult = JOptionPane.showConfirmDialog(
-                                    (Component) swingView, edit, 
-                                    !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() ? "Edit / Assign Locomotive" : "Place New Locomotive", 
-                                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
-                                );
+                                if (p != null && p.isDestination())
+                                {    
+                                    // Select the active locomotive
+                                    GraphLocAssign edit = new GraphLocAssign(parent, p, 
+                                        // If no locs in list, add new
+                                        parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
+                                    );
 
-                                if(dialogResult == JOptionPane.OK_OPTION)
-                                {
-                                    edit.commitChanges();
+                                    int dialogResult = JOptionPane.showConfirmDialog(
+                                        (Component) swingView, edit, 
+                                        !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() ? "Edit / Assign Locomotive" : "Place New Locomotive", 
+                                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+                                    );
+
+                                    if(dialogResult == JOptionPane.OK_OPTION)
+                                    {
+                                        edit.commitChanges();
+                                    }
                                 }
-                            }
-                        }   
+                            }   
+                        }
+                        else if (SwingUtilities.isRightMouseButton(evt))
+                        {
+                            GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+
+                            if (element != null)
+                            {
+                                Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
+
+                                if (p != null)
+                                {                         
+                                    RightClickMenu menu = new RightClickMenu(parent, p);
+
+                                    menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
+                                }
+                            }  
+                            else
+                            {
+                                // Right click on edges does not currently work, so all edge related options will be on the point right click menu
+                                // Insert at cursor
+                                Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
+
+                                RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y);
+                                menu.show(evt.getComponent(), evt.getX(), evt.getY());  
+                            }           
+                        }    
                     }
-                    else if (SwingUtilities.isRightMouseButton(evt))
-                    {
-                        GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
-
-                        if (element != null)
-                        {
-                            Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
-
-                            if (p != null)
-                            {                         
-                                RightClickMenu menu = new RightClickMenu(parent, p);
-
-                                menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
-                            }
-                        }  
-                        else
-                        {
-                            // Right click on edges does not currently work, so all edge related options will be on the point right click menu
-                            // Insert at cursor
-                            Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
-
-                            RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y);
-                            menu.show(evt.getComponent(), evt.getX(), evt.getY());  
-                        }           
-                    }    
                 }
             }
         });
