@@ -200,6 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.11 [Beta]
+    - Function icons are now easier to customize: shown in a 6-column grid instead of a dropdown
+
 * v2.0.10 [12/31/23]
     - In routes with locomotive speed commands, a speed value of -1 will now trigger an instant stop
     - When autonomous operation is started and conditional routes are active, the warning will now only be shown one time
