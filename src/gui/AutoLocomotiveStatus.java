@@ -14,7 +14,6 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import marklin.MarklinRoute;
 import model.ViewListener;
 
 /**
@@ -130,7 +129,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName());
-                        //Edge.pathToString(path));
+                    //Edge.pathToString(path));
                 }
                 
                 this.locAvailPaths.setVisible(true);

@@ -4,7 +4,6 @@
  */
 package gui;
 
-import java.awt.Component;
 import java.awt.HeadlessException;
 import java.awt.Window;
 import java.io.File;

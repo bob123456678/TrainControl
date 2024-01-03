@@ -293,20 +293,10 @@ public class RouteEditor extends javax.swing.JPanel
         buttonGroup1.add(triggerClearThenOccupied);
         triggerClearThenOccupied.setText("Clear then Occupied");
         triggerClearThenOccupied.setFocusable(false);
-        triggerClearThenOccupied.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                triggerClearThenOccupiedActionPerformed(evt);
-            }
-        });
 
         buttonGroup1.add(triggerOccupiedThenClear);
         triggerOccupiedThenClear.setText("Occupied then Clear");
         triggerOccupiedThenClear.setFocusable(false);
-        triggerOccupiedThenClear.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                triggerOccupiedThenClearActionPerformed(evt);
-            }
-        });
 
         jLabel5.setForeground(new java.awt.Color(0, 0, 115));
         jLabel5.setText("Automatic Execution");
@@ -314,20 +304,10 @@ public class RouteEditor extends javax.swing.JPanel
         buttonGroup2.add(executionManual);
         executionManual.setText("Off");
         executionManual.setFocusable(false);
-        executionManual.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                executionManualActionPerformed(evt);
-            }
-        });
 
         buttonGroup2.add(executionAuto);
         executionAuto.setText("On");
         executionAuto.setFocusable(false);
-        executionAuto.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                executionAutoActionPerformed(evt);
-            }
-        });
 
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
         jLabel9.setText("Optional S88 Conditions");
@@ -474,11 +454,6 @@ public class RouteEditor extends javax.swing.JPanel
         accAddr.setMaximumSize(new java.awt.Dimension(90, 26));
         accAddr.setMinimumSize(new java.awt.Dimension(90, 26));
         accAddr.setPreferredSize(new java.awt.Dimension(90, 26));
-        accAddr.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                accAddrActionPerformed(evt);
-            }
-        });
         accAddr.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 accAddrKeyReleased(evt);
@@ -503,11 +478,6 @@ public class RouteEditor extends javax.swing.JPanel
         accState.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Turnout", "Signal", "3-way Turnout" }));
         accState.setMaximumSize(new java.awt.Dimension(136, 26));
         accState.setName(""); // NOI18N
-        accState.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                accStateActionPerformed(evt);
-            }
-        });
 
         buttonGroup4.add(accTypeTurnout);
         accTypeTurnout.setSelected(true);
@@ -538,11 +508,6 @@ public class RouteEditor extends javax.swing.JPanel
         jLabel12.setText("Delay (ms)");
 
         delay.setText("0");
-        delay.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                delayActionPerformed(evt);
-            }
-        });
         delay.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 delayKeyReleased(evt);
@@ -646,11 +611,6 @@ public class RouteEditor extends javax.swing.JPanel
         s88CondAddr.setMaximumSize(new java.awt.Dimension(90, 26));
         s88CondAddr.setMinimumSize(new java.awt.Dimension(90, 26));
         s88CondAddr.setPreferredSize(new java.awt.Dimension(90, 26));
-        s88CondAddr.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                s88CondAddrActionPerformed(evt);
-            }
-        });
         s88CondAddr.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 s88CondAddrKeyReleased(evt);
@@ -666,19 +626,9 @@ public class RouteEditor extends javax.swing.JPanel
         buttonGroup5.add(s88Occupied);
         s88Occupied.setSelected(true);
         s88Occupied.setText("Occupied (1)");
-        s88Occupied.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                s88OccupiedActionPerformed(evt);
-            }
-        });
 
         buttonGroup5.add(s88Clear);
         s88Clear.setText("Clear (0)");
-        s88Clear.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                s88ClearActionPerformed(evt);
-            }
-        });
 
         addS88Condition.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         addS88Condition.setText("Add S88 Condition");
@@ -756,11 +706,6 @@ public class RouteEditor extends javax.swing.JPanel
                 commandTypeListItemStateChanged(evt);
             }
         });
-        commandTypeList.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                commandTypeListActionPerformed(evt);
-            }
-        });
 
         locFuncStateLabel.setForeground(new java.awt.Color(0, 0, 115));
         locFuncStateLabel.setText("Function State");
@@ -772,18 +717,8 @@ public class RouteEditor extends javax.swing.JPanel
                 locNameListItemStateChanged(evt);
             }
         });
-        locNameList.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                locNameListActionPerformed(evt);
-            }
-        });
 
         locDelay.setText("0");
-        locDelay.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                locDelayActionPerformed(evt);
-            }
-        });
         locDelay.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 locDelayKeyReleased(evt);
@@ -793,19 +728,9 @@ public class RouteEditor extends javax.swing.JPanel
         buttonGroup3.add(locFuncOn);
         locFuncOn.setSelected(true);
         locFuncOn.setText("On");
-        locFuncOn.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                locFuncOnActionPerformed(evt);
-            }
-        });
 
         buttonGroup3.add(locFuncOff);
         locFuncOff.setText("Off");
-        locFuncOff.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                locFuncOffActionPerformed(evt);
-            }
-        });
 
         jLabel21.setForeground(new java.awt.Color(0, 0, 115));
         jLabel21.setText("Command Type");
@@ -944,18 +869,6 @@ public class RouteEditor extends javax.swing.JPanel
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    private void triggerClearThenOccupiedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_triggerClearThenOccupiedActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_triggerClearThenOccupiedActionPerformed
-
-    private void executionManualActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executionManualActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_executionManualActionPerformed
-
-    private void executionAutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executionAutoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_executionAutoActionPerformed
-
     private void HelpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HelpActionPerformed
         JOptionPane.showMessageDialog(this, this.helpMessage);        // TODO add your handling code here:
     }//GEN-LAST:event_HelpActionPerformed
@@ -1059,18 +972,6 @@ public class RouteEditor extends javax.swing.JPanel
         updateSettingSelections();
     }//GEN-LAST:event_accTypeSignalActionPerformed
 
-    private void accAddrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accAddrActionPerformed
- 
-    }//GEN-LAST:event_accAddrActionPerformed
-
-    private void accStateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_accStateActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_accStateActionPerformed
-
-    private void triggerOccupiedThenClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_triggerOccupiedThenClearActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_triggerOccupiedThenClearActionPerformed
-
     private void accAddrKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_accAddrKeyReleased
         TrainControlUI.validateInt(evt, false);
         TrainControlUI.limitLength(evt, 5);
@@ -1080,10 +981,6 @@ public class RouteEditor extends javax.swing.JPanel
         TrainControlUI.validateInt(evt, false);
         TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_s88KeyReleased
-
-    private void delayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delayActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_delayActionPerformed
 
     private void delayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_delayKeyReleased
          TrainControlUI.validateInt(evt, false);
@@ -1098,22 +995,10 @@ public class RouteEditor extends javax.swing.JPanel
         addAcc(true);
     }//GEN-LAST:event_addToRouteButton1ActionPerformed
 
-    private void s88CondAddrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s88CondAddrActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_s88CondAddrActionPerformed
-
     private void s88CondAddrKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_s88CondAddrKeyReleased
         TrainControlUI.validateInt(evt, false);
         TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_s88CondAddrKeyReleased
-
-    private void s88OccupiedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s88OccupiedActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_s88OccupiedActionPerformed
-
-    private void s88ClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s88ClearActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_s88ClearActionPerformed
 
     private void addS88ConditionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addS88ConditionActionPerformed
         
@@ -1181,30 +1066,10 @@ public class RouteEditor extends javax.swing.JPanel
         }
     }//GEN-LAST:event_addLocCommandActionPerformed
 
-    private void commandTypeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_commandTypeListActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_commandTypeListActionPerformed
-
-    private void locNameListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locNameListActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_locNameListActionPerformed
-
-    private void locDelayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locDelayActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_locDelayActionPerformed
-
     private void locDelayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locDelayKeyReleased
         TrainControlUI.validateInt(evt, false);
         TrainControlUI.limitLength(evt, 6);
     }//GEN-LAST:event_locDelayKeyReleased
-
-    private void locFuncOnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locFuncOnActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_locFuncOnActionPerformed
-
-    private void locFuncOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_locFuncOffActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_locFuncOffActionPerformed
 
     private void commandTypeListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_commandTypeListItemStateChanged
         if (commandTypeList.getSelectedIndex() == 0)
