@@ -38,6 +38,7 @@ public class RouteEditor extends javax.swing.JPanel
                     + "the specified values in order for the route to fire.\n\n" 
                     + "In addition to accessories, you can set commands for locomotives and functions. Examples:" + "\n"
                     + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
+                    + "locspeed,Locomotive name,-1 (instant stop)\n" 
                     + "locfunc,Locomotive name,20,1 (toggles F20)";
     
     public static final String TURNOUT = "Switched (1)";

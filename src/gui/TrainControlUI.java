@@ -8246,7 +8246,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         new Thread(() ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all key mappings\non the current page?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
                 this.activeLoc = null;
