@@ -5156,10 +5156,10 @@
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jPanel3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jPanel3" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="13" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -5216,6 +5216,7 @@
                                               <Component id="atomicRoutes" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="turnOffFunctionsOnArrival" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="simulate" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="turnOnFunctionsOnDeparture" alignment="0" min="-2" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                       </Group>
@@ -5251,13 +5252,15 @@
                                   <Component id="jLabel49" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Component id="preArrivalSpeedReduction" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="32767" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
                                   <Component id="jLabel50" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Component id="atomicRoutes" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Component id="turnOffFunctionsOnArrival" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
+                                  <Component id="turnOnFunctionsOnDeparture" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" max="-2" attributes="0"/>
                                   <Component id="simulate" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
@@ -5416,6 +5419,16 @@
                           </Properties>
                           <Events>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="simulateMouseReleased"/>
+                          </Events>
+                        </Component>
+                        <Component class="javax.swing.JCheckBox" name="turnOnFunctionsOnDeparture">
+                          <Properties>
+                            <Property name="text" type="java.lang.String" value="Turn On Functions on Departure"/>
+                            <Property name="toolTipText" type="java.lang.String" value="Controls whether preset functions are turned on when a locomotive departs its station."/>
+                            <Property name="focusable" type="boolean" value="false"/>
+                          </Properties>
+                          <Events>
+                            <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="turnOnFunctionsOnDepartureMouseReleased"/>
                           </Events>
                         </Component>
                       </SubComponents>

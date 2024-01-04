@@ -1212,6 +1212,15 @@ public final class CS2File
             layout.setMaxDelay(maxDelay);
             layout.setMinDelay(minDelay);
             layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+            
+            if (!o.has("turnOnFunctionsOnDeparture"))
+            {
+                layout.setTurnOnFunctionsOnDeparture(true);
+            }
+            else
+            {
+                layout.setTurnOnFunctionsOnDeparture(o.getBoolean("turnOnFunctionsOnDeparture"));
+            }            
         }
         catch (Exception e)
         {

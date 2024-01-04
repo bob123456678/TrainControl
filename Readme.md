@@ -200,10 +200,13 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.12 [Beta]
+    - In autonomous operation, added a setting to skip turning on the functions on departure (e.g., useful if you want to run with no sound)
+
 * v2.0.11 [1/2/24]
     - The autonomy graph is now zoomable with the mouse wheel (click mouse wheel to reset)
     - Function icons are now easier to customize: shown in a 6-column grid instead of a dropdown
-    - Improve graph display quality
+    - Improved graph display quality
 
 * v2.0.10 [12/31/23]
     - In routes with locomotive speed commands, a speed value of -1 will now trigger an instant stop

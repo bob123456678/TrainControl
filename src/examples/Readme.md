@@ -211,6 +211,7 @@ Details on advanced configuration parameters can be found at the end of this doc
     "defaultLocSpeed" : 35,
     "preArrivalSpeedReduction" : 0.5,
     "turnOffFunctionsOnArrival": true,
+    "turnOnFunctionsOnDeparture": true,
     "atomicRoutes": true,
     "maxLocInactiveSeconds" : 120,
     "points": [
@@ -419,7 +420,8 @@ Locomotives inactive longer than `maxLocInactiveSeconds` seconds will be priorit
 TrainControl will enable/disable each locomotive's preferred functions, if any, before departure and upon arrival, respectively.  
 
 These preferred functons are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
-However, if you want to avoid turning off the functions on arrival you can set `turnOffFunctionsOnArrival` to `false`.  A good reason to use this is to keep operating sounds / lights on between paths.
+However, if you want to avoid turning on the fuctions on departure / turning off the functions on arrival, respectively, you can set `turnOnFunctionsOnDeparture` / `turnOffFunctionsOnArrival` to `false`.  A good reason to use these settings is to is to keep operating sounds / lights on between paths in the case of the latter,
+ or to skip running sound altogethr in the case of the former.
 
 Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed

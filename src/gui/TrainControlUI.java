@@ -2471,6 +2471,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         atomicRoutes = new javax.swing.JCheckBox();
         turnOffFunctionsOnArrival = new javax.swing.JCheckBox();
         simulate = new javax.swing.JCheckBox();
+        turnOnFunctionsOnDeparture = new javax.swing.JCheckBox();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         hideReversing = new javax.swing.JCheckBox();
@@ -5874,6 +5875,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        turnOnFunctionsOnDeparture.setText("Turn On Functions on Departure");
+        turnOnFunctionsOnDeparture.setToolTipText("Controls whether preset functions are turned on when a locomotive departs its station.");
+        turnOnFunctionsOnDeparture.setFocusable(false);
+        turnOnFunctionsOnDeparture.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                turnOnFunctionsOnDepartureMouseReleased(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -5906,7 +5916,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(jLabel50)
                             .addComponent(atomicRoutes)
                             .addComponent(turnOffFunctionsOnArrival)
-                            .addComponent(simulate))
+                            .addComponent(simulate)
+                            .addComponent(turnOnFunctionsOnDeparture))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -5933,12 +5944,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(jLabel49)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addComponent(jLabel50)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(atomicRoutes)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(turnOffFunctionsOnArrival)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(turnOnFunctionsOnDeparture)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(simulate))
         );
@@ -6031,9 +6044,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jLabel52))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(13, 13, 13))
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
@@ -9595,6 +9608,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 "    \"defaultLocSpeed\": 35,\n" +
                 "    \"preArrivalSpeedReduction\": 0.5,\n" +
                 "    \"turnOffFunctionsOnArrival\": true,\n" +
+                "    \"turnOnFunctionsOnDeparture\": true,\n" +        
                 "    \"atomicRoutes\": true,\n" +
                 "    \"maxLocInactiveSeconds\": 120\n" +
                 "}"
@@ -10062,6 +10076,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.stats.refresh();
         }
     }//GEN-LAST:event_KeyboardTabStateChanged
+
+    private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setTurnOnFunctionsOnDeparture(this.turnOnFunctionsOnDeparture.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
@@ -10179,6 +10208,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.simulate.setSelected(this.model.getAutoLayout().isSimulate());
         this.atomicRoutes.setSelected(this.model.getAutoLayout().isAtomicRoutes());
         this.turnOffFunctionsOnArrival.setSelected(this.model.getAutoLayout().isTurnOffFunctionsOnArrival());
+        this.turnOnFunctionsOnDeparture.setSelected(this.model.getAutoLayout().isTurnOnFunctionsOnDeparture());
     }
     
     /**
@@ -11115,6 +11145,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton syncLocStateButton;
     private javax.swing.JLabel toolsLabel;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
+    private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
     private javax.swing.JButton useCS2Layout;
     private javax.swing.JButton validateButton;
     // End of variables declaration//GEN-END:variables

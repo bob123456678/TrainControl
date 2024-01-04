@@ -70,6 +70,7 @@ public class Layout
     private int maxDelay;
     private int defaultLocSpeed;
     private boolean turnOffFunctionsOnArrival;
+    private boolean turnOnFunctionsOnDeparture;
     private double preArrivalSpeedReduction = 0.5;
     private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
@@ -1782,7 +1783,8 @@ public class Layout
      * @param <R> 
      */
     @FunctionalInterface
-    public interface TriFunction<T, U, V, R> {
+    public interface TriFunction<T, U, V, R>
+    {
         public R apply(T t, U u, V v);
     }
     
@@ -1840,7 +1842,17 @@ public class Layout
     {
         this.turnOffFunctionsOnArrival = turnOffFunctionsOnArrival;
     }
-    
+
+    public boolean isTurnOnFunctionsOnDeparture()
+    {
+        return turnOnFunctionsOnDeparture;
+    }
+
+    public void setTurnOnFunctionsOnDeparture(boolean turnOnFunctionsOnDeparture)
+    {
+        this.turnOnFunctionsOnDeparture = turnOnFunctionsOnDeparture;
+    }
+     
     public boolean isAtomicRoutes()
     {
         return atomicRoutes;
@@ -1900,8 +1912,14 @@ public class Layout
     {
         l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
         {
-            lc.applyPreferredFunctions().delay(minDelay, maxDelay);
-
+            // Optionally skip turning on the functions
+            Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
+            
+            if (layout != null && layout.isTurnOnFunctionsOnDeparture())
+            {
+                lc.applyPreferredFunctions().delay(minDelay, maxDelay);
+            }
+            
             if (lc.hasDepartureFunc())
             {
                 lc.toggleF(lc.getDepartureFunc()).delay(minDelay, maxDelay);
@@ -1980,6 +1998,7 @@ public class Layout
         jsonObj.put("defaultLocSpeed", this.getDefaultLocSpeed());
         jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
+        jsonObj.put("turnOnFunctionsOnDeparture", this.isTurnOnFunctionsOnDeparture());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         
