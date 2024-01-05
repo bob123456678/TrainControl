@@ -51,7 +51,30 @@ public class RightClickPageMenu extends MouseAdapter
             menuItem.addActionListener(event -> ui.renameCurrentPage());    
             add(menuItem);
             
-            // addSeparator();
+            addSeparator();
+
+            menuItem = new JMenuItem("Copy Mappings");
+            menuItem.addActionListener(event -> ui.copyCurrentPage());    
+            add(menuItem);
+            
+            menuItem = new JMenuItem("Paste Mappings");
+            
+            if (ui.pageCopied())
+            {
+                menuItem.addActionListener(event -> ui.pasteCopiedPage());    
+            }
+            else
+            {
+                menuItem.setEnabled(false);
+            }
+            
+            add(menuItem);
+            
+            addSeparator();
+            
+            menuItem = new JMenuItem("Reset Current Mappings");
+            menuItem.addActionListener(event -> ui.clearCurrentPage());    
+            add(menuItem);
         }
     }
 }

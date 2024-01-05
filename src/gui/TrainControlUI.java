@@ -230,6 +230,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private JButton copyTargetButton = null;
     private int copyTargetPage = 0;
     
+    // Page clipboard
+    private Integer pageToCopy = null;
+    
     // Locomotive selector
     private LocomotiveSelector selector;
     
@@ -525,7 +528,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         // Support for changing page names
-        this.LocMappingNumberLabel.addMouseListener(new RightClickPageMenu(this));
+        RightClickPageMenu rcm = new RightClickPageMenu(this);
+        this.LocMappingNumberLabel.addMouseListener(rcm);
+        this.PrevLocMapping.addMouseListener(rcm);
+        this.NextLocMapping.addMouseListener(rcm);
         
         // UI editor bugs out when this is too wide
         this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");
@@ -962,7 +968,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void renameCurrentPage()
     {
-        String input = JOptionPane.showInputDialog(this, "Enter page name: ", this.getPageName(this.locMappingNumber, true));
+        String input = JOptionPane.showInputDialog(this, "Enter page " + this.locMappingNumber + " name: ", this.getPageName(this.locMappingNumber, true));
         
         if (input != null)
         {
@@ -1295,23 +1301,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
-        this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+        javax.swing.SwingUtilities.invokeLater(new Thread(()->
+        { 
+            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
 
-        if (!this.model.getLayoutList().isEmpty())
-        {
-            this.repaintLoc();
-            this.repaintLayout();
-            
-            if (showTab)
+            if (!this.model.getLayoutList().isEmpty())
             {
-                // Open the tab
-                this.KeyboardTab.setSelectedIndex(1);
+                this.repaintLoc();
+                this.repaintLayout(showTab);
             }
-        }
-        else
-        {
-            this.model.log("Model error: no layout loaded.");
-        }
+            else
+            {
+                this.model.log("Model error: no layout loaded.");
+            }
+        }));
     }
     
     public LocomotiveSelector getLocSelector()
@@ -1452,7 +1455,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
-     * Gets the locomotive to be paster
+     * Gets the locomotive to be pasted
      * @return 
      */
     public Locomotive getCopyTarget()
@@ -2494,7 +2497,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         AddNewLocLabel = new javax.swing.JLabel();
         toolsLabel = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
-        clearButton = new javax.swing.JButton();
         SyncButton = new javax.swing.JButton();
         TurnOffFnButton = new javax.swing.JButton();
         TurnOnLightsButton = new javax.swing.JButton();
@@ -6228,15 +6230,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel8.setBackground(new java.awt.Color(245, 245, 245));
         jPanel8.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
-        clearButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        clearButton.setText("Reset Key Mappings");
-        clearButton.setFocusable(false);
-        clearButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                clearButtonActionPerformed(evt);
-            }
-        });
-
         SyncButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         SyncButton.setText("Sync Central Station Loc/Layout DB");
         SyncButton.setFocusable(false);
@@ -6281,7 +6274,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(clearButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
@@ -6293,8 +6285,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(clearButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(SyncButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(syncLocStateButton)
@@ -6445,7 +6435,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(dataSourceLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(55, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -8191,7 +8181,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
 
             this.model.syncWithCS2();
-            this.repaintLoc();
             
             if (!this.model.getLayoutList().isEmpty())
             {   
@@ -8199,6 +8188,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             else
             {
+                this.repaintLoc();
                 JOptionPane.showMessageDialog(this, "Invalid path. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
             }    
         }).start();
@@ -8255,12 +8245,55 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }
     
-    private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
-        
+    /**
+     * Puts the current keyboard mappings on the keyboard
+     */
+    public void copyCurrentPage()
+    {
+        this.pageToCopy = this.locMappingNumber;
+    }
+    
+    /**
+     * Pastes copied mappings to the current page
+     */
+    public void pasteCopiedPage()
+    {
+        if (pageCopied())
+        {
+            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to replace the mappings on the current page with those from page " + this.pageToCopy + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
+            if (dialogResult == JOptionPane.YES_OPTION)
+            {
+                this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
+                this.pageToCopy = null;
+                this.repaintMappings();
+                
+                // We need to repaint the locomotive if a button on this page was active
+                if (currentButtonlocMappingNumber == this.locMappingNumber)
+                {
+                    this.displayCurrentButtonLoc(this.currentButton);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Is there anything on the page clipboard?
+     * @return 
+     */
+    public boolean pageCopied()
+    {
+        return this.pageToCopy != null;
+    }
+    
+    /**
+     * Resets the mappings on the current page
+     */
+    public void clearCurrentPage()
+    {
         new Thread(() ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard", JOptionPane.YES_NO_OPTION);
-            if(dialogResult == JOptionPane.YES_OPTION)
+            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard Mappings", JOptionPane.YES_NO_OPTION);
+            if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.activeLoc = null;
 
@@ -8272,8 +8305,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 repaintLoc();
             }
         }).start();
-    }//GEN-LAST:event_clearButtonActionPerformed
-
+    }
+    
     /**
      * Prompts for a new route ID and attempts to change the ID of the given route
      * @param routeName 
@@ -11027,7 +11060,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JButton checkDuplicates;
-    private javax.swing.JButton clearButton;
     private javax.swing.JButton clearNonParkedLocs;
     private javax.swing.JLabel dataSourceLabel;
     private javax.swing.JTextArea debugArea;
@@ -11188,6 +11220,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     @Override
     public synchronized void repaintLayout()
+    {
+        repaintLayout(false);
+    }    
+    
+    /**
+     * Repaints the track diagram
+     * @param showTab - do we focus the layout tab?
+     */
+    public synchronized void repaintLayout(boolean showTab)
     {    
         this.LayoutGridRenderer.submit(new Thread(() -> 
         { 
@@ -11204,11 +11245,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
                     {
                         this.KeyboardTab.add(this.layoutPanel, 1);
-                        this.KeyboardTab.setTitleAt(1, "Layout");
-                    }
-
-                    // TODO - Likely unnecessary
-                    //this.KeyboardTab.repaint();
+                        this.KeyboardTab.setTitleAt(1, "Layout");                        
+                    };
 
                     //InnerLayoutPanel.setVisible(false);
                     this.trainGrid = new LayoutGrid(
@@ -11223,6 +11261,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                     // Important!
                     this.KeyboardTab.repaint();
+                    
+                    if (showTab) this.KeyboardTab.setSelectedIndex(1);
                 }
             }));
         }));

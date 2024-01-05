@@ -202,6 +202,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 * v2.0.12 [Beta]
     - In autonomous operation, added a setting to skip turning on the functions on departure (e.g., useful if you want to run with no sound)
+    - Added right-click options to copy and paste entire pages of keyboard mappings
+    - Moved the "reset mappings" button from the Tools tab to the page right-click menu
+    - Fixed minor bug from v2.0.10 where the layout tab would not be correctly focused when initializing a new layout
 
 * v2.0.11 [1/2/24]
     - The autonomy graph is now zoomable with the mouse wheel (click mouse wheel to reset)
