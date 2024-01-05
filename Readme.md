@@ -200,7 +200,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.0.12 [Beta]
+* v2.0.12 [1/4/24]
     - In autonomous operation, added a setting to skip turning on the functions on departure (e.g., useful if you want to run with no sound)
     - Added right-click options to copy and paste entire pages of keyboard mappings
     - Moved the "reset mappings" button from the Tools tab to the page right-click menu
