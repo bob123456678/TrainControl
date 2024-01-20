@@ -9212,9 +9212,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
                     
                     if (!conditionalRouteWarningShown)
-                    {
-                        conditionalRouteWarningShown = true;
-                    
+                    {                    
                         int dialogResult = JOptionPane.showConfirmDialog(this, 
                                 "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
 
@@ -9224,6 +9222,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         }
                         else
                         {
+                            conditionalRouteWarningShown = true;
                             break;
                         }
                     }
