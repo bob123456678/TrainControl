@@ -2501,6 +2501,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TurnOffFnButton = new javax.swing.JButton();
         TurnOnLightsButton = new javax.swing.JButton();
         syncLocStateButton = new javax.swing.JButton();
+        ViewDBButton = new javax.swing.JButton();
         jPanel12 = new javax.swing.JPanel();
         jLabel32 = new javax.swing.JLabel();
         LayoutPathLabel = new javax.swing.JLabel();
@@ -6222,7 +6223,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
 
         AddNewLocLabel.setForeground(new java.awt.Color(0, 0, 115));
-        AddNewLocLabel.setText("Add New Locomotive");
+        AddNewLocLabel.setText("Add Locomotive to Database");
 
         toolsLabel.setForeground(new java.awt.Color(0, 0, 115));
         toolsLabel.setText("Tools");
@@ -6231,7 +6232,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel8.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
         SyncButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SyncButton.setText("Sync Central Station Loc/Layout DB");
+        SyncButton.setText("Sync Central Station Loc DB & Layout");
         SyncButton.setFocusable(false);
         SyncButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -6258,11 +6259,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         syncLocStateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        syncLocStateButton.setText("Sync Full Loc State");
+        syncLocStateButton.setText("Sync Full Locomotive Function State");
         syncLocStateButton.setFocusable(false);
         syncLocStateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 syncLocStateButtonActionPerformed(evt);
+            }
+        });
+
+        ViewDBButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ViewDBButton.setText("View DB");
+        ViewDBButton.setFocusable(false);
+        ViewDBButton.setInheritsPopupMenu(true);
+        ViewDBButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ViewDBButtonActionPerformed(evt);
             }
         });
 
@@ -6274,18 +6285,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(SyncButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.PREFERRED_SIZE, 370, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.PREFERRED_SIZE, 370, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel8Layout.createSequentialGroup()
+                        .addComponent(SyncButton, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ViewDBButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(2, 2, 2)))
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(SyncButton)
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(SyncButton)
+                    .addComponent(ViewDBButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(syncLocStateButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -6504,6 +6521,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         ActiveLocLabel.setFont(new java.awt.Font("Tahoma", 0, 19)); // NOI18N
         ActiveLocLabel.setText("Locomotive Name");
+        ActiveLocLabel.setToolTipText("Click to change mapping");
         ActiveLocLabel.setFocusable(false);
         ActiveLocLabel.setMaximumSize(new java.awt.Dimension(296, 23));
         ActiveLocLabel.setMinimumSize(new java.awt.Dimension(296, 23));
@@ -10123,6 +10141,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
     }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
+
+    private void ViewDBButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ViewDBButtonActionPerformed
+        ActiveLocLabelMouseReleased(null);
+    }//GEN-LAST:event_ViewDBButtonActionPerformed
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
@@ -11032,6 +11054,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton VButton;
     private javax.swing.JTextField VLabel;
     private javax.swing.JSlider VSlider;
+    private javax.swing.JButton ViewDBButton;
     private javax.swing.JButton WButton;
     private javax.swing.JTextField WLabel;
     private javax.swing.JSlider WSlider;
