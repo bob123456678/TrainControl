@@ -112,8 +112,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer PING_INTERVAL = 5000;
     
     // Thresholds at which ping is highlighted
-    public static final Integer PING_ORANGE = 150;
-    public static final Integer PING_RED = 500;
+    public static final Integer PING_ORANGE = 100;
+    public static final Integer PING_RED = 300;
     
     // Constants
     // Width of locomotive images
@@ -177,7 +177,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
     private List<Future<?>> autonomyFutures = new LinkedList<>();
-    
+    private List<Future<?>> locFutures = new LinkedList<>();
+
     // The keyboard being displayed
     private int keyboardNumber = 1;
     
@@ -1873,190 +1874,205 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     synchronized public void repaintLoc(boolean force)
     {     
-        this.LocRenderer.submit(new Thread(() -> 
-        { 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        // Prevent concurrent calls
+        for (Future<?> f : this.locFutures)
+        {
+            if (!f.isDone()) 
             {
-                if (this.activeLoc != null)
-                {            
-                    String name = this.activeLoc.getName();
+                // this.model.log("Loc refresh in progress");
+                return;
+            }
+        }
 
-                    if (name.length() > MAX_LOC_NAME)
-                    {
-                        name = name.substring(0, MAX_LOC_NAME);
-                    }
+        // this.model.log("Refreshing auto UI");
+        this.locFutures.clear();
 
-                    // Pre-compute this so we can check if it has changed
-                    // "Page " + this.currentButtonlocMappingNumber + " Button "
-                    String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
-                        + this.currentButton.getText()
-                        + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
-                        + ")";
+        this.locFutures.add(
+            this.LocRenderer.submit(new Thread(() -> 
+            { 
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    if (this.activeLoc != null)
+                    {            
+                        String name = this.activeLoc.getName();
 
-                    // Only repaint icon if the locomotive is changed
-                    // Visual stuff
-                    if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
-                    {
-                        // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
-                        repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
-                        
-                        ImageLoader.submit(new Thread(() -> 
+                        if (name.length() > MAX_LOC_NAME)
                         {
-                            if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                            name = name.substring(0, MAX_LOC_NAME);
+                        }
+
+                        // Pre-compute this so we can check if it has changed
+                        // "Page " + this.currentButtonlocMappingNumber + " Button "
+                        String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
+                            + this.currentButton.getText()
+                            + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
+                            + ")";
+
+                        // Only repaint icon if the locomotive is changed
+                        // Visual stuff
+                        if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
+                        {
+                            // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
+                            repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
+
+                            ImageLoader.submit(new Thread(() -> 
                             {
-                                try 
+                                if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                 {
-                                    locIcon.setIcon(new javax.swing.ImageIcon(
-                                        getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                        // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                                    ));      
-                                    locIcon.setText("");
-                                    locIcon.setVisible(true);
+                                    try 
+                                    {
+                                        locIcon.setIcon(new javax.swing.ImageIcon(
+                                            getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
+                                            // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
+                                        ));      
+                                        locIcon.setText("");
+                                        locIcon.setVisible(true);
+                                    }
+                                    catch (IOException e)
+                                    {
+                                        locIcon.setIcon(null);
+                                        locIcon.setVisible(false);
+                                    }
                                 }
-                                catch (IOException e)
+                                else
                                 {
                                     locIcon.setIcon(null);
                                     locIcon.setVisible(false);
                                 }
-                            }
-                            else
+
+                            }));
+
+                            this.ActiveLocLabel.setText(name);
+
+                            this.CurrentKeyLabel.setText(locLabel);
+
+                            for (int i = 0; i < this.activeLoc.getNumF(); i++)
                             {
-                                locIcon.setIcon(null);
-                                locIcon.setVisible(false);
-                            }
+                                final JToggleButton bt = this.rFunctionMapping.get(i);
+                                final int functionType = this.activeLoc.getFunctionType(i);
 
-                        }));
+                                bt.setVisible(true);
+                                bt.setEnabled(true);
 
-                        this.ActiveLocLabel.setText(name);
+                                String targetURL = this.activeLoc.getFunctionIconUrl(functionType, false, true);
 
-                        this.CurrentKeyLabel.setText(locLabel);
+                                bt.setHorizontalTextPosition(JButton.CENTER);
+                                bt.setVerticalTextPosition(JButton.CENTER);
 
-                        for (int i = 0; i < this.activeLoc.getNumF(); i++)
-                        {
-                            final JToggleButton bt = this.rFunctionMapping.get(i);
-                            final int functionType = this.activeLoc.getFunctionType(i);
-
-                            bt.setVisible(true);
-                            bt.setEnabled(true);
-
-                            String targetURL = this.activeLoc.getFunctionIconUrl(functionType, false, true);
-
-                            bt.setHorizontalTextPosition(JButton.CENTER);
-                            bt.setVerticalTextPosition(JButton.CENTER);
-
-                            ImageLoader.submit(new Thread(() -> 
-                            {
-                                try
+                                ImageLoader.submit(new Thread(() -> 
                                 {
-                                    if (functionType > 0 && LOAD_IMAGES)
+                                    try
                                     {
-                                        Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
-
-                                        if (icon != null)
+                                        if (functionType > 0 && LOAD_IMAGES)
                                         {
-                                            bt.setIcon(
-                                                new javax.swing.ImageIcon(
-                                                    icon
-                                                )
-                                            );
+                                            Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
 
-                                            bt.setText("");                                    
+                                            if (icon != null)
+                                            {
+                                                bt.setIcon(
+                                                    new javax.swing.ImageIcon(
+                                                        icon
+                                                    )
+                                                );
+
+                                                bt.setText("");                                    
+                                            }
+                                            else
+                                            {
+                                                //bt.setText("F" + Integer.toString(fNo));
+                                            }
                                         }
                                         else
                                         {
+                                            bt.setIcon(null);
+                                            bt.setText("");                                    
                                             //bt.setText("F" + Integer.toString(fNo));
                                         }
                                     }
-                                    else
+                                    catch (IOException e)
                                     {
-                                        bt.setIcon(null);
-                                        bt.setText("");                                    
+                                        this.model.log("Icon not found: " + targetURL);
                                         //bt.setText("F" + Integer.toString(fNo));
-                                    }
-                                }
-                                catch (IOException e)
-                                {
-                                    this.model.log("Icon not found: " + targetURL);
-                                    //bt.setText("F" + Integer.toString(fNo));
-                                } 
-                            }));         
+                                    } 
+                                }));         
+                            }
+
+                            for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
+                            {
+                                this.rFunctionMapping.get(i).setVisible(true);
+                                this.rFunctionMapping.get(i).setEnabled(false);
+
+                                //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
+                                this.rFunctionMapping.get(i).setText("");                                    
+                                this.rFunctionMapping.get(i).setIcon(null);
+                            }
+
+                            // Hide unnecessary function tabs
+                            if (this.activeLoc.getNumF() < 20)
+                            {
+                                FunctionTabs.remove(this.F20AndUpPanel);
+                            }
+                            else
+                            {
+                                FunctionTabs.add("F20-F31", this.F20AndUpPanel);
+                            }
+
+                            this.Backward.setVisible(true);
+                            this.Forward.setVisible(true);
+                            this.SpeedSlider.setVisible(true);
+                            this.FunctionTabs.setVisible(true);
+                        }
+
+                        // Loc state
+                        if (this.activeLoc.goingForward())
+                        {
+                            this.Forward.setSelected(true);
+                            this.Backward.setSelected(false);
+                        }
+                        else
+                        {
+                            this.Backward.setSelected(true);
+                            this.Forward.setSelected(false);
+                        }
+
+                        for (int i = 0; i < this.activeLoc.getNumF(); i++)
+                        {
+                            this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
                         }
 
                         for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
                         {
-                            this.rFunctionMapping.get(i).setVisible(true);
-                            this.rFunctionMapping.get(i).setEnabled(false);
-
-                            //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
-                            this.rFunctionMapping.get(i).setText("");                                    
-                            this.rFunctionMapping.get(i).setIcon(null);
+                            this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
                         }
 
-                        // Hide unnecessary function tabs
-                        if (this.activeLoc.getNumF() < 20)
-                        {
-                            FunctionTabs.remove(this.F20AndUpPanel);
-                        }
-                        else
-                        {
-                            FunctionTabs.add("F20-F31", this.F20AndUpPanel);
-                        }
+                        this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
 
-                        this.Backward.setVisible(true);
-                        this.Forward.setVisible(true);
-                        this.SpeedSlider.setVisible(true);
-                        this.FunctionTabs.setVisible(true);
-                    }
-
-                    // Loc state
-                    if (this.activeLoc.goingForward())
-                    {
-                        this.Forward.setSelected(true);
-                        this.Backward.setSelected(false);
+                        this.repaintMappings();
                     }
                     else
                     {
-                        this.Backward.setSelected(true);
-                        this.Forward.setSelected(false);
+                        locIcon.setIcon(null);
+                        locIcon.setText("");
+
+                        this.ActiveLocLabel.setText("No Locomotive (Right-click button)");
+
+                        this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
+                            + this.currentButton.getText()    
+                        );
+
+                        this.Backward.setVisible(false);
+                        this.Forward.setVisible(false);
+                        this.SpeedSlider.setVisible(false);
+                        this.FunctionTabs.setVisible(false);
+
+                        for (int i = 0; i < NUM_FN; i++)
+                        {
+                            this.rFunctionMapping.get(i).setVisible(false);
+                        }
                     }
-
-                    for (int i = 0; i < this.activeLoc.getNumF(); i++)
-                    {
-                        this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-                    }
-
-                    for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
-                    {
-                        this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-                    }
-
-                    this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
-
-                    this.repaintMappings();
-                }
-                else
-                {
-                    locIcon.setIcon(null);
-                    locIcon.setText("");
-
-                    this.ActiveLocLabel.setText("No Locomotive (Right-click button)");
-
-                    this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
-                               + this.currentButton.getText()    
-                    );
-
-                    this.Backward.setVisible(false);
-                    this.Forward.setVisible(false);
-                    this.SpeedSlider.setVisible(false);
-                    this.FunctionTabs.setVisible(false);
-
-                    for (int i = 0; i < NUM_FN; i++)
-                    {
-                        this.rFunctionMapping.get(i).setVisible(false);
-                    }
-                }
-            }));
-        }));
+                }));
+            }))
+        );
     }
     
     private Map<JButton, Locomotive> nextLocMapping()

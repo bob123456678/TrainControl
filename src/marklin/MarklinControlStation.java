@@ -407,14 +407,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Sanity check - in case accessories changed, etc.
         if (this.autoLayout != null)
         {
-            this.autoLayout.invalidate();
+            // this.autoLayout.invalidate();
             
             if (this.autoLayout.isAutoRunning())
             {
                 this.autoLayout.stopLocomotives();
             }
             
-            this.log("Invalidating auto layout to avoid state issues.  Please reload JSON.");
+            // this.log("Invalidating auto layout to avoid state issues.  Please reload JSON.");
         }
                 
         // Fetch Central Station databases

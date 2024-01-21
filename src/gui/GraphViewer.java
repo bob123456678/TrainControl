@@ -983,6 +983,7 @@ final public class GraphViewer extends javax.swing.JFrame {
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(2000, 2000));
         setMinimumSize(new java.awt.Dimension(400, 400));
+        setPreferredSize(new java.awt.Dimension(600, 600));
         setSize(new java.awt.Dimension(600, 572));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {

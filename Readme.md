@@ -202,6 +202,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 * v2.0.13 [Beta]
     - Within the Tools tab, added a button to view the locomotive database
+    - The autonomy layout state is no longer invalidated upon syncing with the Central Station
+    - The autonomy graph window is now larger by default
+    - Improved UI performance when operating many locomotives concurrently
+    - Reduced network latency warning thresholds
 
 * v2.0.12 [1/4/24]
     - In autonomous operation, added a setting to skip turning on the functions on departure (e.g., useful if you want to run with no sound)
