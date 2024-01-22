@@ -205,6 +205,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - The autonomy layout state is no longer invalidated upon syncing with the Central Station
     - The autonomy graph window is now larger by default
     - Improved UI performance when operating many locomotives concurrently
+    - Fixed display issue when resetting function customization
     - Reduced network latency warning thresholds
 
 * v2.0.12 [1/4/24]

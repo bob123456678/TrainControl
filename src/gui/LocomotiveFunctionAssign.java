@@ -100,7 +100,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
         JList list = (JList) scrollPane.getViewport().getView();
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        list.setVisibleRowCount(fIcon.getModel().getSize() / 5);
+        list.setVisibleRowCount(fIcon.getModel().getSize() / 5);        
     }
     
     public void focusFno()
@@ -274,14 +274,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 this.loc.setCustomFunctions(false);
                 this.parent.getModel().syncWithCS2();
                 this.parent.repaintLoc(true);
+                
+                updateFNumber(this.fNo.getSelectedIndex()); 
             }));
         }
     }//GEN-LAST:event_resetButtonActionPerformed
 
-    private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
-        
-        int targetFNo = this.fNo.getSelectedIndex();
-
+    private void updateFNumber(int targetFNo)
+    {
         this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
         
         if (loc.isFunctionTimed(targetFNo) > 0)
@@ -295,9 +295,13 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         else
         {
             this.functionTriggerType.setSelectedIndex(0);
-        }        
+        }  
+    }
+    
+    private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
+        
+        updateFNumber(this.fNo.getSelectedIndex());      
     }//GEN-LAST:event_fNoItemStateChanged
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton applyButton;
