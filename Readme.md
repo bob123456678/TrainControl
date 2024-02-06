@@ -1,11 +1,11 @@
 # TrainControl for Marklin Central Station 2 and 3
 
-This powerful, free, cross-platform Java program allows you to use your computer to *easily* control your entire Marklin / Trix / DCC digital layout.
+This powerful, free, cross-platform Java program allows you to use your computer to *easily* control your entire Marklin / Trix / DCC digital model train layout.
 It connects to a Central Station 2, 3, or 3 Plus over the network.
 It is primarily designed for users with a large layout and many locomotives, as
-the standard Marklin UI makes many common tasks (such as quickly switching between locomotives)
+the standard Marklin UI makes many common tasks (such as quickly switching between locomotives or triggering functions)
 overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
-enabling functions, smooth deceleration, emergency stop, etc.  You can also open windows with interactive track diagrams and edit track diagrams.
+enabling functions, function presets, smooth deceleration, emergency stop, etc.  You can also open windows with interactive track diagrams and edit track diagrams.
 
 As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
 operating your layout, with the Central Station serving solely as the track interface
@@ -16,7 +16,7 @@ also be used to programmatically control the entire layout ([see API](src/exampl
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
-which enables tracking train locations for *fully autonomous* operation at the push of a single button,
+which when paired with S88 sensors, enables tracking train locations for *fully autonomous* operation at the push of a single button,
 as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
 automate switches while operating trains manually.
 
