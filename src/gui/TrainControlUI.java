@@ -62,6 +62,7 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -221,6 +222,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         
     // Image cache
     private static HashMap<String, Image> imageCache;
+    
+    // Layout cache (speeds up rendering)
+    public HashMap<String, JPanel> layoutCache = new HashMap<>();
     
     // Preferences
     private final Preferences prefs;
@@ -497,9 +501,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED)
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
-        // Changing tabs
-        //setupTabTraversalKeys(this.KeyboardTab);
-        
+        // Restore UI component state
         this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
@@ -535,7 +537,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.NextLocMapping.addMouseListener(rcm);
         
         // UI editor bugs out when this is too wide
-        this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");
+        this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");        
     }
     
      /**
@@ -1309,7 +1311,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (!this.model.getLayoutList().isEmpty())
             {
                 this.repaintLoc();
-                this.repaintLayout(showTab);
+                this.repaintLayout(showTab, false);
             }
             else
             {
@@ -8015,12 +8017,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void LayoutListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LayoutListActionPerformed
     {//GEN-HEADEREND:event_LayoutListActionPerformed
-        repaintLayout();
+        repaintLayoutFromCache();
     }//GEN-LAST:event_LayoutListActionPerformed
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SizeListActionPerformed
     {//GEN-HEADEREND:event_SizeListActionPerformed
-        repaintLayout();
+        repaintLayoutFromCache();
     }//GEN-LAST:event_SizeListActionPerformed
 
     public int getRouteId (Object route)
@@ -8255,7 +8257,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
         
-        doSync(ManageLocPanel);
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            doSync(ManageLocPanel);
+        }));
     }//GEN-LAST:event_SyncButtonActionPerformed
 
     public void doSync(Component c)
@@ -11259,14 +11264,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     @Override
     public synchronized void repaintLayout()
     {
-        repaintLayout(false);
+        repaintLayout(false, false);
+    }  
+    
+    /**
+     * Repaints layout from cache - called from UI dropdown/hotkeys
+     */
+    public synchronized void repaintLayoutFromCache()
+    {
+        repaintLayout(false, true);
     }    
     
     /**
      * Repaints the track diagram
      * @param showTab - do we focus the layout tab?
+     * @param useCache - display cached version of the layout?
      */
-    public synchronized void repaintLayout(boolean showTab)
+    public synchronized void repaintLayout(boolean showTab, boolean useCache)
     {    
         this.LayoutGridRenderer.submit(new Thread(() -> 
         { 
@@ -11287,14 +11301,44 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     };
 
                     //InnerLayoutPanel.setVisible(false);
-                    this.trainGrid = new LayoutGrid(
+                    String cacheKey = this.LayoutList.getSelectedItem().toString() + this.SizeList.getSelectedItem().toString();
+
+                    if (useCache && this.layoutCache.containsKey(cacheKey))
+                    {
+                        InnerLayoutPanel.removeAll();
+                        
+                        InnerLayoutPanel.add(this.layoutCache.get(cacheKey));
+                        
+                        if (this.model.isDebug())
+                        {
+                            this.model.log("Used cache to paint " + cacheKey);
+                        }
+                    }
+                    else
+                    {
+                        this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
                             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
                             InnerLayoutPanel, 
                             KeyboardTab, 
                             false,
                             this
-                    );
+                        );
+                        
+                        if (this.model.isDebug())
+                        {
+                            this.model.log("Repainted layout " + cacheKey);
+                        }
+                        
+                        // Reset cache
+                        if (!useCache)
+                        {
+                            this.layoutCache = new HashMap<>();
+                        }
+
+                        this.layoutCache.put(cacheKey, this.trainGrid.getContainer());
+                    }
+                    
                     InnerLayoutPanel.setVisible(true);
 
                     // Important!

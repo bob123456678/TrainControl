@@ -200,6 +200,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.14 [3/15/24]
+    - Added track diagram UI caching to speed up rendering on slower PCs
+
 * v2.0.13 [1/21/24]
     - Within the Tools tab, added a button to view the locomotive database
     - The autonomy layout state is no longer invalidated upon syncing with the Central Station

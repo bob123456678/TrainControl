@@ -21,7 +21,7 @@ public class MarklinLayoutComponent
         TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK, CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y
     };
         
-    private final String resourcePath = "/gui/resources/icons";
+    private final static String RESOURCE_PATH = "/gui/resources/icons";
     
     // Rotation of the component
     private int orientation;
@@ -298,7 +298,7 @@ public class MarklinLayoutComponent
             
         // TODO - check if folder exists, else use a default
         // TODO - switch to /gbsicons/ 
-        return this.resourcePath + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
+        return RESOURCE_PATH + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
     public Image getImage(int size) throws IOException
@@ -561,5 +561,5 @@ public class MarklinLayoutComponent
     public String getImageKey(int size)
     {
         return this.getImageName(size) + "_" + Integer.toString(orientation);
-    }
+    } 
 }

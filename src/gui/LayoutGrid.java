@@ -26,6 +26,9 @@ public class LayoutGrid
     // Should the .text property be rendered in non-empty cells?
     public static final boolean ALLOW_TEXT_ANYWHERE = true;
     
+    // Component that holds the layout
+    private JPanel container;
+    
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
      * @param layout reference to the layout from the model
@@ -49,7 +52,7 @@ public class LayoutGrid
         height = height + 1;
 
         // Create layout                      
-        JPanel container;
+        // JPanel container; // no longer needed - included as class field for caching
         
         parent.removeAll();
         
@@ -191,4 +194,13 @@ public class LayoutGrid
             parent.add(container);
         } 
     } 
+    
+    /**
+     * Return the container that was generated
+     * @return 
+     */
+    public JPanel getContainer()
+    {
+        return container;
+    }
 }
