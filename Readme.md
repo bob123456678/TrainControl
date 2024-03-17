@@ -200,6 +200,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.0.15 [3/17/24]
+    - Added right-click menu option to move locomotive keybinds (shortcut for copy+clear)
+    - Added various helpful tooltips to the UI
+
 * v2.0.14 [3/15/24]
     - Added track diagram UI caching to speed up rendering on slower PCs
 

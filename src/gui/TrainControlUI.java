@@ -1545,9 +1545,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     /**
      * Pastes to copied locomotive to a given UI button
      * @param b 
-     * @param swap 
+     * @param swap - swaps the copied locomotive with the source
+     * @param move - (if swap is false) this will clear the source button
      */
-    public void doPaste(JButton b, boolean swap)
+    public void doPaste(JButton b, boolean swap, boolean move)
     {
         if (b != null)
         {
@@ -1557,6 +1558,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.locMapping.get(this.copyTargetPage - 1).put(copyTargetButton, this.currentLocMapping().get(b));
 
                 // If we are swapping to the same button that is currently active, activate the paste target so that everything gets repainted correctly
+                if (copyTargetButton.equals(this.currentButton))
+                {
+                    displayCurrentButtonLoc(b);
+                }
+            }
+            // Clear the source of the copy
+            else if (move)
+            {
+                this.locMapping.get(this.copyTargetPage - 1).put(copyTargetButton, null);
+                
                 if (copyTargetButton.equals(this.currentButton))
                 {
                     displayCurrentButtonLoc(b);
@@ -1572,7 +1583,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             repaintMappings();  
-            // this.lastLocMappingPainted = this.locMappingNumber;
             
             clearCopyTarget();
         }
@@ -5653,7 +5663,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator3.setForeground(new java.awt.Color(238, 238, 238));
         jSeparator3.setEnabled(false);
 
+        autosave.setSelected(true);
         autosave.setText("Auto-save on exit");
+        autosave.setToolTipText("If unchecked, be sure to manually export the graph prior to exiting.");
         autosave.setFocusable(false);
         autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -5681,6 +5693,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
         loadDefaultBlankGraph.setText("Initialize Blank Graph");
+        loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
         loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
         loadDefaultBlankGraph.setContentAreaFilled(false);
         loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -6357,6 +6370,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         initNewLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         initNewLayoutButton.setText("Initialize New Local Layout");
+        initNewLayoutButton.setToolTipText("Creates a blank track diagram that you can edit visually.");
         initNewLayoutButton.setFocusable(false);
         initNewLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -9276,7 +9290,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
             {
-                new Thread( () -> {
+                new Thread( () ->
+                {
                     this.model.getAutoLayout().runLocomotives();
                 }).start();
 
@@ -9301,7 +9316,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
-        new Thread( () ->
+        new Thread(() ->
         {    
             // If valid, confirm before we overwrite
             if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid() 

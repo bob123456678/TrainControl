@@ -77,14 +77,18 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.hasCopyTarget())
             {
                 menuItem = new JMenuItem("Paste " + ui.getCopyTarget().getName());
-                menuItem.addActionListener(event -> ui.doPaste(source, false));
+                menuItem.addActionListener(event -> ui.doPaste(source, false, false));
+                add(menuItem);
+                
+                menuItem = new JMenuItem("Move " + ui.getCopyTarget().getName());
+                menuItem.addActionListener(event -> ui.doPaste(source, false, true));
                 add(menuItem);
                 
                 // Show swap menu if triggered on a different button than where the copy command was triggered
                 if (ui.getSwapTarget() != null && ui.getButtonLocomotive(source) != null && !ui.getButtonLocomotive(source).getName().equals(ui.getCopyTarget().getName()))
                 {
                     menuItem = new JMenuItem("Swap with " + ui.getCopyTarget().getName());
-                    menuItem.addActionListener(event -> ui.doPaste(source, true));
+                    menuItem.addActionListener(event -> ui.doPaste(source, true, false));
                     add(menuItem);
                 }
             }
@@ -176,7 +180,7 @@ public class RightClickMenuListener extends MouseAdapter
 
                 menuItem = new JMenuItem("Clear Button");
 
-                menuItem.addActionListener(event -> {ui.setCopyTarget(null); ui.doPaste(source, false);});
+                menuItem.addActionListener(event -> {ui.setCopyTarget(null); ui.doPaste(source, false, false);});
                 
                 add(menuItem);
                 

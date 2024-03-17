@@ -4979,7 +4979,9 @@
                     </Component>
                     <Component class="javax.swing.JCheckBox" name="autosave">
                       <Properties>
+                        <Property name="selected" type="boolean" value="true"/>
                         <Property name="text" type="java.lang.String" value="Auto-save on exit"/>
+                        <Property name="toolTipText" type="java.lang.String" value="If unchecked, be sure to manually export the graph prior to exiting."/>
                         <Property name="focusable" type="boolean" value="false"/>
                         <Property name="horizontalAlignment" type="int" value="4"/>
                         <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -5025,6 +5027,7 @@
                           <Color blue="9b" green="0" red="0" type="rgb"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Initialize Blank Graph"/>
+                        <Property name="toolTipText" type="java.lang.String" value="Creates a blank graph that you can edit visually."/>
                         <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                           <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
                             <EmptyBorder/>
@@ -6031,6 +6034,7 @@
                       <Font name="Tahoma" size="11" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Initialize New Local Layout"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Creates a blank track diagram that you can edit visually."/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>
