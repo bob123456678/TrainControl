@@ -776,6 +776,59 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         return out;
     }
+    
+    /**
+     * Activates the current
+     * @param s
+     */
+    public void jumpToLocomotive(String s)
+    {
+        Locomotive target = null;
+        
+        // Exact match
+        for (Locomotive l : this.model.getLocomotives())
+        {
+            if (l.getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
+            {
+                target = l;
+                break;
+            }
+        }
+        
+        // First partial match
+        if (target == null)
+        {
+            for (Locomotive l : this.model.getLocomotives())
+            {
+                if (l.getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
+                {
+                    target = l;
+                    break;
+                }
+            }
+        }
+        
+        // Jump to page and locomotive if found
+        if (target != null)
+        {    
+            for (Integer i = 0; i < this.locMapping.size(); i++)
+            {
+                for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+                {
+                    if (target.equals(entry.getValue()))
+                    {
+                        if (this.locMappingNumber != i + 1)
+                        {
+                            this.switchLocMapping(i + 1);
+                        }
+                        
+                        this.displayCurrentButtonLoc(entry.getKey());
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Restores list of initialized components from a file
@@ -7629,6 +7682,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.savePreferredSpeed(this.activeLoc);
         }
+        else if (controlPressed && keyCode == KeyEvent.VK_F)
+        {
+            this.quickLocSearch();
+        }
         else if (this.buttonMapping.containsKey(keyCode))
         {
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
@@ -7747,7 +7804,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (currentIndex < this.LayoutList.getItemCount() - 1)
                 {
                      this.LayoutList.setSelectedIndex(currentIndex + 1);
-                     //this.repaintLayout();
                 }
             }
             else
@@ -7757,17 +7813,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else if (keyCode == KeyEvent.VK_COMMA || keyCode == KeyEvent.VK_SEMICOLON || (keyCode == KeyEvent.VK_LEFT && altPressed))
         {
-            //if (this.KeyboardTab.getSelectedIndex() == 0)
-            //{
-            this.PrevLocMappingActionPerformed(null);
-            //}    
+            this.PrevLocMappingActionPerformed(null);   
         }
         else if (keyCode == KeyEvent.VK_PERIOD || keyCode == KeyEvent.VK_COLON || (keyCode == KeyEvent.VK_RIGHT && altPressed))
         {
-            //if (this.KeyboardTab.getSelectedIndex() == 0)
-            // {
             this.NextLocMappingActionPerformed(null);
-            // }
         }
         else if (keyCode == KeyEvent.VK_NUMPAD0 || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed && !controlPressed))
         {
@@ -8358,6 +8408,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 repaintLoc();
             }
         }).start();
+    }
+    
+    /**
+     * Prompts for a locomotive name, and activates that locomotive if found
+     */
+    public void quickLocSearch()
+    {
+        String input = JOptionPane.showInputDialog(this, "Enter locomotive name to jump to:");
+            
+        if (input != null)
+        {
+            this.jumpToLocomotive(input);
+        }
     }
     
     /**

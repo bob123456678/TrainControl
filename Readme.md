@@ -126,6 +126,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * Alt+S (save current functions as a preset for current loc)
 * Alt+U (save current speed as a preset for current loc)
 * Alt+V (apply saved speed preset for current loc)
+* Control+F (quickly jump to a specific locomotive name)
 
 ![Key mapping](assets/keyboard.png?raw=true)
 
