@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -246,6 +247,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      
     // Stats UI
     private LocomotiveStats stats;
+    
+    // Quick search cache
+    private String lastSearch = "";
+    private Set<String> lastResults = new HashSet<>();
     
     /**
      * Creates new form MarklinUI
@@ -778,25 +783,85 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
-     * Activates the current
+     * Gets a list of all buttons mapped to the given locomotive name
+     * @param s
+     * @return 
+     */
+    public List<String> getAllLocButtonMappings(String s)
+    {
+        List<String> out = new ArrayList<>();
+        
+        if (s != null)
+        {
+            for (Integer i = 0; i < this.locMapping.size(); i++)
+            {
+                for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+                {
+                    if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
+                    {
+                        out.add(entry.getKey().getText() + " (Page " + Integer.toString(i + 1) + ")");
+                    }
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * Finds a locomotive matching the passed string, and activates its button
+     * Gives priority to exact matches
      * @param s
      */
     public void jumpToLocomotive(String s)
     {        
-        // Jump to page and locomotive if found
+        // Empty string - repeat last search
+        if ("".equals(s))
+        {
+            s = this.lastSearch;
+        }
+        
+        this.model.log("Found " + s + " at: " + this.getAllLocButtonMappings(s));
+        
+        // Reset and loop around if all results already found
+        if (this.lastResults.size() == this.getAllLocButtonMappings(s).size())
+        {
+            this.lastResults.clear();
+        }
+        
+        // Maintain history of results
+        if (!this.lastSearch.equals(s))
+        {
+            this.lastSearch = s;
+            this.lastResults.clear();
+        }
+                        
+        // Exact match - Jump to page and locomotive if found
         for (Integer i = 0; i < this.locMapping.size(); i++)
         {
             for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
             {
                 if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
                 {
+                    // Skip previously seen
+                    if (this.lastResults.contains(entry.getKey().getText() + "_" + (i + 1)))
+                    {
+                        continue;
+                    }
+                    
+                    // Never return current button
+                    if (entry.getValue().equals(this.currentButton) && this.locMappingNumber == i + 1) continue;
+                    
                     if (this.locMappingNumber != i + 1)
                     {
                         this.switchLocMapping(i + 1);
                     }
 
                     this.displayCurrentButtonLoc(entry.getKey());
-
+                    
+                    // Add to results cache
+                    this.lastResults.add(entry.getKey().getText() + "_" + (i + 1));
+                    
                     return;
                 }
             }
@@ -807,17 +872,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
             {
-                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase())
-                        && !entry.getValue().equals(this.currentLocMapping().get(this.currentButton))
-                )
-                {
+                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
+                {                    
+                    // Skip previously seen
+                    if (this.lastResults.contains(entry.getKey().getText() + "_" + (i + 1)))
+                    {
+                        continue;
+                    }
+                    
+                    // Never return current button
+                    if (entry.getValue().equals(this.currentButton) && this.locMappingNumber == i + 1) continue;
+                    
                     if (this.locMappingNumber != i + 1)
                     {
                         this.switchLocMapping(i + 1);
                     }
 
                     this.displayCurrentButtonLoc(entry.getKey());
-
+                    
+                    // Add to results cache
+                    this.lastResults.add(entry.getKey().getText() + "_" + (i + 1));
+                    
                     return;
                 }
             }
@@ -8445,12 +8520,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void quickLocSearch()
     {
-        String input = JOptionPane.showInputDialog(this, "Enter locomotive name to jump to:");
-            
-        if (input != null)
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            this.jumpToLocomotive(input);
-        }
+            String input = JOptionPane.showInputDialog(this, "Enter locomotive name to jump to:");
+
+            if (input != null)
+            {
+                this.jumpToLocomotive(input);
+            }
+        }));
     }
     
     /**
