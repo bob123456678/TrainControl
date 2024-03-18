@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -250,7 +250,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Quick search cache
     private String lastSearch = "";
-    private Set<String> lastResults = new HashSet<>();
+    private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
     
     /**
      * Creates new form MarklinUI
@@ -781,25 +781,37 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         return out;
     }
-    
+        
     /**
-     * Gets a list of all buttons mapped to the given locomotive name
+     * Gets a map of all buttons mapped to the given locomotive name, prioritizing exact matches
      * @param s
      * @return 
      */
-    public List<String> getAllLocButtonMappings(String s)
+    public LinkedHashSet<LocomotiveKeyboardMapping> getAllLocButtonMappingsMap(String s)
     {
-        List<String> out = new ArrayList<>();
+        LinkedHashSet<LocomotiveKeyboardMapping> out = new LinkedHashSet<>();
         
         if (s != null)
         {
+            // Exact matches come first
+            for (Integer i = 0; i < this.locMapping.size(); i++)
+            {
+                for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+                {
+                    if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
+                    {
+                        out.add(new LocomotiveKeyboardMapping(i + 1, entry.getKey()));
+                    }
+                }
+            }
+            
             for (Integer i = 0; i < this.locMapping.size(); i++)
             {
                 for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
                 {
                     if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
                     {
-                        out.add(entry.getKey().getText() + " (Page " + Integer.toString(i + 1) + ")");
+                        out.add(new LocomotiveKeyboardMapping(i + 1, entry.getKey()));
                     }
                 }
             }
@@ -821,12 +833,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             s = this.lastSearch;
         }
         
-        this.model.log("Found " + s + " at: " + this.getAllLocButtonMappings(s));
-        
-        // Reset and loop around if all results already found
-        if (this.lastResults.size() == this.getAllLocButtonMappings(s).size())
+        if ("".equals(s))
         {
-            this.lastResults.clear();
+            return;
         }
         
         // Maintain history of results
@@ -835,66 +844,41 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.lastSearch = s;
             this.lastResults.clear();
         }
-                        
-        // Exact match - Jump to page and locomotive if found
-        for (Integer i = 0; i < this.locMapping.size(); i++)
-        {
-            for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
-            {
-                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
-                {
-                    // Skip previously seen
-                    if (this.lastResults.contains(entry.getKey().getText() + "_" + (i + 1)))
-                    {
-                        continue;
-                    }
-                    
-                    // Never return current button
-                    if (entry.getValue().equals(this.currentButton) && this.locMappingNumber == i + 1) continue;
-                    
-                    if (this.locMappingNumber != i + 1)
-                    {
-                        this.switchLocMapping(i + 1);
-                    }
+        
+        // Get all possible results
+        LinkedHashSet<LocomotiveKeyboardMapping> results = this.getAllLocButtonMappingsMap(s);
+                
+        this.model.log("Found " + s + " mapped at: " + results);
 
-                    this.displayCurrentButtonLoc(entry.getKey());
-                    
-                    // Add to results cache
-                    this.lastResults.add(entry.getKey().getText() + "_" + (i + 1));
-                    
-                    return;
-                }
-            }
+        // Reset and loop around if all results already found
+        if (this.lastResults.size() == results.size())
+        {
+            this.lastResults.clear();
         }
-
-        // Partial match
-        for (Integer i = 0; i < this.locMapping.size(); i++)
+        
+        // Show first unseen result
+        for (LocomotiveKeyboardMapping e : results)
         {
-            for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+            if (!this.lastResults.contains(e))
             {
-                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
-                {                    
-                    // Skip previously seen
-                    if (this.lastResults.contains(entry.getKey().getText() + "_" + (i + 1)))
-                    {
-                        continue;
-                    }
-                    
-                    // Never return current button
-                    if (entry.getValue().equals(this.currentButton) && this.locMappingNumber == i + 1) continue;
-                    
-                    if (this.locMappingNumber != i + 1)
-                    {
-                        this.switchLocMapping(i + 1);
-                    }
-
-                    this.displayCurrentButtonLoc(entry.getKey());
-                    
-                    // Add to results cache
-                    this.lastResults.add(entry.getKey().getText() + "_" + (i + 1));
-                    
-                    return;
+                this.lastResults.add(e);
+                
+                // Exclude current button
+                if (this.locMappingNumber == e.getPage() && this.currentButton.equals(e.getButton())
+                        && results.size() - this.lastResults.size() > 1)
+                {
+                    continue;
                 }
+                
+                // Display it
+                if (this.locMappingNumber != e.getPage())
+                {
+                    this.switchLocMapping(e.getPage());
+                }
+
+                this.displayCurrentButtonLoc(e.getButton());
+                
+                return;
             }
         }
     }
