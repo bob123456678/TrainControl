@@ -800,7 +800,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             for (Locomotive l : this.model.getLocomotives())
             {
-                if (l.getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
+                if (l.getName().trim().toLowerCase().contains(s.trim().toLowerCase()) 
+                        // Ignore current button
+                        && !l.equals(this.currentLocMapping().get(this.currentButton)))
                 {
                     target = l;
                     break;
@@ -1440,7 +1442,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         copyTargetPage = this.locMappingNumber;
         
         // Put locomotive name in clipboard
-        if (button != null)
+        if (button != null && copyTarget != null)
         {
             StringSelection selection = new StringSelection(copyTarget.getName());
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
@@ -2198,8 +2200,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             if (showSelector)
             {
-                // Show selector if no locomotive is assigned
-                if (this.activeLoc == null)
+                // Show selector if no locomotive is assigned and clipboard is empty
+                if (this.activeLoc == null && this.copyTarget == null)
                 {
                     showLocSelector();
                 }
@@ -7685,6 +7687,36 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (controlPressed && keyCode == KeyEvent.VK_F)
         {
             this.quickLocSearch();
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_C)
+        {
+            this.setCopyTarget(this.currentButton);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
+        {
+            if (this.hasCopyTarget())
+            {
+                this.doPaste(this.currentButton, false, false);
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_B) // Move
+        {
+            if (this.hasCopyTarget())
+            {
+                this.doPaste(this.currentButton, false, true);
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_S) // Swap
+        {
+            if (this.hasCopyTarget())
+            {
+                this.doPaste(this.currentButton, true, false);
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_X)
+        {
+            this.setCopyTarget(null);
+            this.doPaste(this.currentButton, false, false);
         }
         else if (this.buttonMapping.containsKey(keyCode))
         {

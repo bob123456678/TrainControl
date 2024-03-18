@@ -57,13 +57,20 @@ public class RightClickMenuListener extends MouseAdapter
             
             add(menuItem);
             
+            menuItem = new JMenuItem("Quick Find Locomotive");
+            menuItem.addActionListener(event -> ui.quickLocSearch()); 
+            menuItem.setToolTipText("Control+F");
+            
+            add(menuItem);
+            
             addSeparator();
             
             // Option to copy
             if (ui.buttonHasLocomotive(source))
             {                
                 menuItem = new JMenuItem("Copy " + ui.getButtonLocomotive(source).getName());
-                menuItem.addActionListener(event -> ui.setCopyTarget(source));    
+                menuItem.addActionListener(event -> ui.setCopyTarget(source));
+                menuItem.setToolTipText("Control+C");
             }
             else
             {
@@ -78,10 +85,12 @@ public class RightClickMenuListener extends MouseAdapter
             {
                 menuItem = new JMenuItem("Paste " + ui.getCopyTarget().getName());
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
+                menuItem.setToolTipText("Control+V");
                 add(menuItem);
                 
                 menuItem = new JMenuItem("Move " + ui.getCopyTarget().getName());
                 menuItem.addActionListener(event -> ui.doPaste(source, false, true));
+                menuItem.setToolTipText("Control+B");
                 add(menuItem);
                 
                 // Show swap menu if triggered on a different button than where the copy command was triggered
@@ -89,6 +98,7 @@ public class RightClickMenuListener extends MouseAdapter
                 {
                     menuItem = new JMenuItem("Swap with " + ui.getCopyTarget().getName());
                     menuItem.addActionListener(event -> ui.doPaste(source, true, false));
+                    menuItem.setToolTipText("Control+S");
                     add(menuItem);
                 }
             }
@@ -181,7 +191,8 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem = new JMenuItem("Clear Button");
 
                 menuItem.addActionListener(event -> {ui.setCopyTarget(null); ui.doPaste(source, false, false);});
-                
+                menuItem.setToolTipText("Control+X");
+
                 add(menuItem);
                 
                 
