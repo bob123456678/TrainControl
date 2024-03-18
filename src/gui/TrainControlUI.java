@@ -782,51 +782,43 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      * @param s
      */
     public void jumpToLocomotive(String s)
-    {
-        Locomotive target = null;
-        
-        // Exact match
-        for (Locomotive l : this.model.getLocomotives())
+    {        
+        // Jump to page and locomotive if found
+        for (Integer i = 0; i < this.locMapping.size(); i++)
         {
-            if (l.getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
+            for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
             {
-                target = l;
-                break;
-            }
-        }
-        
-        // First partial match
-        if (target == null)
-        {
-            for (Locomotive l : this.model.getLocomotives())
-            {
-                if (l.getName().trim().toLowerCase().contains(s.trim().toLowerCase()) 
-                        // Ignore current button
-                        && !l.equals(this.currentLocMapping().get(this.currentButton)))
+                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
                 {
-                    target = l;
-                    break;
+                    if (this.locMappingNumber != i + 1)
+                    {
+                        this.switchLocMapping(i + 1);
+                    }
+
+                    this.displayCurrentButtonLoc(entry.getKey());
+
+                    return;
                 }
             }
         }
-        
-        // Jump to page and locomotive if found
-        if (target != null)
-        {    
-            for (Integer i = 0; i < this.locMapping.size(); i++)
+
+        // Partial match
+        for (Integer i = 0; i < this.locMapping.size(); i++)
+        {
+            for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
             {
-                for (Entry<JButton, Locomotive> entry : this.locMapping.get(i).entrySet())
+                if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase())
+                        && !entry.getValue().equals(this.currentLocMapping().get(this.currentButton))
+                )
                 {
-                    if (target.equals(entry.getValue()))
+                    if (this.locMappingNumber != i + 1)
                     {
-                        if (this.locMappingNumber != i + 1)
-                        {
-                            this.switchLocMapping(i + 1);
-                        }
-                        
-                        this.displayCurrentButtonLoc(entry.getKey());
-                        return;
+                        this.switchLocMapping(i + 1);
                     }
+
+                    this.displayCurrentButtonLoc(entry.getKey());
+
+                    return;
                 }
             }
         }
@@ -1434,12 +1426,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     /**
      * Clipboard copy
      * @param button 
+     * @param cut 
      */
-    public void setCopyTarget(JButton button)
+    public void setCopyTarget(JButton button, boolean cut)
     {
         copyTarget = this.currentLocMapping().get(button);
         copyTargetButton = button;
         copyTargetPage = this.locMappingNumber;
+        
+        if (cut)
+        {
+            Locomotive copyTargetTemp = copyTarget;
+            copyTarget = null;
+            doPaste(copyTargetButton, false, false);
+            copyTarget = copyTargetTemp;
+        }
         
         // Put locomotive name in clipboard
         if (button != null && copyTarget != null)
@@ -1509,7 +1510,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public Locomotive getSwapTarget()
     {
-        return this.locMapping.get(this.copyTargetPage - 1).get(this.copyTargetButton);
+        if (this.copyTargetPage > 0)
+        {
+            return this.locMapping.get(this.copyTargetPage - 1).get(this.copyTargetButton);
+        }
+        
+        return null;
     }
     
     /**
@@ -1608,7 +1614,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (b != null)
         {
             // Move the current locomotive to the source of the copy
-            if (swap)
+            if (swap && this.copyTargetPage > 0)
             {
                 this.locMapping.get(this.copyTargetPage - 1).put(copyTargetButton, this.currentLocMapping().get(b));
 
@@ -1619,7 +1625,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
             }
             // Clear the source of the copy
-            else if (move)
+            else if (move && this.copyTargetPage > 0)
             {
                 this.locMapping.get(this.copyTargetPage - 1).put(copyTargetButton, null);
                 
@@ -7690,20 +7696,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else if (controlPressed && keyCode == KeyEvent.VK_C)
         {
-            this.setCopyTarget(this.currentButton);
+            this.setCopyTarget(this.currentButton, false);
         }
         else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
         {
             if (this.hasCopyTarget())
             {
                 this.doPaste(this.currentButton, false, false);
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_B) // Move
-        {
-            if (this.hasCopyTarget())
-            {
-                this.doPaste(this.currentButton, false, true);
             }
         }
         else if (controlPressed && keyCode == KeyEvent.VK_S) // Swap
@@ -7715,8 +7714,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         else if (controlPressed && keyCode == KeyEvent.VK_X)
         {
-            this.setCopyTarget(null);
-            this.doPaste(this.currentButton, false, false);
+            this.setCopyTarget(this.currentButton, true);
         }
         else if (this.buttonMapping.containsKey(keyCode))
         {

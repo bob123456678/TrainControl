@@ -69,7 +69,7 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.buttonHasLocomotive(source))
             {                
                 menuItem = new JMenuItem("Copy " + ui.getButtonLocomotive(source).getName());
-                menuItem.addActionListener(event -> ui.setCopyTarget(source));
+                menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
                 menuItem.setToolTipText("Control+C");
             }
             else
@@ -188,9 +188,9 @@ public class RightClickMenuListener extends MouseAdapter
                 // Option to clear the mapping
                 addSeparator();
 
-                menuItem = new JMenuItem("Clear Button");
+                menuItem = new JMenuItem("Clear Button / Cut");
 
-                menuItem.addActionListener(event -> {ui.setCopyTarget(null); ui.doPaste(source, false, false);});
+                menuItem.addActionListener(event -> {ui.setCopyTarget(source, true);});
                 menuItem.setToolTipText("Control+X");
 
                 add(menuItem);
