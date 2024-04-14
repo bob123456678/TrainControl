@@ -1469,8 +1469,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public void selectLocomotiveActivated(JButton button)
     {
         // Make sure this button is selected
-        button.doClick();
-        showLocSelector();
+        if (button != null)
+        {
+            button.doClick();
+            showLocSelector();
+        }
     }
     
     public void showLocSelector()
@@ -7748,6 +7751,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (altPressed && keyCode == KeyEvent.VK_U)
         {
             this.savePreferredSpeed(this.activeLoc);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_A)
+        {
+            this.selectLocomotiveActivated(this.currentButton);
         }
         else if (controlPressed && keyCode == KeyEvent.VK_F)
         {

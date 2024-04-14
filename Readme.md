@@ -102,35 +102,40 @@ Monitor the usage of different locomotives.
 
 TrainControl's key mappings are designed to allow you to send any command nearly instantly
 
-* Letter keys (select a locomotive)
-* Up/down arrow (speed up/slow down) (hold Alt to double the increment)
-* Left/right arrow (change direction)
-* Control+Left/right arrow (set direction as reverse / set direction as forward)
-* Escape (power off/emergency stop)
-* Alt+G (power on)
-* 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
-* Numpad 0/backquote/Alt+0 (toggle lights/F0)
-* F1-F24 (toggle functions F1-F24)
-* Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
-* Control+0-9 (toggle functions F10-F19)
-* Control+Alt+0-9 (toggle functions F20-F19)
-* Shift (slow stop)
-* Spacebar (instant stop)
-* Enter (stop all locs)
-* Comma/period, semicolon/colon, Alt+left/right arrow (cycle to previous/next loc page)
-* Backspace/Alt+backspace (cycle through tabs)
-* Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
-* Slash/question mark, < (cycle through function tabs on the loc panel)
-* Alt+P (apply saved function preset for current loc)
-* Alt+O (turn off all functions for current loc)
-* Alt+S (save current functions as a preset for current loc)
-* Alt+U (save current speed as a preset for current loc)
-* Alt+V (apply saved speed preset for current loc)
-* Control+F (quickly jump to a specific locomotive name)
-* Control+C (copy locomotive at currently active button)
-* Control+X (cut locomotive and clear mapping of currently active button)
-* Control+V (paste copied locomotive at currently active button)
-* Control+S (swap copied locomotive with currently active button)
+* Primary controls
+    * A-Z letter keys (select a locomotive)
+    * Up/down arrow (speed up/slow down) (hold Alt to double the increment)
+    * Left/right arrow (change direction)
+    * Control+Left/right arrow (set direction as reverse / set direction as forward)
+    * Escape (power off/emergency stop)
+    * Alt+G (power on)
+    * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
+    * Numpad 0/backquote/Alt+0 (toggle lights/F0)
+    * F1-F24 (toggle functions F1-F24)
+    * Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
+    * Control+0-9 (toggle functions F10-F19)
+    * Control+Alt+0-9 (toggle functions F20-F19)
+    * Shift (slow stop)
+    * Spacebar (instant stop)
+    * Enter (stop all locs)
+* Locomotive shortcuts
+    * Alt+P (apply saved function preset for current loc)
+    * Alt+O (turn off all functions for current loc)
+    * Alt+S (save current functions as a preset for current loc)
+    * Alt+U (save current speed as a preset for current loc)
+    * Alt+V (apply saved speed preset for current loc)
+* Locomotive management
+    * Comma/period, semicolon/colon, Alt+left/right arrow (cycle to previous/next loc page)
+    * Control+F (quickly jump to/search for any locomotive)
+    * Control+C (copy locomotive at currently active button)
+    * Control+X (cut locomotive and clear mapping of currently active button)
+    * Control+V (paste copied locomotive at currently active button)
+    * Control+S (swap copied locomotive with currently active button)
+    * Control+A (assign a new locomotive to the currently active button)
+* UI shortcuts
+    * Backspace/Alt+backspace (cycle through tabs)
+    * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
+    * Slash/question mark, < (cycle through function tabs on the locomotive panel)
 
 ![Key mapping](assets/keyboard.png?raw=true)
 
@@ -204,6 +209,9 @@ Some sample files are included in the `cs2_sample_layout` folder.
 As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ## Changelog
+
+* v2.0.17 [4/13/24]
+    - Added Control+A shortcut to assign a locomotive to the currently active button
 
 * v2.0.16 [3/18/24]
     - Added Control+F shortcut and right-click menu option to quickly find/jump to any locomotive already mapped
