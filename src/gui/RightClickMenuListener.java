@@ -54,7 +54,8 @@ public class RightClickMenuListener extends MouseAdapter
             // Select the active locomotive
             menuItem = new JMenuItem("Assign Locomotive");
             menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));    
-            
+            menuItem.setToolTipText("Control+A");
+
             add(menuItem);
             
             menuItem = new JMenuItem("Quick Find Locomotive");
