@@ -1391,7 +1391,113 @@ public class Layout
         
         return output;
     }
+    
+    /**
+     * Returns the index of the first unfinished path in the timetable
+     * @return 
+     */
+    public int getUnfinishedTimetablePathIndex()
+    {
+        for (int i = 0; i < this.timetable.size(); i++)
+        {
+            if (this.timetable.get(i).getExecutionTime() == 0)
+            {
+                return i;
+            }
+        }
+        
+        return 0;
+    }
+    
+    /**
+     * Checks whether the timetable has any unfinished paths
+     * @return 
+     */
+    private boolean timetableHasUnfinishedPaths()
+    {
+        return getUnfinishedTimetablePathIndex() != 0;
+    }
   
+    /**
+     * Executes the paths in the timetable
+     */
+    public void executeTimetable()
+    {
+        synchronized (this.activeLocomotives)
+        {
+            this.running = true;
+        }
+        
+        // Capture start time
+        long startTime = System.currentTimeMillis();
+
+        // Reset all timestamps in the timetable
+        if (!this.timetableHasUnfinishedPaths())
+        {
+            // this.control.log("Starting fresh timetable execution.");
+            
+            for (TimetablePath ttp : this.timetable)
+            {
+                ttp.setExecutionTime(0);
+            }
+        }
+        
+        int startIndex = getUnfinishedTimetablePathIndex();
+            
+        this.control.log("Starting timetable execution from index " + (startIndex + 1));
+        
+        for (int i = startIndex; i < this.timetable.size(); i++)
+        {
+            TimetablePath ttp = this.timetable.get(i);
+
+            while (this.running)
+            {
+                if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
+                {
+                    this.control.log("Waiting " + (ttp.getSecondsToNext() - (System.currentTimeMillis() - startTime)) / 1000  + "s to time of next timetable entry...");
+                }
+                else if (i > startIndex && this.timetable.get(i - 1).getExecutionTime() == 0)
+                {
+                    this.control.log("Waiting for previous route to start.");
+                }
+                else
+                {
+                    this.control.log("Starting timetable route " + ttp.toString());
+                    startTime = System.currentTimeMillis();
+
+                    new Thread(() ->
+                    {   
+                        try
+                        {
+                            while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
+                            {
+                                this.control.log("Timetable entry " + ttp.toString() + " not yet executable. Check log. Retrying...");
+                                
+                                ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            this.control.log("Timetable error: " + e.toString());
+
+                            if (this.control.isDebug())
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+                    
+                    break;
+                }  
+
+                ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+            }                
+        }
+        
+        // Reset running status
+        this.stopLocomotives();
+    }
+    
     /**
      * Locks a path and runs the locomotive from the start to the end
      * @param path

@@ -10439,7 +10439,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         this.executeTimetable.setEnabled(false);
 
-        new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             if (!this.getModel().getPowerState())
             {
@@ -10454,12 +10454,41 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.executeTimetable.setEnabled(true);
                 return;
             }
+            
+            // Conditional route warning
+            for (String routeName : this.model.getRouteList())
+            {
+                MarklinRoute r = this.model.getRoute(routeName);
+
+                if (r.isEnabled())
+                {
+                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+                    
+                    if (!conditionalRouteWarningShown)
+                    {                    
+                        int dialogResult = JOptionPane.showConfirmDialog(this, 
+                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                        if (dialogResult == JOptionPane.NO_OPTION)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            conditionalRouteWarningShown = true;
+                            break;
+                        }
+                    }
+                }
+            }
 
             // Validate starting locations
             List<Locomotive> seen = new ArrayList<>();
 
-            for (TimetablePath ttp : this.getModel().getAutoLayout().getTimetable())
+            for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
             {
+                TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
+                
                 if (!seen.contains(ttp.getLoc()))
                 {
                     Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
@@ -10473,71 +10502,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     seen.add(ttp.getLoc());
                 }
             }  
-            
-            // Capture start time
-            long startTime = System.currentTimeMillis();
-
-            // Reset all timestamps in the timetable
-            for (TimetablePath ttp : this.getModel().getAutoLayout().getTimetable())
+          
+            new Thread(() -> 
             {
-                ttp.setExecutionTime(0);
-            }
-
-            this.repaintTimetable();
+                this.model.getAutoLayout().executeTimetable();
+                this.executeTimetable.setEnabled(true);
+            }).start();
             
-            for (int i = 0; i < this.getModel().getAutoLayout().getTimetable().size(); i++)
-            {
-                TimetablePath ttp = this.getModel().getAutoLayout().getTimetable().get(i);
-                                
-                while (true)
-                {
-                    if (i > 0 && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
-                    {
-                        this.model.log("Waiting " + (ttp.getSecondsToNext() - (System.currentTimeMillis() - startTime)) / 1000  + "s to time of next timetable entry...");
-                    }
-                    else if (i > 0 && this.getModel().getAutoLayout().getTimetable().get(i - 1).getExecutionTime() == 0)
-                    {
-                        this.model.log("Waiting for previous route to start.");
-                    }
-                    else
-                    {
-                        this.model.log("Starting timetable route " + ttp.toString());
-                        startTime = System.currentTimeMillis();
-
-                        new Thread(() ->
-                        {   
-                            try
-                            {
-                                while (
-                                        !this.getModel().getAutoLayout().executePath(ttp.getPath(), ttp.getLoc(), 
-                                                ttp.getLoc().getPreferredSpeed(), ttp)
-                                )
-                                {
-  
-                                    this.model.log("Timetable entry " + ttp.toString() + " not yet executable. Check log. Retrying...");
-                                    ttp.getLoc().delay(this.getModel().getAutoLayout().getMinDelay(), this.getModel().getAutoLayout().getMaxDelay());
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                this.model.log("Timetable error: " + e.toString());
-
-                                if (this.model.isDebug())
-                                {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }).start();
-                        
-                        break;
-                    }  
-                    
-                    ttp.getLoc().delay(this.getModel().getAutoLayout().getMinDelay(), this.getModel().getAutoLayout().getMaxDelay());
-                }                
-            } 
-
-            this.executeTimetable.setEnabled(true);
-        }).start();
+            this.gracefulStop.setEnabled(true);  
+        }));
     }//GEN-LAST:event_executeTimetableActionPerformed
 
     private void clearTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearTimetableActionPerformed
@@ -10556,6 +10529,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_clearTimetableActionPerformed
 
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
+        
+        if (this.getModel().getAutoLayout().isRunning())
+        {
+            JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+            return;
+        }
         
         this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
         this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());

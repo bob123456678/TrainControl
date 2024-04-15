@@ -103,6 +103,13 @@ public class LocomotiveStats extends javax.swing.JPanel
                             return String.class;
                     }
                 }
+                
+                // Disable editing
+                @Override
+                public boolean isCellEditable(int row, int column)
+                {  
+                    return false;  
+                }
             };
 
             List<Locomotive> sortedLocs = new ArrayList();
