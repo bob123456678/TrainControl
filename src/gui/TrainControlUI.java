@@ -2,6 +2,7 @@ package gui;
 
 import automation.Edge;
 import automation.Point;
+import automation.TimetablePath;
 import base.Locomotive;
 import base.RouteCommand;
 import java.awt.Color;
@@ -68,12 +69,15 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.RowSorter;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
 import marklin.MarklinLocomotive.decoderType;
@@ -526,6 +530,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         // Hide initially
         locCommandPanels.remove(this.locCommandTab);
+        locCommandPanels.remove(this.timetablePanel);
         locCommandPanels.remove(this.autoSettingsPanel);
         
         // Layout editing only supported on windows
@@ -2591,8 +2596,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         NextKeyboard = new javax.swing.JButton();
         KeyboardLabel1 = new javax.swing.JLabel();
         autoPanel = new javax.swing.JPanel();
-        validateButton = new javax.swing.JButton();
-        startAutonomy = new javax.swing.JButton();
         locCommandPanels = new javax.swing.JTabbedPane();
         autonomyPanel = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -2609,6 +2612,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
+        timetablePanel = new javax.swing.JPanel();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        timetable = new javax.swing.JTable();
+        executeTimetable = new javax.swing.JButton();
+        clearTimetable = new javax.swing.JButton();
+        timetableCapture = new javax.swing.JToggleButton();
         autoSettingsPanel = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel46 = new javax.swing.JLabel();
@@ -2632,6 +2641,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         clearNonParkedLocs = new javax.swing.JButton();
         hideInactive = new javax.swing.JCheckBox();
         jLabel52 = new javax.swing.JLabel();
+        validateButton = new javax.swing.JButton();
+        startAutonomy = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
         ManageLocPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
@@ -4472,7 +4483,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 484, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4629,7 +4640,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 460, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 510, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5724,28 +5735,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
-        validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate JSON & Open Graph UI");
-        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
-        validateButton.setFocusable(false);
-        validateButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                validateButtonActionPerformed(evt);
-            }
-        });
-
-        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
-        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        startAutonomy.setText("Start Autonomous Operation");
-        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
-        startAutonomy.setEnabled(false);
-        startAutonomy.setFocusable(false);
-        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startAutonomyActionPerformed(evt);
-            }
-        });
-
         locCommandPanels.setBackground(new java.awt.Color(255, 255, 255));
         locCommandPanels.setFocusable(false);
         locCommandPanels.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -5877,7 +5866,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addContainerGap(430, Short.MAX_VALUE))
+                .addContainerGap(471, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
@@ -5906,6 +5895,83 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
 
         locCommandPanels.addTab("Locomotive Commands", locCommandTab);
+
+        timetablePanel.setBackground(new java.awt.Color(255, 255, 255));
+
+        timetable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        timetable.setGridColor(new java.awt.Color(242, 242, 242));
+        jScrollPane6.setViewportView(timetable);
+
+        executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        executeTimetable.setText("Execute Timetable");
+        executeTimetable.setToolTipText("Sequentially executes the timetable.");
+        executeTimetable.setFocusable(false);
+        executeTimetable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                executeTimetableActionPerformed(evt);
+            }
+        });
+
+        clearTimetable.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        clearTimetable.setText("Clear");
+        clearTimetable.setToolTipText("Completely resets the timetable.");
+        clearTimetable.setFocusable(false);
+        clearTimetable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clearTimetableActionPerformed(evt);
+            }
+        });
+
+        timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        timetableCapture.setText("Capture Locomotive Commands");
+        timetableCapture.setToolTipText("Adds any executed locomotive commands to the timetable.  Try to end where you started!");
+        timetableCapture.setFocusable(false);
+        timetableCapture.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                timetableCaptureActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout timetablePanelLayout = new javax.swing.GroupLayout(timetablePanel);
+        timetablePanel.setLayout(timetablePanelLayout);
+        timetablePanelLayout.setHorizontalGroup(
+            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(timetablePanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 761, Short.MAX_VALUE)
+                    .addGroup(timetablePanelLayout.createSequentialGroup()
+                        .addComponent(timetableCapture)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(clearTimetable, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(executeTimetable)))
+                .addContainerGap())
+        );
+        timetablePanelLayout.setVerticalGroup(
+            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, timetablePanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(executeTimetable)
+                    .addComponent(clearTimetable)
+                    .addComponent(timetableCapture))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 464, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        locCommandPanels.addTab("Timetable", timetablePanel);
 
         autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -6207,6 +6273,28 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
+
+        validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        validateButton.setText("Validate JSON & Open Graph UI");
+        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
+        validateButton.setFocusable(false);
+        validateButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                validateButtonActionPerformed(evt);
+            }
+        });
+
+        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
+        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        startAutonomy.setText("Start Autonomous Operation");
+        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
+        startAutonomy.setEnabled(false);
+        startAutonomy.setFocusable(false);
+        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startAutonomyActionPerformed(evt);
+            }
+        });
 
         gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
         gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
@@ -6607,7 +6695,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(dataSourceLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(55, Short.MAX_VALUE))
+                .addContainerGap(86, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -6632,7 +6720,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 517, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 568, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7641,7 +7729,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(f29Label)
                         .addComponent(f31Label))
                     .addComponent(f28Label))
-                .addGap(0, 91, Short.MAX_VALUE))
+                .addGap(0, 138, Short.MAX_VALUE))
         );
 
         FunctionTabs.addTab("F20-F31", F20AndUpPanel);
@@ -9515,6 +9603,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
             {
                 locCommandPanels.remove(this.locCommandTab);
+                locCommandPanels.remove(this.timetablePanel);
                 locCommandPanels.remove(this.autoSettingsPanel);
                 
                 this.startAutonomy.setEnabled(false);
@@ -9527,10 +9616,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             else
             {
                 locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+                locCommandPanels.addTab("Timetable", this.timetablePanel);
                 locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
                 loadAutoLayoutSettings();
                 
                 this.startAutonomy.setEnabled(true);
+                this.executeTimetable.setEnabled(true);
 
                 // Advance to locomotive tab
                 this.locCommandPanels.setSelectedIndex(
@@ -10343,6 +10434,132 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void ViewDBButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ViewDBButtonActionPerformed
         ActiveLocLabelMouseReleased(null);
     }//GEN-LAST:event_ViewDBButtonActionPerformed
+
+    private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
+        
+        this.executeTimetable.setEnabled(false);
+
+        new Thread(() -> 
+        {
+            if (!this.getModel().getPowerState())
+            {
+                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
+
+            if (this.getModel().getAutoLayout().isRunning())
+            {
+                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
+
+            // Validate starting locations
+            List<Locomotive> seen = new ArrayList<>();
+
+            for (TimetablePath ttp : this.getModel().getAutoLayout().getTimetable())
+            {
+                if (!seen.contains(ttp.getLoc()))
+                {
+                    Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
+                    if (locLocation == null || !locLocation.equals(ttp.getStart()))
+                    {
+                        JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
+                        this.executeTimetable.setEnabled(true);
+                        return;
+                    }
+
+                    seen.add(ttp.getLoc());
+                }
+            }  
+            
+            // Capture start time
+            long startTime = System.currentTimeMillis();
+
+            // Reset all timestamps in the timetable
+            for (TimetablePath ttp : this.getModel().getAutoLayout().getTimetable())
+            {
+                ttp.setExecutionTime(0);
+            }
+
+            this.repaintTimetable();
+            
+            for (int i = 0; i < this.getModel().getAutoLayout().getTimetable().size(); i++)
+            {
+                TimetablePath ttp = this.getModel().getAutoLayout().getTimetable().get(i);
+                                
+                while (true)
+                {
+                    if (i > 0 && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
+                    {
+                        this.model.log("Waiting " + (ttp.getSecondsToNext() - (System.currentTimeMillis() - startTime)) / 1000  + "s to time of next timetable entry...");
+                    }
+                    else if (i > 0 && this.getModel().getAutoLayout().getTimetable().get(i - 1).getExecutionTime() == 0)
+                    {
+                        this.model.log("Waiting for previous route to start.");
+                    }
+                    else
+                    {
+                        this.model.log("Starting timetable route " + ttp.toString());
+                        startTime = System.currentTimeMillis();
+
+                        new Thread(() ->
+                        {   
+                            try
+                            {
+                                while (
+                                        !this.getModel().getAutoLayout().executePath(ttp.getPath(), ttp.getLoc(), 
+                                                ttp.getLoc().getPreferredSpeed(), ttp)
+                                )
+                                {
+  
+                                    this.model.log("Timetable entry " + ttp.toString() + " not yet executable. Check log. Retrying...");
+                                    ttp.getLoc().delay(this.getModel().getAutoLayout().getMinDelay(), this.getModel().getAutoLayout().getMaxDelay());
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                this.model.log("Timetable error: " + e.toString());
+
+                                if (this.model.isDebug())
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
+                        
+                        break;
+                    }  
+                    
+                    ttp.getLoc().delay(this.getModel().getAutoLayout().getMinDelay(), this.getModel().getAutoLayout().getMaxDelay());
+                }                
+            } 
+
+            this.executeTimetable.setEnabled(true);
+        }).start();
+    }//GEN-LAST:event_executeTimetableActionPerformed
+
+    private void clearTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearTimetableActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this, "This will remove all timetable entries. Continue?"
+                    , "Confirm Clear", JOptionPane.YES_NO_OPTION);
+
+            if(dialogResult == JOptionPane.NO_OPTION) return;
+
+            this.model.getAutoLayout().setTimetable(new LinkedList<>());
+            this.repaintTimetable();
+        }));
+    }//GEN-LAST:event_clearTimetableActionPerformed
+
+    private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
+        
+        this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
+        this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+    }//GEN-LAST:event_timetableCaptureActionPerformed
     
     public void setFunctionIcon(Locomotive l, JButton source)
     {
@@ -10732,6 +10949,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {  
                     // Update locomotive panel
                     this.repaintAutoLocListLite();
+                    
+                    this.repaintTimetable();
                                     
                     for (Edge e : edges)
                     {                        
@@ -10825,12 +11044,54 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             });
             
             this.repaintAutoLocList(false);
+            this.repaintTimetable();
             this.updateVisiblePoints();
         } 
         catch (URISyntaxException ex)
         {
             this.model.log("Error loading graph UI.");
         }        
+    }
+    
+    /**
+     * Repaints the timetable once a route completes
+     */
+    synchronized private void repaintTimetable()
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            // Aggregate stats
+            String col[] = {"Index", "Locomotive", "Start", "Destination", "Time"};
+
+            DefaultTableModel tableModel = new DefaultTableModel(col, 0)
+            {
+                // Disable editing
+                @Override
+                public boolean isCellEditable(int row, int column)
+                {  
+                    return false;  
+                }
+            };
+  
+            for (TimetablePath path : this.model.getAutoLayout().getTimetable())
+            {
+                Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(), path.getStart().getName(), path.getEnd().getName(),
+                path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start (" + (path.getSecondsToNext() / 1000) + "s)..."};
+
+                tableModel.addRow(data);
+            }
+
+            this.timetable.setModel(tableModel);
+            
+            TableRowSorter<TableModel> sorter = new TableRowSorter<>(this.timetable.getModel());
+            sorter.setSortable(0, false); 
+            sorter.setSortable(1, false); 
+            sorter.setSortable(2, false); 
+            sorter.setSortable(3, false); 
+            sorter.setSortable(4, false); 
+            this.timetable.setRowSorter(sorter);
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+        }));
     }
     
     synchronized public void repaintAutoLocList(boolean external)
@@ -11281,10 +11542,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JButton checkDuplicates;
     private javax.swing.JButton clearNonParkedLocs;
+    private javax.swing.JButton clearTimetable;
     private javax.swing.JLabel dataSourceLabel;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton editLayoutButton;
+    private javax.swing.JButton executeTimetable;
     private javax.swing.JButton exportAllRoutes;
     private javax.swing.JButton exportJSON;
     private javax.swing.JLabel f0Label;
@@ -11355,6 +11618,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
@@ -11395,6 +11659,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButton sortByName;
     private javax.swing.JButton startAutonomy;
     private javax.swing.JButton syncLocStateButton;
+    private javax.swing.JTable timetable;
+    private javax.swing.JToggleButton timetableCapture;
+    private javax.swing.JPanel timetablePanel;
     private javax.swing.JLabel toolsLabel;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;

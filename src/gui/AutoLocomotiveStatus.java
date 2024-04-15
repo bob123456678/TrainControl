@@ -258,7 +258,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 
                 new Thread(() ->
                 {
-                    boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed());
+                    boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed(), null);
                     
                     if (!success)
                     {

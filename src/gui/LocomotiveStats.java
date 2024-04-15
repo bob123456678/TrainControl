@@ -22,6 +22,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import marklin.MarklinLocomotive;
+import util.Conversion;
 
 /**
  *
@@ -62,7 +63,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         @Override
         public String toString()
         {
-            return convertSecondsToHMmSs(value);
+            return Conversion.convertSecondsToHMmSs(value);
         }
 
         @Override
@@ -134,11 +135,11 @@ public class LocomotiveStats extends javax.swing.JPanel
                 if (l.getTotalRuntime() > 0) totalLocsRun +=1;
             }
 
-            this.todaysRuntimeVal.setText(convertSecondsToHMmSs(todaysTotalRuntime));
+            this.todaysRuntimeVal.setText(Conversion.convertSecondsToHMmSs(todaysTotalRuntime));
             this.locCountVal.setText(Integer.toString(todaysLocsRun));
             this.locomotivesLabel.setText(todaysLocsRun == 1 ? "locomotive" : "locomotives");
             
-            this.cumulativeRuntimeVal.setText(convertSecondsToHMmSs(totalRuntime));
+            this.cumulativeRuntimeVal.setText(Conversion.convertSecondsToHMmSs(totalRuntime));
             this.locCountCumulativeVal.setText(Integer.toString(totalLocsRun));
             this.locomotivesCumulativeLabel.setText(totalLocsRun == 1 ? "locomotive" : "locomotives");
             
@@ -161,26 +162,6 @@ public class LocomotiveStats extends javax.swing.JPanel
         }
     }
     
-    private String convertSecondsToHMmSs(long ms)
-    {
-        long seconds = ms / 1000;
-        
-        long s = seconds % 60;
-        long m = (seconds / 60) % 60;
-        long h = (seconds / (60 * 60));
-        
-        return String.format("%d:%02d:%02d", h,m,s);
-    }
-    
-    private String convertSecondsToDate(long timestamp)
-    {
-        if (timestamp == 0) return "Never";
-        
-        Instant i = Instant.ofEpochMilli( timestamp );
-         
-        return i.toString().split("T")[0];
-    }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

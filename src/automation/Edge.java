@@ -432,5 +432,25 @@ public class Edge
         
         return jsonObj;
     }
+    
+    /**
+     * Converts this edge to a simple JSON representation
+     * @return 
+     * @throws java.lang.IllegalAccessException 
+     * @throws java.lang.NoSuchFieldException 
+     */
+    public JSONObject toSimpleJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+
+        jsonObj.put("start", this.start.getName());
+        jsonObj.put("end", this.end.getName());       
+        
+        return jsonObj;
+    }
 }
             

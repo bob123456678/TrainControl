@@ -2,6 +2,7 @@ package marklin.file;
 
 import automation.Edge;
 import automation.Layout;
+import automation.TimetablePath;
 import base.Accessory;
 import base.Locomotive;
 import java.io.*;
@@ -1228,7 +1229,7 @@ public final class CS2File
             layout.invalidate();
             return layout;   
         }
-        
+                
         // Optional values
         if (o.has("preArrivalSpeedReduction"))
         {
@@ -1798,6 +1799,24 @@ public final class CS2File
                 layout.invalidate();
             }
         });
+        
+        // Load the timetable
+        try
+        {
+            JSONArray timetable = o.getJSONArray("timetable");
+            List<TimetablePath> timetableList = new LinkedList<>();
+            
+            for (Object tt : timetable)
+            {                
+                timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+            }
+            
+            layout.setTimetable(timetableList);
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout timetable warning: " + e.getMessage());
+        }
         
         // Set list of reversible locomotives
         /*reversible.forEach(locc -> { 

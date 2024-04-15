@@ -77,6 +77,7 @@ public class Layout
     private double preArrivalSpeedReduction = 0.5;
     private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
+    private boolean timetableCapture = false;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
@@ -137,11 +138,19 @@ public class Layout
      * @param loc
      * @param path 
      */
-    private void addTimetableEntry(Locomotive loc, List<Edge> path)
+    synchronized private void addTimetableEntry(Locomotive loc, List<Edge> path)
     {
-        if (!path.isEmpty())
+        if (!path.isEmpty() && loc != null && this.timetableCapture)
         {
             timetable.add(new TimetablePath(loc, path, System.currentTimeMillis())); 
+            
+            if (timetable.size() > 1)
+            {
+                TimetablePath second = timetable.get(timetable.size() - 1);
+                TimetablePath first = timetable.get(timetable.size() - 2);
+                
+                first.setSecondsToNext(second.getExecutionTime() - first.getExecutionTime());
+            }
         }
     }
     
@@ -1192,7 +1201,7 @@ public class Layout
 
                 if (path != null)
                 {
-                    this.executePath(path, loc, speed);
+                    this.executePath(path, loc, speed, null);
                 }
 
                 loc.delay(this.getMinDelay() * 1000);
@@ -1390,7 +1399,7 @@ public class Layout
      * @param speed 
      * @return  
      */
-    public boolean executePath(List<Edge> path, Locomotive loc, int speed)
+    public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
     {    
         // Sanity check
         if (!this.isValid())
@@ -1404,10 +1413,16 @@ public class Layout
             this.control.log("Path is empty");
             return false;
         }
-        
+                
         if (loc == null)
         {
             this.control.log("Locomotive is null");
+            return false;
+        }
+        
+        if (this.activeLocomotives.containsKey(loc))
+        {
+            this.control.log("Locomotive is currently busy");
             return false;
         }
         
@@ -1432,7 +1447,7 @@ public class Layout
         else
         {
             synchronized (this.activeLocomotives)
-            {
+            {                
                 this.locomotiveMilestones.put(loc, new LinkedList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.activeLocomotives.put(loc, path);
@@ -1444,6 +1459,11 @@ public class Layout
                     {
                         callback.apply(path, loc, true);
                     }
+                }
+                            
+                if (ttp != null)
+                {
+                    ttp.setExecutionTime(System.currentTimeMillis());
                 }
             }
              
@@ -1485,7 +1505,8 @@ public class Layout
                     
                     if (this.simulate)
                     {            
-                        new Thread( () -> 
+                        // TODO - possible race condition here
+                        new Thread(() -> 
                         {
                             loc.delay(this.getMinDelay(), this.getMaxDelay());
                             this.control.setFeedbackState(current.getS88(), false);
@@ -1890,6 +1911,27 @@ public class Layout
         this.atomicRoutes = atomicRoutes;
     }
     
+    /**
+     * Replaces the timetable with the one passed
+     * Used when loading from JSON
+     * @param lst 
+     */
+    public void setTimetable(List<TimetablePath> lst)
+    {
+        this.timetable.clear();
+        this.timetable.addAll(lst);
+    }
+        
+    public boolean isTimetableCapture()
+    {
+        return timetableCapture;
+    }
+
+    public void setTimetableCapture(boolean timetableCapture)
+    {
+        this.timetableCapture = timetableCapture;
+    }
+    
     public void setMaxLocInactiveSeconds(int sec) throws Exception
     {
         if (sec < 0)
@@ -1988,6 +2030,7 @@ public class Layout
     {        
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();
+        List<JSONObject> timeTableJson = new LinkedList<>();
 
         // Sort station names alphabetically
         List<Point> pointList = new ArrayList<>(this.getPoints());
@@ -2010,6 +2053,11 @@ public class Layout
             edgeJson.add(e.toJSON());
         }
         
+        for (TimetablePath p : this.timetable)
+        {
+            timeTableJson.add(p.toJSON());
+        }
+        
         // Change the map to a linkedhashmap so that ordering gets preserved
         // https://stackoverflow.com/questions/4515676/keep-the-order-of-the-json-keys-during-json-conversion-to-csv
         JSONObject jsonObj = new JSONObject();
@@ -2028,6 +2076,7 @@ public class Layout
         jsonObj.put("turnOnFunctionsOnDeparture", this.isTurnOnFunctionsOnDeparture());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
+        jsonObj.put("timetable", timeTableJson);
         
         if (this.simulate)
         {

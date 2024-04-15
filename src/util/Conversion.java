@@ -3,6 +3,7 @@ package util;
 import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 
 /**
  * Various helpful conversion functions
@@ -10,6 +11,35 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Conversion
 {
+    public static String convertSecondsToHMmSs(long ms)
+    {
+        long seconds = ms / 1000;
+        
+        long s = seconds % 60;
+        long m = (seconds / 60) % 60;
+        long h = (seconds / (60 * 60));
+        
+        return String.format("%d:%02d:%02d", h,m,s);
+    }
+    
+    public static String convertSecondsToDate(long timestamp)
+    {
+        if (timestamp == 0) return "Never";
+        
+        Instant i = Instant.ofEpochMilli( timestamp );
+         
+        return i.toString().split("T")[0];
+    }
+    
+    public static String convertSecondsToDatetime(long timestamp)
+    {
+        if (timestamp == 0) return "Never";
+        
+        Instant i = Instant.ofEpochMilli( timestamp );
+         
+        return i.toString().split("\\.")[0].replace("T", " ");
+    }
+    
     public static String bytesToBin(byte[] bytes)
     {
         String s = "";
