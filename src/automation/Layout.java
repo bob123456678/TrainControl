@@ -65,6 +65,9 @@ public class Layout
     private final Map<Locomotive, List<Edge>> activeLocomotives;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
     
+    // Execution history
+    private final List<TimetablePath> timetable;
+    
     // Additional configuration
     private int minDelay;
     private int maxDelay;
@@ -124,8 +127,31 @@ public class Layout
         this.callbacks = new HashMap<>();
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
+        this.timetable = new LinkedList<>();
         
         Layout.layoutVersion += 1;
+    }
+    
+    /**
+     * Adds a path to the history list
+     * @param loc
+     * @param path 
+     */
+    private void addTimetableEntry(Locomotive loc, List<Edge> path)
+    {
+        if (!path.isEmpty())
+        {
+            timetable.add(new TimetablePath(loc, path, System.currentTimeMillis())); 
+        }
+    }
+    
+    /**
+     * Returns the timetable/path history
+     * @return 
+     */
+    public List<TimetablePath> getTimetable()
+    {
+        return this.timetable;
     }
             
     /**
@@ -1422,6 +1448,7 @@ public class Layout
             }
              
             this.control.log("Executing path " + this.pathToString(path) + " for " + loc.getName());
+            this.addTimetableEntry(loc, path);
         }
         
         // Check to see if the layout class has been re-created since this run
@@ -1867,7 +1894,7 @@ public class Layout
     {
         if (sec < 0)
         {
-            throw new Exception("maxLocInactiveSeconds may not be a negatibve value");
+            throw new Exception("maxLocInactiveSeconds may not be a negative value");
         }
         
         this.maxLocInactiveSeconds = sec;

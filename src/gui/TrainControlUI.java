@@ -10732,7 +10732,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {  
                     // Update locomotive panel
                     this.repaintAutoLocListLite();
-                
+                                    
                     for (Edge e : edges)
                     {                        
                         for (Edge e2 : e.getLockEdges())
