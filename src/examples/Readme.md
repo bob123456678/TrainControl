@@ -426,3 +426,11 @@ However, if you want to avoid turning on the fuctions on departure / turning off
 Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking on any point within the graph UI.
+
+# Timetables
+
+From v2.1.0, TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
+
+To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manully.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
+
+The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.addTimetableEntry` or `Layout.setTimetable`.

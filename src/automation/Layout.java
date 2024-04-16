@@ -133,17 +133,24 @@ public class Layout
         Layout.layoutVersion += 1;
     }
     
+    private boolean addTimetableEntry(Locomotive loc, List<Edge> path)
+    {
+        return addTimetableEntry(loc, path, System.currentTimeMillis());
+    }
+    
     /**
      * Adds a path to the history list
      * @param loc
      * @param path 
+     * @param timestamp
      */
-    synchronized private void addTimetableEntry(Locomotive loc, List<Edge> path)
+    synchronized private boolean addTimetableEntry(Locomotive loc, List<Edge> path, long timestamp)
     {
         if (!path.isEmpty() && loc != null && this.timetableCapture)
         {
-            timetable.add(new TimetablePath(loc, path, System.currentTimeMillis())); 
+            timetable.add(new TimetablePath(loc, path, timestamp)); 
             
+            // Calculate the delay time
             if (timetable.size() > 1)
             {
                 TimetablePath second = timetable.get(timetable.size() - 1);
@@ -151,7 +158,11 @@ public class Layout
                 
                 first.setSecondsToNext(second.getExecutionTime() - first.getExecutionTime());
             }
+            
+            return true;
         }
+        
+        return false;
     }
     
     /**
@@ -1410,6 +1421,27 @@ public class Layout
     }
     
     /**
+     * Fetches the starting station for a given locomotive
+     * @param l
+     * @return 
+     */
+    public Point getTimetableStartingPoint(Locomotive l)
+    {
+        if (l != null)
+        {
+            for (TimetablePath ttp : this.timetable)
+            {
+                if (l.equals(ttp.getLoc()))
+                {
+                    return ttp.getStart();
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Checks whether the timetable has any unfinished paths
      * @return 
      */
@@ -1442,6 +1474,7 @@ public class Layout
             }
         }
         
+        // Calculate start index in case of prior graceful stop request
         int startIndex = getUnfinishedTimetablePathIndex();
             
         this.control.log("Starting timetable execution from index " + (startIndex + 1));
@@ -1449,7 +1482,10 @@ public class Layout
         for (int i = startIndex; i < this.timetable.size(); i++)
         {
             TimetablePath ttp = this.timetable.get(i);
+            
+            final int index = i;
 
+            // Continuously execute unless user requests graceful stop
             while (this.running)
             {
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
@@ -1475,6 +1511,8 @@ public class Layout
                                 
                                 ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
                             }
+                            
+                            this.control.log("Timetable path finished.");
                         }
                         catch (Exception e)
                         {
@@ -1485,6 +1523,19 @@ public class Layout
                                 e.printStackTrace();
                             }
                         }
+                        
+                        // When we are done, exit in this thread to avoid disrupting the final path
+                        if (index == this.timetable.size() - 1)
+                        {                           
+                            // Reset running status
+                            synchronized (this.activeLocomotives)
+                            {
+                                this.stopLocomotives();
+                            }
+                            
+                            this.control.log("Timetable execution finished.");
+                        }
+                        
                     }).start();
                     
                     break;
@@ -1493,9 +1544,6 @@ public class Layout
                 ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
             }                
         }
-        
-        // Reset running status
-        this.stopLocomotives();
     }
     
     /**
@@ -1503,6 +1551,7 @@ public class Layout
      * @param path
      * @param loc
      * @param speed 
+     * @param ttp - null if not running a timetable route
      * @return  
      */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)

@@ -4,6 +4,8 @@ import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * Various helpful conversion functions
@@ -26,7 +28,7 @@ public class Conversion
     {
         if (timestamp == 0) return "Never";
         
-        Instant i = Instant.ofEpochMilli( timestamp );
+        LocalDateTime i = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
          
         return i.toString().split("T")[0];
     }
@@ -35,7 +37,7 @@ public class Conversion
     {
         if (timestamp == 0) return "Never";
         
-        Instant i = Instant.ofEpochMilli( timestamp );
+        LocalDateTime i = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
          
         return i.toString().split("\\.")[0].replace("T", " ");
     }

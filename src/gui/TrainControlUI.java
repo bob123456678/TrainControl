@@ -69,7 +69,6 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
-import javax.swing.RowSorter;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
@@ -5912,7 +5911,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         timetable.setGridColor(new java.awt.Color(242, 242, 242));
         jScrollPane6.setViewportView(timetable);
 
-        executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        executeTimetable.setBackground(new java.awt.Color(204, 255, 204));
+        executeTimetable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         executeTimetable.setText("Execute Timetable");
         executeTimetable.setToolTipText("Sequentially executes the timetable.");
         executeTimetable.setFocusable(false);
@@ -5922,7 +5922,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        clearTimetable.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        clearTimetable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         clearTimetable.setText("Clear");
         clearTimetable.setToolTipText("Completely resets the timetable.");
         clearTimetable.setFocusable(false);
@@ -5932,9 +5932,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        timetableCapture.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         timetableCapture.setText("Capture Locomotive Commands");
-        timetableCapture.setToolTipText("Adds any executed locomotive commands to the timetable.  Try to end where you started!");
+        timetableCapture.setToolTipText("Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!");
         timetableCapture.setFocusable(false);
         timetableCapture.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5953,7 +5953,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(timetablePanelLayout.createSequentialGroup()
                         .addComponent(timetableCapture)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(clearTimetable, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(clearTimetable, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(executeTimetable)))
                 .addContainerGap())
@@ -5967,7 +5967,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(clearTimetable)
                     .addComponent(timetableCapture))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 464, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 465, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -10455,6 +10455,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 return;
             }
             
+            if (this.model.getAutoLayout().getTimetable().isEmpty())
+            {
+                JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
+            
             // Conditional route warning
             for (String routeName : this.model.getRouteList())
             {
@@ -10502,11 +10509,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     seen.add(ttp.getLoc());
                 }
             }  
+            
+            // Disable capture if it was enabled
+            this.model.getAutoLayout().setTimetableCapture(false);
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
           
             new Thread(() -> 
             {
+                this.startAutonomy.setEnabled(false);
                 this.model.getAutoLayout().executeTimetable();
                 this.executeTimetable.setEnabled(true);
+                this.startAutonomy.setEnabled(true);
             }).start();
             
             this.gracefulStop.setEnabled(true);  
@@ -10530,14 +10543,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
         
-        if (this.getModel().getAutoLayout().isRunning())
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
-            return;
-        }
-        
-        this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
-        this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            if (this.getModel().getAutoLayout().isRunning())
+            {
+                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+            }
+            else
+            {
+                this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
+            }
+
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+        }));
     }//GEN-LAST:event_timetableCaptureActionPerformed
     
     public void setFunctionIcon(Locomotive l, JButton source)

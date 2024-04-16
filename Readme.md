@@ -66,6 +66,10 @@ The graph UI will show you which routes are active, which edges are locked, and 
 
 <img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
 
+In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list to paths, subject to the constraints and protections of the graph model.
+
+<img src="assets/timetable.png?raw=true" alt="UI screenshot: timetable" width="500">
+
 **Statistics**
 
 Monitor the usage of different locomotives.
@@ -209,6 +213,12 @@ Some sample files are included in the `cs2_sample_layout` folder.
 As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ## Changelog
+
+* v2.1.0 [Beta]
+    - Added timetable feature as a new type of autonomous operation
+        - Locomotive commands in semi-autonomous or fully-autonomous mode can be captured on demand to create a timetable
+        - The timetable can be replayed sequentally, with progress saved between runs
+        - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
 
 * v2.0.17 [4/13/24]
     - Added Control+A shortcut to assign a locomotive to the currently active button

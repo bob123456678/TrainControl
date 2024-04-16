@@ -5111,7 +5111,7 @@
                                   <Group type="102" alignment="0" attributes="0">
                                       <Component id="timetableCapture" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="clearTimetable" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="clearTimetable" min="-2" pref="68" max="-2" attributes="0"/>
                                       <EmptySpace max="32767" attributes="0"/>
                                       <Component id="executeTimetable" min="-2" max="-2" attributes="0"/>
                                   </Group>
@@ -5130,7 +5130,7 @@
                                   <Component id="timetableCapture" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane6" pref="464" max="32767" attributes="0"/>
+                              <Component id="jScrollPane6" pref="465" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -5163,8 +5163,11 @@
                     </Container>
                     <Component class="javax.swing.JButton" name="executeTimetable">
                       <Properties>
+                        <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                          <Color blue="cc" green="ff" red="cc" type="rgb"/>
+                        </Property>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="11" style="1"/>
+                          <Font name="Tahoma" size="11" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Execute Timetable"/>
                         <Property name="toolTipText" type="java.lang.String" value="Sequentially executes the timetable."/>
@@ -5177,7 +5180,7 @@
                     <Component class="javax.swing.JButton" name="clearTimetable">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="11" style="1"/>
+                          <Font name="Tahoma" size="11" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Clear"/>
                         <Property name="toolTipText" type="java.lang.String" value="Completely resets the timetable."/>
@@ -5190,10 +5193,10 @@
                     <Component class="javax.swing.JToggleButton" name="timetableCapture">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="11" style="1"/>
+                          <Font name="Tahoma" size="11" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Capture Locomotive Commands"/>
-                        <Property name="toolTipText" type="java.lang.String" value="Adds any executed locomotive commands to the timetable.  Try to end where you started!"/>
+                        <Property name="toolTipText" type="java.lang.String" value="Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!"/>
                         <Property name="focusable" type="boolean" value="false"/>
                       </Properties>
                       <Events>

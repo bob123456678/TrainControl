@@ -74,6 +74,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             {
                 this.locName.setForeground(Color.BLACK);
             }
+            
+            this.locStation.setToolTipText("");
 
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive))
@@ -109,13 +111,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText("Double-click a path to execute");
-                    
-                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                    );
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {
                     this.locDest.setText("No available paths.");
-                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : ""));
                 }
                 else
                 {
@@ -123,12 +127,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                     this.locDest.setText("Locomotive is not placed on the graph.");
                 }
                 
+                this.locStation.setToolTipText("Current location. * denotes timetable starting station.");
+                
                 // Sort the list
                 this.paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
                 
                 for (List<Edge> path : this.paths)
                 {
-                    pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName());
+                    pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
+                     + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                    );
                     //Edge.pathToString(path));
                 }
                 

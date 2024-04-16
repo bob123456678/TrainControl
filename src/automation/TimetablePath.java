@@ -9,7 +9,7 @@ import org.json.JSONObject;
 
 /**
  * Class representing a path (locomotive and series of edges)
- * Used for execution history
+ * Used for execution history/timetables
  * @author adam
  */
 public class TimetablePath
@@ -141,10 +141,7 @@ public class TimetablePath
                 throw new Exception("Edge " + edgeJson.getString("start") + " to " + edgeJson.getString("end") + " does not exist.");
             }
             
-            path.add
-            (
-                newEdge
-            );
+            path.add(newEdge);
         }
         
         // Parse executionTime
