@@ -3,6 +3,7 @@ package automation;
 import base.Locomotive;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import marklin.MarklinControlStation;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -77,6 +78,52 @@ public class TimetablePath
     public void setSecondsToNext(long secondsToNext)
     {
         this.secondsToNext = secondsToNext;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 29 * hash + Objects.hashCode(this.loc);
+        hash = 29 * hash + Objects.hashCode(this.path);
+        hash = 29 * hash + (int) (this.executionTime ^ (this.executionTime >>> 32));
+        hash = 29 * hash + (int) (this.secondsToNext ^ (this.secondsToNext >>> 32));
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        
+        final TimetablePath other = (TimetablePath) obj;
+        
+        if (this.executionTime != other.executionTime)
+        {
+            return false;
+        }
+        if (this.secondsToNext != other.secondsToNext)
+        {
+            return false;
+        }
+        
+        if (!Objects.equals(this.loc, other.loc))
+        {
+            return false;
+        }
+        
+        return Objects.equals(this.path, other.path);
     }
     
     /**

@@ -255,6 +255,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private String lastSearch = "";
     private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
     
+    // Cache timetable state to minimize repaining
+    private int lastTimetableState = 0;
+    
     /**
      * Creates new form MarklinUI
      */
@@ -9659,8 +9662,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.gracefulStop.setEnabled(false);
         this.startAutonomy.setEnabled(true);
         
-        new Thread(() -> {
+        new Thread(() ->
+        {
             this.getModel().getAutoLayout().stopLocomotives();
+            
+            // Ensure list is updated after stopping a timetable run
+            this.repaintAutoLocListLite();
         }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
@@ -11050,7 +11057,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.model.log("Error loading graph UI.");
         }        
     }
-    
+        
     /**
      * Repaints the timetable once a route completes
      */
@@ -11058,6 +11065,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            
+            List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetable();
+            
+            if (timeTable.hashCode() == lastTimetableState) return;
+            
+            lastTimetableState = timeTable.hashCode();
+                        
             // Aggregate stats
             String col[] = {"Index", "Locomotive", "Start", "Destination", "Time"};
 
@@ -11071,10 +11086,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
             };
   
-            for (TimetablePath path : this.model.getAutoLayout().getTimetable())
+            for (TimetablePath path : timeTable)
             {
                 Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(), path.getStart().getName(), path.getEnd().getName(),
-                path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start (" + (path.getSecondsToNext() / 1000) + "s)..."};
+                path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start +" + (path.getSecondsToNext() / 1000) + "s"};
 
                 tableModel.addRow(data);
             }
@@ -11088,7 +11103,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             sorter.setSortable(3, false); 
             sorter.setSortable(4, false); 
             this.timetable.setRowSorter(sorter);
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
         }));
     }
     
@@ -11142,11 +11156,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     { 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            for (Object o : this.autoLocPanel.getComponents())
+            new Thread( () ->
             {
-                AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                status.updateState(null);
-            }
+                for (Object o : this.autoLocPanel.getComponents())
+                {
+                    AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
+                    status.updateState(null);
+                }
+            }).start();
         }));
     }
     

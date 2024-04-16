@@ -55,9 +55,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         // We only need to update if the callback corresponding to our locomotive was fired
         if (someLoc == null || someLoc.equals(locomotive))
         {
-            // true -> Only include unique starts/end pairs
-            this.paths = layout.getPossiblePaths(locomotive, true);
-
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
             this.locDest.setForeground(new Color(0, 0, 115));
@@ -108,6 +105,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             // Layout is standing by.  Show the list.
             else
             {
+                // true -> Only include unique starts/end pairs
+                this.paths = layout.getPossiblePaths(locomotive, true);
+                
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText("Double-click a path to execute");
@@ -135,7 +135,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
-                     + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                     );
                     //Edge.pathToString(path));
                 }
@@ -236,45 +236,48 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
         
-        JList list = (JList) evt.getSource();
-        
-        if (evt.getClickCount() == 2)
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            // Double-click detected
-            int index = list.locationToIndex(evt.getPoint());
-                        
-            if (!layout.isAutoRunning() && !this.paths.isEmpty())
-            {
-                if (!this.control.getPowerState())
-                {
-                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
-                    return;
-                }
-                
-                // Ensure there are no automatic routes
-                /* for (String routeName : this.control.getRouteList())
-                {
-                    MarklinRoute r = this.control.getRoute(routeName);
+            JList list = (JList) evt.getSource();
 
-                    if (r.isEnabled())
+            if (evt.getClickCount() == 2)
+            {
+                // Double-click detected
+                int index = list.locationToIndex(evt.getPoint());
+
+                if (!layout.isAutoRunning() && !this.paths.isEmpty())
+                {
+                    if (!this.control.getPowerState())
                     {
-                        this.control.log(r.toString());
-                        JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                        JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
                         return;
                     }
-                }*/
-                
-                new Thread(() ->
-                {
-                    boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed(), null);
-                    
-                    if (!success)
+
+                    // Ensure there are no automatic routes
+                    /* for (String routeName : this.control.getRouteList())
                     {
-                        JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
-                    }
-                }).start();
-            }
-        } 
+                        MarklinRoute r = this.control.getRoute(routeName);
+
+                        if (r.isEnabled())
+                        {
+                            this.control.log(r.toString());
+                            JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
+                            return;
+                        }
+                    }*/
+
+                    new Thread(() ->
+                    {
+                        boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed(), null);
+
+                        if (!success)
+                        {
+                            JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
+                        }
+                    }).start();
+                }
+            } 
+        }));
     }//GEN-LAST:event_locAvailPathsMouseClicked
 
     private void locAvailPathsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered
