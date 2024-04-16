@@ -10538,6 +10538,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
             this.repaintTimetable();
+            this.repaintAutoLocListLite();
         }));
     }//GEN-LAST:event_clearTimetableActionPerformed
 

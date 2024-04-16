@@ -1,8 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/EmptyTestNGTest.java to edit this template
- */
-
 import base.Locomotive;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,8 +15,8 @@ import org.testng.annotations.Test;
 /**
  *
  */
-public class testLocomotive {
-    
+public class testLocomotive
+{    
     public static MarklinControlStation model;
     public static MarklinLocomotive l;
     

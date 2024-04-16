@@ -1,8 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/EmptyTestNGTest.java to edit this template
- */
-
 import base.RouteCommand;
 import static base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
@@ -25,10 +20,10 @@ import org.testng.annotations.Test;
 
 /**
  *
- * @author adamo
+ * @author adam
  */
-public class testRoutes {
-    
+public class testRoutes
+{   
     public static MarklinControlStation model;
     
     public testRoutes()
