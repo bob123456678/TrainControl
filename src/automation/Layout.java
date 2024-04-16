@@ -1517,6 +1517,12 @@ public class Layout
                         catch (Exception e)
                         {
                             this.control.log("Timetable error: " + e.toString());
+                            
+                            // Stop execution
+                            synchronized (this.activeLocomotives)
+                            {
+                                this.stopLocomotives();
+                            }
 
                             if (this.control.isDebug())
                             {
