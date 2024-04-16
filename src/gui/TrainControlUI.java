@@ -5947,7 +5947,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         restartTimetable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        restartTimetable.setText("Reset");
+        restartTimetable.setText("Restart");
         restartTimetable.setToolTipText("Restarts timetable execution from the top.");
         restartTimetable.setFocusable(false);
         restartTimetable.addActionListener(new java.awt.event.ActionListener() {
