@@ -1404,6 +1404,17 @@ public class Layout
     }
     
     /**
+     * Marks all paths in the timetable as untraversed
+     */
+    public void resetTimetable()
+    {
+        for (int i = 0; i < this.timetable.size(); i++)
+        {
+            this.timetable.get(i).setExecutionTime(0);
+        }
+    }
+    
+    /**
      * Returns the index of the first unfinished path in the timetable
      * @return 
      */
