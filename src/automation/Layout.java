@@ -313,7 +313,18 @@ public class Layout
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
         {
-            control.log("Starting autonomous operation of locomotive " + loc.getName());
+            Point locLocation = this.getLocomotiveLocation(loc);
+            
+            // Optimization - avoid starting inactive locomotives
+            if (locLocation != null && !locLocation.isActive())
+            {
+                control.log("Skipping autonomous operation of locomotive " + loc.getName() + " (inactive)");  
+                return;
+            }
+            else
+            {
+                control.log("Starting autonomous operation of locomotive " + loc.getName());
+            }
             
             try 
             {
