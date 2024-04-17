@@ -5107,14 +5107,10 @@
                           <Group type="102" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jScrollPane6" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="jScrollPane6" alignment="0" pref="761" max="32767" attributes="0"/>
                                   <Group type="102" alignment="0" attributes="0">
                                       <Component id="timetableCapture" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="clearTimetable" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace pref="163" max="32767" attributes="0"/>
-                                      <Component id="restartTimetable" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
+                                      <EmptySpace max="32767" attributes="0"/>
                                       <Component id="executeTimetable" min="-2" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
@@ -5128,9 +5124,7 @@
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="executeTimetable" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="clearTimetable" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="timetableCapture" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="restartTimetable" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="jScrollPane6" pref="465" max="32767" attributes="0"/>
@@ -5180,19 +5174,6 @@
                         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="executeTimetableActionPerformed"/>
                       </Events>
                     </Component>
-                    <Component class="javax.swing.JButton" name="clearTimetable">
-                      <Properties>
-                        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="Delete Timetable"/>
-                        <Property name="toolTipText" type="java.lang.String" value="Completely empties the timetable."/>
-                        <Property name="focusable" type="boolean" value="false"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearTimetableActionPerformed"/>
-                      </Events>
-                    </Component>
                     <Component class="javax.swing.JToggleButton" name="timetableCapture">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
@@ -5204,19 +5185,6 @@
                       </Properties>
                       <Events>
                         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="timetableCaptureActionPerformed"/>
-                      </Events>
-                    </Component>
-                    <Component class="javax.swing.JButton" name="restartTimetable">
-                      <Properties>
-                        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="Restart"/>
-                        <Property name="toolTipText" type="java.lang.String" value="Restarts timetable execution from the top."/>
-                        <Property name="focusable" type="boolean" value="false"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="restartTimetableActionPerformed"/>
                       </Events>
                     </Component>
                   </SubComponents>

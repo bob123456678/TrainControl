@@ -77,7 +77,7 @@ public class TimetablePath
 
     public void setSecondsToNext(long secondsToNext)
     {
-        this.secondsToNext = secondsToNext;
+        this.secondsToNext = Math.abs(secondsToNext);
     }
 
     @Override
