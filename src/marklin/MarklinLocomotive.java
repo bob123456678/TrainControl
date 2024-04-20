@@ -220,8 +220,30 @@ public class MarklinLocomotive extends Locomotive
     }
         
     /**
-     * Returns the image URL for a function icon, if any
+     * Returns the image URL for a function number
+     * @param fNo - the function number
      * @param fType
+     * @param active
+     * @param yellow
+     * @return 
+     */
+    public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow)
+    {
+        String customIconURL = this.getLocalFunctionImageURL(fNo);
+
+        if (customIconURL != null)
+        {
+            return customIconURL;
+        }
+        else
+        {
+            return getFunctionIconUrl(fType, active, yellow);
+        }
+    }
+    
+    /**
+     * Returns the image URL for a function icon, if any
+     * @param fType - the CS2 icon index
      * @param active
      * @param yellow
      * @return 
@@ -230,11 +252,11 @@ public class MarklinLocomotive extends Locomotive
     {
         int index = active ? 1 : 0;
         String[] color = yellow ? COLOR_YELLOW : COLOR_WHITE;
-        
+
         fType = sanitizeFIconIndex(fType);
 
         String iconName = "FktIcon_" + color[index] + "_" + (fType < 10 ? "0" : "") + Integer.toString(fType) + ".png";
-        
+
         // Load local version of the marklin icon
         try
         {
@@ -248,7 +270,7 @@ public class MarklinLocomotive extends Locomotive
                 this.network.log("Missing local function icon: " + iconName);
             }
         }
-        
+
         // Icon was missing, try loading from central station
         return "http://" + this.network.getIP() + "/fcticons/" + iconName;
     }

@@ -36,6 +36,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private Map<String, Long> historicalOperatingTimeNew;
     private String localImageURL;
     private boolean customFunctions;
+    private Map<Integer, String> localFunctionImageURLs;
     
     // TODO - deprecate
     private long totalRuntime; // deprecated
@@ -155,6 +156,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.historicalOperatingTimeNew = l.getHistoricalOperatingTime();
         this.localImageURL = l.getLocalImageURL();
         this.customFunctions = l.isCustomFunctions();
+        this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
     }
     
     public List<RouteCommand> getRoute()
@@ -329,4 +331,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
     {
         return this.conditionAccessoroes;
     }
+
+    public Map<Integer, String> getLocalFunctionImageURLs()
+    {
+        return localFunctionImageURLs;
+    }  
 }

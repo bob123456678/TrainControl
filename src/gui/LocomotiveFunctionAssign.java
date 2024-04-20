@@ -1,18 +1,21 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package gui;
 
 import base.Locomotive;
+import static gui.TrainControlUI.LAST_USED_ICON_FOLDER;
+import java.awt.Dimension;
 import java.awt.Image;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicComboPopup;
 import marklin.MarklinLocomotive;
 
@@ -23,6 +26,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
     MarklinLocomotive loc;
     TrainControlUI parent;
+    String customIconPath;
     
     /**
      * Creates new form LocomotiveFunctionAssign
@@ -60,7 +64,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 this.parent.getModel().log("Error loading function icon " + i);
             }
         }
-
+                
         fNo.setModel(
             new javax.swing.DefaultComboBoxModel<>(funcModel.toArray(new String[0])) 
         );
@@ -77,7 +81,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             fNo.setSelectedIndex(functionIndex);
         }
-        
+                
         if (standalone)
         {
             this.applyButton.setVisible(false);
@@ -100,7 +104,22 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
         JList list = (JList) scrollPane.getViewport().getView();
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        list.setVisibleRowCount(fIcon.getModel().getSize() / 5);        
+        list.setVisibleRowCount(fIcon.getModel().getSize() / 5);   
+        
+        // Show custom icon and controls
+        displayCustomizationButtons();
+        
+        this.customFunctionIcon.setMinimumSize(new Dimension(35, 35));
+    }
+    
+    /**
+     * Manages the correct display of the custom icon buttons
+     * @param funcNo 
+     */
+    private void displayCustomizationButtons()
+    {
+        this.customIconPath = this.loc.getLocalFunctionImageURL(this.getFNo());
+        displayCustomFunctionIcon(this.customIconPath);
     }
     
     public void focusFno()
@@ -126,7 +145,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         return this.fIcon.getSelectedIndex();
     }
     
-    public Integer getFNo()
+    public final Integer getFNo()
     {
         return this.fNo.getSelectedIndex();
     }
@@ -149,6 +168,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         jSeparator1 = new javax.swing.JSeparator();
         fIconlabel1 = new javax.swing.JLabel();
         functionTriggerType = new javax.swing.JComboBox<>();
+        customFunctionIcon = new javax.swing.JLabel();
+        useCustomFunctionIcon = new javax.swing.JButton();
+        deleteCustomIcon = new javax.swing.JButton();
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
@@ -181,6 +203,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         resetButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         resetButton.setText("Reset Customizations");
+        resetButton.setFocusable(false);
         resetButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 resetButtonActionPerformed(evt);
@@ -192,6 +215,24 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         functionTriggerType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Toggle", "Momentary", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s", "16s", "17s", "18s", "19s", "20s", "21s", "22s", "23s", "24s", "25s", "26s", "27s", "28s", "29s", "30s" }));
 
+        useCustomFunctionIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        useCustomFunctionIcon.setText("Use Custom Icon");
+        useCustomFunctionIcon.setFocusable(false);
+        useCustomFunctionIcon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                useCustomFunctionIconActionPerformed(evt);
+            }
+        });
+
+        deleteCustomIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        deleteCustomIcon.setText("Delete Custom Icon");
+        deleteCustomIcon.setFocusable(false);
+        deleteCustomIcon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteCustomIconActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -200,25 +241,31 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(useCustomFunctionIcon)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(deleteCustomIcon)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(customFunctionIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fIconlabel1))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(resetButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(applyButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(fIconlabel, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(fIcon, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(functionTriggerType, javax.swing.GroupLayout.Alignment.TRAILING, 0, 153, Short.MAX_VALUE)
-                                .addComponent(fNo, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(applyButton, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fIconlabel1))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                .addComponent(fNo, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(functionTriggerType, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(resetButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(0, 6, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(fNoLabel)
                     .addComponent(fNo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -230,13 +277,18 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 .addComponent(fIconlabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(fIcon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(31, 31, 31)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(useCustomFunctionIcon)
+                    .addComponent(deleteCustomIcon)
+                    .addComponent(customFunctionIcon))
+                .addGap(25, 25, 25)
                 .addComponent(applyButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 3, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(13, 13, 13)
                 .addComponent(resetButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(13, 13, 13))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -256,10 +308,12 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             fTriggerType = this.functionTriggerType.getSelectedIndex() - 1;
         } 
         
+        this.applyCustomFunctionIcon();
+        
         loc.setFunctionType(getFNo(), getFIcon(), fTriggerType);
         parent.repaintLoc(true);
             
-        this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());  
+        this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
@@ -272,8 +326,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
             {
                 this.loc.setCustomFunctions(false);
+                this.loc.unsetLocalFunctionImageURLs();
                 this.parent.getModel().syncWithCS2();
                 this.parent.repaintLoc(true);
+                this.customIconPath = null;
                 
                 updateFNumber(this.fNo.getSelectedIndex()); 
             }));
@@ -296,6 +352,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             this.functionTriggerType.setSelectedIndex(0);
         }  
+        
+        displayCustomizationButtons();
     }
     
     private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
@@ -303,8 +361,106 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         updateFNumber(this.fNo.getSelectedIndex());      
     }//GEN-LAST:event_fNoItemStateChanged
 
+    private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
+        
+        String currentPath = null;
+        
+        if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
+        {
+            File currentIcon = new File(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+
+            if (currentIcon.exists())
+            {
+                currentPath = currentIcon.getParent();
+            }
+        }
+        
+        JFileChooser fc = new JFileChooser(
+            currentPath != null ? currentPath : this.parent.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+        );
+
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP images", "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+        fc.setFileFilter(filter);
+
+        fc.setAcceptAllFileFilterUsed(false);
+
+        int i = fc.showOpenDialog(this);
+
+        if (i == JFileChooser.APPROVE_OPTION)
+        {
+            File f = fc.getSelectedFile();
+            
+            this.parent.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+            
+            customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
+            this.displayCustomFunctionIcon(customIconPath);
+        } 
+    }//GEN-LAST:event_useCustomFunctionIconActionPerformed
+
+    private void deleteCustomIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCustomIconActionPerformed
+        
+        // This allows us to delay the change until the OK button is pressed
+        this.customIconPath = "reset";       
+        
+        this.displayCustomFunctionIcon(null);
+    }//GEN-LAST:event_deleteCustomIconActionPerformed
+
+    private void displayCustomFunctionIcon(String path)
+    {       
+        if (path == null)
+        {
+            this.customFunctionIcon.setIcon(null);
+            this.fIcon.setEnabled(true);
+            
+            this.deleteCustomIcon.setVisible(false);
+            this.useCustomFunctionIcon.setVisible(true);
+        }
+        else
+        {        
+            try
+            {
+                this.fIcon.setEnabled(false);
+                
+                this.deleteCustomIcon.setVisible(true);
+                this.useCustomFunctionIcon.setVisible(false);
+                
+                this.customFunctionIcon.setIcon(
+                    new ImageIcon(parent.getLocImage(path, 20))
+                );                
+                
+            }
+            catch (IOException ex)
+            {
+                this.parent.getModel().log("Error: invalid icon path: " + path);
+            }      
+        }
+    }
+    
+    private void applyCustomFunctionIcon()
+    {       
+        if ("reset".equals(this.customIconPath))
+        {
+            this.loc.unsetLocalFunctionImageURL(this.getFNo());
+        }
+        else if (this.customIconPath != null)
+        {
+            this.loc.setLocalFunctionImageURL(this.getFNo(), this.customIconPath);
+
+            this.parent.getModel().log(("Set custom function for " 
+                + loc.getName() + " function " 
+                + this.getFNo() + ": " + this.loc.getLocalFunctionImageURL(this.getFNo())));
+                                    
+            this.parent.repaintLoc(true);
+        }
+        
+        this.customIconPath = null;
+    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton applyButton;
+    private javax.swing.JLabel customFunctionIcon;
+    private javax.swing.JButton deleteCustomIcon;
     private javax.swing.JComboBox<String> fIcon;
     private javax.swing.JLabel fIconlabel;
     private javax.swing.JLabel fIconlabel1;
@@ -313,5 +469,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     private javax.swing.JComboBox<String> functionTriggerType;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JButton resetButton;
+    private javax.swing.JButton useCustomFunctionIcon;
     // End of variables declaration//GEN-END:variables
 }

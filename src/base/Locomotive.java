@@ -49,6 +49,9 @@ public abstract class Locomotive
     private String imageURL;
     private String localImageURL;
     
+    // Mapping of custom funciton icons
+    private Map<Integer, String> localFunctionImageURLs;
+    
     // Types of functions
     protected int[] functionTypes;
     
@@ -98,6 +101,7 @@ public abstract class Locomotive
         
         this.callbacks = new HashMap<>();
         this.historicalOperatingTime = new HashMap<>();
+        this.localFunctionImageURLs = new HashMap<>();
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
@@ -222,7 +226,8 @@ public abstract class Locomotive
         this.setFunctionTypes(functionTypes, functionTriggerTypes);
   
         this.callbacks = new HashMap<>();
-        
+        this.localFunctionImageURLs = new HashMap<>();
+
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
@@ -310,8 +315,7 @@ public abstract class Locomotive
     public Locomotive(String name, int speed, locDirection direction, int numF,
         boolean[] functionState, int[] functionTypes, int[] functionTriggerTypes, boolean[] preferredFunctions, 
         int preferredSpeed, Integer departureFunc, Integer arrivalFunc, boolean reversible,
-        int trainLength, Map<String, Long> historicalOperatingTime
-    )
+        int trainLength, Map<String, Long> historicalOperatingTime)
     {
         this.name = name;
         this.direction = direction;
@@ -321,6 +325,7 @@ public abstract class Locomotive
         this.setFunctionTypes(functionTypes, functionTriggerTypes);
       
         this.callbacks = new HashMap<>();
+        this.localFunctionImageURLs = new HashMap<>();
         
         this.preferredFunctions = preferredFunctions;
         this.preferredSpeed = preferredSpeed;
@@ -1086,5 +1091,49 @@ public abstract class Locomotive
     public static String getDate(long ts)
     {
         return new SimpleDateFormat("yyyy-MM-dd").format(ts);
+    }
+    
+    public void setLocalFunctionImageURLs(Map<Integer, String> urls)
+    {
+        if (urls != null && urls instanceof Map)
+        {
+            this.localFunctionImageURLs = urls;
+        }
+    }
+
+    public Map<Integer, String> getLocalFunctionImageURLs()
+    {
+        return localFunctionImageURLs;
+    }
+    
+    public String getLocalFunctionImageURL(int fNo)
+    {
+        if (fNo <= this.numF && fNo >= 0)
+        {
+            return this.localFunctionImageURLs.get(fNo);
+        }
+        
+        return null;
+    }
+    
+    public boolean setLocalFunctionImageURL(int fNo, String url)
+    {
+        if (fNo <= this.numF && fNo >= 0)
+        {
+            this.localFunctionImageURLs.put(fNo, url);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public void unsetLocalFunctionImageURL(int fNo)
+    {
+        this.localFunctionImageURLs.remove(fNo);
+    }
+    
+    public void unsetLocalFunctionImageURLs()
+    {
+        this.localFunctionImageURLs.clear();
     }
 }

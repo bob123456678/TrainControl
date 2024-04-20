@@ -2099,7 +2099,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 bt.setVisible(true);
                                 bt.setEnabled(true);
 
-                                String targetURL = this.activeLoc.getFunctionIconUrl(functionType, false, true);
+                                String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, false, true);
+                                
+                                final boolean hasCustom = this.activeLoc.getLocalFunctionImageURL(i) != null;
 
                                 bt.setHorizontalTextPosition(JButton.CENTER);
                                 bt.setVerticalTextPosition(JButton.CENTER);
@@ -2108,7 +2110,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 {
                                     try
                                     {
-                                        if (functionType > 0 && LOAD_IMAGES)
+                                        if ((hasCustom || functionType > 0) && LOAD_IMAGES)
                                         {
                                             Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
 

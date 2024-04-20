@@ -47,7 +47,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.0 Beta 4 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.0 Beta 5 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1489,6 +1489,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             newLoc.setLocalImageURL(c.getLocalImageURL());
             newLoc.setCustomFunctions(c.getCustomFunctions());
+            newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
 
             this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
             
