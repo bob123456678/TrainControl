@@ -202,7 +202,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         });
 
         resetButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        resetButton.setText("Reset Customizations");
+        resetButton.setText("Reset All Customizations");
         resetButton.setFocusable(false);
         resetButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -286,7 +286,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 .addComponent(applyButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 3, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(13, 13, 13)
+                .addGap(8, 8, 8)
                 .addComponent(resetButton)
                 .addGap(13, 13, 13))
         );
