@@ -1270,8 +1270,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Populate statistics tab
         this.stats = new LocomotiveStats(this);
-        this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
-                
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
+        }));
+        
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
         {            

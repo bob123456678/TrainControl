@@ -363,39 +363,49 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
         
-        String currentPath = null;
-        
-        if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
-        {
-            File currentIcon = new File(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+        new Thread(() ->
+        {     
+            String currentPath = null;
 
-            if (currentIcon.exists())
+            if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
             {
-                currentPath = currentIcon.getParent();
+                File currentIcon = new File(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+
+                if (currentIcon.exists())
+                {
+                    currentPath = currentIcon.getParent();
+                }
             }
-        }
-        
-        JFileChooser fc = new JFileChooser(
-            currentPath != null ? currentPath : this.parent.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
-        );
 
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP images", "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-        fc.setFileFilter(filter);
-
-        fc.setAcceptAllFileFilterUsed(false);
-
-        int i = fc.showOpenDialog(this);
-
-        if (i == JFileChooser.APPROVE_OPTION)
-        {
-            File f = fc.getSelectedFile();
+            this.useCustomFunctionIcon.setEnabled(false);
+            this.deleteCustomIcon.setEnabled(false);
             
-            this.parent.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+            JFileChooser fc = new JFileChooser(
+                currentPath != null ? currentPath : this.parent.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+            );
+
+            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP images", "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+            fc.setFileFilter(filter);
+
+            fc.setAcceptAllFileFilterUsed(false);
+
+            int i = fc.showOpenDialog(this);
+
+            if (i == JFileChooser.APPROVE_OPTION)
+            {
+                File f = fc.getSelectedFile();
+
+                this.parent.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+
+                customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
+                this.displayCustomFunctionIcon(customIconPath);
+            } 
             
-            customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
-            this.displayCustomFunctionIcon(customIconPath);
-        } 
+            this.useCustomFunctionIcon.setEnabled(true);
+            this.deleteCustomIcon.setEnabled(true);
+
+        }).start();
     }//GEN-LAST:event_useCustomFunctionIconActionPerformed
 
     private void deleteCustomIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCustomIconActionPerformed
