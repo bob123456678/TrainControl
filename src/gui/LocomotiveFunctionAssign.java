@@ -404,6 +404,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             
             this.useCustomFunctionIcon.setEnabled(true);
             this.deleteCustomIcon.setEnabled(true);
+            parent.repaintLoc(true);
 
         }).start();
     }//GEN-LAST:event_useCustomFunctionIconActionPerformed
@@ -457,7 +458,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             this.loc.setLocalFunctionImageURL(this.getFNo(), this.customIconPath);
 
-            this.parent.getModel().log(("Set custom function for " 
+            this.parent.getModel().log(("Set custom icon for " 
                 + loc.getName() + " function " 
                 + this.getFNo() + ": " + this.loc.getLocalFunctionImageURL(this.getFNo())));
                                     
