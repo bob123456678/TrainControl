@@ -92,24 +92,27 @@ public class LayoutPopupUI extends javax.swing.JFrame {
      */
     public void goToLayoutPage(int index)
     {
-        int page = index + 1;
-     
-        if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
+        javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
         {
-            this.parent.getModel().log("Popup layout: updating or jumping to page " + page);
+            int page = index + 1;
 
-            this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
-                        
-            drawGrid();  
-            this.repaint();
-            
-            // Update saved index
-            this.pageIndex = index;
-        }
-        else
-        {
-            this.parent.getModel().log("Popup layout: page " + page + " does not exist");
-        }
+            if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
+            {
+                this.parent.getModel().log("Popup layout: updating or jumping to page " + page);
+
+                this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
+
+                drawGrid();  
+                this.repaint();
+
+                // Update saved index
+                this.pageIndex = index;
+            }
+            else
+            {
+                this.parent.getModel().log("Popup layout: page " + page + " does not exist");
+            }
+        }));
     }
     
     public JPanel getPanel()

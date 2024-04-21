@@ -121,7 +121,7 @@ public final class LayoutLabel extends JLabel
      */
     private synchronized void setImage(boolean update)
     {
-        new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
             if (this.component != null)
             {            
@@ -186,7 +186,7 @@ public final class LayoutLabel extends JLabel
                     }
                 }
             }
-        }).start();
+        }));
     }
     
     /**

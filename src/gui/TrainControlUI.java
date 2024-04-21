@@ -9585,7 +9585,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
-        new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {    
             // If valid, confirm before we overwrite
             if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid() 
@@ -9662,7 +9662,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Stop all locomotives
             AltEmergencyStopActionPerformed(null);
             
-        }).start();
+        }));
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
@@ -11316,16 +11316,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             int gridCols = 3;
 
             autoLocPanel.setLayout(new java.awt.GridLayout(
-                    (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
-                    gridCols, // cols
-                    5, // padding
-                    5)
+                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                gridCols, // cols
+                5, // padding
+                5)
             );
             
             // Sort alphabetically, with parked locomotives last
             List<Locomotive> locs = new LinkedList<>(this.model.getAutoLayout().getLocomotivesToRun());
             
-            locs.sort((Locomotive l1, Locomotive l2) -> {
+            locs.sort((Locomotive l1, Locomotive l2) ->
+            {
                 Point loc1Point = this.model.getAutoLayout().getLocomotiveLocation(l1);
                 Point loc2Point = this.model.getAutoLayout().getLocomotiveLocation(l2);
 
