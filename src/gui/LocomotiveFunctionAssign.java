@@ -50,7 +50,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             funcModel.add(Integer.toString(i));
         }
 
-        for (int i = 0; i <= MarklinLocomotive.NUM_FN_ICONS; i++)
+        for (int i = 0; i <= this.loc.getNumFnIcons(); i++)
         {
             try
             {
@@ -338,7 +338,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
     private void updateFNumber(int targetFNo)
     {
-        this.fIcon.setSelectedIndex(MarklinLocomotive.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
+        this.fIcon.setSelectedIndex(this.loc.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
         
         if (loc.isFunctionTimed(targetFNo) > 0)
         {

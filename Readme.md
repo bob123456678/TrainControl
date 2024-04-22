@@ -221,7 +221,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
         - [Java API](src/examples/Readme.md#timetables) for programmatically creating timetables
     - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
-    - Locomotive function icons can now be set to custom (local) images
+    - Locomotive function icon improvements
+        - Expanded support to 296 function icons when connected to a CS3. Icons will now match what is shown in the CS3.
+        - Improved icon contrast and resolution
+        - Icons can now be set to custom (local) images
     - Improved UI/general performance in fully autonomous mode
 
 * v2.0.17 [4/13/24]

@@ -48,7 +48,9 @@ public class MarklinLocomotive extends Locomotive
 
     // Local function icons
     private final String resourcePath = "/gui/resources/functions";
-    public static final int NUM_FN_ICONS = 112;
+    private static final int NUM_FN_ICONS_CS2 = 112;
+    private static final int NUM_FN_ICONS_CS3 = 296;
+    
     // Track if user customizations were made
     private boolean customFunctions = false;
                 
@@ -204,19 +206,40 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Ensures that the function icon type is within a valid range (0-112)
+     * Returns the number of possible function icons depending on the type of control station
+     * @return 
+     */
+    public int getNumFnIcons()
+    {
+        if (this.network.isCS3())
+        {
+            return NUM_FN_ICONS_CS3;
+        }
+        
+        return NUM_FN_ICONS_CS2;
+    }
+    
+    /**
+     * Ensures that the function icon type is within a valid range (0-112 for CS2 or 0-296 for CS3)
      * @param fType
      * @return 
      */
-    public static int sanitizeFIconIndex(int fType)
+    public int sanitizeFIconIndex(int fType)
     {
-        // > 128 just means it's a pulse function.  While loop in case this is 224-255
-        while (fType > NUM_FN_ICONS)
+        if (this.network.isCS3())
         {
-            fType = fType % Math.min(128, fType); // icons 113-127 do not exist
+            return fType % (NUM_FN_ICONS_CS3 + 1);
         }
-        
-        return fType;
+        else
+        {
+            // > 128 just means it's a pulse function.  While loop in case this is 224-255
+            while (fType > NUM_FN_ICONS_CS2)
+            {
+                fType = fType % Math.min(128, fType); // icons 113-127 do not exist
+            }
+
+            return fType;
+        }
     }
         
     /**

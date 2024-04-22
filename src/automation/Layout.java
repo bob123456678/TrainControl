@@ -22,8 +22,11 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import marklin.MarklinAccessory;
+import marklin.MarklinControlStation;
 import marklin.MarklinLocomotive;
 import model.ViewListener;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -2267,6 +2270,705 @@ public class Layout
         }
 
         return jsonObj.toString(4);
+    }
+    
+    /**
+     * Parses TrainControl's autonomous operation configuration file
+     * @param config 
+     * @param control 
+     * @return  
+     */
+    public static Layout fromJSON(String config, MarklinControlStation control)
+    {           
+        Layout layout = new Layout(control);
+        JSONObject o;
+        
+        try
+        {
+            o = new JSONObject(config);
+        }
+        catch (JSONException e)
+        {
+            control.log("Auto layout error: JSON parsing error");
+            layout.invalidate();
+            return layout;
+        }
+               
+        List<String> locomotives = new LinkedList<>();
+
+        JSONArray points;
+        JSONArray edges;
+        Integer minDelay;
+        Integer maxDelay;
+        Integer defaultLocSpeed;
+        
+        // Validate basic required data
+        try
+        {
+            points = o.getJSONArray("points");
+            edges = o.getJSONArray("edges");
+            minDelay  = o.getInt("minDelay");
+            maxDelay  = o.getInt("maxDelay");
+            defaultLocSpeed  = o.getInt("defaultLocSpeed");
+        }
+        catch (JSONException e)
+        {
+            control.log("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");
+            layout.invalidate();
+            return layout;
+        }
+        
+        if (points == null || edges == null)
+        {
+            control.log("Auto layout error: missing keys (points, edges)");
+            layout.invalidate();
+            return layout;        
+        }
+                
+        // Save values in layout class
+        try
+        {
+            layout.setDefaultLocSpeed(defaultLocSpeed);
+            layout.setMaxDelay(maxDelay);
+            layout.setMinDelay(minDelay);
+            layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+            
+            if (!o.has("turnOnFunctionsOnDeparture"))
+            {
+                layout.setTurnOnFunctionsOnDeparture(true);
+            }
+            else
+            {
+                layout.setTurnOnFunctionsOnDeparture(o.getBoolean("turnOnFunctionsOnDeparture"));
+            }            
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout error: " + e.getMessage());
+            layout.invalidate();
+            return layout;   
+        }
+                
+        // Optional values
+        if (o.has("preArrivalSpeedReduction"))
+        {
+            try
+            {
+                layout.setPreArrivalSpeedReduction(o.getDouble("preArrivalSpeedReduction"));
+            }
+            catch (Exception e)
+            {
+                control.log("Auto layout error: invalid value for preArrivalSpeedReduction (must be 0-1)");
+                layout.invalidate();
+                return layout;
+            }    
+        }
+        
+        if (o.has("maxLocInactiveSeconds"))
+        {
+            try
+            {
+                layout.setMaxLocInactiveSeconds(o.getInt("maxLocInactiveSeconds"));
+                
+                if (o.getInt("maxLocInactiveSeconds") > 0)
+                {
+                     control.log("Auto layout: trains will yield to other trains inactive longer than " + o.getInt("maxLocInactiveSeconds") + " seconds");
+                }
+            }
+            catch (Exception e)
+            {
+                control.log("Auto layout error: invalid value for maxLocInactiveSeconds (must not be negative)");
+                layout.invalidate();
+                return layout;
+            }    
+        }
+        
+        // Debug/dev only setting
+        try
+        {
+            layout.setSimulate(false);
+            
+            if (o.has("simulate"))
+            {
+                layout.setSimulate(o.getBoolean("simulate"));
+            }
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout simulation warning: " + e.getMessage());
+        }
+        
+        if (o.has("atomicRoutes"))
+        {
+            try
+            {
+                layout.setAtomicRoutes(o.getBoolean("atomicRoutes"));
+                
+                if (!o.getBoolean("atomicRoutes"))
+                {
+                    control.log("Auto layout notice: disabled atomic routes.  Edges will be unlocked as trains pass them instead of at the end of the route.");
+                }
+
+            }
+            catch (JSONException e)
+            {
+                control.log("Auto layout error: invalid value for atomicRoutes (must be true or false)");
+                layout.invalidate();
+                return layout;
+            }    
+        }
+           
+        // Add points
+        points.forEach(pnt -> { 
+            JSONObject point = (JSONObject) pnt; 
+
+            String s88 = null;
+            if (point.has("s88"))
+            {
+                if (point.get("s88") instanceof Integer)
+                {
+                    s88 = Integer.toString(point.getInt("s88"));
+                    
+                    if (!control.isFeedbackSet(s88))
+                    {
+                        control.log("Auto layout warning: feedback " + s88 + " does not exist in CS2 layout");
+                        control.newFeedback(point.getInt("s88"), null);
+                    }
+                }
+                else if (!point.isNull("s88"))
+                {
+                    control.log("Auto layout error: s88 not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+            
+            // Read optional coordinates
+            Integer x = null, y = null;
+            if (point.has("x"))
+            {
+                if (point.get("x") instanceof Integer)
+                {
+                    x = point.getInt("x");
+                }
+                else
+                {
+                    control.log("Auto layout error: x not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+            
+            if (point.has("y"))
+            {
+                if (point.get("y") instanceof Integer)
+                {
+                    y = point.getInt("y");
+                }
+                else
+                {
+                    control.log("Auto layout error: y not a valid integer " + point.toString());
+                    layout.invalidate();
+                }
+            }
+            
+            try 
+            {
+                layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
+                     
+                if (point.has("maxTrainLength"))
+                {
+                    if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
+                    { 
+                        layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
+
+                        if (point.getInt("maxTrainLength") > 0)
+                        {
+                            control.log("Set max train length of " + point.getInt("maxTrainLength") + " for " + point.getString("name"));
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: " + point.getString("name") + " has invalid maxTrainLength value");
+                        layout.invalidate();  
+                    }
+                }
+                else
+                {
+                    layout.getPoint(point.getString("name")).setMaxTrainLength(0);
+                }   
+     
+                // Set optional coordinates
+                if (x != null && y != null)
+                {
+                    layout.getPoint(point.getString("name")).setX(x);
+                    layout.getPoint(point.getString("name")).setY(y);
+                }
+                
+                if (point.has("terminus"))
+                {
+                    if (point.get("terminus") instanceof Boolean)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setTerminus(point.getBoolean("terminus"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for terminus " + point.toString());
+                        layout.invalidate();
+                    }
+                }  
+                
+                if (point.has("active"))
+                {
+                    if (point.get("active") instanceof Boolean)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setActive(point.getBoolean("active"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for active " + point.toString());
+                        layout.invalidate();
+                    }
+                }   
+                
+                if (point.has("reversing"))
+                {
+                    if (point.get("reversing") instanceof Boolean)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setReversing(point.getBoolean("reversing"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for reversing " + point.toString());
+                        layout.invalidate();
+                    }
+                }    
+                
+                if (point.has("priority"))
+                {
+                    if (point.get("priority") instanceof Integer)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setPriority(point.getInt("priority"));
+                        } 
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout error: " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: invalid value for priority " + point.toString());
+                        layout.invalidate();
+                    }
+                } 
+            } 
+            catch (Exception ex)
+            {
+                if (control.isDebug())
+                {
+                    ex.printStackTrace();
+                }
+                
+                control.log("Auto layout error: Point error for " + point.toString() + " (" + ex.getMessage() + ")");
+                layout.invalidate();
+                return;
+            }
+
+            // Set the locomotive
+            if (point.has("loc") && !point.isNull("loc"))
+            {
+                if (point.get("loc") instanceof JSONObject)
+                {
+                    JSONObject locInfo = point.getJSONObject("loc");
+                    
+                    if (locInfo.has("name") && locInfo.get("name") instanceof String)
+                    {
+                        String loc = locInfo.getString("name");
+
+                        if (control.getLocByName(loc) != null)
+                        {
+                            Locomotive l = control.getLocByName(loc);
+
+                            if (locInfo.has("trainLength"))
+                            {
+                                if (locInfo.get("trainLength") instanceof Integer && locInfo.getInt("trainLength") >= 0)
+                                {
+                                    l.setTrainLength(locInfo.getInt("trainLength"));   
+
+                                    control.log("Set train length of " + locInfo.getInt("trainLength") + " for " + loc);
+                                }
+                                else
+                                {
+                                    control.log("Auto layout error: " + loc + " has invalid trainLength value");
+                                    layout.invalidate();  
+                                }
+                            }
+                            else
+                            {
+                                l.setTrainLength(0);   
+                            }
+
+                            if (locInfo.has("reversible"))
+                            {
+                                if (locInfo.get("reversible") instanceof Boolean)
+                                {
+                                    l.setReversible(locInfo.getBoolean("reversible"));   
+
+                                    if (locInfo.getBoolean("reversible"))
+                                    {
+                                        control.log("Flagged as reversible: " + loc);
+                                    }
+                                }
+                                else
+                                {
+                                    control.log("Auto layout error: " + loc + " has invalid reversible value");
+                                    layout.invalidate();  
+                                }
+                            }
+                            else
+                            {
+                                l.setReversible(false);   
+                            }
+
+                            // Only throw a warning if this is not a station
+                            if (point.getBoolean("station") != true)
+                            {
+                                control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
+                            }
+
+                            // Place the locomotive
+                            layout.getPoint(point.getString("name")).setLocomotive(l);
+
+                            // Reset if none present
+                            l.setDepartureFunc(null);
+
+                            // Set start and end callbacks
+                            if (locInfo.has("speed") && locInfo.get("speed") != null)
+                            {
+                                try
+                                {
+                                    if (locInfo.getInt("speed") > 0 && locInfo.getInt("speed") <= 100)
+                                    {
+                                        l.setPreferredSpeed(locInfo.getInt("speed"));
+                                    }
+                                }
+                                catch (JSONException ex)
+                                {
+                                    control.log("Auto layout error: Error in speed value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            // Set start and end callbacks
+                            if (locInfo.has("departureFunc") && locInfo.get("departureFunc") != null)
+                            {
+                                try
+                                {
+                                    l.setDepartureFunc(locInfo.getInt("departureFunc"));
+                                }
+                                catch (JSONException ex)
+                                {
+                                    control.log("Auto layout error: Error in departureFunc value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            // Fires functions on departure and arrival
+                            layout.applyDefaultLocCallbacks(l);
+
+                            // Reset if none present
+                            l.setArrivalFunc(null);
+
+                            if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)
+                            {
+                                try
+                                {
+                                    l.setArrivalFunc(locInfo.getInt("arrivalFunc"));
+                                }
+                                catch (JSONException ex)
+                                {
+                                    control.log("Auto layout error: Error in arrivalFunc value for " + locInfo.getString("name"));
+                                    layout.invalidate();
+                                }
+                            }
+
+                            if (l.getPreferredSpeed() == 0)
+                            {
+                                l.setPreferredSpeed(defaultLocSpeed);
+                                control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
+                            }
+
+                            if (locomotives.contains(loc))
+                            {
+                                control.log("Auto layout error: duplicate locomotive " + loc + " at " + point.getString("name"));
+                                layout.invalidate();
+                            }
+                            else
+                            {
+                                locomotives.add(loc);
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: Locomotive " + loc + " does not exist");
+                            layout.invalidate();
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: Locomotive configuration array at " + point.getString("name") + " missing name");
+                        layout.invalidate();
+                    }
+                }
+                else
+                {
+                    control.log("Auto layout warning: ignoring invalid value for loc \"" + point.get("loc").toString() + "\" (must be a JSON object)");
+                } 
+            }
+        });
+
+        // Add edges
+        edges.forEach(edg -> 
+        { 
+            JSONObject edge = (JSONObject) edg; 
+            try 
+            {
+                String start = edge.getString("start");
+                String end = edge.getString("end");
+
+                if (edge.has("commands") && !edge.isNull("commands"))
+                {
+                    JSONArray commands = edge.getJSONArray("commands");
+
+                    // Validate commands
+                    commands.forEach((cmd) -> {
+                        JSONObject command = (JSONObject) cmd;
+                        
+                        // Validate accessory
+                        if (command.has("acc") && !command.isNull("acc"))
+                        {
+                            String accessory = command.getString("acc");
+                            if (null == control.getAccessoryByName(accessory))
+                            {
+                                // TODO - use Edge.validateConfigCommand
+                                control.log("Auto layout warning: accessory \"" + accessory + "\" does not exist in CS2 layout");
+                                
+                                if (accessory.contains("Signal "))
+                                {
+                                    Integer address = Integer.valueOf(accessory.replace("Signal ", ""));
+                                    
+                                    if (control.getAccessoryByName("Switch " + address) != null)
+                                    {
+                                        control.log("Auto layout warning: " + accessory + " conflicts with switch with the same address.");
+                                        //layout.invalidate();
+                                    }
+                                    
+                                    control.newSignal(address.toString(), address, false);
+                                    control.log("Auto layout warning: created " + accessory);
+                                }
+                                else if (accessory.contains("Switch "))
+                                {   
+                                    Integer address = Integer.valueOf(accessory.replace("Switch ", ""));
+
+                                    if (control.getAccessoryByName("Signal " + address) != null)
+                                    {
+                                        control.log("Auto layout warning: " + accessory + " conflicts with signal with the same address.");
+                                        //layout.invalidate();
+                                    }
+                                    
+                                    control.newSwitch(address.toString(), address, false);
+                                    control.log("Auto layout warning: created " + accessory);                       
+                                }
+                                else
+                                {
+                                    control.log("Auto layout error: unrecognized accessory type");
+                                    layout.invalidate();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: Edge command missing accessory definition in " + start + "-" + end + " action: " + command.toString());
+                            layout.invalidate(); 
+                        }
+                        
+                        // Validate state
+                        if (command.has("state") && !command.isNull("state"))
+                        {            
+                            String action = command.getString("state");
+
+                            if (null == Accessory.stringToAccessorySetting(action))
+                            {
+                                control.log("Auto layout error: Invalid action in edge " + start + "->" + end + " (" + command.toString() + ")");
+                                layout.invalidate();
+                            }
+                        }
+                        else
+                        {
+                            control.log("Auto layout error: Edge command missing state " + start + "->" + end + " action: " + command.toString());
+                            layout.invalidate();
+                        }
+                    });
+                }
+                
+                Edge e = layout.createEdge(start, end); 
+                
+                // Store the raw config commands so that we can reference them later
+                if (edge.has("commands") && !edge.isNull("commands"))
+                {
+                    JSONArray commands = edge.getJSONArray("commands");
+                    commands.forEach((cmd) -> 
+                    {
+                        JSONObject command = (JSONObject) cmd;
+                        String action = command.getString("state");
+                        String acc = command.getString("acc");
+
+                        e.addConfigCommand(acc, Accessory.stringToAccessorySetting(action));
+                    });                    
+                }            
+                
+                if (edge.has("length"))
+                {
+                    if (edge.get("length") instanceof Integer && edge.getInt("length") >= 0)
+                    {
+                        e.setLength(edge.getInt("length"));   
+
+                        if (edge.getInt("length") > 0)
+                        {
+                            if (control.isDebug())
+                            {
+                                control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        control.log("Auto layout error: " + e.getName() + " has invalid length value");
+                        layout.invalidate();  
+                    }
+                }
+                else
+                {
+                    e.setLength(0);
+                }
+            } 
+            catch (Exception ex)
+            {
+                control.log("Auto layout error: Invalid edge " + edge.toString() + " (" + ex.getMessage() + ")");
+                layout.invalidate();
+            }
+        });
+
+        // Add lock edges
+        edges.forEach(edg -> 
+        { 
+            JSONObject edge = (JSONObject) edg; 
+            try 
+            { 
+                String start = edge.getString("start");
+                String end = edge.getString("end");  
+                
+                if (layout.getEdge(start, end) != null && edge.has("lockedges"))
+                {
+                    edge.getJSONArray("lockedges").forEach(lckedg -> {
+                        JSONObject lockEdge = (JSONObject) lckedg;
+
+                        if (layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end")) == null)
+                        {
+                            control.log("Auto layout error: Lock edge" + lockEdge.toString() + " does not exist");  
+                            layout.invalidate();
+                        }
+                        else
+                        {
+                            layout.getEdge(start, end).addLockEdge(
+                                layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end"))
+                            );
+                        }
+                    });
+                }
+            } 
+            catch (JSONException ex)
+            {
+                control.log("Auto layout error: Lock edge error - " + edge.toString());
+                layout.invalidate();
+            }
+        });
+        
+        // Load the timetable
+        try
+        {
+            JSONArray timetable = o.getJSONArray("timetable");
+            List<TimetablePath> timetableList = new LinkedList<>();
+            
+            for (Object tt : timetable)
+            {                
+                timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+            }
+            
+            layout.setTimetable(timetableList);
+        }
+        catch (Exception e)
+        {
+            control.log("Auto layout timetable warning: " + e.getMessage());
+        }
+        
+        // Set list of reversible locomotives
+        /*reversible.forEach(locc -> { 
+            String loc = (String) locc;
+                            
+            if (control.getLocByName(loc) != null)
+            {
+                layout.addReversibleLoc(control.getLocByName(loc));
+                control.log("Flagged as reversible: " + loc);
+            }
+            else
+            {
+                control.log("Auto layout error: Reversible locomotive " + loc + " does not exist");
+                layout.invalidate();
+            }
+        });*/
+
+        /*if (locomotives.isEmpty())
+        {
+            control.log("Auto layout error: No locomotives placed.");
+            layout.invalidate();
+        }*/
+        
+        List<Locomotive> locsToRun = new LinkedList<>();
+        
+        for (String s : locomotives)
+        {
+            locsToRun.add(control.getLocByName(s));
+        }
+        
+        layout.setLocomotivesToRun(locsToRun);
+                    
+        return layout;
     }
 }
 

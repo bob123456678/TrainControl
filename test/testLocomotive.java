@@ -51,8 +51,9 @@ public class testLocomotive
         assertEquals(false, l.isFunctionPulse(1));
         assertEquals(240, l.getFunctionType(2));
         assertEquals(true, l.isFunctionPulse(2));
-        assertEquals(112, MarklinLocomotive.sanitizeFIconIndex(l.getFunctionType(2)));
-        assertEquals(0, MarklinLocomotive.sanitizeFIconIndex(l.getFunctionType(3)));
+        // TODO - simulate CS3
+        assertEquals(112, l.sanitizeFIconIndex(l.getFunctionType(2)));
+        assertEquals(0, l.sanitizeFIconIndex(l.getFunctionType(3)));
         assertEquals(0, l.getFunctionType(4));
 
         assertEquals(true, l.isReversible());
