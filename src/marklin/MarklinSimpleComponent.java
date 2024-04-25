@@ -37,12 +37,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private String localImageURL;
     private boolean customFunctions;
     private Map<Integer, String> localFunctionImageURLs;
-    
-    // TODO - deprecate
-    private long totalRuntime; // deprecated
-    private long historicalOperatingTime; // deprecated
-    // TODO - end deprecate
-    
+        
     // Route state
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
@@ -286,23 +281,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public Map<String, Long> getHistoricalOperatingTime()
     {
-        // TODO - deprecate, Legacy compatibility
-        if (this.historicalOperatingTime != 0)
-        {
-            Map<String, Long> data = new HashMap<>();
-            data.put(Locomotive.getDate(this.historicalOperatingTime), this.totalRuntime);
-            
-            return data;
-        }
-        else if (this.historicalOperatingTimeNew == null)
-        {
-            return new HashMap<>();
-        }
-        // TODO - end deprecate
-        else
-        {
-            return (Map<String, Long>) this.historicalOperatingTimeNew;
-        }
+        return (Map<String, Long>) this.historicalOperatingTimeNew;   
     }
     
     public Integer getTrainLength()

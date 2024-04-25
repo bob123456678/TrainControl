@@ -219,13 +219,15 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Locomotive commands in semi-autonomous or fully-autonomous mode can be captured on demand to create a timetable
         - Paths in the timetable can be replayed sequentally, with progress saved between runs
         - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
+        - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
         - [Java API](src/examples/Readme.md#timetables) for programmatically creating timetables
-    - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
     - Locomotive function icon improvements
         - Expanded support to 296 function icons when connected to a CS3. Icons will now match what is shown in the CS3.
         - Improved icon contrast and resolution
         - Icons can now be set to custom (local) images
+        - The Reset All Customizations button will now be greyed out if no customizations have been made
     - Improved UI/general performance in fully autonomous mode
+    - No longer backwards-compatible with LocDB.data files from versions older than 2.0.0
 
 * v2.0.17 [4/13/24]
     - Added Control+A shortcut to assign a locomotive to the currently active button

@@ -120,6 +120,15 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     {
         this.customIconPath = this.loc.getLocalFunctionImageURL(this.getFNo());
         displayCustomFunctionIcon(this.customIconPath);
+        
+        if (this.loc.isCustomFunctions())
+        {
+            this.resetButton.setEnabled(true);
+        }
+        else
+        {
+            this.resetButton.setEnabled(false);
+        }
     }
     
     public void focusFno()
@@ -317,23 +326,29 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
-        int dialogResult = JOptionPane.showConfirmDialog(
-                this, "Do you want to reset the functions to the Central Station's settings?" ,"Confirm Reset", JOptionPane.YES_NO_OPTION
-            );
-            
-        if (dialogResult == JOptionPane.YES_OPTION)
-        {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        
+        this.resetButton.setEnabled(false);
+
+        new Thread(() ->
+        {  
+            int dialogResult = JOptionPane.showConfirmDialog(
+                    this, "Do you want to reset the functions to the Central Station's settings?" ,"Confirm Reset", JOptionPane.YES_NO_OPTION
+                );
+
+            if (dialogResult == JOptionPane.YES_OPTION)
             {
-                this.loc.setCustomFunctions(false);
-                this.loc.unsetLocalFunctionImageURLs();
-                this.parent.getModel().syncWithCS2();
-                this.parent.repaintLoc(true);
-                this.customIconPath = null;
-                
-                updateFNumber(this.fNo.getSelectedIndex()); 
-            }));
-        }
+                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                {
+                    this.loc.setCustomFunctions(false);
+                    this.loc.unsetLocalFunctionImageURLs();               
+                    this.parent.repaintLoc(true);
+                    this.customIconPath = null;
+
+                    updateFNumber(this.fNo.getSelectedIndex()); 
+                }));
+            }
+            
+        }).start();
     }//GEN-LAST:event_resetButtonActionPerformed
 
     private void updateFNumber(int targetFNo)

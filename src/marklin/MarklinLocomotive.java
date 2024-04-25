@@ -136,13 +136,17 @@ public class MarklinLocomotive extends Locomotive
     public void setFunctionType(int fNo, int type, int triggerType)
     {
         if (this.validF(fNo))
-        {
+        { 
+            // Mark as custom if we are making changes
+            if (this.functionTypes[fNo] != type || this.functionTriggerTypes[fNo] != triggerType)
+            {
+                this.customFunctions = true;
+            }
+            
             this.functionTypes[fNo] = type;
             
             this.functionTriggerTypes[fNo] = triggerType;
         }
-        
-        this.customFunctions = true;
     }
     
     public void setCustomFunctions(boolean state)
