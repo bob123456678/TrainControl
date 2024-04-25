@@ -871,7 +871,7 @@ public class RouteEditor extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     private void HelpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HelpActionPerformed
-        JOptionPane.showMessageDialog(this, this.helpMessage);        // TODO add your handling code here:
+        JOptionPane.showMessageDialog(this, this.helpMessage);
     }//GEN-LAST:event_HelpActionPerformed
 
     private void addAcc(boolean isConditional)
@@ -957,7 +957,6 @@ public class RouteEditor extends javax.swing.JPanel
     }
     
     private void addToRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButtonActionPerformed
-        
         addAcc(false);
     }//GEN-LAST:event_addToRouteButtonActionPerformed
 

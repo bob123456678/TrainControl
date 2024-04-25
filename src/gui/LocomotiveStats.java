@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package gui;
 
 import base.Locomotive;
@@ -11,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -350,7 +345,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         {
             try
             {
-                JFileChooser fc = new JFileChooser(tcui.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
+                JFileChooser fc = new JFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
                 fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".txt"));
                 int i = fc.showSaveDialog(this);
 
@@ -369,7 +364,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                     }
 
                     Files.write(Paths.get(f.getPath()), data.trim().getBytes());
-                    tcui.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
                 }
             }
             catch (HeadlessException | IOException e)

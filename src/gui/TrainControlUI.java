@@ -48,6 +48,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -207,7 +208,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Maximum number of functions
     private static final int NUM_FN = 32;
     
-    // Number of seconds to wait before checking for CAN acivity
+    // Number of seconds to wait before checking for CAN activity
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Data save file name
@@ -231,7 +232,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public HashMap<String, JPanel> layoutCache = new HashMap<>();
     
     // Preferences
-    private final Preferences prefs;
+    private static final Preferences prefs = Preferences.userNodeForPackage(TrainControlUI.class);
     private boolean conditionalRouteWarningShown = false;
     
     // Locomotive clipboard 
@@ -287,8 +288,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         //</editor-fold>
         
         initComponents();
-        
-        this.prefs = Preferences.userNodeForPackage(TrainControlUI.class);
         
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
@@ -513,15 +512,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
         // Restore UI component state
-        this.sliderSetting.setSelected(this.prefs.getBoolean(SLIDER_SETTING_PREF, false));
-        this.alwaysOnTopCheckbox.setSelected(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
-        this.autosave.setSelected(this.prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
-        this.hideReversing.setSelected(this.prefs.getBoolean(HIDE_REVERSING_PREF, false));
-        this.hideInactive.setSelected(this.prefs.getBoolean(HIDE_INACTIVE_PREF, false));
+        this.sliderSetting.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
+        this.alwaysOnTopCheckbox.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
+        this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
+        this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
 
         // Set selected route sort radio button
-        this.sortByID.setSelected(!this.prefs.getBoolean(ROUTE_SORT_PREF, false));
-        this.sortByName.setSelected(this.prefs.getBoolean(ROUTE_SORT_PREF, false));
+        this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
+        this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
         
         // Right-clicks on the route list
         this.RouteList.addMouseListener(new RightClickRouteMenu(this)); 
@@ -530,14 +529,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.timetable.addMouseListener(new RightClickTimetableMenu(this));   
 
         // Keyboard layout preference
-        this.keyboardType.setSelectedIndex(this.prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0));
+        this.keyboardType.setSelectedIndex(prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0));
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex() >= 0 ? this.keyboardType.getSelectedIndex() : 0]);
 
-        // Hide initially
-        locCommandPanels.remove(this.locCommandTab);
-        locCommandPanels.remove(this.timetablePanel);
-        locCommandPanels.remove(this.autoSettingsPanel);
-        
         // Layout editing only supported on windows
         if (!this.isWindows())
         {
@@ -657,9 +651,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.buttonMapping.put(KeyEvent.VK_Z, ZButton);
     }
         
-    public Preferences getPrefs()
+    public static Preferences getPrefs()
     {
-        return this.prefs;
+        return prefs;
     }
     
     /**
@@ -681,9 +675,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     /**
      * Saves initialized component database to a file
+     * @param backup
      */
-    public void saveState()
+    public void saveState(boolean backup)
     {
+        String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
+        
         List<Map<Integer,String>> l = new ArrayList<>();
         
         for (int i = 0; i < this.locMapping.size(); i++)
@@ -715,12 +712,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Write object with ObjectOutputStream to disk using
             // FileOutputStream
             ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(TrainControlUI.DATA_FILE_NAME));
+                new FileOutputStream(prefix + TrainControlUI.DATA_FILE_NAME));
 
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.model.log("Saving UI state to: " + new File(TrainControlUI.DATA_FILE_NAME).getAbsolutePath());
+            this.model.log("Saving UI state to: " + new File(prefix + TrainControlUI.DATA_FILE_NAME).getAbsolutePath());
         } 
         catch (IOException iOException)
         {
@@ -753,10 +750,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             try 
             {
-                this.model.log("Saving autonomy JSON to: " + new File(TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
+                this.model.log("Saving autonomy JSON to: " + new File(prefix + TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
 
                 ObjectOutputStream obj_out = new ObjectOutputStream(
-                    new FileOutputStream(TrainControlUI.AUTONOMY_FILE_NAME));
+                    new FileOutputStream(prefix + TrainControlUI.AUTONOMY_FILE_NAME));
 
                 // Write object out to disk
                 obj_out.writeObject(this.autonomyJSON.getText());                
@@ -1135,7 +1132,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }
     
-    public void setViewListener(ViewListener listener) throws IOException
+    public void setViewListener(ViewListener listener, CountDownLatch latch) throws IOException
     {
         // Set the model reference
         this.model = listener;
@@ -1188,7 +1185,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.log("Failed to parse stored mapping number or active button.");
             }
         }
-                
+             
+        // Hide initially
+        locCommandPanels.remove(this.locCommandTab);
+        locCommandPanels.remove(this.timetablePanel);
+        locCommandPanels.remove(this.autoSettingsPanel);
+        
         // Add the first locomotive to the mapping if nothing was loaded
         if (!this.model.getLocList().isEmpty() && !locWasLoaded)
         {
@@ -1254,11 +1256,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
              
         this.latencyLabel.setText("Not Connected to Central Station");
 
-        // Show window        
-        this.setVisible(true); 
+        // Show window - this is now called externally once this call returns        
+        // this.setVisible(true); 
 
         // Don't do this until the end, otherwise keyboard events may not register properly
-        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
         
         // Render layout now that the UI is visible
         repaintLayout();
@@ -1270,11 +1272,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Populate statistics tab
         this.stats = new LocomotiveStats(this);
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
-        }));
+        this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
         
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
@@ -1304,28 +1302,34 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 @Override
                 public void run()
                 {
-                    try
+                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                     {
-                        if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
+                        try
                         {
-                            latencyLabel.setText("Lost network connection");
-                            latencyLabel.setForeground(Color.red);
+                            if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
+                            {
+                                latencyLabel.setText("Lost network connection");
+                                latencyLabel.setForeground(Color.red);
+                            }
+
+                            model.sendPing(false);
                         }
-                                                
-                        model.sendPing(false);
-                    }
-                    catch (Exception e)
-                    {
-                        model.log("Error sending ping: " + e.getMessage());
-                        
-                        if (model.isDebug())
+                        catch (Exception e)
                         {
-                            e.printStackTrace();
+                            model.log("Error sending ping: " + e.getMessage());
+
+                            if (model.isDebug())
+                            {
+                                e.printStackTrace();
+                            }
                         }
-                    }
+                    }));
                 }
             }, 0, PING_INTERVAL);
         }
+        
+        // Release the latch
+        if (latch != null) latch.countDown();
     }
     
     /**
@@ -1383,7 +1387,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (path != null)
                     {
                         this.model.log("Layout initialized at: " + path);
-                        this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+                        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
                         this.model.syncWithCS2();
                         this.repaintLoc();
@@ -2674,6 +2678,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TurnOnLightsButton = new javax.swing.JButton();
         syncLocStateButton = new javax.swing.JButton();
         ViewDBButton = new javax.swing.JButton();
+        BackupButton = new javax.swing.JButton();
         jPanel12 = new javax.swing.JPanel();
         jLabel32 = new javax.swing.JLabel();
         LayoutPathLabel = new javax.swing.JLabel();
@@ -6517,6 +6522,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        BackupButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BackupButton.setText("Backup TrainControl Data");
+        BackupButton.setFocusable(false);
+        BackupButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BackupButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
@@ -6524,16 +6538,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.PREFERRED_SIZE, 370, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel8Layout.createSequentialGroup()
                         .addComponent(SyncButton, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(ViewDBButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(2, 2, 2)))
+                        .addGap(2, 2, 2))
+                    .addComponent(BackupButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
@@ -6545,11 +6558,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(ViewDBButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(syncLocStateButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(BackupButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(TurnOnLightsButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(TurnOffFnButton)
-                .addContainerGap())
+                .addGap(12, 12, 12))
         );
 
         jPanel12.setBackground(new java.awt.Color(245, 245, 245));
@@ -6689,11 +6704,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(toolsLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(9, 9, 9)
                 .addComponent(dataSourceLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(86, Short.MAX_VALUE))
+                .addContainerGap(49, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);
@@ -8178,8 +8193,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
         
-        model.saveState();
-        this.saveState();
+        model.saveState(false);
+        this.saveState(false);
         //model.stop();
         this.dispose();
         System.exit(0);
@@ -8447,7 +8462,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void OverrideCS2DataPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OverrideCS2DataPathActionPerformed
         new Thread(()->
         { 
-            JFileChooser fc = new JFileChooser(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             int i = fc.showOpenDialog(this);
             if (i == JFileChooser.APPROVE_OPTION)
@@ -8455,7 +8470,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 File f = fc.getSelectedFile();
                 String filepath = f.getPath();
 
-                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
             }
             else
             {
@@ -8893,7 +8908,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     l.switchDirection();
                     
                     // Change active loc if setting selected
-                    if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
+                    if (prefs.getBoolean(SLIDER_SETTING_PREF, false))
                     {
                         this.displayCurrentButtonLoc(b);
                     }
@@ -8924,7 +8939,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 // Change active loc if setting selected
-                if (this.prefs.getBoolean(SLIDER_SETTING_PREF, false))
+                if (prefs.getBoolean(SLIDER_SETTING_PREF, false))
                 {
                     this.displayCurrentButtonLoc(b);
                 }
@@ -8949,7 +8964,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_SpeedSliderDragged
 
     private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
-        this.prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
+        prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
     }//GEN-LAST:event_sliderSettingActionPerformed
 
     private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
@@ -9363,7 +9378,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
         new Thread(()->
         {  
-            this.prefs.putBoolean(ROUTE_SORT_PREF, true);
+            prefs.putBoolean(ROUTE_SORT_PREF, true);
             this.refreshRouteList();
         }).start();
     }//GEN-LAST:event_sortByNameActionPerformed
@@ -9371,7 +9386,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
         new Thread(()->
         {  
-            this.prefs.putBoolean(ROUTE_SORT_PREF, false);
+            prefs.putBoolean(ROUTE_SORT_PREF, false);
             this.refreshRouteList();
         }).start();
     }//GEN-LAST:event_sortByIDActionPerformed
@@ -9692,8 +9707,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_gracefulStopActionPerformed
 
     private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
-        this.prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
-        setAlwaysOnTop(this.prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
     }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
 
     private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
@@ -9824,7 +9839,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (!this.isAutoLayoutRunning())
         {
             this.updateVisiblePoints();
-            this.prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
+            prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
         }
         else
         {
@@ -9874,7 +9889,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (!this.isAutoLayoutRunning())
         {
             this.updateVisiblePoints();
-            this.prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
+            prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
         }
         else
         {
@@ -9916,7 +9931,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_loadJSONButtonActionPerformed
 
     private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
-        this.prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
+        prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
     }//GEN-LAST:event_autosaveActionPerformed
 
     private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
@@ -10261,7 +10276,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             JOptionPane.showMessageDialog(this, "In the next window, please select a folder for the new layout.");
 
-            JFileChooser fc = new JFileChooser(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             int i = fc.showOpenDialog(this);
             if (i == JFileChooser.APPROVE_OPTION)
@@ -10269,7 +10284,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 File f = fc.getSelectedFile();
                 String filepath = f.getPath();
 
-                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
                 
                 this.initNewLayoutButton.setEnabled(false);
 
@@ -10289,7 +10304,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 this.KeyboardTab.remove(this.layoutPanel);
 
-                this.prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
                 this.model.clearLayouts();
                 this.model.syncWithCS2();
                 
@@ -10425,7 +10440,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (evt.getStateChange() == ItemEvent.SELECTED && this.keyboardType.getSelectedIndex() >= 0)
         {
-            this.prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
+            prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
             this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
 
             if (this.model != null)
@@ -10593,6 +10608,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }//GEN-LAST:event_timetableCaptureActionPerformed
 
+    private void BackupButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BackupButtonActionPerformed
+        new Thread(() ->
+        {
+            this.BackupButton.setEnabled(false);
+            this.saveState(true);
+            this.model.saveState(true);
+            this.BackupButton.setEnabled(true);
+            JOptionPane.showMessageDialog(this, "Backup complete: check log.");
+        }).start();
+    }//GEN-LAST:event_BackupButtonActionPerformed
+
     public void deleteTimetableEntry(MouseEvent evt)
     {
         try
@@ -10742,7 +10768,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             
             JFileChooser fc = new JFileChooser(
-                currentPath != null ? currentPath : this.prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+                currentPath != null ? currentPath : prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -10776,7 +10802,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public JFileChooser getJSONFileChooser(int type)
     {
         JFileChooser fc = new JFileChooser(
-            this.prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
+            prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
         );
                 
         fc.setFileSelectionMode(type);
@@ -11406,7 +11432,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             List<String> names = this.model.getRouteList();
 
-            if (this.prefs.getBoolean(ROUTE_SORT_PREF, false))
+            if (prefs.getBoolean(ROUTE_SORT_PREF, false))
             {
                 Collections.sort(names);
             }
@@ -11451,6 +11477,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton BButton;
     private javax.swing.JTextField BLabel;
     private javax.swing.JSlider BSlider;
+    private javax.swing.JButton BackupButton;
     private javax.swing.JToggleButton Backward;
     private javax.swing.JButton BulkDisable;
     private javax.swing.JButton BulkEnable;
@@ -11835,7 +11862,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     private boolean isLocalLayout()
     {
-        return !"".equals(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+        return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
     
     /**
@@ -11848,12 +11875,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Set UI label
             if (!isLocalLayout())
             {
-                LayoutPathLabel.setText("Central Station: " + this.prefs.get(IP_PREF, "(none loaded)"));
+                LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.useCS2Layout.setVisible(false);
             }
             else
             {
-                LayoutPathLabel.setText(this.prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+                LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
                 this.useCS2Layout.setVisible(true);
             }
         }));

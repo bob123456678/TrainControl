@@ -396,7 +396,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             this.deleteCustomIcon.setEnabled(false);
             
             JFileChooser fc = new JFileChooser(
-                currentPath != null ? currentPath : this.parent.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+                currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -411,7 +411,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             {
                 File f = fc.getSelectedFile();
 
-                this.parent.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+                TrainControlUI.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
 
                 customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
                 this.displayCustomFunctionIcon(customIconPath);

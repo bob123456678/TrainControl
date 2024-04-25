@@ -23,7 +23,7 @@ public interface ViewListener
     public List<String> getRouteList();
     public MarklinLocomotive getLocByName(String name);
     public MarklinAccessory getAccessoryByName(String name);
-    public void saveState();
+    public void saveState(boolean backup);
     public MarklinLocomotive newMM2Locomotive(String name, int address);
     public MarklinLocomotive newMFXLocomotive(String name, int address);
     public MarklinLocomotive newDCCLocomotive(String name, int address);

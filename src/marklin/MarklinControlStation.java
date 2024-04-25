@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive.decoderType;
@@ -35,6 +36,7 @@ import model.View;
 import model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import util.Conversion;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.
@@ -47,7 +49,7 @@ import org.json.JSONObject;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.0 Beta 8 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.0 Beta 9 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -118,7 +120,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Ping metrics
     private long pingStart;
     private double lastLatency;
-            
+                    
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {        
         // Initialize maps
@@ -352,12 +354,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
     }
-    
-    private Preferences getPrefs()
-    {
-        return Preferences.userNodeForPackage(TrainControlUI.class);
-    }
-    
+        
     /**
      * Returns the auto layout class (and creates it if it does not yet exist)
      * @return 
@@ -434,12 +431,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                        
             // Import layout
             String overrideLayoutPath = "";
-            Preferences prefs = null;
             
             try
             {
-                prefs = this.getPrefs();
-                overrideLayoutPath = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             }
             catch (Exception e)
             {
@@ -452,7 +447,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
                 
-            if (!"".equals(overrideLayoutPath) && prefs != null)
+            if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
             {
                 fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
                 
@@ -478,7 +473,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                            
                     this.log("Error, reverting to default layout load." + (!debug ? " Enable debug mode for details." : ""));
-                    prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
                 }
@@ -671,8 +666,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Saves initialized component database to a file
      */
     @Override
-    public void saveState()
+    public void saveState(boolean backup)
     {
+        String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
+        
         List<MarklinSimpleComponent> l = new LinkedList<>();
         
         for (MarklinLocomotive loc : this.locDB.getItems())
@@ -700,12 +697,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Write object with ObjectOutputStream to disk using
             // FileOutputStream
             ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(MarklinControlStation.DATA_FILE_NAME));
+                new FileOutputStream(prefix + MarklinControlStation.DATA_FILE_NAME));
 
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.log("Saving database state to: " + new File(MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
+            this.log("Saving database state to: " + new File(prefix + MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
         } 
         catch (IOException iOException)
         {
@@ -1822,8 +1819,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return
      * @throws UnknownHostException
      * @throws IOException 
+     * @throws java.lang.InterruptedException 
      */
-    public static MarklinControlStation init() throws UnknownHostException, IOException
+    public static MarklinControlStation init() throws UnknownHostException, IOException, InterruptedException
     {
         return init(null, false, true, true, false);
     }
@@ -1900,7 +1898,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.newRoute(route);
         }
     }
-    
+        
     /**
      * Main initialization method
      * @param initIP
@@ -1911,15 +1909,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return
      * @throws UnknownHostException
      * @throws IOException 
+     * @throws java.lang.InterruptedException 
      */
-    public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException
-    {
+    public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException, InterruptedException
+    {        
         // User interface
         TrainControlUI ui = new TrainControlUI();
         
         if (initIP == null)
         {
-            initIP = ui.getPrefs().get(TrainControlUI.IP_PREF, null);
+            initIP = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, null);
         }
 
         if (!simulate)
@@ -1945,7 +1944,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else
                     {
-                        ui.getPrefs().put(TrainControlUI.IP_PREF, initIP);
+                        TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, initIP);
                         break;
                     }
                 }
@@ -1964,24 +1963,44 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Delegate the hard part
         NetworkProxy proxy = new NetworkProxy(InetAddress.getByName(initIP));
-
+        
         // Initialize the central station
-        MarklinControlStation model = 
+        final MarklinControlStation model = 
             new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
 
         // Set model
         if (showUI)
         {
-            ui.setViewListener(model);
+            model.log("Initializing UI");
+            
+            final CountDownLatch latch = new CountDownLatch(1);
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                try
+                {
+                    ui.setViewListener(model, latch);
+                }
+                catch (IOException ex)
+                {
+                    model.log("Error initializing UI");
+                    ex.printStackTrace();
+                }                
+            }));
+
+            latch.await();
+            model.log("UI initialized");
+
+            ui.setVisible(true);
         }
-        
+                
         // Start execution
         proxy.setModel(model);
-
+        
         // Connection failed - ask for IP on next run
         if (!model.getNetworkCommState())
         {
-            ui.getPrefs().remove(TrainControlUI.IP_PREF);
+            TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
         }
         
         // Make the model think that the power is on

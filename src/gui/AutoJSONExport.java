@@ -105,7 +105,7 @@ public class AutoJSONExport extends javax.swing.JPanel
                     byte[] json = this.jsonTextArea.getText().getBytes();
 
                     Files.write(Paths.get(f.getPath()), json);
-                    tcui.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
                     
                     // Close the popup
                     Window w = SwingUtilities.getWindowAncestor(jsonSaveAs);
