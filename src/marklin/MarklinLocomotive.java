@@ -156,7 +156,7 @@ public class MarklinLocomotive extends Locomotive
     
     public boolean isCustomFunctions()
     {
-        return this.customFunctions;
+        return this.customFunctions || !this.getLocalFunctionImageURLs().isEmpty();
     }
     
     /**
