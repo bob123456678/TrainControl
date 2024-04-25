@@ -214,7 +214,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.0 [Beta]
+* v2.1.0 [4/24/24]
     - Added a Timetable feature as a new type of autonomous operation mode
         - Locomotive commands in semi-autonomous or fully-autonomous mode can be captured on demand to create a timetable
         - Paths in the timetable can be replayed sequentally, with progress saved between runs
@@ -229,7 +229,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Added a backup button to the Tools tab to backup all TrainControl state
     - Fixed possible race condition at UI startup
     - Improved UI/general performance in fully autonomous mode
-    - Backward-compatible changes
+    - Backward-incompatible changes:
         - LocDB.data files from versions older than 2.0.0 are no longer readable.  Convert them with v2.0.0+ first.
 
 * v2.0.17 [4/13/24]

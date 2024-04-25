@@ -49,7 +49,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.0 Beta 9 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.0 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -664,6 +664,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Saves initialized component database to a file
+     * @param backup
      */
     @Override
     public void saveState(boolean backup)
