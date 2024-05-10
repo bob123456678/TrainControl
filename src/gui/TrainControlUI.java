@@ -1834,9 +1834,52 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
+    /**
+     * Repaints a single switch on the keyboard
+     * @param address 
+     */
+    @Override
+    synchronized public void repaintSwitch(int address)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            int offset = this.getKeyboardOffset();
+            //System.out.println(offset);
+            //System.out.println(address);
+
+            if (offset + 1 <= address && offset + TrainControlUI.KEYBOARD_KEYS >= address)
+            {
+                //System.out.println("Updating key " + (address - offset) + " for accessory " + address);
+                JToggleButton key = this.switchMapping.get(address - offset);
+
+                if (this.model.getAccessoryState(address))
+                {
+                    key.setSelected(true);
+                    key.setBackground(COLOR_SWITCH_RED);        
+                }
+                else
+                {
+                    key.setSelected(false);
+                    key.setBackground(COLOR_SWITCH_GREEN);
+                }
+
+                // Underline when red
+                Font font = key.getFont();
+                Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+                attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
+                key.setFont(font.deriveFont(attributes));
+            }
+            else
+            {
+                //System.out.println("No need to update keyboard due to out of range.");
+            }
+        }));
+    }
+    
     @Override
     public void repaintSwitches()
     {
+        //System.out.println("Repainting all switches");
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
@@ -1859,10 +1902,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
 
                     // Underline when red
-                    Font font = this.switchMapping.get(i).getFont();
+                    Font font = key.getFont();
                     Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
                     attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
-                    this.switchMapping.get(i).setFont(font.deriveFont(attributes));
+                    key.setFont(font.deriveFont(attributes));
                 }
             }
         }));
@@ -6708,7 +6751,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(dataSourceLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(49, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Tools", ManageLocPanel);

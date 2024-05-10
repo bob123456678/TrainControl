@@ -49,7 +49,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.0 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.1 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1136,7 +1136,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.accDB.getById(id).parseMessage(message);
                 
-                if (this.view != null) this.view.repaintSwitches();
+                if (this.view != null) this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1); //this.view.repaintSwitches();
             }
         }
         else if (message.isFeedbackCommand())

@@ -15,6 +15,7 @@ public interface View
      * Regenerates a switch display
      */
     public void repaintSwitches();
+    public void repaintSwitch(int id);
     
     /**
      * Regenerates the layout display
