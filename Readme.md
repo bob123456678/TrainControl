@@ -214,6 +214,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.1.1 [5/10/24]
+    - UI performance optimizations
+
 * v2.1.0 [4/24/24]
     - Added a Timetable feature as a new type of autonomous operation mode
         - Locomotive commands in semi-autonomous or fully-autonomous mode can be captured on demand to create a timetable

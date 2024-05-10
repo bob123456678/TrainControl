@@ -1844,12 +1844,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
-            //System.out.println(offset);
-            //System.out.println(address);
 
             if (offset + 1 <= address && offset + TrainControlUI.KEYBOARD_KEYS >= address)
             {
-                //System.out.println("Updating key " + (address - offset) + " for accessory " + address);
                 JToggleButton key = this.switchMapping.get(address - offset);
 
                 if (this.model.getAccessoryState(address))
@@ -1869,17 +1866,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
                 key.setFont(font.deriveFont(attributes));
             }
-            else
-            {
-                //System.out.println("No need to update keyboard due to out of range.");
-            }
         }));
     }
     
     @Override
     public void repaintSwitches()
     {
-        //System.out.println("Repainting all switches");
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
@@ -2075,12 +2067,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             if (!f.isDone()) 
             {
-                // this.model.log("Loc refresh in progress");
                 return;
             }
         }
 
-        // this.model.log("Refreshing auto UI");
         this.locFutures.clear();
 
         this.locFutures.add(
