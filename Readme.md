@@ -214,7 +214,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.1 [5/10/24]
+* v2.1.1 [Beta]
     - UI performance optimizations
 
 * v2.1.0 [4/24/24]
