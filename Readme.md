@@ -215,6 +215,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.1.1 [Beta]
+    - Fixed bug where speed would not be reset in the UI after changing a locomitive's direction via the Central Station
     - UI performance optimizations
     - Improved logging performance
 

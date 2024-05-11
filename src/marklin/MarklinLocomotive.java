@@ -448,10 +448,22 @@ public class MarklinLocomotive extends Locomotive
                                 
                 if (direction == 1)
                 {
+                    // Reset speed if direction changed
+                    if (this.getDirection() == locDirection.DIR_BACKWARD)
+                    {
+                        this._setSpeed(0);
+                    }
+                    
                     this._setDirection(locDirection.DIR_FORWARD);
                 }
                 else if (direction == 2)
                 {
+                    // Reset speed if direction changed
+                    if (this.getDirection() == locDirection.DIR_FORWARD)
+                    {
+                        this._setSpeed(0);
+                    }
+                    
                     this._setDirection(locDirection.DIR_BACKWARD);
                 }
                 
