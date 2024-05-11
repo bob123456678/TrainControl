@@ -1321,10 +1321,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         {
                             model.log("Error sending ping: " + e.getMessage());
 
-                            if (model.isDebug())
-                            {
-                                e.printStackTrace();
-                            }
+                            model.log(e);
                         }
                     }));
                 }
@@ -1410,10 +1407,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     this.model.log("Critical error while initializing demo layout: " + e.getMessage());
 
-                    if (this.model.isDebug())
-                    {
-                        e.printStackTrace();
-                    }
+                    this.model.log(e);
                 }
                 
                 this.initNewLayoutButton.setEnabled(true);      
@@ -2038,10 +2032,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                         this.model.log("Failed to load image " + l.getImageURL());
                         
-                        if (this.model.isDebug())
-                        {
-                            e.printStackTrace();
-                        }
+                        this.model.log(e);
                     }
                 }
                 else
@@ -8734,10 +8725,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
+            this.model.log(e);
             
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
@@ -9242,10 +9230,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
         
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
+            this.model.log(e);
         }
         
         return true;
@@ -9668,10 +9653,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 catch (Exception e)
                 {
-                    if (this.model.isDebug())
-                    {
-                        e.printStackTrace();
-                    }
+                    this.model.log(e);
                 }
             }
             
@@ -9965,10 +9947,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     JOptionPane.showMessageDialog(this, "Error opening file.");
 
-                    if (this.model.isDebug())
-                    {
-                        e.printStackTrace();
-                    }
+                    this.model.log(e);
                 }
 
                 this.loadJSONButton.setEnabled(true);
@@ -9995,11 +9974,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             catch (Exception e)
             {
-                if (this.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
-
+                this.model.log(e);
+                
                 this.model.log("JSON error: " + e.getMessage());
 
                 JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
@@ -10078,10 +10054,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.model.log("Error during demo layout extraction.");
             
-            if (this.model.isDebug())
-            {
-                ex.printStackTrace();
-            }
+            this.model.log(ex);
         }
         
         return null;
@@ -10123,8 +10096,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         Path targetDir = Paths.get(folderName);
 
         //Open the file
-        try (ZipFile zip = new ZipFile(filePathToUnzip.toFile())) {
-
+        try (ZipFile zip = new ZipFile(filePathToUnzip.toFile()))
+        {
           FileSystem fileSystem = FileSystems.getDefault();
           Enumeration<? extends ZipEntry> entries = zip.entries();
 
@@ -10163,24 +10136,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
               }
               catch (Exception e)
               {
-                  this.model.log(e.getMessage());
-                  
-                  if (this.model.isDebug())
-                  {
-                      e.printStackTrace();
-                  }
+                this.model.log(e);
               }
             }
           }
         } 
         catch (IOException e)
         {
-            this.model.log(e.getMessage());
-            
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
+            this.model.log(e);
         }
     }
     
@@ -10301,10 +10264,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 this.model.log("Layout editing error: " + ex.getMessage());
                 
-                if (this.model.isDebug())
-                {
-                    ex.printStackTrace();
-                }
+                this.model.log(ex);
             }
             
             this.editLayoutButton.setEnabled(true);
@@ -10390,12 +10350,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             catch (Exception e)
             {
-                if (this.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
-
                 this.model.log("JSON error: " + e.getMessage());
+                this.model.log(e);
 
                 JOptionPane.showMessageDialog(this, "Failed to generate/export route JSON.  Check log for details.");
             }
@@ -10433,10 +10389,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             this.model.log("Route import error: " + e.getMessage());
 
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
+            this.model.log(e);
         }
         
         this.importRoutes.setEnabled(true);
@@ -10691,11 +10644,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
-            
+            this.model.log(e);
+
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }    
     }
@@ -10725,11 +10675,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         catch (Exception e)
         {
-            if (this.model.isDebug())
-            {
-                e.printStackTrace();
-            }
-            
+            this.model.log(e);
+
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
     }

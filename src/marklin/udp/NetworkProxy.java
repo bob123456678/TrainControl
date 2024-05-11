@@ -151,9 +151,8 @@ public class NetworkProxy
             catch (IOException e)
             {
                 // Do not exit on error, simply close the socket connection
-                model.log("Network error");
-                model.log(e.getMessage());
-                e.printStackTrace();
+                model.log("Fatal network error");
+                model.log(e);
             }
             finally
             {

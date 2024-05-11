@@ -92,11 +92,8 @@ public final class CS2File
         {
             this.control.log("URL encoding error: " + ex.getMessage());
             
-            if (this.control.isDebug())
-            {
-                ex.printStackTrace();
-            }
-            
+            this.control.log(ex);
+ 
             return URL.replace(" ", "%20");
         }
     }

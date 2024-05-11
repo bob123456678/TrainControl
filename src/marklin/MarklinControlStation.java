@@ -30,6 +30,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive.decoderType;
 import marklin.file.CS2File;
@@ -467,11 +468,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.log("Error loading user preferences; try re-running as admin.");
                 
-                if (debug)
-                {
-                    this.log(e.getMessage());
-                    e.printStackTrace();
-                }
+                this.log(e);
             }
                 
             if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
@@ -493,11 +490,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (Exception e)
                 {
-                    if (debug)
-                    {
-                       this.log(e.getMessage());
-                       e.printStackTrace();
-                    }
+                    this.log(e);
                            
                     this.log("Error, reverting to default layout load." + (!debug ? " Enable debug mode for details." : ""));
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -627,12 +620,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         catch (Exception e)
         {
              this.log("Failed to sync locomotive DB.");
-             
-             if (debug)
-             {
-                this.log(e.getMessage());
-                e.printStackTrace();
-             }
+             this.log(e);
              
              return -1;
         }
@@ -1314,6 +1302,28 @@ public class MarklinControlStation implements ViewListener, ModelListener
             log.info(message);
 
             this.lastMessage = message;
+        }
+    }
+    
+    /**
+     * Logs an exception
+     * @param e 
+     */
+    @Override
+    public final void log(Exception e)
+    {
+        if (this.view != null)
+        {
+            this.view.log(e.getMessage());    
+        }
+
+        log.warning(e.getClass().getName() + " " + e.getMessage());
+        
+        if (debug)
+        {
+            log.warning(String.join("\n", Arrays.stream(e.getStackTrace())
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.toList())));     
         }
     }
             
@@ -2001,7 +2011,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (IOException ex)
                 {
                     model.log("Error initializing UI");
-                    ex.printStackTrace();
+                    model.log(ex);
                 }                
             }));
 

@@ -39,6 +39,7 @@ public interface ViewListener
     public void locFunctionsOff(MarklinLocomotive l);
     public void lightsOn(List<String> locomotives);
     public void log(String s);
+    public void log(Exception e);
     public void stopAllLocs();
     public int syncWithCS2();
     public List<String> getLayoutList();

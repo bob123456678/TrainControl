@@ -371,10 +371,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             {
                 JOptionPane.showMessageDialog(this, "Error writing file.");
 
-                if (this.tcui.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
+                this.tcui.getModel().log(e);
             }
             
             this.exportData.setEnabled(true);

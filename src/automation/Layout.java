@@ -1549,10 +1549,7 @@ public class Layout
                                 this.stopLocomotives();
                             }
 
-                            if (this.control.isDebug())
-                            {
-                                e.printStackTrace();
-                            }
+                            control.log(e);
                         }
                         
                         // When we are done, exit in this thread to avoid disrupting the final path
@@ -2589,10 +2586,7 @@ public class Layout
             } 
             catch (Exception ex)
             {
-                if (control.isDebug())
-                {
-                    ex.printStackTrace();
-                }
+                control.log(ex);
                 
                 control.log("Auto layout error: Point error for " + point.toString() + " (" + ex.getMessage() + ")");
                 layout.invalidate();
