@@ -54,7 +54,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.1 Beta 2 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.1 Beta 3 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -1110,7 +1110,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         numMessagesProcessed +=1;
         
         // Send the message to the appropriate listener
-        if (message.isLocCommand())
+        if (message.isLocCommand() && message.getResponse())
         {               
             Integer id = message.extractUID();
             
@@ -1121,7 +1121,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // to the network, however, so remove this check when offline
             if (locs != null)
             {
-                if (!locs.isEmpty() && message.getResponse())
+                if (!locs.isEmpty())
                 {
                     List<Locomotive> locList = new ArrayList<>();
                     
@@ -1131,15 +1131,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         ((MarklinLocomotive) locList.get(locList.size() - 1)).parseMessage(message);
                     }
 
-                    if (message.getResponse())
+                    new Thread(() ->
                     {
-                        new Thread(() ->
-                        {
-                            if (this.view != null) this.view.repaintLoc(false, locList);
-                        }).start();
-                    }
+                        if (this.view != null) this.view.repaintLoc(false, locList);
+                    }).start();                    
                 }
-                else if (locs.isEmpty())
+                else
                 {
                     this.log("Unknown locomotive received command: " 
                         + MarklinLocomotive.addressFromUID(id));
@@ -1257,16 +1254,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.log("Network transmission disabled\n" + m.toString());
             }
-        }    
-        
-        // This is not necessary
-        /*try
-        {
-            Thread.sleep(SLEEP_INTERVAL);
-        } catch (InterruptedException ex)
-        {
-            
-        }*/
+        }
     }
         
     /**
