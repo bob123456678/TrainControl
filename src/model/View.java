@@ -1,5 +1,8 @@
 package model;
 
+import base.Locomotive;
+import java.util.List;
+
 /**
  * Interface for a generic train control GUI
  * @author Adam
@@ -10,7 +13,8 @@ public interface View
      * Regenerates locomotive display after a change occurred
      */
     public void repaintLoc();
-    
+    public void repaintLoc(boolean force, List<Locomotive> locs);
+
     /**
      * Regenerates a switch display
      */

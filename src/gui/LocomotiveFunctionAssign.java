@@ -320,7 +320,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         this.applyCustomFunctionIcon();
         
         loc.setFunctionType(getFNo(), getFIcon(), fTriggerType);
-        parent.repaintLoc(true);
+        parent.repaintLoc(true, null);
             
         this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());
     }//GEN-LAST:event_applyButtonActionPerformed
@@ -342,7 +342,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                     this.loc.setCustomFunctions(false);
                     this.loc.unsetLocalFunctionImageURLs();  
                     this.parent.getModel().syncWithCS2();
-                    this.parent.repaintLoc(true);
+                    this.parent.repaintLoc(true, null);
                     this.customIconPath = null;
 
                     updateFNumber(this.fNo.getSelectedIndex()); 
@@ -420,7 +420,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             
             this.useCustomFunctionIcon.setEnabled(true);
             this.deleteCustomIcon.setEnabled(true);
-            parent.repaintLoc(true);
+            parent.repaintLoc(true, null);
 
         }).start();
     }//GEN-LAST:event_useCustomFunctionIconActionPerformed
@@ -478,7 +478,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 + loc.getName() + " function " 
                 + this.getFNo() + ": " + this.loc.getLocalFunctionImageURL(this.getFNo())));
                                     
-            this.parent.repaintLoc(true);
+            this.parent.repaintLoc(true, null);
         }
         
         this.customIconPath = null;

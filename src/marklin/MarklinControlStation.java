@@ -2,6 +2,7 @@ package marklin;
 
 import automation.Layout;
 import base.Accessory;
+import base.Locomotive;
 import base.RemoteDeviceCollection;
 import base.RouteCommand;
 import gui.TrainControlUI;
@@ -25,7 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.prefs.Preferences;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import marklin.MarklinLocomotive.decoderType;
 import marklin.file.CS2File;
@@ -49,7 +53,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.1 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.1 Beta 2 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -120,16 +124,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Ping metrics
     private long pingStart;
     private double lastLatency;
+    
+    private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
-    {        
+    {       
+        // Configure logger
+        log.setUseParentHandlers(false);
+
+        ConsoleHandler consoleHandler = new ConsoleHandler()
+        {
+            {
+                setOutputStream(System.out); // Set output stream to System.out
+            }
+        };
+        
+        consoleHandler.setFormatter(new Formatter()
+        {
+            @Override
+            public String format(LogRecord record)
+            {
+                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()), record.getMessage());
+            }
+        });
+        
+        log.addHandler(consoleHandler);
+        
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
         this.accDB = new RemoteDeviceCollection<>();
         this.feedbackDB = new RemoteDeviceCollection<>();
         this.routeDB = new RemoteDeviceCollection<>();
         this.layoutDB = new RemoteDeviceCollection<>();
-        
+                
         // Set references
         this.on = false;
         this.NetworkInterface = network;
@@ -190,7 +217,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.log("Network connection not established");
         }   
     }
-    
+        
     /**
      * Returns the URL to the CS3 web app
      * @return
@@ -1108,16 +1135,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (!locs.isEmpty() && message.getResponse())
                 {
+                    List<Locomotive> locList = new ArrayList<>();
+                    
                     for (String l : locs)
                     {
-                        this.locDB.getById(l).parseMessage(message);
+                        locList.add(this.locDB.getById(l));
+                        ((MarklinLocomotive) locList.get(locList.size() - 1)).parseMessage(message);
                     }
 
                     if (message.getResponse())
                     {
                         new Thread(() ->
                         {
-                            if (this.view != null) this.view.repaintLoc();
+                            if (this.view != null) this.view.repaintLoc(false, locList);
                         }).start();
                     }
                 }
@@ -1281,26 +1311,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.view.log(message);    
             }
             
-            System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()) + " " + message);
+            log.info(message);
+
             this.lastMessage = message;
         }
     }
-    
-    /**
-     * Logs a message
-     * @param message 
-     */
-    public final void logPartial(String message)
-    {
-        // TODO - write to file, suppress, etc.
-        if (this.view != null)
-        {
-            this.view.log(message);    
-        }
-        
-        System.out.print(message);   
-    }
-        
+            
     /**
      * Pings the Central Station so that we can discover its UID
      * @param force - send the ping even if no response previously?

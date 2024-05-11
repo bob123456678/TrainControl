@@ -950,7 +950,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     @Override
     public void log(String message)
     {
-        this.debugArea.insert(message + "\n", 0);
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            this.debugArea.insert(message + "\n", 0);
+        }));
     }             
     
     public int getKeyboardOffset()
@@ -1016,7 +1019,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
         
         this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
-        this.repaintLoc(true);
+        this.repaintLoc(true, null);
     }
     
     /**
@@ -1676,7 +1679,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
                 this.model.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
-                repaintLoc(true);
+                repaintLoc(true, null);
                 this.repaintLayout();
                 this.repaintMappings(l);
             }));
@@ -2057,10 +2060,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     @Override
     public void repaintLoc()
     {
-        repaintLoc(false);
+        repaintLoc(false, null);
     }
-    
-    synchronized public void repaintLoc(boolean force)
+        
+    @Override
+    synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
     {     
         // Prevent concurrent calls
         for (Future<?> f : this.locFutures)
@@ -2079,163 +2083,165 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     if (this.activeLoc != null)
-                    {            
-                        String name = this.activeLoc.getName();
-
-                        if (name.length() > MAX_LOC_NAME)
+                    {           
+                        // Only update if the active locomotive matches the event
+                        if (updatedLocs == null || updatedLocs.contains(activeLoc))
                         {
-                            name = name.substring(0, MAX_LOC_NAME);
-                        }
+                            String name = this.activeLoc.getName();
 
-                        // Pre-compute this so we can check if it has changed
-                        // "Page " + this.currentButtonlocMappingNumber + " Button "
-                        String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
-                            + this.currentButton.getText()
-                            + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
-                            + ")";
-
-                        // Only repaint icon if the locomotive is changed
-                        // Visual stuff
-                        if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
-                        {
-                            // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
-                            repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
-
-                            ImageLoader.submit(new Thread(() -> 
+                            if (name.length() > MAX_LOC_NAME)
                             {
-                                if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                                name = name.substring(0, MAX_LOC_NAME);
+                            }
+
+                            // Pre-compute this so we can check if it has changed
+                            // "Page " + this.currentButtonlocMappingNumber + " Button "
+                            String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
+                                + this.currentButton.getText()
+                                + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
+                                + ")";
+
+                            // Only repaint icon if the locomotive is changed
+                            // Visual stuff
+                            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
+                            {
+                                // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
+                                repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
+
+                                ImageLoader.submit(new Thread(() -> 
                                 {
-                                    try 
+                                    if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
-                                        locIcon.setIcon(new javax.swing.ImageIcon(
-                                            getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                            // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                                        ));      
-                                        locIcon.setText("");
-                                        locIcon.setVisible(true);
+                                        try 
+                                        {
+                                            locIcon.setIcon(new javax.swing.ImageIcon(
+                                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
+                                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
+                                            ));      
+                                            locIcon.setText("");
+                                            locIcon.setVisible(true);
+                                        }
+                                        catch (IOException e)
+                                        {
+                                            locIcon.setIcon(null);
+                                            locIcon.setVisible(false);
+                                        }
                                     }
-                                    catch (IOException e)
+                                    else
                                     {
                                         locIcon.setIcon(null);
                                         locIcon.setVisible(false);
                                     }
-                                }
-                                else
+
+                                }));
+
+                                this.ActiveLocLabel.setText(name);
+
+                                this.CurrentKeyLabel.setText(locLabel);
+
+                                for (int i = 0; i < this.activeLoc.getNumF(); i++)
                                 {
-                                    locIcon.setIcon(null);
-                                    locIcon.setVisible(false);
-                                }
+                                    final JToggleButton bt = this.rFunctionMapping.get(i);
+                                    final int functionType = this.activeLoc.getFunctionType(i);
 
-                            }));
+                                    bt.setVisible(true);
+                                    bt.setEnabled(true);
 
-                            this.ActiveLocLabel.setText(name);
+                                    String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, false, true);
 
-                            this.CurrentKeyLabel.setText(locLabel);
+                                    final boolean hasCustom = this.activeLoc.getLocalFunctionImageURL(i) != null;
 
-                            for (int i = 0; i < this.activeLoc.getNumF(); i++)
-                            {
-                                final JToggleButton bt = this.rFunctionMapping.get(i);
-                                final int functionType = this.activeLoc.getFunctionType(i);
+                                    bt.setHorizontalTextPosition(JButton.CENTER);
+                                    bt.setVerticalTextPosition(JButton.CENTER);
 
-                                bt.setVisible(true);
-                                bt.setEnabled(true);
-
-                                String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, false, true);
-                                
-                                final boolean hasCustom = this.activeLoc.getLocalFunctionImageURL(i) != null;
-
-                                bt.setHorizontalTextPosition(JButton.CENTER);
-                                bt.setVerticalTextPosition(JButton.CENTER);
-
-                                ImageLoader.submit(new Thread(() -> 
-                                {
-                                    try
+                                    ImageLoader.submit(new Thread(() -> 
                                     {
-                                        if ((hasCustom || functionType > 0) && LOAD_IMAGES)
+                                        try
                                         {
-                                            Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
-
-                                            if (icon != null)
+                                            if ((hasCustom || functionType > 0) && LOAD_IMAGES)
                                             {
-                                                bt.setIcon(
-                                                    new javax.swing.ImageIcon(
-                                                        icon
-                                                    )
-                                                );
+                                                Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
 
-                                                bt.setText("");                                    
+                                                if (icon != null)
+                                                {
+                                                    bt.setIcon(
+                                                        new javax.swing.ImageIcon(
+                                                            icon
+                                                        )
+                                                    );
+
+                                                    bt.setText("");                                    
+                                                }
+                                                else
+                                                {
+                                                    //bt.setText("F" + Integer.toString(fNo));
+                                                }
                                             }
                                             else
                                             {
+                                                bt.setIcon(null);
+                                                bt.setText("");                                    
                                                 //bt.setText("F" + Integer.toString(fNo));
                                             }
                                         }
-                                        else
+                                        catch (IOException e)
                                         {
-                                            bt.setIcon(null);
-                                            bt.setText("");                                    
+                                            this.model.log("Icon not found: " + targetURL);
                                             //bt.setText("F" + Integer.toString(fNo));
-                                        }
-                                    }
-                                    catch (IOException e)
-                                    {
-                                        this.model.log("Icon not found: " + targetURL);
-                                        //bt.setText("F" + Integer.toString(fNo));
-                                    } 
-                                }));         
+                                        } 
+                                    }));         
+                                }
+
+                                for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
+                                {
+                                    this.rFunctionMapping.get(i).setVisible(true);
+                                    this.rFunctionMapping.get(i).setEnabled(false);
+
+                                    //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
+                                    this.rFunctionMapping.get(i).setText("");                                    
+                                    this.rFunctionMapping.get(i).setIcon(null);
+                                }
+
+                                // Hide unnecessary function tabs
+                                if (this.activeLoc.getNumF() < 20)
+                                {
+                                    FunctionTabs.remove(this.F20AndUpPanel);
+                                }
+                                else
+                                {
+                                    FunctionTabs.add("F20-F31", this.F20AndUpPanel);
+                                }
+
+                                this.Backward.setVisible(true);
+                                this.Forward.setVisible(true);
+                                this.SpeedSlider.setVisible(true);
+                                this.FunctionTabs.setVisible(true);
+                            }
+
+                            // Loc state
+                            if (this.activeLoc.goingForward())
+                            {
+                                this.Forward.setSelected(true);
+                                this.Backward.setSelected(false);
+                            }
+                            else
+                            {
+                                this.Backward.setSelected(true);
+                                this.Forward.setSelected(false);
+                            }
+
+                            for (int i = 0; i < this.activeLoc.getNumF(); i++)
+                            {
+                                this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
                             }
 
                             for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
                             {
-                                this.rFunctionMapping.get(i).setVisible(true);
-                                this.rFunctionMapping.get(i).setEnabled(false);
-
-                                //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
-                                this.rFunctionMapping.get(i).setText("");                                    
-                                this.rFunctionMapping.get(i).setIcon(null);
+                                this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
                             }
 
-                            // Hide unnecessary function tabs
-                            if (this.activeLoc.getNumF() < 20)
-                            {
-                                FunctionTabs.remove(this.F20AndUpPanel);
-                            }
-                            else
-                            {
-                                FunctionTabs.add("F20-F31", this.F20AndUpPanel);
-                            }
-
-                            this.Backward.setVisible(true);
-                            this.Forward.setVisible(true);
-                            this.SpeedSlider.setVisible(true);
-                            this.FunctionTabs.setVisible(true);
+                            this.SpeedSlider.setValue(this.activeLoc.getSpeed()); 
                         }
-
-                        // Loc state
-                        if (this.activeLoc.goingForward())
-                        {
-                            this.Forward.setSelected(true);
-                            this.Backward.setSelected(false);
-                        }
-                        else
-                        {
-                            this.Backward.setSelected(true);
-                            this.Forward.setSelected(false);
-                        }
-
-                        for (int i = 0; i < this.activeLoc.getNumF(); i++)
-                        {
-                            this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-                        }
-
-                        for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
-                        {
-                            this.rFunctionMapping.get(i).setSelected(this.activeLoc.getF(i));
-                        }
-
-                        this.SpeedSlider.setValue(this.activeLoc.getSpeed());  
-
-                        this.repaintMappings();
                     }
                     else
                     {
@@ -2257,6 +2263,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         {
                             this.rFunctionMapping.get(i).setVisible(false);
                         }
+                    }
+                    
+                    // Repaint mappings only if the updated locomotive is currently visible
+                    if (updatedLocs == null || currentLocMapping().values().stream().anyMatch(updatedLocs::contains))
+                    {
+                        this.repaintMappings();
                     }
                 }));
             }))
@@ -8564,7 +8576,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             Integer r = this.model.syncWithCS2();
             refreshRouteList();
             this.selector.refreshLocSelectorList();
-            this.repaintLoc(true);
+            this.repaintLoc(true, null);
             this.repaintLayout();
 
             if ("-1".equals(r.toString()))
@@ -8715,7 +8727,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                     {
                         this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
-                        this.repaintLoc(true);
+                        this.repaintLoc(true, null);
                     }
                 }
             }
@@ -10479,7 +10491,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (this.model != null)
             {
                 this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
-                this.repaintLoc(true);
+                this.repaintLoc(true, null);
             }
         }
     }//GEN-LAST:event_keyboardTypeItemStateChanged
@@ -10772,7 +10784,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             l.setLocalImageURL(null);
             this.model.syncWithCS2();
-            this.repaintLoc(true);
+            this.repaintLoc(true, null);
             this.repaintMappings(l);
             this.selector.refreshLocSelectorList();
         }));
@@ -10819,7 +10831,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 l.setLocalImageURL(Paths.get(f.getAbsolutePath()).toUri().toString());
                 prefs.put(LAST_USED_ICON_FOLDER, f.getParent());
 
-                this.repaintLoc(true);
+                this.repaintLoc(true, null);
                 this.repaintMappings(l);
                 this.selector.refreshLocSelectorList();
                 // TODO - clear icon setting if load failed
