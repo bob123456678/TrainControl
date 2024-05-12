@@ -214,10 +214,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.1 [Beta]
-    - Fixed bug where speed would not be reset in the UI after changing a locomitive's direction via the Central Station
-    - UI performance optimizations
-    - Improved logging performance
+* v2.1.1 [5/12/24]
+    - Fixed bug where the speed would not be reset in the UI after changing a locomotive's direction via the Central Station
+    - Performance improvemens aimed at improving the reliability of autonomous operation when using slower PCs
+        - UI performance optimizations
+        - Improved logging performance
 
 * v2.1.0 [4/24/24]
     - Added a Timetable feature as a new type of autonomous operation mode
