@@ -258,7 +258,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Cache timetable state to minimize repaining
     private int lastTimetableState = 0;
-    
+        
     /**
      * Creates new form MarklinUI
      */
@@ -1675,7 +1675,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 this.repaintLayout();
-                this.repaintMappings(l);
+                this.repaintMappings(Collections.singletonList(l), true);
             }));
         }   
     }
@@ -1750,21 +1750,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     private synchronized void repaintMappings()
     {
-        repaintMappings(null);
+        repaintMappings(null, false);
     }
     
     /**
      * Repaints the locomotive keyboard
      * @param forceUpdateLoc 
      */
-    private synchronized void repaintMappings(Locomotive forceUpdateLoc)
+    private synchronized void repaintMappings(List<Locomotive> forceUpdateLoc, boolean updateIcon)
     {         
         this.MappingRenderer.submit(new Thread(() -> 
         { 
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
+            {                
+                Set<JButton> update;
+                
+                if (forceUpdateLoc == null)
+                {   
+                    update = this.labelMapping.keySet();
+                }
+                else
+                {
+                    update = this.currentLocMapping(forceUpdateLoc).keySet();
+                }
+                
                 // Only repaint a button if the locomotive has changed
-                for(JButton b : this.labelMapping.keySet())
+                for(JButton b : update)
                 {
                     // Grey out if the active page corresponds to the active loc
                     if (b.equals(this.currentButton) 
@@ -1790,7 +1801,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             name = name.substring(0,9);
                         }
 
-                        if (!this.labelMapping.get(b).getText().equals(name) || l.equals(forceUpdateLoc))
+                        if (!this.labelMapping.get(b).getText().equals(name) || updateIcon) 
                         {
                             this.labelMapping.get(b).setText(name); 
                             this.labelMapping.get(b).setCaretPosition(0);
@@ -1811,7 +1822,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         this.sliderMapping.get(b).setValue(0);
                         this.sliderMapping.get(b).setEnabled(false);   
                     }
-                }    
+                }
             }));
         }));
     }
@@ -2259,7 +2270,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     // Repaint mappings only if the updated locomotive is currently visible
                     if (updatedLocs == null || currentLocMapping().values().stream().anyMatch(updatedLocs::contains))
                     {
-                        this.repaintMappings();
+                        this.repaintMappings(updatedLocs, false);
                     }
                 }));
             }))
@@ -2279,6 +2290,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private Map<JButton, Locomotive> currentLocMapping()
     {
         return this.locMapping.get(this.locMappingNumber - 1);
+    }
+    
+    /**
+     * Same as currentLocMapping, but filters on the locomotives in the passed array
+     * @param l
+     * @return 
+     */
+    private Map<JButton, Locomotive> currentLocMapping(List<Locomotive> l)
+    {
+        Map<JButton, Locomotive> result = new HashMap<>();
+        
+        for (Map.Entry<JButton, Locomotive> entry : this.currentLocMapping().entrySet())
+        {
+            if (l.contains(entry.getValue()))
+            {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        
+        return result;
     }
     
     private void displayCurrentButtonLoc(javax.swing.JButton b)
@@ -10732,7 +10763,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             l.setLocalImageURL(null);
             this.model.syncWithCS2();
             this.repaintLoc(true, null);
-            this.repaintMappings(l);
+            this.repaintMappings(Collections.singletonList(l), true);
             this.selector.refreshLocSelectorList();
         }));
     }
@@ -10779,7 +10810,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 prefs.put(LAST_USED_ICON_FOLDER, f.getParent());
 
                 this.repaintLoc(true, null);
-                this.repaintMappings(l);
+                this.repaintMappings(Collections.singletonList(l), true);
                 this.selector.refreshLocSelectorList();
                 // TODO - clear icon setting if load failed
             } 
