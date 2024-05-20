@@ -214,8 +214,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.2 [Beta]
-    - Improved UI performance when adjusting locomotive speed
+* v2.1.2 [5/20/24]
+    - Improved UI performance when adjusting locomotive speeds
 
 * v2.1.1 [5/12/24]
     - Fixed bug where the speed would not be reset in the UI after changing a locomotive's direction via the Central Station

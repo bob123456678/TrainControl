@@ -1092,12 +1092,20 @@
             "length": 4,
             "commands": [
                 {
+                    "acc": "Switch 58",
+                    "state": "straight"
+                },
+                {
                     "acc": "Switch 99",
                     "state": "straight"
                 },
                 {
                     "acc": "Switch 51",
                     "state": "straight"
+                },
+                {
+                    "acc": "Signal 61",
+                    "state": "red"
                 },
                 {
                     "acc": "Signal 62",
