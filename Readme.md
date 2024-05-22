@@ -214,8 +214,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.3 [Beta]
-    - Improve CAN message processing performance, aimed at improving the reliability of autonomous operation when using slower PCs
+* v2.1.3 [5/21/24]
+    - Improved CAN message processing performance, aimed at improving the reliability of autonomous operation when using slower PCs
 
 * v2.1.2 [5/20/24]
     - Improved UI performance when adjusting locomotive speeds
