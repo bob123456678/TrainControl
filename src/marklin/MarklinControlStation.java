@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -54,7 +56,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.2 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.3 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -125,7 +127,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Ping metrics
     private long pingStart;
     private double lastLatency;
-    
+
+    // Thread pool for network messages
+    private ExecutorService messageProcessor = Executors.newFixedThreadPool(1);
+
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
@@ -1099,134 +1104,150 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param message
      */
     @Override
-    synchronized public void receiveMessage(CS2Message message)
+    public void receiveMessage(CS2Message message)
     {
-        // Prints out each message
-        if (this.debug && DEBUG_LOG_NETWORK)
+        this.messageProcessor.submit(new Thread(() ->
         {
-            this.log(message.toString());
-        }
-        
-        numMessagesProcessed +=1;
-        
-        // Send the message to the appropriate listener
-        if (message.isLocCommand() && message.getResponse())
-        {               
-            Integer id = message.extractUID();
-            
-            List<String> locs = this.locIdCache.get(id);
-
-            // Only worry about the message if it's a response
-            // This prevents the gui from being updated when not connected
-            // to the network, however, so remove this check when offline
-            if (locs != null)
+            // Prints out each message
+            if (this.debug && DEBUG_LOG_NETWORK)
             {
-                if (!locs.isEmpty())
-                {
-                    List<Locomotive> locList = new ArrayList<>();
-                    
-                    for (String l : locs)
-                    {
-                        locList.add(this.locDB.getById(l));
-                        ((MarklinLocomotive) locList.get(locList.size() - 1)).parseMessage(message);
-                    }
+                this.log(message.toString());
+            }
 
-                    new Thread(() ->
+            numMessagesProcessed +=1;
+
+            // Send the message to the appropriate listener
+            if (message.isLocCommand() && message.getResponse())
+            {               
+                Integer id = message.extractUID();
+
+                List<String> locs = this.locIdCache.get(id);
+
+                // Only worry about the message if it's a response
+                // This prevents the gui from being updated when not connected
+                // to the network, however, so remove this check when offline
+                if (locs != null)
+                {
+                    if (!locs.isEmpty())
                     {
-                        if (this.view != null) this.view.repaintLoc(false, locList);
-                    }).start();                    
+                        List<Locomotive> locList = new ArrayList<>();
+
+                        for (String l : locs)
+                        {
+                            locList.add(this.locDB.getById(l));
+                            ((MarklinLocomotive) locList.get(locList.size() - 1)).parseMessage(message);
+                        }
+
+                        if (this.view != null)
+                        {
+                            new Thread(() ->
+                            {
+                                 this.view.repaintLoc(false, locList);
+                            }).start();    
+                        }
+                    }
+                    else
+                    {
+                        this.log("Unknown locomotive received command: " 
+                            + MarklinLocomotive.addressFromUID(id));
+                    }
+                }
+            }
+            else if (message.isAccessoryCommand())
+            {
+                int id = message.extractUID();
+
+                if (this.accDB.hasId(id) && message.getResponse())
+                {
+                    this.accDB.getById(id).parseMessage(message);
+
+                    if (this.view != null)
+                    {
+                        new Thread(() -> 
+                        {
+                            this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1);
+                            //this.view.repaintSwitches();
+                        }).start();
+                    } 
+                }
+            }
+            else if (message.isFeedbackCommand())
+            {
+                int id = message.extractShortUID();
+
+                if (this.feedbackDB.hasId(id))
+                {
+                    this.feedbackDB.getById(id).parseMessage(message);
                 }
                 else
                 {
-                    this.log("Unknown locomotive received command: " 
-                        + MarklinLocomotive.addressFromUID(id));
+                    newFeedback(id, message);   
                 }
             }
-        }
-        else if (message.isAccessoryCommand())
-        {
-            int id = message.extractUID();
+            else if (message.isSysCommand())
+            {
+                if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
+                {
+                    this.powerState = true;
 
-            if (this.accDB.hasId(id) && message.getResponse())
-            {
-                this.accDB.getById(id).parseMessage(message);
-                
-                if (this.view != null) this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1); //this.view.repaintSwitches();
-            }
-        }
-        else if (message.isFeedbackCommand())
-        {
-            int id = message.extractShortUID();
-            
-            if (this.feedbackDB.hasId(id))
-            {
-                this.feedbackDB.getById(id).parseMessage(message);
-            }
-            else
-            {
-                newFeedback(id, message);   
-            }
-        }
-        else if (message.isSysCommand())
-        {
-            if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
-            {
-                this.powerState = true;
-                
-                // For correctly tracking locomotive stats
-                for (MarklinLocomotive l : this.locDB.getItems())
-                {
-                    l.notifyOfPowerStateChange(true);
+                    // For correctly tracking locomotive stats
+                    for (MarklinLocomotive l : this.locDB.getItems())
+                    {
+                        l.notifyOfPowerStateChange(true);
+                    }
+
+                    if (this.view != null) this.view.updatePowerState();
+                    this.log("Power On");
                 }
-                
-                if (this.view != null) this.view.updatePowerState();
-                this.log("Power On");
-            }
-            else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
-            {
-                this.powerState = false;
-                
-                // For correctly tracking locomotive stats
-                for (MarklinLocomotive l : this.locDB.getItems())
+                else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
                 {
-                    l.notifyOfPowerStateChange(false);   
-                }
-                
-                if (this.view != null) this.view.updatePowerState();
-                this.log("Power Off");
-            }
-        }
-        else if (message.isPingCommand())
-        {
-            // Track latency
-            if (this.pingStart > 0 && message.getResponse())
-            {
-                this.lastLatency = ((double) (System.nanoTime() - this.pingStart)) / 1000000.0;
-                this.pingStart = 0;
-                
-                if (this.view != null)
-                {
-                    this.view.updateLatency(this.lastLatency);
+                    this.powerState = false;
+
+                    // For correctly tracking locomotive stats
+                    for (MarklinLocomotive l : this.locDB.getItems())
+                    {
+                        l.notifyOfPowerStateChange(false);   
+                    }
+
+                    if (this.view != null) this.view.updatePowerState();
+                    this.log("Power Off");
                 }
             }
-            
-            // Set the serial number if it is not already set
-            if (this.UID == 0 && message.getResponse() && message.getLength() == 8)
+            else if (message.isPingCommand())
             {
-                int payload = CS2Message.mergeBytes(
+                // Track latency
+                if (this.pingStart > 0 && message.getResponse())
+                {
+                    this.lastLatency = ((double) (System.nanoTime() - this.pingStart)) / 1000000.0;
+                    this.pingStart = 0;
+
+                    if (this.view != null)
+                    {
+                        new Thread(() -> 
+                        {
+                            this.view.updateLatency(this.lastLatency);
+                        }).start();
+                    }
+                }
+
+                // Set the serial number if it is not already set
+                if (this.UID == 0 && message.getResponse() && message.getLength() == 8)
+                {
+                    int payload = CS2Message.mergeBytes(
                         new byte[]{message.getData()[6], message.getData()[7]}
-                );
-                
-                // 0x0000 means this is the central station
-                if (payload == 0)
-                {
-                    this.UID = message.extractUID();
-                    this.serialNumber = (message.extractUID() - 0x43533200) / 2;
+                    );
 
-                    this.log("Connected to Central Station with serial number " + this.serialNumber);
+                    // 0x0000 means this is the central station
+                    if (payload == 0)
+                    {
+                        this.UID = message.extractUID();
+                        this.serialNumber = (message.extractUID() - 0x43533200) / 2;
+
+                        this.log("Connected to Central Station with serial number " + this.serialNumber);
+                    }
                 }
             }
-        }
+        }));
     }
         
     /**
