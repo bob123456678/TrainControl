@@ -129,9 +129,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private double lastLatency;
 
     // Thread pools for network messages
+    CS2Message lastPacket;
     private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
-    private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService accessoryMessageProcessor = Executors.newFixedThreadPool(1);
+    private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
     
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
@@ -1105,7 +1106,34 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void receiveMessage(CS2Message message)
     {
-        numMessagesProcessed +=1;
+        if (message == null) return;
+        
+        synchronized (this)
+        {
+            // CS3 seems to send respones packets twice.  Ignore the second.
+            if (lastPacket != null && 
+                    (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) && 
+                    message.equals(lastPacket)
+            )
+            {
+                if (this.debug && DEBUG_LOG_NETWORK)
+                {
+                    this.log("Skipping duplicate packet " + message.toString());
+                }
+                
+                return;
+            }
+        
+            numMessagesProcessed +=1;
+            
+            // Prints out each message
+            if (this.debug && DEBUG_LOG_NETWORK)
+            {
+                this.log(numMessagesProcessed + " " + message.toString());
+            }
+            
+            lastPacket = message;
+        }
                 
         // Send the message to the appropriate listener
         if (message.isFeedbackCommand())
@@ -1252,12 +1280,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                 }
             }));
-        }
-        
-        // Prints out each message
-        if (this.debug && DEBUG_LOG_NETWORK)
-        {
-            this.log(message.toString());
         }
     }
         
