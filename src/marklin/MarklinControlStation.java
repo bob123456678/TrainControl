@@ -56,7 +56,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.3 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.4 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -128,9 +128,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private long pingStart;
     private double lastLatency;
 
-    // Thread pool for network messages
-    private ExecutorService messageProcessor = Executors.newFixedThreadPool(1);
-
+    // Thread pools for network messages
+    private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
+    private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
+    private ExecutorService accessoryMessageProcessor = Executors.newFixedThreadPool(1);
+    private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
+    
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
@@ -256,8 +259,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     int newAddress = c.getAddress() - 1;                    
                     int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
                     
-                    // addresses.add(newAddress);
-
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
                        // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
@@ -281,8 +282,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 {
                                     newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
                                 }
-                                
-                                // addresses.add(newAddress + 1);
                             }
                         }
                         else if (c.isSignal())
@@ -1106,26 +1105,36 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void receiveMessage(CS2Message message)
     {
-        this.messageProcessor.submit(new Thread(() ->
+        numMessagesProcessed +=1;
+                
+        // Send the message to the appropriate listener
+        if (message.isFeedbackCommand())
         {
-            // Prints out each message
-            if (this.debug && DEBUG_LOG_NETWORK)
+            this.feedbackMessageProcessor.submit(new Thread(() ->
             {
-                this.log(message.toString());
-            }
+                int id = message.extractShortUID();
 
-            numMessagesProcessed +=1;
-
-            // Send the message to the appropriate listener
-            if (message.isLocCommand() && message.getResponse())
-            {               
+                if (this.feedbackDB.hasId(id))
+                {
+                    this.feedbackDB.getById(id).parseMessage(message);
+                }
+                else
+                {
+                    newFeedback(id, message);   
+                }
+            }));
+        }
+        // Only worry about the message if it's a response
+        // This prevents the gui from being updated when not connected
+        // to the network, however, so remove this check when offline
+        else if (message.isLocCommand() && message.getResponse())
+        {            
+            this.locMessageProcessor.submit(new Thread(() ->
+            {
                 Integer id = message.extractUID();
 
                 List<String> locs = this.locIdCache.get(id);
 
-                // Only worry about the message if it's a response
-                // This prevents the gui from being updated when not connected
-                // to the network, however, so remove this check when offline
                 if (locs != null)
                 {
                     if (!locs.isEmpty())
@@ -1152,12 +1161,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             + MarklinLocomotive.addressFromUID(id));
                     }
                 }
-            }
-            else if (message.isAccessoryCommand())
+            }));
+        }
+        else if (message.isAccessoryCommand() && message.getResponse())
+        {
+            this.accessoryMessageProcessor.submit(new Thread(() ->
             {
                 int id = message.extractUID();
 
-                if (this.accDB.hasId(id) && message.getResponse())
+                if (this.accDB.hasId(id))
                 {
                     this.accDB.getById(id).parseMessage(message);
 
@@ -1170,21 +1182,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }).start();
                     } 
                 }
-            }
-            else if (message.isFeedbackCommand())
-            {
-                int id = message.extractShortUID();
-
-                if (this.feedbackDB.hasId(id))
-                {
-                    this.feedbackDB.getById(id).parseMessage(message);
-                }
-                else
-                {
-                    newFeedback(id, message);   
-                }
-            }
-            else if (message.isSysCommand())
+            }));
+        }
+        else if (message.isSysCommand())
+        {
+            this.locMessageProcessor.submit(new Thread(() ->
             {
                 if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
                 {
@@ -1212,11 +1214,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     if (this.view != null) this.view.updatePowerState();
                     this.log("Power Off");
                 }
-            }
-            else if (message.isPingCommand())
+            }));
+        }
+        else if (message.isPingCommand() && message.getResponse())
+        {
+            this.systemMessageProcessor.submit(new Thread(() ->
             {
                 // Track latency
-                if (this.pingStart > 0 && message.getResponse())
+                if (this.pingStart > 0)
                 {
                     this.lastLatency = ((double) (System.nanoTime() - this.pingStart)) / 1000000.0;
                     this.pingStart = 0;
@@ -1231,7 +1236,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
 
                 // Set the serial number if it is not already set
-                if (this.UID == 0 && message.getResponse() && message.getLength() == 8)
+                if (this.UID == 0 && message.getLength() == 8)
                 {
                     int payload = CS2Message.mergeBytes(
                         new byte[]{message.getData()[6], message.getData()[7]}
@@ -1246,8 +1251,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         this.log("Connected to Central Station with serial number " + this.serialNumber);
                     }
                 }
-            }
-        }));
+            }));
+        }
+        
+        // Prints out each message
+        if (this.debug && DEBUG_LOG_NETWORK)
+        {
+            this.log(message.toString());
+        }
     }
         
     /**
