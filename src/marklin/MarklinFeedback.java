@@ -85,10 +85,10 @@ public class MarklinFeedback extends Feedback
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
                     this._setState((state == 1));
+                                        
+                    this.updateTiles();
                     
                     this.network.log("Feedback " + this.getName() + " to " + (state == 1 ? "Set" : "Not set"));
-                    
-                    this.updateTiles();
                 }                
             }  
         }

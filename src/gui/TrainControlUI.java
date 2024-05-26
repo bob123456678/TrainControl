@@ -953,6 +953,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
             this.debugArea.insert(message + "\n", 0);
+            this.debugArea.setCaretPosition(0);
         }));
     }             
     

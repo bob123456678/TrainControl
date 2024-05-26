@@ -131,7 +131,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Thread pools for network messages
     CS2Message lastPacket;
     private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
-    private ExecutorService accessoryMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
     
@@ -1193,7 +1192,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else if (message.isAccessoryCommand() && message.getResponse())
         {
-            this.accessoryMessageProcessor.submit(new Thread(() ->
+            this.locMessageProcessor.submit(new Thread(() ->
             {
                 int id = message.extractUID();
 
@@ -1212,7 +1211,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }));
         }
-        else if (message.isSysCommand())
+        else if (message.isSysCommand() && 
+           (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
+        )
         {
             this.locMessageProcessor.submit(new Thread(() ->
             {
