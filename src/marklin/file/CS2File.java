@@ -1,16 +1,11 @@
 package marklin.file;
 
-import automation.Edge;
-import automation.Layout;
-import automation.TimetablePath;
-import base.Accessory;
 import base.Locomotive;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import marklin.MarklinControlStation;

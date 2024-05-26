@@ -67,8 +67,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Debug mode
     private boolean debug = false;
     
-    // Do we print out packets
+    // Do we print out packets in debug mode?
     public static boolean DEBUG_LOG_NETWORK = true;
+    
+    // Do we parse mock packets when not connected to the central station and in debug mode?
+    // This will update the UI when locomotive/function/switch commands get sent
+    public static boolean DEBUG_SIMULATE_PACKETS = false;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -1152,8 +1156,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }));
         }
         // Only worry about the message if it's a response
-        // This prevents the gui from being updated when not connected
-        // to the network, however, so remove this check when offline
         else if (message.isLocCommand() && message.getResponse())
         {            
             this.locMessageProcessor.submit(new Thread(() ->
@@ -1308,6 +1310,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (debug && MarklinControlStation.DEBUG_LOG_NETWORK)
             {
                 this.log("Network transmission disabled\n" + m.toString());
+
+                if (DEBUG_SIMULATE_PACKETS)
+                {
+                    if (this.locIdCache == null) rebuildLocIdCache();
+
+                    this.receiveMessage(new CS2Message(
+                            m.getCommand(), 
+                            m.getHash(), true, m.getData()));
+                }
             }
         }
     }
