@@ -219,6 +219,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Locomotives excluded from stations will not be directed there in fully autonomous mode
         - Locomotives excluded form non-stations will never be able to traverse paths that include them
     - Added graph UI menu option to edit excluded locomotives
+    - Semi-autonomous paths that end at an excluded station are denoted with a `-`
 
 * v2.1.4 [5/25/24]
     - Parallelized CAN message processing, aimed at improving the reliability of autonomous operation when using slower PCs
