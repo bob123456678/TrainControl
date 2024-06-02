@@ -184,7 +184,7 @@ final public class GraphViewer extends javax.swing.JFrame {
 
                 add(menuItem);
             }
-
+            
             // Edit sensor
             menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
             menuItem.addActionListener(event -> 
@@ -225,6 +225,37 @@ final public class GraphViewer extends javax.swing.JFrame {
             );     
 
             add(menuItem);
+            
+            // Excluded locomotives
+            menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
+            menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+
+                        GraphLocExclude edit = new GraphLocExclude(parent, p);
+
+                        int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
+                                "Edit Excluded Locomotives at " + p.getName(), 
+                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+                        if(dialogResult2 == JOptionPane.OK_OPTION)
+                        {
+                            p.setExcludedLocs(edit.getSelectedExcludeLocs());
+                        }
+
+                        parent.repaintAutoLocList(true);
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "Error editing point: " + e.getMessage());
+                    }
+                }
+            ); 
+
+            add(menuItem);
+            
             addSeparator();
             
             // Enable/disable point

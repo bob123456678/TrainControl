@@ -1,8 +1,12 @@
 package automation;
 import base.Locomotive;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.json.JSONObject;
 
 /**
@@ -23,6 +27,7 @@ public class Point
     private Integer priority = 0;
     private Integer uniqueId;
     private boolean active;
+    private Set<Locomotive> excludedLocs;
     
     // Unique ID for any new node
     private static Integer id = 0;
@@ -36,6 +41,7 @@ public class Point
         this.isTerminus = false;
         this.isReversing = false;
         this.active = true;
+        this.excludedLocs = new HashSet<>();
 
         if (isDestination && !hasS88())
         {
@@ -104,6 +110,19 @@ public class Point
         this.priority = value;
         
         return this;
+    }
+
+    public Set<Locomotive> getExcludedLocs()
+    {
+        return excludedLocs;
+    }
+
+    public void setExcludedLocs(Set<Locomotive> excludedLocs)
+    {
+        if (excludedLocs != null)
+        {
+            this.excludedLocs = excludedLocs;
+        }
     }
     
     /**
@@ -394,6 +413,17 @@ public class Point
             }
             
             jsonObj.put("loc", locObj);
+        }
+        
+        if (!this.excludedLocs.isEmpty())
+        {
+            List<String> locNames = new ArrayList<>();
+            for (Locomotive l : excludedLocs)
+            {
+                locNames.add(l.getName());
+            }
+
+            jsonObj.put("excludedLocs", locNames);
         }
                 
         if (this.coordinatesSet())

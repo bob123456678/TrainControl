@@ -113,13 +113,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                     this.locDest.setText("Double-click a path to execute");
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
+
                     );
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {
                     this.locDest.setText("No available paths.");
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : ""));
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
+                    );
                 }
                 else
                 {
@@ -136,6 +140,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
                         + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().getExcludedLocs().contains(locomotive) ? " -" : "")
                     );
                     //Edge.pathToString(path));
                 }

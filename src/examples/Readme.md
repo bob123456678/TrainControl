@@ -434,3 +434,10 @@ From v2.1.0, TrainControl provides a timetable feature which can be accessed fro
 To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points can be traversed in semi-autonomous mode, but not in timetable/fully autonomous mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
 
 The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.addTimetableEntry` or `Layout.setTimetable`.
+
+# Locomotive exclusions
+
+From v2.1.5, you can prevent locomotives from stopping at a given station by adding them to the list within the 
+`excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
+
+However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.

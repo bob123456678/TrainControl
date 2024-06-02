@@ -214,6 +214,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.1.5 [6/1/24]
+    - Added JSON key `excludedLocs` for `Point`s, which allow locomotives to be excluded from certain autonomous paths
+        - Locomotives excluded from stations will not be directed there in fully autonomous mode
+        - Locomotives excluded form non-stations will never be able to traverse such points
+
 * v2.1.4 [5/25/24]
     - Parallelized CAN message processing, aimed at improving the reliability of autonomous operation when using slower PCs
     - Fixed bug where the UI log window would always auto scroll to the bottom

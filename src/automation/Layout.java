@@ -656,6 +656,14 @@ public class Layout
                 return false;
             }
             
+            // Excluded intermediate points cannot be traversed
+            if (!e.getStart().isDestination() && e.getStart().getExcludedLocs().contains(loc))
+            {
+                logPathError(loc, path, "The intermediate point " + e.getStart().getName() + " excludes this locomotive");
+                
+                return false;
+            }
+            
             // Terminus stations may only be at the end of a path
             if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
             {
@@ -1295,7 +1303,8 @@ public class Layout
             {
                 for (Point end : ends)
                 {                        
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive())
+                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive() &&
+                            !end.getExcludedLocs().contains(loc))
                     {
                         try 
                         {
@@ -2470,7 +2479,31 @@ public class Layout
             try 
             {
                 layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
-                     
+                
+                if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)
+                {
+                    JSONArray locs = point.getJSONArray("excludedLocs");
+                
+                    Set<Locomotive> excludedLocs = new HashSet<>();
+                    
+                    for(Object loc : locs)
+                    {
+                        try
+                        {
+                            String locName = (String) loc;
+
+                            if (control.getLocByName(locName) != null) excludedLocs.add(control.getLocByName(locName));
+                        }
+                        catch (Exception e)
+                        {
+                            control.log("Auto layout warning: invalid excluded locomotive on " + point.toString() + " " + e.getMessage());
+                            layout.invalidate();  
+                        }
+                    }
+                    
+                    layout.getPoint(point.getString("name")).setExcludedLocs(excludedLocs);
+                }
+                
                 if (point.has("maxTrainLength"))
                 {
                     if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
