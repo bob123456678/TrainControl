@@ -191,6 +191,25 @@ public final class CS2File
     {
         return "http://" + this.IP + "/app/api/loks";
     }
+    
+    /**
+     * CS3 Route DB URL
+     * @return 
+     */
+    public String getCS3RouteDBUrl()
+    {
+        return "http://" + this.IP + "/app/api/automatics";
+    }
+    
+    /**
+     * CS3 Accessory DB URL
+     * @return 
+     */
+    public String getCS3MagDBUrl()
+    {
+        return "http://" + this.IP + "/app/api/mags";
+    }
+        
         
     /**
      * CS3 Layout Data URL
@@ -371,6 +390,11 @@ public final class CS2File
     public List<MarklinRoute> parseRoutes() throws Exception
     {
         return parseRoutes(parseFile(fetchURL(getRouteURL())));
+    }
+    
+    public List<MarklinRoute> parseRoutesCS3() throws Exception
+    {
+        return parseRoutesCS3(parseJSONObject(fetchURL(getCS3RouteDBUrl())), parseJSONArray(fetchURL(getCS3MagDBUrl())));
     }
     
     public List<MarklinLocomotive> parseLocomotives() throws Exception
@@ -612,6 +636,167 @@ public final class CS2File
         }
         
         return output;
+    }
+    
+    /**
+     * Fetches a CS3 accessory DB entry based on its id
+     * @param searchId
+     * @param mags
+     * @return 
+     */
+    private JSONObject getCS3MagById(int searchId, JSONArray mags)
+    {
+        for (int i = 0 ; i < mags.length(); i++)
+        {
+            JSONObject obj = mags.getJSONObject(i);
+            
+            if (searchId == obj.getInt("id"))
+            {
+                return obj;
+            }
+        }
+        
+        return null;   
+    }
+    
+    /**
+     * Parses routes from the CS3 API
+     * @param routes
+     * @param mags
+     * @return 
+     */
+    public List<MarklinRoute> parseRoutesCS3(JSONObject routes, JSONArray mags)
+    {
+        List<MarklinRoute> out = new ArrayList<>();
+        
+        JSONArray routeList = routes.getJSONArray("automatics");
+        
+        for (int i = 0 ; i < routeList.length(); i++)
+        {
+            try
+            {
+                JSONObject route = routeList.getJSONObject(i);
+                
+                MarklinRoute r = new MarklinRoute(control, route.getString("name"), route.getInt("id"));
+                
+                JSONArray items = route.getJSONArray("items");
+                
+                for (int j = 0; j < items.length(); j++)
+                {
+                    JSONObject item = items.getJSONObject(j);
+                    
+                    if (item.has("typ") && "mag".equals(item.getString("typ")))
+                    {
+                        // To get the address, we need to look up this accessory in the accessory DB
+                        JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
+                        
+                        if (accessory != null)
+                        {
+                            System.out.println(accessory);
+                            int address = accessory.getInt("address");
+                            
+                            // stellung 0 - key not included
+                            if (!item.has("stellung"))
+                            {
+                                r.addAccessory(address, true);
+                                
+                                //if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                if (3 == accessory.getInt("states"))
+                                {
+                                    r.addAccessory(address + 1, false);
+                                }
+                            }
+                            // stellung 1 means isSwitched is false                            
+                            else if ("1".equals(item.getString("stellung")))
+                            {                                
+                                r.addAccessory(address, false);
+                                
+                                if (3 == accessory.getInt("states"))
+                                {
+                                    r.addAccessory(address + 1, false);
+                                }
+                            }
+                            else if ("2".equals(item.getString("stellung")))
+                            {           
+                                r.addAccessory(address, false);
+                                
+                                if (3 == accessory.getInt("states"))
+                                {
+                                    r.addAccessory(address + 1, true);
+                                }
+                            }
+                            
+                            if (item.has("sekunde"))
+                            {
+                                r.setDelay(address, Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                            }
+                        }     
+                    }
+                    else if (item.has("typ") && "s88".equals(item.getString("typ")))
+                    {
+                        if (r.getRoute().isEmpty())
+                        {
+                            // Only include S88s at the start.  First is trigger S88, others are treated as condition S88s
+                            if (!r.hasS88())
+                            {
+                                r.setS88(item.getInt("id"));
+                                
+                                // action key won't be present if unoccupied
+                                if (!item.has("action"))
+                                {
+                                    r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+                                }
+                                
+                                if (2 == item.getInt("mode"))
+                                {
+                                    // This value indicates that the route will automatically fire
+                                    // As this would duplicate functionality with the CS3, we leave it disabled
+                                    // r.enable();
+                                }
+                            }
+                            else
+                            {
+                                r.addConditionS88(item.getInt("id"), item.has("action"));
+                            }
+                        }
+                        else
+                        {
+                            if (this.control != null)
+                            {
+                                this.control.log("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName()); 
+                            }
+                            else
+                            {
+                                System.out.println("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName());
+                            }
+                        }
+                    }
+                    
+                    System.out.println("---");   
+                }
+                
+                System.out.println(route);
+                System.out.println(r.toVerboseString());
+                System.out.println("======");
+                                    
+                out.add(r);
+            }
+            catch (NumberFormatException | JSONException e)
+            {
+                if (this.control != null)
+                {
+                    this.control.log("Failed to add route at index " + i + " due to parsing error.");
+                    this.control.log(e.toString());
+                }
+                else
+                {
+                    System.out.println("Failed to add route at index " + i + " due to parsing error.");
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return out;
     }
  
     /**

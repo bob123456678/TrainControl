@@ -56,7 +56,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.5 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.1.6 Beta 1 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -514,8 +514,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }  
             }
             
+            // Import locomotives
+            List<MarklinRoute> parsedRoutes;
+            
+            if (this.isCS3)
+            {
+                parsedRoutes = fileParser.parseRoutesCS3();
+            }
+            else
+            {
+                parsedRoutes = fileParser.parseRoutes();
+            }
+            
             // Import routes
-            for (MarklinRoute r : fileParser.parseRoutes())
+            for (MarklinRoute r : parsedRoutes)
             {
                 // Other existing route with same name but different ID
                 if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
