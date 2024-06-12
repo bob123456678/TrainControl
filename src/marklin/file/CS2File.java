@@ -692,7 +692,7 @@ public final class CS2File
                         
                         if (accessory != null)
                         {
-                            System.out.println(accessory);
+                            // System.out.println(accessory);
                             int address = accessory.getInt("address");
                             
                             // stellung 0 - key not included
@@ -772,12 +772,12 @@ public final class CS2File
                         }
                     }
                     
-                    System.out.println("---");   
+                    // System.out.println("---");   
                 }
                 
-                System.out.println(route);
-                System.out.println(r.toVerboseString());
-                System.out.println("======");
+                // System.out.println(route);
+                // System.out.println(r.toVerboseString());
+                // System.out.println("======");
                                     
                 out.add(r);
             }

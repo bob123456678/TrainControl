@@ -214,6 +214,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.1.6 [Beta]
+    - Added basic support for parsing CS3 routes.  CS3 routes will now be imported into TrainControl
+
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths
         - Locomotives excluded from stations will not be directed there in fully autonomous mode
