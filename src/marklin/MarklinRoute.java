@@ -667,6 +667,26 @@ public class MarklinRoute extends Route
                 && this.conditionAccessories.equals(other.getConditionAccessories())
                 && this.getRoute().equals(other.getRoute());
     }
+    
+    /**
+     * Checks routes for equality, but does not care about the sequence of route commands
+     * @param o
+     * @return 
+     */
+    public boolean equalsUnordered(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        MarklinRoute other = (MarklinRoute) o;
+        return id == other.id &&
+                s88 == other.s88 &&
+                enabled == other.enabled &&
+                triggerType == other.triggerType &&
+                this.conditionS88s.equals(other.getConditionS88s())
+                && this.conditionAccessories.equals(other.getConditionAccessories())
+                && new HashSet(this.getRoute()).equals(new HashSet(other.getRoute()));
+    }
 
     @Override
     public int hashCode()

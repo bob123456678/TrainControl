@@ -277,7 +277,7 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    private static BufferedReader fetchURL(String url) throws Exception 
+    public static BufferedReader fetchURL(String url) throws Exception 
     {
         URL website = new URL(url);
         URLConnection connection = website.openConnection();
@@ -685,7 +685,7 @@ public final class CS2File
                 {
                     JSONObject item = items.getJSONObject(j);
                     
-                    if (item.has("typ") && "mag".equals(item.getString("typ")))
+                    if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
                     {
                         // To get the address, we need to look up this accessory in the accessory DB
                         JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
@@ -741,8 +741,12 @@ public final class CS2File
                             {
                                 r.setS88(item.getInt("id"));
                                 
-                                // action key won't be present if unoccupied
-                                if (!item.has("action"))
+                                // value key won't be present if unoccupied
+                                if (!item.has("value"))
+                                {
+                                    r.setTriggerType(MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+                                }
+                                else
                                 {
                                     r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
                                 }
@@ -756,7 +760,7 @@ public final class CS2File
                             }
                             else
                             {
-                                r.addConditionS88(item.getInt("id"), item.has("action"));
+                                r.addConditionS88(item.getInt("id"), !item.has("value"));
                             }
                         }
                         else
