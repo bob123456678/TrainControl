@@ -696,7 +696,8 @@ public final class CS2File
                             int address = accessory.getInt("address");
                             
                             // stellung 0 - key not included
-                            if (!item.has("stellung"))
+                            // this means red/turn
+                            if (!item.has("stellung") || "0".equals(item.getString("stellung")))
                             {
                                 r.addAccessory(address, true);
                                 
@@ -706,11 +707,13 @@ public final class CS2File
                                     r.addAccessory(address + 1, false);
                                 }
                             }
-                            // stellung 1 means isSwitched is false                            
+                            // stellung 1 means isSwitched is false   
+                            // this means green/straight
                             else if ("1".equals(item.getString("stellung")))
                             {                                
                                 r.addAccessory(address, false);
                                 
+                                //if ("dreiwegweiche".equals(accessory.getString("typ")))
                                 if (3 == accessory.getInt("states"))
                                 {
                                     r.addAccessory(address + 1, false);
@@ -723,6 +726,16 @@ public final class CS2File
                                 if (3 == accessory.getInt("states"))
                                 {
                                     r.addAccessory(address + 1, true);
+                                }
+                            }
+                            // Unclear how this differs from 1, seems to only be used by certain signals
+                            else if ("3".equals(item.getString("stellung")))
+                            {           
+                                r.addAccessory(address, false);
+                                
+                                if (3 == accessory.getInt("states"))
+                                {
+                                    r.addAccessory(address + 1, false);
                                 }
                             }
                             

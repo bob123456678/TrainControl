@@ -1,7 +1,4 @@
 import base.RouteCommand;
-import static base.RouteCommand.commandType.TYPE_ACCESSORY;
-import static base.RouteCommand.commandType.TYPE_FUNCTION;
-import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import java.util.ArrayList;
 import java.util.List;
 import marklin.MarklinControlStation;
@@ -104,6 +101,14 @@ public class testParseCS3Routes
                 {
                     System.out.println("Should be:");
                     System.out.println(otherRoute.toVerboseString());
+                    List<RouteCommand> rc = otherRoute.getRoute();
+                    
+                    rc.removeAll(newRoute.getRoute());
+                    
+                    if (!rc.isEmpty())
+                    {
+                        System.out.println("!!! Correct values: " + rc.toString());
+                    }
                 }
             }
             
