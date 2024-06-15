@@ -701,8 +701,9 @@ public final class CS2File
                             {
                                 r.addAccessory(address, true);
                                 
-                                //if ("dreiwegweiche".equals(accessory.getString("typ")))
-                                if (3 == accessory.getInt("states"))
+                                // This is invalid for 3-way signals
+                                // if (3 == accessory.getInt("states"))
+                                if ("dreiwegweiche".equals(accessory.getString("typ")))
                                 {
                                     r.addAccessory(address + 1, false);
                                 }
@@ -713,8 +714,9 @@ public final class CS2File
                             {                                
                                 r.addAccessory(address, false);
                                 
-                                //if ("dreiwegweiche".equals(accessory.getString("typ")))
-                                if (3 == accessory.getInt("states"))
+                                // This is invalid for 3-way signals
+                                // if (3 == accessory.getInt("states"))
+                                if ("dreiwegweiche".equals(accessory.getString("typ")))
                                 {
                                     r.addAccessory(address + 1, false);
                                 }
