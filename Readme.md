@@ -225,10 +225,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Any S88s after a switch/signal command will be ignored
     - Statistics improvements
         - Added a 30-day usage graph to the Stats tab
-        - Exported raw data how has the .csv extension
+        - Exported raw data now has the .csv extension
     - Locomotive management improvements
-        - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as last lubrication date, etc.
-        - Consolidated "rename" and "change address" options into a single menu entry.  Added keyboard shortcut (Control+R) 
+        - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as the last lubrication date, etc.
+        - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
 
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths
