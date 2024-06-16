@@ -1,0 +1,5913 @@
+{"routes": [
+    {
+        "name": "sk reset",
+        "id": 1,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "84",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "21",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "106",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "114",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "115",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "117",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "52",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "27",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "68",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "118",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "119",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "105",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "si r",
+        "id": 2,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "58",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "59",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "61",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "96",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "73",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "74",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "41",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "43",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "101",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "102",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "103",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "104",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "14",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "63",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "113",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "76",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "111",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "44",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "si r udk",
+        "id": 3,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "96",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "112",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "61",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "si r indk",
+        "id": 4,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "96",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "112",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "41",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "111",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "si r dvaerg",
+        "id": 5,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "x31",
+        "id": 135,
+        "s88": 12,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "x32",
+        "id": 136,
+        "s88": 33,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "107",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zyAutoInit",
+        "id": 137,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zyA01",
+        "id": 138,
+        "s88": 24,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "16",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zyA02",
+        "id": 139,
+        "s88": 22,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "15",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zy35",
+        "id": 140,
+        "s88": 35,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "46",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "si g dvaerg",
+        "id": 13,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zy41",
+        "id": 141,
+        "s88": 41,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "DELAY": "4000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zyA02/01",
+        "id": 145,
+        "s88": 16,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true",
+                    "DELAY": "2000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zyA01/02",
+        "id": 146,
+        "s88": 17,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false",
+                    "DELAY": "2000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zyBk0xg",
+        "id": 147,
+        "s88": 1,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "95",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "zyBk02r",
+        "id": 148,
+        "s88": 22,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "95",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zyBk01r",
+        "id": 149,
+        "s88": 24,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "95",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zyBk2xg",
+        "id": 150,
+        "s88": 20,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "99",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "zyBk22r",
+        "id": 151,
+        "s88": 35,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "99",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zyBk21r",
+        "id": 152,
+        "s88": 39,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "99",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zA01",
+        "id": 153,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "16",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zA02",
+        "id": 154,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "15",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zBlok03x",
+        "id": 155,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "97",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "zBlok04",
+        "id": 156,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "98",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zBlok03",
+        "id": 157,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "98",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zBlok2y",
+        "id": 158,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "98",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "ziBk24r",
+        "id": 159,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "97",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "zBlok23",
+        "id": 160,
+        "auto": false,
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "97",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "04-23<",
+        "id": 33,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "04-24<",
+        "id": 34,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "21",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "04-30<",
+        "id": 35,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "61",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "04-31<",
+        "id": 36,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "21-01<",
+        "id": 37,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "118",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "21-02<",
+        "id": 38,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "xTEE",
+        "id": 168,
+        "s88": 39,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "86",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "ziAutoInit",
+        "id": 169,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "03-23<",
+        "id": 41,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "03-24<",
+        "id": 42,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "21",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "03-30<",
+        "id": 43,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "61",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "03-31<",
+        "id": 44,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zik15",
+        "id": 173,
+        "s88": 15,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "22-01<",
+        "id": 45,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "118",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zik47",
+        "id": 174,
+        "s88": 47,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "22-02<",
+        "id": 46,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zik40",
+        "id": 175,
+        "s88": 40,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "zik03",
+        "id": 176,
+        "s88": 3,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 14i",
+        "id": 177,
+        "s88": 14,
+        "conditionS88": "3,0\n15,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false",
+                    "DELAY": "2000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-21>",
+        "id": 49,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "106",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 15u",
+        "id": 178,
+        "s88": 15,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-22>",
+        "id": 50,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-23>",
+        "id": 51,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 15i",
+        "id": 179,
+        "s88": 15,
+        "conditionS88": "3,0\n14,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true",
+                    "DELAY": "3000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 14u",
+        "id": 180,
+        "s88": 14,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-24>",
+        "id": 52,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 34i",
+        "id": 181,
+        "s88": 34,
+        "conditionS88": "40,1\n47,0",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false",
+                    "DELAY": "3000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "23-03>",
+        "id": 53,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 40u",
+        "id": 182,
+        "s88": 40,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "23-04>",
+        "id": 54,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 40i",
+        "id": 183,
+        "s88": 40,
+        "conditionS88": "34,1\n47,0",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true",
+                    "DELAY": "3000"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "23-01>",
+        "id": 55,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 34u",
+        "id": 184,
+        "s88": 34,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 47a",
+        "id": 185,
+        "s88": 47,
+        "conditionS88": "15,0",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "01-21>",
+        "id": 57,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "106",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 47b",
+        "id": 186,
+        "s88": 47,
+        "conditionS88": "14,0\n15,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "01-22>",
+        "id": 58,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 47c",
+        "id": 187,
+        "s88": 47,
+        "conditionS88": "14,1\n15,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "98",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "01-23>",
+        "id": 59,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "01-24>",
+        "id": 60,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 03a",
+        "id": 189,
+        "s88": 3,
+        "conditionS88": "40,0",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "24-03>",
+        "id": 61,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 03b",
+        "id": 190,
+        "s88": 3,
+        "conditionS88": "34,0\n40,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "21",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "24-04>",
+        "id": 62,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "24-4-21<",
+        "id": 63,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "21",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "106",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "yi 03c",
+        "id": 191,
+        "s88": 3,
+        "conditionS88": "34,1\n40,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "97",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "yi init",
+        "id": 192,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "01a-05>",
+        "id": 91,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "110",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "96",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "118",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "05-01a>",
+        "id": 101,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "96",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "06-01>",
+        "id": 103,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "110",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "118",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "06-02>",
+        "id": 104,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "110",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "2223p<",
+        "id": 105,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "95",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "03-32>",
+        "id": 109,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "22-04>",
+        "id": 110,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "66",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "74",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "0203p>",
+        "id": 113,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "32-04<",
+        "id": 116,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "110",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-32>",
+        "id": 117,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "32-31<",
+        "id": 118,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "02-04>",
+        "id": 119,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "15",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "110",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "26",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "13",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "31-21>",
+        "id": 121,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "106",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "77",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "45",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "31-22>",
+        "id": 122,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "78",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "46",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "31-23>",
+        "id": 123,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "47",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "31-24>",
+        "id": 124,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "93",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "48",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "01-32>",
+        "id": 125,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "33",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "34",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "16",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    },
+    {
+        "name": "31-32>",
+        "id": 126,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "17",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "109",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            }
+        ]
+    }
+]}

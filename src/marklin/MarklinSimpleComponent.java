@@ -37,6 +37,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private String localImageURL;
     private boolean customFunctions;
     private Map<Integer, String> localFunctionImageURLs;
+    private String notes;
         
     // Route state
     private int s88;
@@ -152,6 +153,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.localImageURL = l.getLocalImageURL();
         this.customFunctions = l.isCustomFunctions();
         this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
+        this.notes = l.getNotes();
     }
     
     public List<RouteCommand> getRoute()
@@ -294,6 +296,11 @@ public class MarklinSimpleComponent implements java.io.Serializable
         {
             return 0;
         }
+    }
+    
+    public String getLocNotes()
+    {
+        return this.notes;
     }
     
     public String getLocalImageURL()

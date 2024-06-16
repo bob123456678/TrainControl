@@ -84,6 +84,9 @@ public abstract class Locomotive
     // Track power state to ensure correct timings
     private boolean powerState = true;
  
+    // User-defined notes about this locomotive
+    private String notes = "";
+
     /**
      * Constructor with name and all functions off
      * @param name
@@ -1032,10 +1035,20 @@ public abstract class Locomotive
     }
     
     /**
-     * Amount of time the locomotive was today
+     * Amount of time the locomotive was run on a specific day
+     * @param date - String formatted as yyyy-MM-dd
      * @return 
      */
-    public long getTotalRuntimeToday()
+    public long getRuntimeOnDay(String date)
+    {
+        return this.historicalOperatingTime.getOrDefault(date, 0L);
+    }
+    
+    /**
+     * Amount of time the locomotive was run today
+     * @return 
+     */
+    public long getRuntimeToday()
     {
         return this.historicalOperatingTime.getOrDefault(Locomotive.getDate(), 0L);
     }
@@ -1135,5 +1148,15 @@ public abstract class Locomotive
     public void unsetLocalFunctionImageURLs()
     {
         this.localFunctionImageURLs.clear();
+    }
+    
+    public String getNotes()
+    {
+        return notes;
+    }
+
+    public void setNotes(String notes)
+    {
+        this.notes = notes;
     }
 }

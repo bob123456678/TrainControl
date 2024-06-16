@@ -136,6 +136,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+V (paste copied locomotive at currently active button)
     * Control+S (swap copied locomotive with currently active button)
     * Control+A (assign a new locomotive to the currently active button)
+    * Control+N (edit locomotive notes)
 * UI shortcuts
     * Backspace/Alt+backspace (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
@@ -214,8 +215,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.1.6 [Beta]
+* v2.2.0 [Beta]
     - Added basic support for parsing CS3 routes.  CS3 routes will now be imported into TrainControl
+    - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as last lubrication date.
 
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths

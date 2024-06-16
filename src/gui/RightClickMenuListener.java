@@ -211,6 +211,13 @@ public class RightClickMenuListener extends MouseAdapter
                 
                 add(menuItem);
                 
+                menuItem = new JMenuItem("Edit Notes");
+
+                menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
+                menuItem.setToolTipText("Control+N");
+
+                add(menuItem);
+                
                 addSeparator();
 
                 

@@ -124,14 +124,14 @@ public class LocomotiveStats extends javax.swing.JPanel
 
             for (Locomotive l : sortedLocs)
             {            
-                Object[] data = {l.getName(), new TimestampString(l.getTotalRuntime()), new TimestampString(l.getTotalRuntimeToday()), 
+                Object[] data = {l.getName(), new TimestampString(l.getTotalRuntime()), new TimestampString(l.getRuntimeToday()), 
                     l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
                 tableModel.addRow(data);
                 
                 // Populate stats
-                todaysTotalRuntime += l.getTotalRuntimeToday();
-                if (l.getTotalRuntimeToday() > 0) todaysLocsRun +=1;
+                todaysTotalRuntime += l.getRuntimeToday();
+                if (l.getRuntimeToday() > 0) todaysLocsRun +=1;
                 
                 totalRuntime += l.getTotalRuntime();
                 if (l.getTotalRuntime() > 0) totalLocsRun +=1;

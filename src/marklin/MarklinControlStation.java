@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,7 +57,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.1.6 Beta 4 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.0 Beta 5 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -421,6 +422,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.autoLayout = Layout.fromJSON(s, this);
+    }
+    
+    /**
+     * Gets cumulative locomotive runtime for the number of days specified from the current date
+     * @param days
+     * @return 
+     */
+    public TreeMap<String, Long> getDailyRuntimeStats(int days)
+    {
+        long startDate = System.currentTimeMillis();
+        
+        TreeMap stats = new TreeMap<>();
+        
+        for (int i = 0; i < Math.abs(days); i++)
+        {
+            final long date = startDate;
+            
+            stats.put(
+                Locomotive.getDate(startDate), 
+                this.getLocomotives().stream().mapToLong(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date))).sum()
+            );
+            
+            startDate -= 86400000;
+        }
+        
+        return stats;
     }
     
     /**
@@ -1580,6 +1607,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setLocalImageURL(c.getLocalImageURL());
             newLoc.setCustomFunctions(c.getCustomFunctions());
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
+            newLoc.setNotes(c.getLocNotes());
 
             this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
             

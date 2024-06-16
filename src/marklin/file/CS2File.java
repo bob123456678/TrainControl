@@ -32,6 +32,9 @@ public final class CS2File
     // Store the URL to the CS2 layout config by default
     // Can be overriden by files on the local filesystem (if using a CS3, etc)
     private String layoutDataLoc;
+    
+    // Cache CS3 mags
+    private final Map<Integer, JSONObject> magList;
         
     /**
      * Constructor
@@ -43,6 +46,7 @@ public final class CS2File
         this.IP = IP;
         this.control = control;
         this.setDefaultLayoutDataLoc();
+        this.magList = new HashMap<>();
     }
     
     /**
@@ -646,12 +650,20 @@ public final class CS2File
      */
     private JSONObject getCS3MagById(int searchId, JSONArray mags)
     {
+        // Cache accessories by ID
+        if (this.magList.containsKey(searchId))
+        {
+            return this.magList.get(searchId);
+        }
+        
         for (int i = 0 ; i < mags.length(); i++)
         {
             JSONObject obj = mags.getJSONObject(i);
             
             if (searchId == obj.getInt("id"))
             {
+                this.magList.put(searchId, obj);
+                
                 return obj;
             }
         }

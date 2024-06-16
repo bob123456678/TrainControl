@@ -20,13 +20,13 @@ import org.testng.annotations.Test;
  */
 public class testParseCS3Routes
 {   
-    public static String pathprefix = "";
-    private static String cs2_routes = "File:///" + pathprefix + "CS2_fahrstrassen.json";
-    private static String cs3_mags = "File:///" + pathprefix + "CS3_mags.json";
-    private static String cs3_automatics = "File:///" + pathprefix + "CS3_automatics.json";
+    // Test files stored locally
+    private final String tc_routes = getClass().getResource("TC_routes.json").toURI().toString();
+    private final String cs3_mags = getClass().getResource("CS3_mags.json").toURI().toString();
+    private final String cs3_automatics = getClass().getResource("CS3_automatics.json").toURI().toString();
     
     public MarklinControlStation model;
-    public List<MarklinRoute> routesCS2;
+    public List<MarklinRoute> routesTC;
     public CS2File parser;
     public List<MarklinRoute> routesCS3;
             
@@ -34,12 +34,12 @@ public class testParseCS3Routes
     {
         parser = new CS2File(null, null);
         model = init(null, true, false, false, false); 
-        
-        // We assume this data is correct
+                
+        // We assume the TrainControl routes are correct.  Also possible to read a CS2 file to compare
         // routesCS2 = parser.parseRoutes(parseFile(fetchURL(cs2_routes)));
-        routesCS2 = model.parseRoutesFromJson(parseJSONObject(fetchURL(cs2_routes)).toString()); 
+        routesTC = model.parseRoutesFromJson(parseJSONObject(fetchURL(tc_routes)).toString()); 
         
-        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)), parseJSONArray(fetchURL(cs3_mags)));   
+        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)), parseJSONArray(fetchURL(cs3_mags)));           
     }
    
     /**
@@ -48,7 +48,7 @@ public class testParseCS3Routes
     @Test
     public void testSameLength()
     {   
-        assertEquals(routesCS2.size(), routesCS3.size());
+        assertEquals(routesTC.size(), routesCS3.size());
     }
     
     /**
@@ -57,10 +57,10 @@ public class testParseCS3Routes
     @Test
     public void testCS2()
     {           
-        List<MarklinRoute> routesCS2Not3 = new ArrayList<>(routesCS2);
-        routesCS2Not3.removeAll(routesCS3);
+        List<MarklinRoute> routesTCNot3 = new ArrayList<>(routesTC);
+        routesTCNot3.removeAll(routesCS3);
                 
-        for (MarklinRoute newRoute : routesCS2Not3)
+        for (MarklinRoute newRoute : routesTCNot3)
         {
             boolean exists = false;
             
@@ -80,22 +80,22 @@ public class testParseCS3Routes
             }
         }
         
-        assertEquals(true, routesCS2Not3.isEmpty());
+        assertEquals(true, routesTCNot3.isEmpty());
     }
    
     
     @Test 
     public void testCS3()
     {
-        List<MarklinRoute> routesCS3Not2 = new ArrayList<>(routesCS3);
-        routesCS3Not2.removeAll(routesCS2);
+        List<MarklinRoute> routesCS3NotTC = new ArrayList<>(routesCS3);
+        routesCS3NotTC.removeAll(routesTC);
         
-        for (MarklinRoute newRoute : routesCS3Not2)
+        for (MarklinRoute newRoute : routesCS3NotTC)
         {
             System.out.println("CS3 Route:");
             System.out.println(newRoute.toVerboseString());
             
-            for (MarklinRoute otherRoute : routesCS2)
+            for (MarklinRoute otherRoute : routesTC)
             {
                 if (otherRoute.getId() == newRoute.getId() && !otherRoute.equalsUnordered(newRoute))
                 {
@@ -115,7 +115,7 @@ public class testParseCS3Routes
             System.out.println("============");
         }
 
-        assertEquals(true, routesCS3Not2.isEmpty());
+        assertEquals(true, routesCS3NotTC.isEmpty());
     }
     
         

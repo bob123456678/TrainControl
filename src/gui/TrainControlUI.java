@@ -66,12 +66,16 @@ import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -7933,6 +7937,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.setCopyTarget(this.currentButton, false);
         }
+        else if (controlPressed && keyCode == KeyEvent.VK_N)
+        {
+            this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
+        }
         else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
         {
             if (this.hasCopyTarget())
@@ -8753,6 +8761,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         this.repaintLoc(true, null);
                     }
                 }
+                
+                String newName = edit.getLocName();
+                
+                if (result == JOptionPane.OK_OPTION && newName != null)
+                {
+                    if (newName.trim().length() == 0)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            "Please enter a locomotive name");
+                        return;
+                    }
+
+                    if (newName.length() >= MAX_LOC_NAME_DATABASE)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
+                        return;
+                    }
+
+                    if (this.model.getLocByName(newName) != null)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            "Locomotive " + newName + " already exists in the locomotive DB.  Rename or delete it first.");
+                        return;
+                    }
+
+                    this.model.renameLoc(l.getName(), newName);
+
+                    clearCopyTarget();
+                    repaintLoc();
+                    repaintMappings();
+                    selector.refreshLocSelectorList();
+                }
             }
         }
         catch (Exception e)
@@ -8760,6 +8801,45 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.model.log(e);
             
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Allows the user to specify notes for the given locomotive
+     * @param l
+     */
+    public void changeLocNotes(Locomotive l)
+    {
+        if (l != null)
+        {
+            JTextArea textArea = new JTextArea(l.getNotes());
+            textArea.setColumns(30);
+            textArea.setRows(10);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+
+            // Ensure the text area is in focus
+            textArea.addAncestorListener(new AncestorListener() {
+                @Override
+                public void ancestorRemoved(AncestorEvent event) {}
+
+                @Override
+                public void ancestorMoved(AncestorEvent event) {}
+
+                @Override
+                public void ancestorAdded(AncestorEvent event) {
+                    event.getComponent().requestFocusInWindow();
+                }
+            });
+            
+            int confirm = JOptionPane.showConfirmDialog(this, new JScrollPane(textArea), "Enter notes for " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION)
+            {
+                // Max length is 2000 characters
+                l.setNotes(textArea.getText().substring(0, Math.min(textArea.getText().length(), 2000)));
+            }
         }
     }
     
