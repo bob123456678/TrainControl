@@ -24,6 +24,16 @@ public class Conversion
         return String.format("%d:%02d:%02d", h,m,s);
     }
     
+    public static String convertSecondsToHMm(long ms)
+    {
+        long seconds = ms / 1000;
+        
+        long m = (seconds / 60) % 60;
+        long h = (seconds / (60 * 60));
+        
+        return String.format("%d:%02d", h,m);
+    }
+    
     public static String convertSecondsToDate(long timestamp)
     {
         if (timestamp == 0) return "Never";

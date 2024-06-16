@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -429,11 +430,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param days
      * @return 
      */
+    @Override
     public TreeMap<String, Long> getDailyRuntimeStats(int days)
     {
         long startDate = System.currentTimeMillis();
         
-        TreeMap stats = new TreeMap<>();
+        TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
         
         for (int i = 0; i < Math.abs(days); i++)
         {
@@ -442,6 +444,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
             stats.put(
                 Locomotive.getDate(startDate), 
                 this.getLocomotives().stream().mapToLong(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date))).sum()
+            );
+            
+            startDate -= 86400000;
+        }
+        
+        return stats;
+    }
+    
+    /**
+     * Gets the number of locomotives run daily over the number of days specified from the current date
+     * @param days
+     * @return 
+     */
+    @Override
+    public TreeMap<String, Integer> getDailyCountStats(int days)
+    {
+        long startDate = System.currentTimeMillis();
+        
+        TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
+        
+        for (int i = 0; i < Math.abs(days); i++)
+        {
+            final long date = startDate;
+            
+            stats.put(
+                Locomotive.getDate(startDate), 
+                this.getLocomotives().stream().mapToInt(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date)) > 0 ? 1 : 0).sum()
             );
             
             startDate -= 86400000;

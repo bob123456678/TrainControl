@@ -34,6 +34,8 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="filterField" min="-2" pref="220" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
+                      <Component id="viewUsageGraph" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="exportData" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="refresh" min="-2" max="-2" attributes="0"/>
@@ -90,6 +92,7 @@
                   <Component id="refresh" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="filterLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="filterField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="viewUsageGraph" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -237,6 +240,18 @@
       </Properties>
     </Component>
     <Component class="javax.swing.JSeparator" name="jSeparator1">
+    </Component>
+    <Component class="javax.swing.JButton" name="viewUsageGraph">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Tahoma" size="11" style="1"/>
+        </Property>
+        <Property name="text" type="java.lang.String" value="30-day Usage Graph"/>
+        <Property name="focusable" type="boolean" value="false"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewUsageGraphActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>

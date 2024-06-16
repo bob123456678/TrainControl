@@ -217,12 +217,15 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.2.0 [Beta]
-    - Added basic support for parsing CS3 routes.  
-        - CS3 routes will now be imported into TrainControl and will always overwrite local routes with the same ID
+    - Added basic support for parsing and importing routes from the CS3  
+        - CS3 routes will now automatically be imported into TrainControl and will always overwrite local routes with the same ID
         - The first S88 will be interpreted as the triggering S88
-        - Subsequent S88s will be interpreted as additional conditions for triggering the route
+        - Subsequent S88s will be interpreted as additional mandatory conditions for triggering the route
         - Remaining switch/signal commands are executed sequentially
-        - Any S88s after switch/signal commands will be ignored
+        - Any S88s after a switch/signal command will be ignored
+    - Statistics improvements
+        - Added a 30-day usage graph to the Stats tab
+        - Exported raw data how has the .csv extension
     - Locomotive management improvements
         - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as last lubrication date, etc.
         - Consolidated "rename" and "change address" options into a single menu entry.  Added keyboard shortcut (Control+R) 

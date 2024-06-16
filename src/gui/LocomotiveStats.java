@@ -190,6 +190,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         locCountCumulativeVal = new javax.swing.JLabel();
         locomotivesCumulativeLabel = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
+        viewUsageGraph = new javax.swing.JButton();
 
         setBackground(new java.awt.Color(238, 238, 238));
         addMouseListener(new java.awt.event.MouseAdapter() {
@@ -271,6 +272,15 @@ public class LocomotiveStats extends javax.swing.JPanel
         locomotivesCumulativeLabel.setForeground(new java.awt.Color(0, 0, 115));
         locomotivesCumulativeLabel.setText("locomotives");
 
+        viewUsageGraph.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        viewUsageGraph.setText("30-day Usage Graph");
+        viewUsageGraph.setFocusable(false);
+        viewUsageGraph.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                viewUsageGraphActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -285,6 +295,8 @@ public class LocomotiveStats extends javax.swing.JPanel
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(viewUsageGraph)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportData)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(refresh))
@@ -334,7 +346,8 @@ public class LocomotiveStats extends javax.swing.JPanel
                     .addComponent(exportData)
                     .addComponent(refresh)
                     .addComponent(filterLabel)
-                    .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(viewUsageGraph))
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -346,7 +359,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             try
             {
                 JFileChooser fc = new JFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
-                fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".txt"));
+                fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".csv"));
                 int i = fc.showSaveDialog(this);
 
                 if (i == JFileChooser.APPROVE_OPTION)
@@ -396,6 +409,10 @@ public class LocomotiveStats extends javax.swing.JPanel
         this.tcui.resetFocus();
     }//GEN-LAST:event_formMouseClicked
 
+    private void viewUsageGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewUsageGraphActionPerformed
+        new UsageHistogram(this.tcui);
+    }//GEN-LAST:event_viewUsageGraphActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel byLabel;
     private javax.swing.JLabel byLabel1;
@@ -414,5 +431,6 @@ public class LocomotiveStats extends javax.swing.JPanel
     private javax.swing.JTable statsTable;
     private javax.swing.JLabel todaysRuntimeLabel;
     private javax.swing.JLabel todaysRuntimeVal;
+    private javax.swing.JButton viewUsageGraph;
     // End of variables declaration//GEN-END:variables
 }

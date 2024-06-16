@@ -5,6 +5,7 @@ import base.RouteCommand;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import marklin.MarklinAccessory;
 import marklin.MarklinLayout;
 import marklin.MarklinLocomotive;
@@ -70,4 +71,6 @@ public interface ViewListener
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);
     public long getTimeSinceLastPing();
+    public TreeMap<String, Long> getDailyRuntimeStats(int days);
+    public TreeMap<String, Integer> getDailyCountStats(int days);
 }
