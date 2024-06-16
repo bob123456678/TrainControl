@@ -26,7 +26,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="decoderTypeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                   <Component id="addressLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                  <Component id="addressLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
+                  <Component id="locNameLabel" alignment="0" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace pref="65" max="32767" attributes="0"/>
               <Group type="103" groupAlignment="1" max="-2" attributes="0">
@@ -43,7 +43,7 @@
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="-2" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="addressLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="locNameLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="locName" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
@@ -112,11 +112,8 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="jTextField1"/>
       </Properties>
-      <Events>
-        <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="locNameKeyReleased"/>
-      </Events>
     </Component>
-    <Component class="javax.swing.JLabel" name="addressLabel1">
+    <Component class="javax.swing.JLabel" name="locNameLabel">
       <Properties>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>

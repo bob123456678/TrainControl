@@ -137,6 +137,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Maximum allowed length of locomotive names (in characters)
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
+   
+    public static final Integer MAX_LOC_NOTES_LENGTH = 2000;
 
     // Maximum page name length
     public static final Integer MAX_PAGE_NAME_LENGTH = 40;
@@ -7941,6 +7943,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
         }
+        else if (controlPressed && keyCode == KeyEvent.VK_R)
+        {
+            this.changeLocAddress((MarklinLocomotive) this.getButtonLocomotive(this.currentButton));
+        }
         else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
         {
             if (this.hasCopyTarget())
@@ -8726,17 +8732,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    public void changeLocAddress(String s)
+    public void changeLocAddress(MarklinLocomotive l)
     {
         try
         {
-            MarklinLocomotive l = this.model.getLocByName(s);
-
             if (l != null)
             {
                 LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
                 int result = JOptionPane.showConfirmDialog(
-                    this, edit, "Change address for " + l.getName(),
+                    this, edit, "Change name/address for " + l.getName(),
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
                 );
                 
@@ -8813,11 +8817,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (l != null)
         {
             JTextArea textArea = new JTextArea(l.getNotes());
-            textArea.setColumns(30);
-            textArea.setRows(10);
-            textArea.setLineWrap(true);
-            textArea.setWrapStyleWord(true);
+            textArea.setColumns(50);
+            textArea.setRows(20);
+            //textArea.setLineWrap(true);
+            //textArea.setWrapStyleWord(true);
             textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
 
             // Ensure the text area is in focus
             textArea.addAncestorListener(new AncestorListener() {
@@ -8837,49 +8842,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (confirm == JOptionPane.YES_OPTION)
             {
-                // Max length is 2000 characters
-                l.setNotes(textArea.getText().substring(0, Math.min(textArea.getText().length(), 2000)));
-            }
-        }
-    }
-    
-    public void renameLocomotive(String s)
-    {
-        Locomotive l = this.model.getLocByName(s);
-
-        if (l != null)
-        {
-            String newName = JOptionPane.showInputDialog(this, "Enter new name:", s);
-
-            if (newName != null)
-            {
-                if (newName.trim().length() == 0)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a locomotive name");
-                    return;
-                }
-
-                if (newName.length() >= MAX_LOC_NAME_DATABASE)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
-                    return;
-                }
-
-                if (this.model.getLocByName(newName) != null)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "Locomotive " + newName + " already exists in the locomotive DB.  Rename or delete it first.");
-                    return;
-                }
-
-                this.model.renameLoc(l.getName(), newName);
-
-                clearCopyTarget();
-                repaintLoc();
-                repaintMappings();
-                selector.refreshLocSelectorList();
+                l.setNotes(textArea.getText().substring(0, Math.min(textArea.getText().length(), MAX_LOC_NOTES_LENGTH)));
             }
         }
     }

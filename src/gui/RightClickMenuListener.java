@@ -11,6 +11,7 @@ import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import marklin.MarklinLocomotive;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
@@ -154,16 +155,12 @@ public class RightClickMenuListener extends MouseAdapter
                 // Option to turn off functions and sync with station
                 
                 menuItem = new JMenuItem("Turn Off Functions");
-
                 menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-O");
-                
                 add(menuItem);
 
                 menuItem = new JMenuItem("Sync w/ Central Station");
-
                 menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
-                
                 add(menuItem);
                 
                 addSeparator();
@@ -190,36 +187,23 @@ public class RightClickMenuListener extends MouseAdapter
                 addSeparator();
 
                 menuItem = new JMenuItem("Clear Button / Cut");
-
                 menuItem.addActionListener(event -> {ui.setCopyTarget(source, true);});
                 menuItem.setToolTipText("Control+X");
-
                 add(menuItem);
-                
                 
                 addSeparator();
-                
-                menuItem = new JMenuItem("Rename Locomotive");
-
-                menuItem.addActionListener(event -> {ui.renameLocomotive(ui.getButtonLocomotive(source).getName());});
-                
-                add(menuItem);
-                
-                menuItem = new JMenuItem("Change Address/Type");
-
-                menuItem.addActionListener(event -> {ui.changeLocAddress(ui.getButtonLocomotive(source).getName());});
-                
+                 
+                menuItem = new JMenuItem("Edit Name/Address/Decoder");
+                menuItem.addActionListener(event -> {ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source));});
+                menuItem.setToolTipText("Control+R");
                 add(menuItem);
                 
                 menuItem = new JMenuItem("Edit Notes");
-
                 menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
                 menuItem.setToolTipText("Control+N");
-
                 add(menuItem);
                 
                 addSeparator();
-
                 
                 menuItem = new JMenuItem("Delete from Database");
 

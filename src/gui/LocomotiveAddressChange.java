@@ -56,7 +56,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
         addressLabel = new javax.swing.JLabel();
         address = new javax.swing.JTextField();
         locName = new javax.swing.JTextField();
-        addressLabel1 = new javax.swing.JLabel();
+        locNameLabel = new javax.swing.JLabel();
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
@@ -79,14 +79,9 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
         });
 
         locName.setText("jTextField1");
-        locName.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                locNameKeyReleased(evt);
-            }
-        });
 
-        addressLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        addressLabel1.setText("Name");
+        locNameLabel.setForeground(new java.awt.Color(0, 0, 115));
+        locNameLabel.setText("Name");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -97,7 +92,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(decoderTypeLabel)
                     .addComponent(addressLabel)
-                    .addComponent(addressLabel1))
+                    .addComponent(locNameLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 65, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(locName)
@@ -110,7 +105,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(addressLabel1)
+                    .addComponent(locNameLabel)
                     .addComponent(locName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -129,17 +124,13 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
         TrainControlUI.limitLength(evt, 6);
     }//GEN-LAST:event_addressKeyReleased
 
-    private void locNameKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locNameKeyReleased
-        // TODO add your handling code here:
-    }//GEN-LAST:event_locNameKeyReleased
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;
     private javax.swing.JLabel addressLabel;
-    private javax.swing.JLabel addressLabel1;
     private javax.swing.JComboBox<String> decoderTypeInput;
     private javax.swing.JLabel decoderTypeLabel;
     private javax.swing.JTextField locName;
+    private javax.swing.JLabel locNameLabel;
     // End of variables declaration//GEN-END:variables
 }
