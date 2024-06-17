@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.2.0 Beta 6 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.0 Beta 7 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -2138,43 +2138,44 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set model
         if (showUI)
         {
-            while(!ui.isVisible())
+            model.log("Initializing UI");
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                model.log("Initializing UI");
-
-                final CountDownLatch latch = new CountDownLatch(1);
-
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-                {
-                    try
-                    {
-                        ui.setViewListener(model, latch);
-                    }
-                    catch (IOException ex)
-                    {
-                        model.log("Error initializing UI");
-                        model.log(ex);
-                        
-                        try
-                        {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException ex1) {}
-                    }                
-                }));
-
-                latch.await();
-                model.log("UI rendering...");
-
                 try
                 {
-                    ui.setVisible(true);
-                    model.log("UI initialized.");
+                    ui.setViewListener(model, latch);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
                 {
                     model.log("Error initializing UI");
                     model.log(ex);
-                }
+
+                    try
+                    {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ex1) {}
+                }                
+            }));
+
+            latch.await();
+            model.log("UI rendering...");
+
+            try
+            {
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    ui.setVisible(true);
+                    model.log("UI initialized.");
+                }));
+            }
+            catch (Exception ex)
+            {
+                model.log("Fatal error initializing UI");
+                model.log(ex);
+                System.exit(0);
             }
         }
                         
@@ -2192,7 +2193,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             model.powerState = true;
         }
-        
+                                    
         return model;
     }
 }
