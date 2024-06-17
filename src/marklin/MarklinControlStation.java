@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -2068,7 +2069,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (initIP == null)
         {
-            initIP = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, null);
+            try
+            {
+                initIP = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, null);
+            }
+            catch (Exception ex)
+            {
+                System.out.println("Error accessing preferences.");
+                ex.printStackTrace();
+            }   
         }
 
         if (!simulate)
@@ -2094,7 +2103,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else
                     {
-                        TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, initIP);
+                        try
+                        {
+                            TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, initIP);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.out.println("Error updating preferences.");
+                            ex.printStackTrace();
+                        } 
+                        
                         break;
                     }
                 }
@@ -2121,35 +2139,43 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set model
         if (showUI)
         {
-            model.log("Initializing UI");
-            
-            final CountDownLatch latch = new CountDownLatch(1);
-            
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            while(!ui.isVisible())
             {
+                model.log("Initializing UI");
+
+                final CountDownLatch latch = new CountDownLatch(1);
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    try
+                    {
+                        ui.setViewListener(model, latch);
+                    }
+                    catch (IOException ex)
+                    {
+                        model.log("Error initializing UI");
+                        model.log(ex);
+                        
+                        try
+                        {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException ex1) {}
+                    }                
+                }));
+
+                latch.await();
+                model.log("UI rendering...");
+
                 try
                 {
-                    ui.setViewListener(model, latch);
+                    ui.setVisible(true);
+                    model.log("UI initialized.");
                 }
-                catch (IOException ex)
+                catch (Exception ex)
                 {
                     model.log("Error initializing UI");
                     model.log(ex);
-                }                
-            }));
-
-            latch.await();
-            model.log("UI rendering...");
-
-            try
-            {
-                ui.setVisible(true);
-                model.log("UI initialized.");
-            }
-            catch (Exception ex)
-            {
-                model.log("Error initializing UI");
-                model.log(ex);
+                }
             }
         }
                         
