@@ -188,6 +188,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private ExecutorService MappingRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
+    private ExecutorService ImageLoaderLoc = Executors.newFixedThreadPool(2);
     private List<Future<?>> autonomyFutures = new LinkedList<>();
     private List<Future<?>> locFutures = new LinkedList<>();
 
@@ -2117,7 +2118,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
 
-                                ImageLoader.submit(new Thread(() -> 
+                                ImageLoaderLoc.submit(new Thread(() -> 
                                 {
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
@@ -2163,7 +2164,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                     bt.setHorizontalTextPosition(JButton.CENTER);
                                     bt.setVerticalTextPosition(JButton.CENTER);
 
-                                    ImageLoader.submit(new Thread(() -> 
+                                    ImageLoaderLoc.submit(new Thread(() -> 
                                     {
                                         try
                                         {
