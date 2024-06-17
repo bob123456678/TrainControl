@@ -18,7 +18,8 @@ public class MarklinLayoutComponent
     public static enum componentType {CURVE, STRAIGHT, SWITCH_LEFT, 
         DOUBLE_CURVE, SWITCH_RIGHT, SWITCH_THREE, SIGNAL, UNCOUPLER, CROSSING,
         SWITCH_CROSSING, OVERPASS, FEEDBACK_CURVE, FEEDBACK_DOUBLE_CURVE, FEEDBACK, END, TUNNEL, 
-        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK, CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y
+        TURNTABLE, LAMP, SWITCH_Y, ROUTE, TEXT, LINK, CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y, CUSTOM_PERM_THREEWAY, 
+        CUSTOM_SCISSORS, CUSTOM_PERM_SCISSORS
     };
         
     private final static String RESOURCE_PATH = "/gui/resources/icons";
@@ -184,7 +185,8 @@ public class MarklinLayoutComponent
                 this.type == componentType.SWITCH_RIGHT ||
                 this.type == componentType.SWITCH_CROSSING ||
                 this.type == componentType.SWITCH_THREE ||
-                this.type == componentType.SWITCH_Y;
+                this.type == componentType.SWITCH_Y ||
+                this.type == componentType.CUSTOM_SCISSORS;
     }   
     
     public boolean isUncoupler()
@@ -379,6 +381,9 @@ public class MarklinLayoutComponent
             case CUSTOM_PERM_LEFT:
             case CUSTOM_PERM_RIGHT:
             case CUSTOM_PERM_Y:
+            case CUSTOM_PERM_THREEWAY:
+            case CUSTOM_PERM_SCISSORS:
+            case CUSTOM_SCISSORS:
                 return this.type.toString().toLowerCase();
         }
         

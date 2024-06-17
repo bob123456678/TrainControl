@@ -10437,37 +10437,41 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         this.importRoutes.setEnabled(false);
         
-        try
-        {
-            JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
-            int i = fc.showOpenDialog(this);
-
-            if (i == JFileChooser.APPROVE_OPTION)
+        new Thread(() ->
+        {   
+            try
             {
-                File f = fc.getSelectedFile();
+                JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                int i = fc.showOpenDialog(this);
 
-                this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
-                
-                prefs.put(LAST_USED_FOLDER, f.getParent());
-       
-                refreshRouteList();
+                if (i == JFileChooser.APPROVE_OPTION)
+                {
+                    File f = fc.getSelectedFile();
 
-                // Ensure route changes are synced
-                this.model.syncWithCS2();
-                this.repaintLayout();
-                this.repaintLoc();
+                    this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+
+                    prefs.put(LAST_USED_FOLDER, f.getParent());
+
+                    refreshRouteList();
+
+                    // Ensure route changes are synced
+                    this.model.syncWithCS2();
+                    this.repaintLayout();
+                    this.repaintLoc();
+                }
             }
-        }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
-            
-            this.model.log("Route import error: " + e.getMessage());
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
 
-            this.model.log(e);
-        }
-        
-        this.importRoutes.setEnabled(true);
+                this.model.log("Route import error: " + e.getMessage());
+
+                this.model.log(e);
+            }
+
+            this.importRoutes.setEnabled(true);
+            
+        }).start();
     }//GEN-LAST:event_importRoutesActionPerformed
 
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction

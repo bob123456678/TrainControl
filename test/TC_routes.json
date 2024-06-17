@@ -22,13 +22,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "84",
                     "SETTING": "false"
                 }
@@ -873,212 +866,6 @@
         ]
     },
     {
-        "name": "x31",
-        "id": 135,
-        "s88": 12,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "109",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
-        "name": "x32",
-        "id": 136,
-        "s88": 33,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "107",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zyAutoInit",
-        "id": 137,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "46",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "78",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "99",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "95",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "71",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "72",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "15",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "16",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "77",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "8",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "34",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "88",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "94",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "3",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "2",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "81",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "107",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zyA01",
-        "id": 138,
-        "s88": 24,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "16",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zyA02",
-        "id": 139,
-        "s88": 22,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "15",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zy35",
-        "id": 140,
-        "s88": 35,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "46",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
         "name": "si g dvaerg",
         "id": 13,
         "auto": false,
@@ -1143,291 +930,11 @@
         ]
     },
     {
-        "name": "zy41",
-        "id": 141,
-        "s88": 41,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "81",
-                    "SETTING": "false",
-                    "DELAY": "4000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "46",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zyA02/01",
-        "id": 145,
-        "s88": 16,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "2",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "33",
-                    "SETTING": "true",
-                    "DELAY": "2000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "8",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "16",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zyA01/02",
-        "id": 146,
-        "s88": 17,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "2",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "8",
-                    "SETTING": "false",
-                    "DELAY": "2000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "15",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zyBk0xg",
-        "id": 147,
-        "s88": 1,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "95",
-                "SETTING": "false"
-            }
-        }]
-    },
-    {
-        "name": "zyBk02r",
-        "id": 148,
-        "s88": 22,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "95",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zyBk01r",
-        "id": 149,
-        "s88": 24,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "95",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zyBk2xg",
-        "id": 150,
-        "s88": 20,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "99",
-                "SETTING": "false"
-            }
-        }]
-    },
-    {
-        "name": "zyBk22r",
-        "id": 151,
-        "s88": 35,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "99",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zyBk21r",
-        "id": 152,
-        "s88": 39,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "99",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zA01",
-        "id": 153,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "16",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zA02",
-        "id": 154,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "15",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zBlok03x",
-        "id": 155,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "97",
-                "SETTING": "false"
-            }
-        }]
-    },
-    {
-        "name": "zBlok04",
-        "id": 156,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "98",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zBlok03",
-        "id": 157,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "98",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zBlok2y",
-        "id": 158,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "98",
-                "SETTING": "false"
-            }
-        }]
-    },
-    {
-        "name": "ziBk24r",
-        "id": 159,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "97",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "zBlok23",
-        "id": 160,
-        "auto": false,
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "97",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
         "name": "04-23<",
         "id": 33,
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
@@ -1492,13 +999,6 @@
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
@@ -1573,13 +1073,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "50",
                     "SETTING": "true"
                 }
@@ -1606,13 +1099,6 @@
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
@@ -1793,159 +1279,11 @@
         ]
     },
     {
-        "name": "xTEE",
-        "id": 168,
-        "s88": 39,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "86",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "ziAutoInit",
-        "id": 169,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "50",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "83",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "47",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "93",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "40",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "88",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "70",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "80",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "34",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
         "name": "03-23<",
         "id": 41,
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
@@ -2017,13 +1355,6 @@
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
@@ -2105,13 +1436,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "50",
                     "SETTING": "true"
                 }
@@ -2141,13 +1465,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "50",
                     "SETTING": "false"
                 }
@@ -2170,29 +1487,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zik15",
-        "id": 173,
-        "s88": 15,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
                     "SETTING": "false"
                 }
             }
@@ -2270,29 +1564,6 @@
         ]
     },
     {
-        "name": "zik47",
-        "id": 174,
-        "s88": 47,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
         "name": "22-02<",
         "id": 46,
         "auto": false,
@@ -2344,77 +1615,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "46",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zik40",
-        "id": 175,
-        "s88": 40,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "zik03",
-        "id": 176,
-        "s88": 3,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 14i",
-        "id": 177,
-        "s88": 14,
-        "conditionS88": "3,0\n15,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "false",
-                    "DELAY": "2000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
                     "SETTING": "false"
                 }
             }
@@ -2500,36 +1700,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "15",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 15u",
-        "id": 178,
-        "s88": 15,
-        "auto": false,
-        "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
                     "SETTING": "false"
                 }
             }
@@ -2706,61 +1876,6 @@
         ]
     },
     {
-        "name": "yi 15i",
-        "id": 179,
-        "s88": 15,
-        "conditionS88": "3,0\n14,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "true",
-                    "DELAY": "3000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 14u",
-        "id": 180,
-        "s88": 14,
-        "auto": false,
-        "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
         "name": "02-24>",
         "id": 52,
         "auto": false,
@@ -2833,31 +1948,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "15",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 34i",
-        "id": 181,
-        "s88": 34,
-        "conditionS88": "40,1\n47,0",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "false",
-                    "DELAY": "3000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
                     "SETTING": "false"
                 }
             }
@@ -2956,13 +2046,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "80",
                     "SETTING": "true"
                 }
@@ -2971,36 +2054,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "79",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 40u",
-        "id": 182,
-        "s88": 40,
-        "auto": false,
-        "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
                     "SETTING": "false"
                 }
             }
@@ -3120,31 +2173,6 @@
         ]
     },
     {
-        "name": "yi 40i",
-        "id": 183,
-        "s88": 40,
-        "conditionS88": "34,1\n47,0",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "true",
-                    "DELAY": "3000"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "80",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
         "name": "23-01>",
         "id": 55,
         "auto": false,
@@ -3231,74 +2259,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "79",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 34u",
-        "id": 184,
-        "s88": 34,
-        "auto": false,
-        "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "80",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 47a",
-        "id": 185,
-        "s88": 47,
-        "conditionS88": "15,0",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "70",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
                     "SETTING": "false"
                 }
             }
@@ -3397,51 +2357,6 @@
         ]
     },
     {
-        "name": "yi 47b",
-        "id": 186,
-        "s88": 47,
-        "conditionS88": "14,0\n15,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "51",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "13",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
         "name": "01-22>",
         "id": 58,
         "auto": false,
@@ -3532,21 +2447,6 @@
                 }
             }
         ]
-    },
-    {
-        "name": "yi 47c",
-        "id": 187,
-        "s88": 47,
-        "conditionS88": "14,1\n15,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "98",
-                "SETTING": "true"
-            }
-        }]
     },
     {
         "name": "01-23>",
@@ -3733,44 +2633,6 @@
         ]
     },
     {
-        "name": "yi 03a",
-        "id": 189,
-        "s88": 3,
-        "conditionS88": "40,0",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "47",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
         "name": "24-03>",
         "id": 61,
         "auto": false,
@@ -3872,51 +2734,6 @@
                 "state": {
                     "ADDRESS": "48",
                     "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "yi 03b",
-        "id": 190,
-        "s88": 3,
-        "conditionS88": "34,0\n40,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "54",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "21",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "48",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "80",
-                    "SETTING": "true"
                 }
             }
         ]
@@ -4064,7 +2881,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "97",
+                    "ADDRESS": "48",
                     "SETTING": "false"
                 }
             },
@@ -4085,13 +2902,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "11",
                     "SETTING": "false"
                 }
@@ -4107,6 +2917,20 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "49",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
                     "SETTING": "false"
                 }
             },
@@ -4204,99 +3028,6 @@
         ]
     },
     {
-        "name": "yi 03c",
-        "id": 191,
-        "s88": 3,
-        "conditionS88": "34,1\n40,1",
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "97",
-                "SETTING": "true"
-            }
-        }]
-    },
-    {
-        "name": "yi init",
-        "id": 192,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "12",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "13",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "70",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "47",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "48",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "79",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "80",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "98",
-                    "SETTING": "true"
-                }
-            }
-        ]
-    },
-    {
         "name": "01a-05>",
         "id": 91,
         "auto": false,
@@ -4305,14 +3036,14 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "110",
+                    "ADDRESS": "109",
                     "SETTING": "false"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "109",
+                    "ADDRESS": "110",
                     "SETTING": "false"
                 }
             },
@@ -4608,14 +3339,14 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "110",
+                    "ADDRESS": "109",
                     "SETTING": "false"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "109",
+                    "ADDRESS": "110",
                     "SETTING": "false"
                 }
             },
@@ -4714,14 +3445,14 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "110",
+                    "ADDRESS": "109",
                     "SETTING": "false"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "109",
+                    "ADDRESS": "110",
                     "SETTING": "false"
                 }
             },
@@ -4869,13 +3600,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "12",
                     "SETTING": "false"
                 }
@@ -4962,77 +3686,6 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "22-04>",
-        "id": 110,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "97",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "66",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "18",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "7",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "74",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "42",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "11",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "45",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "13",
                     "SETTING": "false"
                 }
             }
@@ -5237,15 +3890,15 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "110",
+                    "ADDRESS": "109",
                     "SETTING": "false"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "109",
-                    "SETTING": "false"
+                    "ADDRESS": "110",
+                    "SETTING": "true"
                 }
             }
         ]
@@ -5289,6 +3942,13 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
                 }
             },
             {
@@ -5365,13 +4025,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "1",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "50",
                     "SETTING": "false"
                 }
@@ -5429,14 +4082,14 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "110",
+                    "ADDRESS": "109",
                     "SETTING": "false"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "109",
+                    "ADDRESS": "110",
                     "SETTING": "false"
                 }
             },
@@ -5549,13 +4202,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "108",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "107",
                     "SETTING": "false"
                 }
@@ -5622,13 +4268,6 @@
                 "state": {
                     "ADDRESS": "46",
                     "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "108",
-                    "SETTING": "false"
                 }
             },
             {
@@ -5762,13 +4401,6 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "108",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "107",
                     "SETTING": "false"
                 }
@@ -5828,6 +4460,13 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false"
                 }
             },
             {
@@ -5897,17 +4536,24 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "108",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
                     "ADDRESS": "107",
                     "SETTING": "false"
                 }
             }
         ]
+    },
+    {
+        "name": "xTEE",
+        "id": 168,
+        "s88": 39,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "86",
+                "SETTING": "true"
+            }
+        }]
     }
 ]}

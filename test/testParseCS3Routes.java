@@ -74,7 +74,7 @@ public class testParseCS3Routes
             
             if (!exists)
             {
-                System.out.println("CS2 route not in CS3 file:");
+                System.out.println("TC route missing in CS3 parsed data:");
                 System.out.println(newRoute.toVerboseString()); 
                 System.out.println("============");
             }

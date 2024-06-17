@@ -56,7 +56,7 @@ public class NetworkProxy
     {
     	// Set reference
         this.model = model;
-        
+                
         // Start reader
         new ReadMessages().start();
     }
@@ -129,11 +129,15 @@ public class NetworkProxy
         {
             try
             {
+                model.log("Initializing network connection...");
+                
                 // Create a read buffer based on the protocol message length
                 byte[] buffer = new byte[CS2Message.MESSAGE_LENGTH];
 
                 // Create a packet to receive the data
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                
+                model.log("Network connection established.");
 
                 // Receive packets as they come in
                 while (true) 
@@ -154,8 +158,16 @@ public class NetworkProxy
                 model.log("Fatal network error");
                 model.log(e);
             }
+            catch (Exception e)
+            {
+                // Do not exit on error, simply close the socket connection
+                model.log("Fatal network error");
+                model.log(e);
+            }
             finally
             {
+                model.log("Network connection closed");
+                
                 // Close connection on error or when finished
             	socket.close();
             }

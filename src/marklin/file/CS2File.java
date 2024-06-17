@@ -1103,10 +1103,11 @@ public final class CS2File
     /**
      * Converts a component name from the MCS2 file to an internal componentType
      * @param name
+     * @param address - only used for CS3 switches w/o address
      * @return
      * @throws Exception 
      */
-    private MarklinLayoutComponent.componentType getComponentType(String name) throws Exception
+    private MarklinLayoutComponent.componentType getComponentType(String name, int address) throws Exception
     {
         switch(name)
         {
@@ -1144,14 +1145,6 @@ public final class CS2File
                 return MarklinLayoutComponent.componentType.DOUBLE_CURVE;
             case "bogen":
                 return MarklinLayoutComponent.componentType.CURVE;
-            case "linksweiche":
-                return MarklinLayoutComponent.componentType.SWITCH_LEFT;
-            case "rechtsweiche":
-                return MarklinLayoutComponent.componentType.SWITCH_RIGHT;
-            case "yweiche":
-                return MarklinLayoutComponent.componentType.SWITCH_Y;
-            case "dreiwegweiche":
-                return MarklinLayoutComponent.componentType.SWITCH_THREE;
             case "tunnel":
                 return MarklinLayoutComponent.componentType.TUNNEL;
             case "kreuzung":
@@ -1177,13 +1170,44 @@ public final class CS2File
                 return MarklinLayoutComponent.componentType.TEXT;
             case "pfeil":       // Link to another page
                 return MarklinLayoutComponent.componentType.LINK;
-            // Custom (non-CS2) components
+            
+            // If these have an address, make them switchable, otherwise default to a permanent crossing
+            case "linksweiche":
+            // CS3 double slip switch 2 is just two of these
+            case "dkw3_li_2":
+            case "dkw3_li":
+                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_LEFT;
             case "custom_perm_left":
                 return MarklinLayoutComponent.componentType.CUSTOM_PERM_LEFT;
+            
+            // If these have an address, make them switchable, otherwise default to a permanent crossing
+            case "rechtsweiche":
+            // CS3 double slip switch 2 is just two of these
+            case "dkw3_re":
+            case "dkw3_re_2":
+                // CS3 double slip switch 2. If these have an address, make them switchable, otherwise default to a permanent crossing
+                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_RIGHT;
             case "custom_perm_right":
                 return MarklinLayoutComponent.componentType.CUSTOM_PERM_RIGHT;
+            
+            // Y switch.  If these have an address, make them switchable, otherwise default to a permanent crossing
+            case "yweiche":
+                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_Y;
             case "custom_perm_y":
                 return MarklinLayoutComponent.componentType.CUSTOM_PERM_Y;
+             
+            case "dreiwegweiche":
+                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_THREE;
+            case "custom_perm_threeway":
+                return MarklinLayoutComponent.componentType.CUSTOM_PERM_THREEWAY;
+                
+            case "hosentraeger":
+            case "custom_scissors":
+                if (address > 0) return MarklinLayoutComponent.componentType.CUSTOM_SCISSORS;
+            case "custom_perm_scissors":
+                return MarklinLayoutComponent.componentType.CUSTOM_PERM_SCISSORS;
+                
+            // Custom (non-CS2) components
             default:
                 this.control.log("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");
@@ -1320,10 +1344,10 @@ public final class CS2File
                     }
                     
                     // This will fail for unknown components.  Catch errors?
-                    if (getComponentType(type) != null)
+                    if (getComponentType(type, address) != null)
                     {
                         layout.addComponent(
-                           getComponentType(type),
+                           getComponentType(type, address),
                            x, y, orient, state, address, rawAddress
                         );  
                         

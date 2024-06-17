@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.2.0 Beta 5 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.0 Beta 6 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -218,7 +218,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (syncWithCS2() >= 0)
         {
-            this.log("Connected to Central Station at " + network.getIP());
+            this.log("Imported data from Central Station at " + network.getIP());
 
             // Turn on network communication and turn on the power
             this.on = true;
@@ -2139,11 +2139,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }));
 
             latch.await();
-            model.log("UI initialized");
+            model.log("UI rendering...");
 
-            ui.setVisible(true);
+            try
+            {
+                ui.setVisible(true);
+                model.log("UI initialized.");
+            }
+            catch (Exception ex)
+            {
+                model.log("Error initializing UI");
+                model.log(ex);
+            }
         }
-                
+                        
         // Start execution
         proxy.setModel(model);
         

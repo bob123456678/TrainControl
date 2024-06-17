@@ -156,7 +156,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 **Limitations:**
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
-* Central Station track diagrams can only be downloaded from the CS2, not CS3 (local layout files can be created/used with a CS3 if desired)
+* Central Station track diagrams require a CS2, or CS3 v2.5+ (local layout files can be created/used with older CS3s if desired)
 
 ## License & Contact
 
@@ -198,17 +198,24 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 ## Layouts and the CS3
 
 This program was originally written to import and display layouts created/configured from within the CS2.
-Because the CS3 uses a different layout file format than the CS2, this program does not currently support displaying CS3 layouts.
 
-However, even when using a CS3, you can view CS2 layouts in this program as follows:
-- Create an empty folder on your PC
-- From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
-- Start TrainControl and within the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
-- The static local layout will now be shown in the Layout tab
+Because the CS3 uses a different layout format than the CS2, this program does support displaying native CS3 layouts. 
+However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
+In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.
 
-If no CS2 is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.  A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.
+If have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
+    - If you have a CS2 with a layout, import your layout:
+        - Create an empty folder on your PC
+        - From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+        - Start TrainControl, then from the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
+        - The static local layout will now be shown in the Layout tab
+    - Otherwise
+        - Start TrainControl, then from the Settings tab, click on "Initialize New Local Layout"
+        - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
 
-If you change the local files, clicking on "Sync with CS2" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2.  Some users might find this easier than inputting data into the CS3 UI.
+A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
+
+If you change the local files, clicking on "Sync Central Station" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
@@ -226,6 +233,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Statistics improvements
         - Added a 30-day usage graph to the Stats tab
         - Exported raw data now has the .csv extension
+    - Layout improvements
+        - Track Board layouts from CS3 v2.5.0+ can now be automatically imported
+        - Added new accessory types for special CS3 double slip switches
+        - Switches without an address will no longer be clickable
+        - Improved left/right/threeway switch icon quality
     - Locomotive management improvements
         - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as the last lubrication date, etc.
         - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
