@@ -224,7 +224,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.2.0 [Beta]
-    - Added basic support for parsing and importing routes from the CS3  
+    - Added basic support for parsing and importing routes from the CS3 
         - CS3 routes will now automatically be imported into TrainControl and will always overwrite local routes with the same ID
         - The first S88 will be interpreted as the triggering S88
         - Subsequent S88s will be interpreted as additional mandatory conditions for triggering the route
