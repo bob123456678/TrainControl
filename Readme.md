@@ -204,14 +204,15 @@ However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the 
 In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.
 
 If have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
-    - If you have a CS2 with a layout, import your layout:
-        - Create an empty folder on your PC
-        - From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
-        - Start TrainControl, then from the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
-        - The static local layout will now be shown in the Layout tab
-    - Otherwise
-        - Start TrainControl, then from the Settings tab, click on "Initialize New Local Layout"
-        - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
+
+- If you have a CS2 with a layout, import your layout:
+    - Create an empty folder on your PC
+    - From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+    - Start TrainControl, then from the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
+    - The static local layout will now be shown in the Layout tab
+- Otherwise
+    - Start TrainControl, then from the Settings tab, click on "Initialize New Local Layout"
+    - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
 
 A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
 
