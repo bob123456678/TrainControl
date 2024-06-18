@@ -242,7 +242,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Locomotive management improvements
         - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as the last lubrication date, etc.
         - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
-    - Improved occasional UI initialization error on startup
+    - Fixed occasional UI initialization error on startup
     - Improved error logging
 
 * v2.1.5 [6/1/24]
