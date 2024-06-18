@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import model.ModelListener;
 
 /**
- *  This class facilitates communication with the Marklin CS2 over UDP
+ *  This class facilitates communication with the Marklin CS2/CS3 over UDP
  */
 public class NetworkProxy
 {
@@ -57,6 +57,8 @@ public class NetworkProxy
     	// Set reference
         this.model = model;
                 
+        model.log("Initializing CAN listener on " + this.getIP() + "...");
+        
         // Start reader
         new ReadMessages().start();
     }
@@ -128,16 +130,14 @@ public class NetworkProxy
         public void run()
         {
             try
-            {
-                model.log("Initializing network connection...");
-                
+            {                
                 // Create a read buffer based on the protocol message length
                 byte[] buffer = new byte[CS2Message.MESSAGE_LENGTH];
 
                 // Create a packet to receive the data
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 
-                model.log("Network connection established.");
+                model.log("CAN listener running.");
 
                 // Receive packets as they come in
                 while (true) 
@@ -166,7 +166,7 @@ public class NetworkProxy
             }
             finally
             {
-                model.log("Network connection closed");
+                model.log("CAN listener closed.");
                 
                 // Close connection on error or when finished
             	socket.close();

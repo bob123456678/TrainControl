@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.2.0 Beta 7 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.0 Beta 8 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -229,7 +229,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.log("Network connection not established");
+            this.log("Central Station network connection not established.");
         }   
     }
         
@@ -428,12 +428,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Gets cumulative locomotive runtime for the number of days specified from the current date
      * @param days
+     * @param offset
      * @return 
      */
     @Override
-    public TreeMap<String, Long> getDailyRuntimeStats(int days)
+    public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset)
     {
-        long startDate = System.currentTimeMillis();
+        long startDate = System.currentTimeMillis() - (offset * 86400000);
         
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
         
@@ -455,12 +456,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Gets the number of locomotives run daily over the number of days specified from the current date
      * @param days
+     * @param offset
      * @return 
      */
     @Override
-    public TreeMap<String, Integer> getDailyCountStats(int days)
+    public TreeMap<String, Integer> getDailyCountStats(int days, long offset)
     {
-        long startDate = System.currentTimeMillis();
+        long startDate = System.currentTimeMillis() - (offset * 86400000);
         
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
         
@@ -2063,6 +2065,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException, InterruptedException
     {        
+        System.out.println("TrainControl starting...");
+        
         // User interface
         TrainControlUI ui = new TrainControlUI();
         

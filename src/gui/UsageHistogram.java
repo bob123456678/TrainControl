@@ -1,8 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
 package gui;
 
 import java.awt.BorderLayout;
@@ -21,6 +16,8 @@ import util.Conversion;
 public class UsageHistogram extends javax.swing.JFrame
 {
     TrainControlUI tcui;
+    JComponent chart;
+    long offset = 0;
     
     /** Creates new form UsageHistogram
      * @param tcui 
@@ -34,21 +31,25 @@ public class UsageHistogram extends javax.swing.JFrame
 
     private void createHistogramPanel()
     {
-        // Example data: Replace with your actual data (dates and values)
-        TreeMap<String, Long> data = tcui.getModel().getDailyRuntimeStats(30);
-        TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(30);
+        if (chart != null)
+        {
+            remove(chart);
+        }
+        
+        TreeMap<String, Long> data = tcui.getModel().getDailyRuntimeStats(30, offset);
+        TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(30, offset);
                 
         setLayout(new BorderLayout());
 
         // Create a custom component for drawing the histogram
-        JComponent histogramComponent = new JComponent()
+        chart = new JComponent()
         {
             @Override
             protected void paintComponent(Graphics g)
             {
                 super.paintComponent(g);
 
-                // Set up drawing parameters (adjust as needed)
+                // Set up drawing parameters
                 int barWidth = 20;
                 int barHeight = 130;
                 int x = 30;
@@ -56,7 +57,7 @@ public class UsageHistogram extends javax.swing.JFrame
                 
                 // Draw a white background for the chart rectangle
                 g.setColor(Color.WHITE);
-                g.fillRect(x - 3, y - 150 - 20, 930 - x, 150 + 20); // Adjust dimensions as needed
+                g.fillRect(x - 3, y - 150 - 20, 900, 170); // Adjust dimensions as needed
                 
                 double maxVal = 0;
                 
@@ -110,7 +111,7 @@ public class UsageHistogram extends javax.swing.JFrame
                 
                 // Draw a 1-pixel border around the entire chart
                 g.setColor(Color.BLACK);
-                g.drawRect(25, 30, x - 30, y - 30);
+                g.drawRect(x - 930 + 25, y - 170, 900, 170);
                 
                 // Add rotated y-axis label
                 g.setColor(Color.BLACK);
@@ -122,7 +123,7 @@ public class UsageHistogram extends javax.swing.JFrame
             }
         };
 
-        add(histogramComponent, BorderLayout.CENTER);
+        add(chart, BorderLayout.CENTER);
         getContentPane().setBackground(new Color(240, 240, 240)); // Set background color
 
         this.pack();
@@ -138,31 +139,101 @@ public class UsageHistogram extends javax.swing.JFrame
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        prev = new javax.swing.JButton();
+        next = new javax.swing.JButton();
+        reset = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Cumulative Locomotive Runtime - Past 30 Days");
         setBackground(new java.awt.Color(246, 246, 246));
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(960, 330));
         setMinimumSize(new java.awt.Dimension(960, 330));
-        setPreferredSize(new java.awt.Dimension(960, 330));
+        setPreferredSize(new java.awt.Dimension(940, 330));
+
+        prev.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        prev.setText("<<<");
+        prev.setFocusable(false);
+        prev.setMaximumSize(new java.awt.Dimension(90, 20));
+        prev.setMinimumSize(new java.awt.Dimension(90, 20));
+        prev.setPreferredSize(new java.awt.Dimension(90, 20));
+        prev.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                prevActionPerformed(evt);
+            }
+        });
+
+        next.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        next.setText(">>>");
+        next.setFocusable(false);
+        next.setMaximumSize(new java.awt.Dimension(90, 20));
+        next.setMinimumSize(new java.awt.Dimension(90, 20));
+        next.setPreferredSize(new java.awt.Dimension(90, 20));
+        next.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nextActionPerformed(evt);
+            }
+        });
+
+        reset.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        reset.setText("Reset");
+        reset.setFocusable(false);
+        reset.setMaximumSize(new java.awt.Dimension(90, 20));
+        reset.setMinimumSize(new java.awt.Dimension(90, 20));
+        reset.setPreferredSize(new java.awt.Dimension(90, 20));
+        reset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resetActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(23, 23, 23)
+                .addComponent(prev, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(reset, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(next, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(131, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(prev, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(next, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(reset, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(274, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-   
+    private void prevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_prevActionPerformed
+        offset += 30;
+        createHistogramPanel();
+    }//GEN-LAST:event_prevActionPerformed
+
+    private void nextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextActionPerformed
+        offset -= 30;
+        createHistogramPanel();
+    }//GEN-LAST:event_nextActionPerformed
+
+    private void resetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetActionPerformed
+        offset = 0;
+        createHistogramPanel();
+    }//GEN-LAST:event_resetActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton next;
+    private javax.swing.JButton prev;
+    private javax.swing.JButton reset;
     // End of variables declaration//GEN-END:variables
 
 }

@@ -1231,6 +1231,12 @@ public final class CS2File
         for (String name : names)
         { 
             String url = getLayoutURL(name);
+            
+            if (control.isDebug())
+            {
+                control.log("Loading layout from: " + url);
+            }
+            
             List<Map<String, String> > l = parseFile(fetchURL(url));
             
             int maxX = 0;

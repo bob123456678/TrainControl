@@ -71,6 +71,6 @@ public interface ViewListener
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);
     public long getTimeSinceLastPing();
-    public TreeMap<String, Long> getDailyRuntimeStats(int days);
-    public TreeMap<String, Integer> getDailyCountStats(int days);
+    public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset);
+    public TreeMap<String, Integer> getDailyCountStats(int days, long offset);
 }
