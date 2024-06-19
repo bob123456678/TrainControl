@@ -201,13 +201,13 @@ This program was originally written to import and display layouts created/config
 
 Because the CS3 uses a different layout format than the CS2, this program does support displaying native CS3 layouts. 
 However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
-In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.
+In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
 
 If have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
 
-- If you have a CS2 with a layout, import your layout:
+- If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
-    - From your CS2, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
     - Start TrainControl, then from the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
     - The static local layout will now be shown in the Layout tab
 - Otherwise
@@ -224,7 +224,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.0 [Beta]
+* v2.2.0 [6/18/2024]
     - Added basic support for parsing and importing routes from the CS3 
         - CS3 routes will now automatically be imported into TrainControl and will always overwrite local routes with the same ID
         - The first S88 will be interpreted as the triggering S88
@@ -243,8 +243,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Locomotive management improvements
         - Added notes feature to locomotives (Control+N).  This can be used to save arbitrary information such as the last lubrication date, etc.
         - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
-    - Fixed occasional UI initialization error on startup
     - Improved error logging
+    - Fixed occasional UI initialization error on startup
 
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths

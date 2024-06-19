@@ -18,6 +18,7 @@ public class UsageHistogram extends javax.swing.JFrame
     TrainControlUI tcui;
     JComponent chart;
     long offset = 0;
+    final int perPage = 30;
     
     /** Creates new form UsageHistogram
      * @param tcui 
@@ -36,8 +37,8 @@ public class UsageHistogram extends javax.swing.JFrame
             remove(chart);
         }
         
-        TreeMap<String, Long> data = tcui.getModel().getDailyRuntimeStats(30, offset);
-        TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(30, offset);
+        TreeMap<String, Long> data = tcui.getModel().getDailyRuntimeStats(perPage, offset);
+        TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(perPage, offset);
                 
         setLayout(new BorderLayout());
 
@@ -126,6 +127,8 @@ public class UsageHistogram extends javax.swing.JFrame
         add(chart, BorderLayout.CENTER);
         getContentPane().setBackground(new Color(240, 240, 240)); // Set background color
 
+        setTitle(String.format("Cumulative Locomotive Runtime: Past %s to %s Days", offset, offset + perPage));
+        
         this.pack();
         this.setVisible(true);
     }
@@ -215,13 +218,17 @@ public class UsageHistogram extends javax.swing.JFrame
     }// </editor-fold>//GEN-END:initComponents
 
     private void prevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_prevActionPerformed
-        offset += 30;
+        offset += perPage;
         createHistogramPanel();
     }//GEN-LAST:event_prevActionPerformed
 
     private void nextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextActionPerformed
-        offset -= 30;
-        createHistogramPanel();
+        
+        if (offset >= perPage)
+        {
+            offset -= perPage;
+            createHistogramPanel();
+        }
     }//GEN-LAST:event_nextActionPerformed
 
     private void resetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetActionPerformed
