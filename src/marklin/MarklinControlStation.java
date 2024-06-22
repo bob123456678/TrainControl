@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.2.0 for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.0a for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -2168,10 +2168,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             model.log("UI rendering...");
 
             try
-            {
+            {                // System.out.println(javax.swing.SwingUtilities.isEventDispatchThread());
+
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
-                    ui.setVisible(true);
+                    ui.display();
                     model.log("UI initialized.");
                 }));
             }

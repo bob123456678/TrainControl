@@ -1267,11 +1267,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
              
         this.latencyLabel.setText("Not Connected to Central Station");
 
-        // Show window - this is now called externally once this call returns        
-        // this.setVisible(true); 
-
-        // Don't do this until the end, otherwise keyboard events may not register properly
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        // Start with true to ensure keyboard events register properly
+        // If we don't do this, initializing the UI from the EDT will cause issues
+        setAlwaysOnTop(true);
         
         // Render layout now that the UI is visible
         repaintLayout();
@@ -1338,6 +1336,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         // Release the latch
         if (latch != null) latch.countDown();
+        
+        // Show window - this is now called externally once this call returns        
+    }
+    
+    /**
+     * Renders the UI once everything is initialized - to be called externally
+     */
+    public void display()
+    {
+        setVisible(true);
+             
+        // Restore correct preference
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));             
     }
     
     /**
