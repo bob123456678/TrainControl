@@ -41,7 +41,7 @@ public class UsageHistogram extends javax.swing.JFrame
         TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(perPage, offset);
                 
         setLayout(new BorderLayout());
-
+        
         // Create a custom component for drawing the histogram
         chart = new JComponent()
         {
@@ -69,6 +69,8 @@ public class UsageHistogram extends javax.swing.JFrame
                         maxVal = entry.getValue();
                     }
                 }
+                
+                long cumulativeHours = 0;
 
                 for (Map.Entry<String, Long> entry : data.entrySet())
                 {
@@ -79,6 +81,7 @@ public class UsageHistogram extends javax.swing.JFrame
                     Integer locCount = dataLocs.getOrDefault(date, 0);
 
                     String hours = Conversion.convertSecondsToHMm(entry.getValue());
+                    cumulativeHours += entry.getValue();
 
                     if (maxVal > 0)
                     {
@@ -121,13 +124,21 @@ public class UsageHistogram extends javax.swing.JFrame
                 g2d.setFont(g2d.getFont().deriveFont(Font.BOLD)); 
                 g2d.drawString("Hours (# Locs)", 32, y / 2 + 65);
                 g2d.rotate(-Math.toRadians(270), 17, y / 2 + 65); 
+                
+                int numLocs = tcui.getModel().getTotalLocStats(perPage, offset);
+                
+                setTitle(String.format("Cumulative Runtime: %s locomotive%s, %s hours over past %s to %s days", 
+                    numLocs, 
+                    numLocs != 1 ? "s" : "",
+                    Conversion.convertSecondsToHMm(cumulativeHours),        
+                    offset, 
+                    offset + perPage
+                ));
             }
         };
 
         add(chart, BorderLayout.CENTER);
         getContentPane().setBackground(new Color(240, 240, 240)); // Set background color
-
-        setTitle(String.format("Cumulative Locomotive Runtime: Past %s to %s Days", offset, offset + perPage));
         
         this.pack();
         this.setVisible(true);

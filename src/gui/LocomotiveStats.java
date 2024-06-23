@@ -111,10 +111,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
             for (Locomotive l : tcui.getModel().getLocomotives())
             {
-                //if (l.getTotalRuntime() > 0)
-                //{
-                    sortedLocs.add(l);
-                //}
+                sortedLocs.add(l);
             }
 
             if (!sortedLocs.isEmpty())
@@ -410,7 +407,11 @@ public class LocomotiveStats extends javax.swing.JPanel
     }//GEN-LAST:event_formMouseClicked
 
     private void viewUsageGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewUsageGraphActionPerformed
-        new UsageHistogram(this.tcui);
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            new UsageHistogram(this.tcui);
+        }));
     }//GEN-LAST:event_viewUsageGraphActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -73,4 +73,5 @@ public interface ViewListener
     public long getTimeSinceLastPing();
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset);
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset);
+    public int getTotalLocStats(int days, long offset);
 }

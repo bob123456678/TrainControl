@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String VERSION = "v2.2.0a for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v2.2.1 for Marklin Central Station 2 & 3";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
@@ -479,6 +479,35 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         return stats;
+    }
+    
+    /**
+     * Gets the total number of unique locomotives over the number of days specified from the current date
+     * @param days
+     * @param offset
+     * @return 
+     */
+    @Override
+    public int getTotalLocStats(int days, long offset)
+    {
+        long startDate = System.currentTimeMillis() - (offset * 86400000);
+        
+        Set locs = new HashSet<>();
+        
+        for (int i = 0; i < Math.abs(days); i++)
+        {            
+            for (Locomotive l : this.getLocomotives())
+            {
+                if (l.getRuntimeOnDay(Locomotive.getDate(startDate)) > 0)
+                {
+                    locs.add(l);
+                }
+            }
+            
+            startDate -= 86400000;
+        }
+        
+        return locs.size();
     }
     
     /**

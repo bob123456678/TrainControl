@@ -224,6 +224,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.2.1 [Beta]
+    - Added total runtime and number of locomotives to stats histogram chart
+
 * v2.2.0 [6/18/2024]
     - Added basic support for parsing and importing routes from the CS3 
         - CS3 routes will now automatically be imported into TrainControl and will always overwrite local routes with the same ID
