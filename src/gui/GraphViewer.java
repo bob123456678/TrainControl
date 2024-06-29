@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package gui;
 
 import automation.Edge;
@@ -37,8 +32,7 @@ import org.graphstream.ui.view.camera.Camera;
 import org.graphstream.ui.view.util.InteractiveElement;
 
 /**
- *
- * @author Adam
+ * Autonomy graph UI
  */
 final public class GraphViewer extends javax.swing.JFrame {
     
@@ -127,6 +121,7 @@ final public class GraphViewer extends javax.swing.JFrame {
                             {
                                 int newLength = Math.abs(Integer.parseInt(dialogResult));
                                 p.setMaxTrainLength(newLength);
+                                ui.updatePoint(p, mainGraph);
                                 parent.repaintAutoLocList(false);
                             }
                             catch (NumberFormatException e)
@@ -243,7 +238,8 @@ final public class GraphViewer extends javax.swing.JFrame {
                         {
                             p.setExcludedLocs(edit.getSelectedExcludeLocs());
                         }
-
+                        
+                        ui.updatePoint(p, mainGraph);
                         parent.repaintAutoLocList(true);
                     }
                     catch (Exception e)
@@ -1008,7 +1004,6 @@ final public class GraphViewer extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Auto Layout Graph View");
         setAlwaysOnTop(true);
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));

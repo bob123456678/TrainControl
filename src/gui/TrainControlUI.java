@@ -107,6 +107,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
+    public static final String SHOW_STATION_LENGTH = "ShowStationLength";
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
@@ -524,7 +525,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
         this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
-
+        this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, false));
+ 
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -2740,6 +2742,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         hideReversing = new javax.swing.JCheckBox();
         clearNonParkedLocs = new javax.swing.JButton();
         hideInactive = new javax.swing.JCheckBox();
+        showStationLengths = new javax.swing.JCheckBox();
         jLabel52 = new javax.swing.JLabel();
         validateButton = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
@@ -6301,6 +6304,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        showStationLengths.setText("Show Station Lengths");
+        showStationLengths.setToolTipText("Displays the maximum train lengths next to each station name. Also highlights locomotive exclusions.");
+        showStationLengths.setFocusable(false);
+        showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                showStationLengthsMouseReleased(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -6308,15 +6320,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(clearNonParkedLocs))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(hideReversing)
-                            .addComponent(hideInactive))
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                    .addComponent(hideReversing)
+                    .addComponent(hideInactive)
+                    .addComponent(clearNonParkedLocs)
+                    .addComponent(showStationLengths))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6325,9 +6333,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(hideReversing)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(hideInactive)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(showStationLengths)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(clearNonParkedLocs)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         jLabel52.setText("Graph UI options");
@@ -6345,7 +6355,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(53, Short.MAX_VALUE))
+                .addContainerGap(31, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6356,9 +6366,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jLabel52))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(13, 13, 13))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
@@ -9660,6 +9670,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
                 return;
             }
+            
+            // Show graph window if it was closed
+            if (!this.graphViewer.isVisible())
+            {
+                this.graphViewer.setVisible(true);
+            }
 
             for (String routeName : this.model.getRouteList())
             {
@@ -10708,6 +10724,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_BackupButtonActionPerformed
 
+    private void showStationLengthsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_showStationLengthsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+            prefs.putBoolean(SHOW_STATION_LENGTH, this.showStationLengths.isSelected());
+        }
+        else
+        {
+            this.showStationLengths.setSelected(!this.showStationLengths.isSelected());
+        }
+    }//GEN-LAST:event_showStationLengthsMouseReleased
+
     public void deleteTimetableEntry(MouseEvent evt)
     {
         try
@@ -10981,6 +11009,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         for (Point p : this.model.getAutoLayout().getPoints())
         {    
+            this.updatePoint(p, g);
+
             if (this.hideReversing.isSelected() && 
                     (p.isReversing() 
                     || this.model.getAutoLayout().hasOnlyReversingIncoming(p)
@@ -11026,14 +11056,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     synchronized public void updatePoint(Point p, Graph graph)
     {
+        // Labels for station length and exclusions
+        String lengthSuffix = "";
+        String additionalStyle = "";
+        
+        if (p.getMaxTrainLength() > 0 && this.showStationLengths.isSelected())
+        {
+            lengthSuffix = " (" + p.getMaxTrainLength() + ")";
+        }
+        
+        if (!p.getExcludedLocs().isEmpty() && this.showStationLengths.isSelected())
+        {
+            additionalStyle = "shadow-mode:plain; shadow-color:rgb(255,102,0); shadow-width: 4; shadow-offset:0;";
+        }
+        else
+        {
+            additionalStyle = "shadow-mode:none;";
+        }
+        
         if (p.isOccupied() && p.getCurrentLocomotive() != null)
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + "  [" + p.getCurrentLocomotive().getName() + "]");
+            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + lengthSuffix + "  [" + p.getCurrentLocomotive().getName() + "]");
             graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
         }
         else
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName());
+            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + lengthSuffix);
             graph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
         }
 
@@ -11067,11 +11115,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
         if (p.isActive())
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);");
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);" + additionalStyle);
         }
         else
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);");
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle);
         }
     }
     
@@ -11915,6 +11963,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider minDelay;
     private javax.swing.JSlider preArrivalSpeedReduction;
+    private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;
     private javax.swing.JCheckBox sliderSetting;
