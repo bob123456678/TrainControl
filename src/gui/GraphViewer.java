@@ -2,6 +2,7 @@ package gui;
 
 import automation.Edge;
 import automation.Point;
+import base.Locomotive;
 import java.awt.Component;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -34,12 +36,14 @@ import org.graphstream.ui.view.util.InteractiveElement;
 /**
  * Autonomy graph UI
  */
-final public class GraphViewer extends javax.swing.JFrame {
-    
+final public class GraphViewer extends javax.swing.JFrame
+{    
     private TrainControlUI parent;
     private SwingViewer swingViewer;
     private final View swingView;
     private final Graph mainGraph;
+    
+    private String lastHoveredNode;
 
     public Graph getMainGraph()
     {
@@ -871,6 +875,42 @@ final public class GraphViewer extends javax.swing.JFrame {
                 if (SwingUtilities.isLeftMouseButton(evt)) 
                 {
                     super.mousePressed(evt);
+                }
+            }
+            
+            @Override
+            public void mouseMoved(MouseEvent evt)
+            {
+                // Disply log message to show what locomotives are excluded
+                if (parent.isShowStationLengthsSelected() && !parent.getModel().getAutoLayout().isRunning())
+                {
+                    GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+
+                    if (element != null)
+                    {
+                        Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
+
+                        if (p != null)
+                        {                            
+                            if (!p.getName().equals(lastHoveredNode))
+                            {
+                                List<String> locomotiveNames = p.getExcludedLocs().stream()
+                                    .map(Locomotive::getName)
+                                    .collect(Collectors.toList());
+
+                                if (!locomotiveNames.isEmpty())
+                                {
+                                    ui.getModel().log("Excluded at " + p.getName() + ": " + locomotiveNames.toString().replace("[", "").replace("]", ""));
+                                }
+                                
+                                lastHoveredNode = p.getName();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        lastHoveredNode = null;
+                    }
                 }
             }
             

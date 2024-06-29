@@ -4880,7 +4880,7 @@
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace min="-2" pref="34" max="-2" attributes="0"/>
                               <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace pref="471" max="32767" attributes="0"/>
+                              <EmptySpace pref="445" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -5127,7 +5127,7 @@
                                   <Component id="timetableCapture" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane6" pref="465" max="32767" attributes="0"/>
+                              <Component id="jScrollPane6" pref="439" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -5217,7 +5217,7 @@
                                   <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel52" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="31" max="32767" attributes="0"/>
+                              <EmptySpace pref="19" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -5592,8 +5592,8 @@
                         </Component>
                         <Component class="javax.swing.JCheckBox" name="showStationLengths">
                           <Properties>
-                            <Property name="text" type="java.lang.String" value="Show Station Lengths"/>
-                            <Property name="toolTipText" type="java.lang.String" value="Displays the maximum train lengths next to each station name. Also highlights locomotive exclusions."/>
+                            <Property name="text" type="java.lang.String" value="Show Lengths &amp; Exclusions"/>
+                            <Property name="toolTipText" type="java.lang.String" value="Displays edge lengths, maximum train lengths next to each station name, and highlights locomotive exclusions."/>
                             <Property name="focusable" type="boolean" value="false"/>
                           </Properties>
                           <Events>

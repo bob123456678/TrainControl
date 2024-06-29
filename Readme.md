@@ -224,12 +224,12 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.1 [Beta]
+* v2.2.1 [6/29/2024]
     - Added total runtime and number of locomotives to stats histogram chart
     - Autonomy graph UI improvements
-        - If closed, the graph UI will now automatically re-open whenever autonmous operation is started
-        - Added a setting to show/hide the max train lengths at each station
-        - The above setting also highlights stations with excluded locomotives
+        - If closed, the graph UI will now automatically re-open whenever autonomous operation is started
+        - Added a setting to show/hide edge lengths and the maximum train lengths at each station
+        - The above setting also highlights stations with excluded locomotives and shows the list of locomotives in the log on hover
 
 * v2.2.0 [6/18/2024]
     - Added basic support for parsing and importing routes from the CS3 

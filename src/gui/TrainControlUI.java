@@ -525,7 +525,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
         this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
-        this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, false));
+        this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, true));
  
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -5970,7 +5970,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addContainerGap(471, Short.MAX_VALUE))
+                .addContainerGap(445, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
@@ -6059,7 +6059,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(executeTimetable)
                     .addComponent(timetableCapture))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 465, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 439, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6304,8 +6304,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        showStationLengths.setText("Show Station Lengths");
-        showStationLengths.setToolTipText("Displays the maximum train lengths next to each station name. Also highlights locomotive exclusions.");
+        showStationLengths.setText("Show Lengths & Exclusions");
+        showStationLengths.setToolTipText("Displays edge lengths, maximum train lengths next to each station name, and highlights locomotive exclusions.");
         showStationLengths.setFocusable(false);
         showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -6355,7 +6355,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addContainerGap(19, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -10713,6 +10713,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }//GEN-LAST:event_timetableCaptureActionPerformed
 
+    public boolean isShowStationLengthsSelected()
+    {
+        return this.showStationLengths.isSelected();
+    }
+    
     private void BackupButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BackupButtonActionPerformed
         new Thread(() ->
         {
@@ -10975,7 +10980,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void updateEdgeLength(Edge e, Graph graph)
     {
-        if (e.getLength() > 0)
+        if (e.getLength() > 0 && this.isShowStationLengthsSelected())
         {
             graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getLength());
         }
@@ -11037,6 +11042,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Hides edges, TODO move to a separate function later
         for (Edge e : this.model.getAutoLayout().getEdges())
         {
+            this.updateEdgeLength(e, g);
+            
             if (g.getNode(e.getEnd().getUniqueId()).getAttribute("ui.hide") != null || 
                     g.getNode(e.getStart().getUniqueId()).getAttribute("ui.hide") != null)
             {
@@ -11046,6 +11053,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 g.getEdge(e.getUniqueId()).removeAttribute("ui.hide");
             }   
+            
         }
     }
     
