@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package gui;
 
 import java.awt.Dimension;
@@ -17,8 +12,8 @@ import marklin.MarklinLayout;
  *
  * @author Adam
  */
-public class LayoutPopupUI extends javax.swing.JFrame {
-
+public class LayoutPopupUI extends javax.swing.JFrame
+{
     TrainControlUI parent;
     int size;
     MarklinLayout layout;

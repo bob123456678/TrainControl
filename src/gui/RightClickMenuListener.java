@@ -60,8 +60,16 @@ public class RightClickMenuListener extends MouseAdapter
             add(menuItem);
             
             menuItem = new JMenuItem("Quick Find Locomotive");
-            menuItem.addActionListener(event -> ui.quickLocSearch()); 
-            menuItem.setToolTipText("Control+F");
+            
+            if (ui.getModel().getLocomotives().isEmpty())
+            {
+                menuItem.setEnabled(false);
+            }
+            else
+            {
+                menuItem.addActionListener(event -> ui.quickLocSearch()); 
+                menuItem.setToolTipText("Control+F");
+            }
             
             add(menuItem);
             

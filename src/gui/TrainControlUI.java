@@ -112,6 +112,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
     
+    public static final String NO_LOC_MESSAGE = "There are no locomotives currently in the database. Add some in the Tools tab, or via the Central Station, and then synchronize.";
+    
     // Keyboard layout constants
     public static final String KEYBOARD_QWERTY = "QWERTY";
     public static final String KEYBOARD_QWERTZ = "QWERTZ";
@@ -1516,8 +1518,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(()->
         { 
-            this.selector.setVisible(true);
-            this.selector.updateScrollArea();    
+            if (this.getModel().getLocomotives().isEmpty())
+            {
+                JOptionPane.showMessageDialog(this,
+                    NO_LOC_MESSAGE
+                ); 
+            }
+            else
+            {
+                this.selector.setVisible(true);
+                this.selector.updateScrollArea();
+                this.selector.requestFocus();
+            }
         }));
     }
     
@@ -8917,9 +8929,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_syncLocStateButtonActionPerformed
 
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
-        this.selector.setVisible(true);
-        this.selector.updateScrollArea();
-        this.selector.requestFocus();
+        
+        this.showLocSelector();
+        
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
 
     private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
@@ -10096,7 +10108,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
                 int dialogResult = JOptionPane.showConfirmDialog(this,
-            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the UI to add points and edges, and to place locomotives.",
+            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
             "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if(dialogResult == JOptionPane.OK_OPTION)
         {
@@ -10115,7 +10127,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 "    \"turnOffFunctionsOnArrival\": true,\n" +
                 "    \"turnOnFunctionsOnDeparture\": true,\n" +        
                 "    \"atomicRoutes\": true,\n" +
-                "    \"maxLocInactiveSeconds\": 120\n" +
+                "    \"maxLocInactiveSeconds\": 120,\n" +
+                "    \"timetable\": []\n" +
                 "}"
             );
 

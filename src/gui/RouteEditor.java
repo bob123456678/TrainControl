@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package gui;
 
 import base.RouteCommand;
@@ -21,8 +16,7 @@ import javax.swing.JTextField;
 import marklin.MarklinRoute;
 
 /**
- *
- * @author Adam
+ * UI for editing routes 
  */
 public class RouteEditor extends javax.swing.JPanel
 {    
@@ -279,7 +273,6 @@ public class RouteEditor extends javax.swing.JPanel
         jLabel4.setText("Triggering S88");
 
         s88.setColumns(6);
-        s88.setText("jTextField1");
         s88.setMaximumSize(new java.awt.Dimension(90, 26));
         s88.setMinimumSize(new java.awt.Dimension(90, 26));
         s88.addKeyListener(new java.awt.event.KeyAdapter() {

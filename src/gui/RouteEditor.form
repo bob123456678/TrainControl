@@ -246,7 +246,6 @@
         <Component class="javax.swing.JTextField" name="s88">
           <Properties>
             <Property name="columns" type="int" value="6"/>
-            <Property name="text" type="java.lang.String" value="jTextField1"/>
             <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
               <Dimension value="[90, 26]"/>
             </Property>

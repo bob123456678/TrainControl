@@ -224,6 +224,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.2.2 [Beta]
+    - Various minor UI enhancements and helpful messages for first-time users
+
 * v2.2.1 [6/29/2024]
     - Added total runtime and number of locomotives to stats histogram chart
     - Autonomy graph UI improvements

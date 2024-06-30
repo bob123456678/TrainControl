@@ -82,12 +82,21 @@ final public class GraphViewer extends javax.swing.JFrame
                 menuItem = new JMenuItem("Add new Locomotive to graph at " + nodeName);
                 menuItem.addActionListener(event -> 
                     {
-                        GraphLocAssign edit = new GraphLocAssign(parent, p, true);
-
-                        int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                        if(dialogResult == JOptionPane.OK_OPTION)
+                        if (parent.getModel().getLocomotives().isEmpty())
                         {
-                            edit.commitChanges();
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                TrainControlUI.NO_LOC_MESSAGE
+                            );
+                        }
+                        else
+                        {
+                            GraphLocAssign edit = new GraphLocAssign(parent, p, true);
+
+                            int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                            if(dialogResult == JOptionPane.OK_OPTION)
+                            {
+                                edit.commitChanges();
+                            }
                         }
                     }
                 ); 
@@ -943,7 +952,7 @@ final public class GraphViewer extends javax.swing.JFrame
                             {
                                 Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
 
-                                if (p != null && p.isDestination())
+                                if (p != null && p.isDestination() && !parent.getModel().getLocomotives().isEmpty())
                                 {    
                                     // Select the active locomotive
                                     GraphLocAssign edit = new GraphLocAssign(parent, p, 

@@ -13,8 +13,7 @@ import javax.swing.SwingUtilities;
 
 
 /**
- *
- * @author adamo
+ * UI for exporting JSON state
  */
 public class AutoJSONExport extends javax.swing.JPanel
 {
