@@ -110,6 +110,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         MainLocList = new javax.swing.JPanel();
         SyncWithCS = new javax.swing.JButton();
         closeOnLocSel = new javax.swing.JCheckBox();
+        addLocomotive = new javax.swing.JButton();
 
         setTitle("Locomotive Selector");
         setAutoRequestFocus(false);
@@ -198,6 +199,15 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         closeOnLocSel.setText("Close Window on Assignment");
         closeOnLocSel.setFocusPainted(false);
 
+        addLocomotive.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addLocomotive.setText("Add Locomotive");
+        addLocomotive.setFocusable(false);
+        addLocomotive.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addLocomotiveActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -215,6 +225,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                         .addGap(15, 15, 15)
                         .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(addLocomotive)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SyncWithCS)))
                 .addContainerGap())
         );
@@ -231,7 +243,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(renameLabel)
-                    .addComponent(SyncWithCS))
+                    .addComponent(SyncWithCS)
+                    .addComponent(addLocomotive))
                 .addContainerGap())
         );
 
@@ -303,6 +316,15 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         updateScrollArea();
     }//GEN-LAST:event_formFocusGained
 
+    private void addLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveActionPerformed
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            this.toBack();
+            this.parent.showTab("Tools");
+        }));
+    }//GEN-LAST:event_addLocomotiveActionPerformed
+
     public boolean doCloseWindow()
     {
         return this.closeOnLocSel.isSelected();
@@ -359,6 +381,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     private javax.swing.JScrollPane LocScroller;
     private javax.swing.JPanel MainLocList;
     private javax.swing.JButton SyncWithCS;
+    private javax.swing.JButton addLocomotive;
     private javax.swing.JCheckBox closeOnLocSel;
     private javax.swing.JLabel locListLabel;
     private javax.swing.JLabel renameLabel;

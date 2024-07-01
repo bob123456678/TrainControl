@@ -8316,6 +8316,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         System.exit(0);
     }//GEN-LAST:event_WindowClosed
 
+    /**
+     * Shows the tab with the specified name
+     * @param title 
+     */
+    public void showTab(String title)
+    {
+        for (int i = 0; i < this.KeyboardTab.getTabCount(); i++)
+        {
+            if (title.equals(this.KeyboardTab.getTitleAt(i)))
+            {
+                this.KeyboardTab.setSelectedIndex(i);
+                this.KeyboardTab.requestFocus();
+            }
+        }
+    }
+    
     public void deleteRoute(MouseEvent evt)
     {
         Object route = getRouteAtCursor(evt);

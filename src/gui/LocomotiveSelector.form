@@ -60,6 +60,8 @@
                       <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                       <Component id="LocFilterBox" min="-2" pref="232" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
+                      <Component id="addLocomotive" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="SyncWithCS" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -82,6 +84,7 @@
                   <Component id="LocFilterBox" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="renameLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="SyncWithCS" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="addLocomotive" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" max="-2" attributes="0"/>
           </Group>
@@ -181,6 +184,18 @@
         <Property name="text" type="java.lang.String" value="Close Window on Assignment"/>
         <Property name="focusPainted" type="boolean" value="false"/>
       </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="addLocomotive">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Tahoma" size="11" style="1"/>
+        </Property>
+        <Property name="text" type="java.lang.String" value="Add Locomotive"/>
+        <Property name="focusable" type="boolean" value="false"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addLocomotiveActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>

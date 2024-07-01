@@ -226,6 +226,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 * v2.2.2 [Beta]
     - Various minor UI enhancements and helpful messages for first-time users
+    - Added an "add locomotive" shortcut button to the locomotive selection window
+    - Added address information to the locomotive selection window
 
 * v2.2.1 [6/29/2024]
     - Added total runtime and number of locomotives to stats histogram chart

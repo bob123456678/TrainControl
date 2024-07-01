@@ -33,6 +33,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         this.mainLocList = mainLocList;
                 
         this.LocLabel.setText(loc.getName());
+        this.AddrLabel.setText(loc.getDecoderTypeLabel() + " " + loc.getAddress());
         
         this.refreshToolTip();
                 
@@ -88,6 +89,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         }
         
         LocLabel.setToolTipText(this.locIcon.getToolTipText());
+        AddrLabel.setToolTipText(this.locIcon.getToolTipText());
         this.setToolTipText(this.locIcon.getToolTipText());
     }
     
@@ -107,12 +109,13 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
 
         locIcon = new javax.swing.JLabel();
         LocLabel = new javax.swing.JLabel();
+        AddrLabel = new javax.swing.JLabel();
 
         setBackground(new java.awt.Color(255, 255, 255));
         setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        setMaximumSize(new java.awt.Dimension(140, 95));
-        setMinimumSize(new java.awt.Dimension(140, 95));
-        setPreferredSize(new java.awt.Dimension(140, 95));
+        setMaximumSize(new java.awt.Dimension(142, 114));
+        setMinimumSize(new java.awt.Dimension(142, 114));
+        setPreferredSize(new java.awt.Dimension(142, 114));
         addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 formMouseReleased(evt);
@@ -134,22 +137,31 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
             }
         });
 
+        AddrLabel.setForeground(new java.awt.Color(0, 0, 155));
+        AddrLabel.setText("jLabel1");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 110, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(LocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(AddrLabel)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
+            .addComponent(locIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocLabel)
+                .addGap(0, 0, 0)
+                .addComponent(AddrLabel)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -181,6 +193,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
     }//GEN-LAST:event_locIconMouseReleased
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel AddrLabel;
     private javax.swing.JLabel LocLabel;
     private javax.swing.JLabel locIcon;
     // End of variables declaration//GEN-END:variables
