@@ -80,7 +80,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             for (Component b : this.MainLocList.getComponents())
             {
                 LocomotiveSelectorItem bb = (LocomotiveSelectorItem) b;
-                if ("".equals(filter) || bb.getText().toLowerCase().contains(filter))
+                if ("".equals(filter) || bb.getText().toLowerCase().contains(filter) || bb.getAddr().toLowerCase().contains(filter))
                 {
                     b.setVisible(true);
                 }
@@ -135,6 +135,11 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
         addWindowStateListener(new java.awt.event.WindowStateListener() {
             public void windowStateChanged(java.awt.event.WindowEvent evt) {
                 formWindowStateChanged(evt);
+            }
+        });
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowActivated(java.awt.event.WindowEvent evt) {
+                formWindowActivated(evt);
             }
         });
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -324,6 +329,10 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
             this.parent.showTab("Tools");
         }));
     }//GEN-LAST:event_addLocomotiveActionPerformed
+
+    private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
+        this.LocFilterBox.requestFocus();
+    }//GEN-LAST:event_formWindowActivated
 
     public boolean doCloseWindow()
     {

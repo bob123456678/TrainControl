@@ -1,5 +1,6 @@
 package gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.io.IOException;
@@ -12,8 +13,8 @@ import marklin.MarklinLocomotive;
  *
  * @author Adam
  */
-public final class LocomotiveSelectorItem extends javax.swing.JPanel {
-    
+public final class LocomotiveSelectorItem extends javax.swing.JPanel
+{    
     private final MarklinLocomotive loc;
     private TrainControlUI tcui;
     private final JPanel mainLocList;
@@ -45,7 +46,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
                 try 
                 {
                     ImageIcon ic = new javax.swing.ImageIcon(
-                        tcui.getLocImage(loc.getImageURL(), 135)
+                        tcui.getLocImage(loc.getImageURL(), 142)
                     );
                     
                     locIcon.setIcon(ic);      
@@ -75,17 +76,22 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
         {
             locIcon.setToolTipText("Mapped to: " + String.join(", ", mappings));
             
-            Font font = new Font("Tahoma", Font.BOLD, 17); 
+            //this.setBackground(new Color(254, 255, 212));
+            this.setBackground(new Color(222,255,222));
+         
+            // Font font = new Font("Tahoma", Font.BOLD, 17); 
+            Font font = new Font("Tahoma", Font.PLAIN, 18); 
+
             LocLabel.setFont(font);
-            // LocLabel.setForeground(Color.GRAY);
         }
         else
         {
             locIcon.setToolTipText(null);
             
+            this.setBackground(Color.WHITE);
+            
             Font font = new Font("Tahoma", Font.PLAIN, 18); 
             LocLabel.setFont(font);
-            // LocLabel.setForeground(Color.BLACK);
         }
         
         LocLabel.setToolTipText(this.locIcon.getToolTipText());
@@ -96,6 +102,11 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel {
     public String getText()
     {
         return this.loc.getName();
+    }
+    
+    public String getAddr()
+    {
+        return Integer.toString(this.loc.getAddress());
     }
 
     /**

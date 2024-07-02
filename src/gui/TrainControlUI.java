@@ -7977,6 +7977,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
         }
+        else if (controlPressed && keyCode == KeyEvent.VK_DELETE)
+        {
+            if (this.getButtonLocomotive(this.currentButton) != null)
+            {
+                this.deleteLoc(this.getButtonLocomotive(this.currentButton).getName());
+            }
+        }
         else if (controlPressed && keyCode == KeyEvent.VK_R)
         {
             this.changeLocAddress((MarklinLocomotive) this.getButtonLocomotive(this.currentButton));
@@ -8899,7 +8906,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void deleteLoc(String value)
     {
-        Locomotive l = this.model.getLocByName(value);
+        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + value + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
+        {
+            Locomotive l = this.model.getLocByName(value);
 
             if (l != null)
             {
@@ -8924,6 +8933,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 repaintMappings();
                 selector.refreshLocSelectorList();
             }
+        }
     }
     
     private void syncLocStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncLocStateButtonActionPerformed

@@ -214,12 +214,9 @@ public class RightClickMenuListener extends MouseAdapter
                 addSeparator();
                 
                 menuItem = new JMenuItem("Delete from Database");
-
+                menuItem.setToolTipText("Control+Delete");
                 menuItem.addActionListener(event -> { 
-                    if (0 == JOptionPane.showConfirmDialog(ui, "Are you sure you want to delete " + ui.getButtonLocomotive(source).getName() + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
-                    {
-                        ui.deleteLoc(ui.getButtonLocomotive(source).getName());
-                    } 
+                    ui.deleteLoc(ui.getButtonLocomotive(source).getName());
                 });
                 
                 add(menuItem);

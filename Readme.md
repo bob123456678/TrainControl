@@ -138,6 +138,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+A (assign a new locomotive to the currently active button)
     * Control+N (edit locomotive notes)
     * Control+R (edit locomotive name or address)
+    * Control+Delete (permanentely delete locomotive from database)
 * UI shortcuts
     * Backspace/Alt+backspace (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
@@ -226,8 +227,12 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 * v2.2.2 [Beta]
     - Various minor UI enhancements and helpful messages for first-time users
-    - Added an "add locomotive" shortcut button to the locomotive selection window
-    - Added address information to the locomotive selection window
+    - Locomotive selector improvements
+        - Added an "add locomotive" shortcut button
+        - Added address information to each locomotive tile
+        - Mapped locomotives are more clearly highlighted
+        - Locomotive addresses are now checked when filtering
+    - Added keyboard shortcut to delete locomotives from the database (Control+Delete)
 
 * v2.2.1 [6/29/2024]
     - Added total runtime and number of locomotives to stats histogram chart
