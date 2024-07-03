@@ -1529,6 +1529,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.selector.setVisible(true);
                 this.selector.updateScrollArea();
                 this.selector.requestFocus();
+                this.selector.toFront();
             }
         }));
     }
