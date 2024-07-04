@@ -225,7 +225,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.2 [Beta]
+* v2.2.2 [7/3/2024]
     - Various minor UI enhancements and helpful messages for first-time users
     - Locomotive selector improvements
         - Added an "add locomotive" shortcut button
