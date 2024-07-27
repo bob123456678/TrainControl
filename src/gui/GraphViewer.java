@@ -44,6 +44,8 @@ final public class GraphViewer extends javax.swing.JFrame
     private final Graph mainGraph;
     
     private String lastHoveredNode;
+    
+    private Locomotive clipboard;
 
     public Graph getMainGraph()
     {
@@ -102,6 +104,20 @@ final public class GraphViewer extends javax.swing.JFrame
                 ); 
 
                 add(menuItem);
+                
+                if (!parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && parent.getActiveLoc() != null)
+                {
+                    menuItem = new JMenuItem("Assign " + parent.getActiveLoc().getName() + " to Node");
+                    menuItem.setToolTipText("Control+V");
+                    menuItem.addActionListener(event -> 
+                        {
+                            parent.getModel().getAutoLayout().moveLocomotive(parent.getActiveLoc().getName(), nodeName, false);
+
+                        }
+                    );    
+
+                    add(menuItem);
+                }
             
                 addSeparator();
                 
@@ -112,6 +128,7 @@ final public class GraphViewer extends javax.swing.JFrame
                     add(menuItem);
                     
                     menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
+                    menuItem.setToolTipText("Delete");
                     menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(false); });    
                     add(menuItem);
                     
@@ -237,31 +254,30 @@ final public class GraphViewer extends javax.swing.JFrame
             // Excluded locomotives
             menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
             menuItem.addActionListener(event -> 
+            {
+                try
                 {
-                    try
+
+                    GraphLocExclude edit = new GraphLocExclude(parent, p);
+
+                    int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
+                            "Edit Excluded Locomotives at " + p.getName(), 
+                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+                    if(dialogResult2 == JOptionPane.OK_OPTION)
                     {
-
-                        GraphLocExclude edit = new GraphLocExclude(parent, p);
-
-                        int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
-                                "Edit Excluded Locomotives at " + p.getName(), 
-                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                        if(dialogResult2 == JOptionPane.OK_OPTION)
-                        {
-                            p.setExcludedLocs(edit.getSelectedExcludeLocs());
-                        }
-                        
-                        ui.updatePoint(p, mainGraph);
-                        parent.repaintAutoLocList(true);
+                        p.setExcludedLocs(edit.getSelectedExcludeLocs());
                     }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "Error editing point: " + e.getMessage());
-                    }
+
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(true);
                 }
-            ); 
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        "Error editing point: " + e.getMessage());
+                }
+            });
 
             add(menuItem);
             
@@ -348,35 +364,34 @@ final public class GraphViewer extends javax.swing.JFrame
             // Rename option applicable to all nodes
             menuItem = new JMenuItem("Rename " + nodeName);
             menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the new station name.",
-                        nodeName);
+            {
+                String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                    "Enter the new station name.",
+                    nodeName);
 
-                    if (dialogResult != null && !"".equals(dialogResult))
+                if (dialogResult != null && !"".equals(dialogResult))
+                {
+                    try
                     {
-                        try
-                        {
-                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "This station name is already in use.  Pick another.");
-                            }
-                            else
-                            {
-                                parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
-                                parent.repaintAutoLocList(false);
-                                ui.updatePoint(p, mainGraph);
-                            }
-                        }
-                        catch (Exception e)
+                        if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
                         {
                             JOptionPane.showMessageDialog((Component) swingView,
-                                "Error renaming node.");
+                                "This station name is already in use.  Pick another.");
+                        }
+                        else
+                        {
+                            parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
+                            parent.repaintAutoLocList(false);
+                            ui.updatePoint(p, mainGraph);
                         }
                     }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "Error renaming node.");
+                    }
                 }
-            );  
+            });  
                 
             add(menuItem);
                         
@@ -385,69 +400,68 @@ final public class GraphViewer extends javax.swing.JFrame
             
             menuItem = new JMenuItem("Connect to Point...");
             menuItem.addActionListener(event -> 
+            {
+                // Get all point names except this one
+                Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
+                List<String> pointNames = new LinkedList<>();
+
+                for (Point p2 : points)
                 {
-                    // Get all point names except this one
-                    Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
-                    List<String> pointNames = new LinkedList<>();
-                    
-                    for (Point p2 : points)
-                    {
-                        pointNames.add(p2.getName());
-                    }
-                    
-                    Collections.sort(pointNames);
-                    
-                    // Remove self and all existing neighbors
-                    pointNames.remove(nodeName);
-                    
-                    for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                    {
-                        pointNames.remove(e2.getEnd().getName());
-                    }
-                        
-                    if (!pointNames.isEmpty())
-                    {
-                        String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
-                                "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                pointNames.toArray(), // Array of choices
-                                pointNames.get(0));
+                    pointNames.add(p2.getName());
+                }
 
-                        if (dialogResult != null && !"".equals(dialogResult))
+                Collections.sort(pointNames);
+
+                // Remove self and all existing neighbors
+                pointNames.remove(nodeName);
+
+                for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
+                {
+                    pointNames.remove(e2.getEnd().getName());
+                }
+
+                if (!pointNames.isEmpty())
+                {
+                    String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
+                            "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
+                            "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
+                            pointNames.toArray(), // Array of choices
+                            pointNames.get(0));
+
+                    if (dialogResult != null && !"".equals(dialogResult))
+                    {
+                        try
                         {
-                            try
-                            {
-                                if (parent.getModel().getAutoLayout().getPoint(dialogResult) == null)
-                                {
-                                    JOptionPane.showMessageDialog((Component) swingView,
-                                        "This point name does not exist.");
-                                }
-                                else
-                                {
-                                    // Add the edge
-                                    parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult);
-
-                                    Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
-
-                                    ui.addEdge(e, mainGraph);
-                                    parent.repaintAutoLocList(false);
-                                    parent.getModel().getAutoLayout().refreshUI();
-                                }
-                            }
-                            catch (Exception e)
+                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) == null)
                             {
                                 JOptionPane.showMessageDialog((Component) swingView,
-                                    "Error adding edge.");
+                                    "This point name does not exist.");
+                            }
+                            else
+                            {
+                                // Add the edge
+                                parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult);
+
+                                Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
+
+                                ui.addEdge(e, mainGraph);
+                                parent.repaintAutoLocList(false);
+                                parent.getModel().getAutoLayout().refreshUI();
                             }
                         }
-                    }
-                    else
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "No other points to connect to.  Add more points to the graph.");
+                        catch (Exception e)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "Error adding edge.");
+                        }
                     }
                 }
-            ); 
+                else
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        "No other points to connect to.  Add more points to the graph.");
+                }
+            }); 
             
             add(menuItem);
             
@@ -733,10 +747,7 @@ final public class GraphViewer extends javax.swing.JFrame
         JMenuItem menuItem;
 
         public RightClickMenuNew(TrainControlUI ui, int x, int y)
-        {       
-            
-            //addSeparator();
-
+        {
             menuItem = new JMenuItem("Create New Point");
             menuItem.addActionListener(event -> 
             {
@@ -832,6 +843,8 @@ final public class GraphViewer extends javax.swing.JFrame
         graph.setAttribute("ui.antialias");
         graph.setAttribute("ui.quality");
         
+        final GraphViewer g = this;
+        
         // Disable the auto layout if a node gets dragged
         swingView.setMouseManager(new DefaultMouseManager()
         {
@@ -889,10 +902,12 @@ final public class GraphViewer extends javax.swing.JFrame
             
             @Override
             public void mouseMoved(MouseEvent evt)
-            {
+            {                
                 // Disply log message to show what locomotives are excluded
-                if (parent.isShowStationLengthsSelected() && !parent.getModel().getAutoLayout().isRunning())
+                if (!parent.getModel().getAutoLayout().isRunning())
                 {
+                    g.requestFocus();
+                    
                     GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
 
                     if (element != null)
@@ -903,13 +918,17 @@ final public class GraphViewer extends javax.swing.JFrame
                         {                            
                             if (!p.getName().equals(lastHoveredNode))
                             {
-                                List<String> locomotiveNames = p.getExcludedLocs().stream()
-                                    .map(Locomotive::getName)
-                                    .collect(Collectors.toList());
-
-                                if (!locomotiveNames.isEmpty())
+                                // Last hovered node will be used by key listener, so put this condition here instead of above
+                                if (parent.isShowStationLengthsSelected())
                                 {
-                                    ui.getModel().log("Excluded at " + p.getName() + ": " + locomotiveNames.toString().replace("[", "").replace("]", ""));
+                                    List<String> locomotiveNames = p.getExcludedLocs().stream()
+                                        .map(Locomotive::getName)
+                                        .collect(Collectors.toList());
+
+                                    if (!locomotiveNames.isEmpty())
+                                    {
+                                        ui.getModel().log("Excluded at " + p.getName() + ": " + locomotiveNames.toString().replace("[", "").replace("]", ""));
+                                    }
                                 }
                                 
                                 lastHoveredNode = p.getName();
@@ -1073,7 +1092,42 @@ final public class GraphViewer extends javax.swing.JFrame
     }// </editor-fold>//GEN-END:initComponents
 
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
-        parent.childWindowKeyEvent(evt);
+        
+        // Special key commands for the graph UI
+        
+        int keyCode = evt.getKeyCode();
+        // boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
+        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
+        
+        boolean isRunning = parent.getModel().getAutoLayout().isRunning();
+        
+        if (!isRunning && controlPressed && keyCode == KeyEvent.VK_V)
+        {
+            // can also be parent.getCopyTarget()
+            if (parent.getActiveLoc() != null && this.lastHoveredNode != null)
+            {
+                parent.getModel().getAutoLayout().moveLocomotive(this.clipboard != null ? this.clipboard.getName() : parent.getActiveLoc().getName(), this.lastHoveredNode, false);
+                this.clipboard = null;
+            }
+        }
+        else if (!isRunning && (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE || controlPressed && keyCode == KeyEvent.VK_X))
+        {
+            if (this.lastHoveredNode != null)
+            {
+                this.clipboard = null;
+                if (controlPressed && keyCode == KeyEvent.VK_X)
+                {
+                    this.clipboard = parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode).getCurrentLocomotive();
+                }
+                
+                parent.getModel().getAutoLayout().moveLocomotive(null, this.lastHoveredNode, true);
+            }
+        }
+        // Default key commands
+        else
+        {
+            parent.childWindowKeyEvent(evt);
+        }
     }//GEN-LAST:event_formKeyPressed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing

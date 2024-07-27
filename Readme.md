@@ -139,6 +139,10 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+N (edit locomotive notes)
     * Control+R (edit locomotive name or address)
     * Control+Delete (permanentely delete locomotive from database)
+* Autonomy Graph UI
+    * Control+V (assign active locomotive, or clipboard locomotive if non-empty, to currently hovered node)
+    * Delete/Backspace (remove locomotive from currently hovered node, clear clipboard if non-empty)
+    * Control+X (remove locomotive from currently hovered node and place it in the clipboard)
 * UI shortcuts
     * Backspace/Alt+backspace (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
@@ -224,6 +228,13 @@ Some sample files are included in the `cs2_sample_layout` folder.
 As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ## Changelog
+
+* v2.2.3 [7/27/2024]
+    - Autonomy graph UI convenience enhancements
+        - Added Control+X keyboard shortcut: hover over a node to remove the currently assigned locomotive & put it on the clipboard
+        - Added Delete/Backspace keyboard shortcut: hover over a node to remove the currently assigned locomotive, and/or clear the clipboard
+        - Added Control+V keyboard shortcut: hover over a node and easily assign the active locomotive to it (or the clipboard locomotive if non empty)
+        - Added the above option to the right-click menu
 
 * v2.2.2 [7/3/2024]
     - Various minor UI enhancements and helpful messages for first-time users

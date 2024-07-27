@@ -1639,6 +1639,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Gets the active locomotive
+     * @return 
+     */
+    public Locomotive getActiveLoc()
+    {
+        return activeLoc;
+    }
+    
+    /**
      * Apply function presets
      * @param l 
      */
