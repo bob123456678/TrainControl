@@ -66,7 +66,7 @@ The graph UI will show you which routes are active, which edges are locked, and 
 
 <img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
 
-In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list to paths, subject to the constraints and protections of the graph model.
+In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list of paths, subject to the constraints and protections of the graph model.
 
 <img src="assets/timetable.png?raw=true" alt="UI screenshot: timetable" width="500">
 
