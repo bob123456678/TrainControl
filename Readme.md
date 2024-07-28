@@ -204,7 +204,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 This program was originally written to import and display layouts created/configured from within the CS2.
 
-Because the CS3 uses a different layout format than the CS2, this program does support displaying native CS3 layouts. 
+Because the CS3 uses a different layout format than the CS2, this program does not support displaying native CS3 layouts. 
 However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
 In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
 
