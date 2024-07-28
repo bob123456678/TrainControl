@@ -235,6 +235,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Added Delete/Backspace keyboard shortcut: hover over a node to remove the currently assigned locomotive, and/or clear the clipboard
         - Added Control+V keyboard shortcut: hover over a node and easily assign the active locomotive to it (or the clipboard locomotive if non empty)
         - Added the above option to the right-click menu
+    - Improved the locomotive exclusion UI in the autonomy graph UI
 
 * v2.2.2 [7/3/2024]
     - Various minor UI enhancements and helpful messages for first-time users

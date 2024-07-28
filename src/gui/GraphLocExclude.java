@@ -2,19 +2,19 @@ package gui;
 
 import automation.Point;
 import base.Locomotive;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import javax.swing.DefaultListModel;
 
 /**
- *
- * @author Adam
+ * UI to exclude locomotives from points
  */
-public class GraphLocExclude extends javax.swing.JPanel {
+public class GraphLocExclude extends javax.swing.JPanel
+{
     TrainControlUI parent;
     Point p;
 
@@ -23,18 +23,19 @@ public class GraphLocExclude extends javax.swing.JPanel {
      * @param parent
      * @param p
      */
-    public GraphLocExclude(TrainControlUI parent, Point p) {
+    public GraphLocExclude(TrainControlUI parent, Point p)
+    {
         initComponents();
         this.parent = parent;
         this.p = p;
         
         if (p.isDestination())
         {
-            this.infoLabel.setText("These locomotives will not stop at this station in autonomous operation.");
+            this.infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
         }
         else
         {
-            this.infoLabel.setText("These locomotives will never be able to traverse this point.");
+            this.infoLabel.setText("Excluded locomotives will never be able to traverse this point.");
         }
         
         updateValues();
@@ -44,8 +45,9 @@ public class GraphLocExclude extends javax.swing.JPanel {
     {
         // Configure lock edge list
         this.excludedLocList.removeAll();
-        DefaultListModel elementList = new DefaultListModel();
-        
+        DefaultListModel excludedList = new DefaultListModel();
+        DefaultListModel allowedList = new DefaultListModel();
+
         List<String> locNames = new LinkedList<>();
 
         for (Locomotive l : this.parent.getModel().getLocomotives())
@@ -55,27 +57,27 @@ public class GraphLocExclude extends javax.swing.JPanel {
 
         Collections.sort(locNames);
         
-        List<Integer> selected = new LinkedList<>();
-
         for (String s : locNames)
         {   
-            // Store index of current lock edges
             if (p.getExcludedLocs().contains((Locomotive) parent.getModel().getLocByName(s)))
             {
-                selected.add(elementList.size());
+                excludedList.addElement(s);
+            }     
+            else
+            {
+                allowedList.addElement(s);
             }
-            
-            elementList.addElement(s);
         }
         
-        this.excludedLocList.setModel(elementList);
+        this.excludedLocList.setModel(excludedList);
+        this.allowedLocList.setModel(allowedList);
                 
-        this.excludedLocList.setSelectedIndices(selected.stream()
-                    .filter(Objects::nonNull)
-                    .mapToInt(Integer::intValue)
-                    .toArray());
-        
-        
+        /*
+            this.excludedLocList.setSelectedIndices(selected.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .toArray());
+        */
     }
    
     
@@ -90,8 +92,13 @@ public class GraphLocExclude extends javax.swing.JPanel {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         excludedLocList = new javax.swing.JList<>();
-        excludeLocLabel = new javax.swing.JLabel();
+        allowedLocLabel = new javax.swing.JLabel();
         infoLabel = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        allowedLocList = new javax.swing.JList<>();
+        excludeLoc = new javax.swing.JButton();
+        excludeLocLabel = new javax.swing.JLabel();
+        includeLoc = new javax.swing.JButton();
 
         excludedLocList.setBackground(new java.awt.Color(254, 254, 254));
         excludedLocList.setModel(new javax.swing.AbstractListModel<String>() {
@@ -101,10 +108,45 @@ public class GraphLocExclude extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(excludedLocList);
 
+        allowedLocLabel.setForeground(new java.awt.Color(0, 0, 115));
+        allowedLocLabel.setText("Allowed Locomotives (Default)");
+
+        infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
+
+        allowedLocList.setBackground(new java.awt.Color(254, 254, 254));
+        allowedLocList.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane2.setViewportView(allowedLocList);
+
+        excludeLoc.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        excludeLoc.setText(">>>");
+        excludeLoc.setFocusable(false);
+        excludeLoc.setMaximumSize(new java.awt.Dimension(100, 24));
+        excludeLoc.setMinimumSize(new java.awt.Dimension(100, 24));
+        excludeLoc.setPreferredSize(new java.awt.Dimension(100, 24));
+        excludeLoc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                excludeLocActionPerformed(evt);
+            }
+        });
+
         excludeLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         excludeLocLabel.setText("Excluded Locomotives");
 
-        infoLabel.setText("These locomotives will not stop at this station in autonomous operation.");
+        includeLoc.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        includeLoc.setText("<<<");
+        includeLoc.setFocusable(false);
+        includeLoc.setMaximumSize(new java.awt.Dimension(100, 24));
+        includeLoc.setMinimumSize(new java.awt.Dimension(100, 24));
+        includeLoc.setPreferredSize(new java.awt.Dimension(100, 24));
+        includeLoc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                includeLocActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -113,26 +155,70 @@ public class GraphLocExclude extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(excludeLocLabel)
-                            .addComponent(infoLabel))
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                            .addComponent(allowedLocLabel)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(excludeLoc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(includeLoc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(excludeLocLabel)))
+                    .addComponent(infoLabel))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(excludeLocLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(infoLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 397, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(allowedLocLabel)
+                    .addComponent(excludeLocLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 397, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(excludeLoc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(includeLoc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 397, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(15, 15, 15))
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    private void excludeLocActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_excludeLocActionPerformed
+        
+        for (String s : this.allowedLocList.getSelectedValuesList())
+        {
+            ((DefaultListModel) this.allowedLocList.getModel()).removeElement(s);
+            ((DefaultListModel) this.excludedLocList.getModel()).addElement(s);
+        }
+        
+        this.sort((DefaultListModel) this.excludedLocList.getModel());
+        this.sort((DefaultListModel) this.allowedLocList.getModel());
+        
+        this.allowedLocList.setSelectedIndices(null);
+    }//GEN-LAST:event_excludeLocActionPerformed
+
+    private void includeLocActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_includeLocActionPerformed
+        
+        for (String s : this.excludedLocList.getSelectedValuesList())
+        {
+            ((DefaultListModel) this.excludedLocList.getModel()).removeElement(s);
+            ((DefaultListModel) this.allowedLocList.getModel()).addElement(s);
+        }
+        
+        this.sort((DefaultListModel) this.excludedLocList.getModel());
+        this.sort((DefaultListModel) this.allowedLocList.getModel());
+
+        this.excludedLocList.setSelectedIndices(null);
+    }//GEN-LAST:event_includeLocActionPerformed
 
     /**
      * Returns the set of selected locomotives
@@ -142,8 +228,11 @@ public class GraphLocExclude extends javax.swing.JPanel {
     {
         Set<Locomotive> output = new HashSet<>();
         
-        for (String s : this.excludedLocList.getSelectedValuesList())
+        //for (String s : this.excludedLocList.getSelectedValuesList())
+        for (int i = 0; i < this.excludedLocList.getModel().getSize(); i++)
         {
+            String s = this.excludedLocList.getModel().getElementAt(i);
+            
             if (this.parent.getModel().getLocByName(s) != null)
             {
                 output.add((Locomotive) this.parent.getModel().getLocByName(s));
@@ -152,11 +241,33 @@ public class GraphLocExclude extends javax.swing.JPanel {
         
         return output;
     }
+    
+    private void sort(DefaultListModel<String> model)
+    {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < model.size(); i++)
+        {
+            list.add(model.getElementAt(i));
+        }
+
+        Collections.sort(list);
+
+        model.clear();
+        for (String element : list)
+        {
+            model.addElement(element);
+        }
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel allowedLocLabel;
+    private javax.swing.JList<String> allowedLocList;
+    private javax.swing.JButton excludeLoc;
     private javax.swing.JLabel excludeLocLabel;
     private javax.swing.JList<String> excludedLocList;
+    private javax.swing.JButton includeLoc;
     private javax.swing.JLabel infoLabel;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     // End of variables declaration//GEN-END:variables
 }
