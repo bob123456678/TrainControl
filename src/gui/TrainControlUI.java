@@ -8835,7 +8835,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 
                 String newName = edit.getLocName();
                 
-                if (result == JOptionPane.OK_OPTION && newName != null)
+                if (result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName))
                 {
                     if (newName.trim().length() == 0)
                     {

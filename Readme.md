@@ -229,6 +229,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.2.4 [8/1/2024]
+    - Fixed UI bug where an "invalid name" warning would always be shown when editing a locomotive address
+
 * v2.2.3 [7/27/2024]
     - Autonomy graph UI convenience enhancements
         - Added Control+X keyboard shortcut: hover over a node to remove the currently assigned locomotive & put it on the clipboard
