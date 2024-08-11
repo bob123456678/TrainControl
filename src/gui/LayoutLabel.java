@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Map;
 import javax.swing.Icon;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import marklin.MarklinLayoutComponent;
 
 /**
@@ -87,7 +88,18 @@ public final class LayoutLabel extends JLabel
                         @Override
                         public void mouseClicked(MouseEvent e)  
                         {  
-                           component.execSwitching();
+                            if (!tcUI.getModel().getPowerState())
+                            {
+                                if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+                                    tcUI,  "This will only update the UI because the power is off. Proceed?", "Please Confirm",
+                                    JOptionPane.YES_NO_OPTION
+                                ))
+                                {
+                                    return;
+                                }
+                            }
+                            
+                            component.execSwitching();
                         }  
                     });    
                 }

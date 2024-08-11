@@ -139,7 +139,11 @@ public class MarklinAccessory extends Accessory
         
         if (this.network.getGUI() != null)
         {
-            this.network.getGUI().repaintSwitches(); // dirty workaround
+            // Dirty workaround to update UI state
+            this.network.getGUI().repaintSwitch(this.getAddress() + 1);
+            
+            // Not necessary because we can update a single keyboard button at a time above
+            // this.network.getGUI().repaintSwitches();
         }
         
         this.network.exec(new CS2Message(
@@ -154,7 +158,7 @@ public class MarklinAccessory extends Accessory
               1                               // 1 means power on
             }
         ));
-        
+                
         return this;
     }
 
