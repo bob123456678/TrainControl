@@ -230,7 +230,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.2.5 [8/11/2024]
-    - Clicking on switches in the layout diagram while the UI is off will now trigger a pop-up warning
+    - Clicking on switches in the layout diagram while the power is off will now trigger a pop-up warning
     - Minor UI performance optimizations
 
 * v2.2.4 [8/1/2024]
