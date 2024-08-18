@@ -229,7 +229,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.6 [Beta]
+* v2.2.6 [8/18/2024]
     - Improved the S88 active icon for straight and curved track segments
 
 * v2.2.5 [8/11/2024]
