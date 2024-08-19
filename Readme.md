@@ -229,8 +229,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.6 [8/18/2024]
+* v2.2.6 [8/19/2024]
     - Improved the S88 active icon for straight and curved track segments
+    - Autonomy graphs can now be moved around by dragging
+    - Fixed bug where the keyboard shortcuts from v2.2.3 would not refresh the autonomy locomotive list
 
 * v2.2.5 [8/11/2024]
     - Clicking on switches in the layout diagram while the power is off will now trigger a pop-up warning

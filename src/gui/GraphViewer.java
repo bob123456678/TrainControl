@@ -849,7 +849,40 @@ final public class GraphViewer extends javax.swing.JFrame
         swingView.setMouseManager(new DefaultMouseManager()
         {
             GraphicElement lastNode;
+            MouseEvent last;
             
+            /**
+             * Support dragging to move around the graph
+             * https://github.com/graphstream/gs-core/issues/239
+             * @param evt 
+             */
+            @Override
+            public void mouseDragged(MouseEvent evt)
+            {
+                GraphicElement element = view.findGraphicElementAt(EnumSet.of(InteractiveElement.NODE), evt.getX(), evt.getY());
+               
+                if (element != null)
+                {
+                    super.mouseDragged(evt);
+                }
+                else
+                {
+                    if (last != null)
+                    {
+                        Point3 p1 = swingView.getCamera().getViewCenter();
+                        Point3 p2 = swingView.getCamera().transformGuToPx(p1.x, p1.y, 0);
+                        int xdelta = evt.getX() - last.getX();
+                        int ydelta = evt.getY() - last.getY();
+                        p2.x -= xdelta;
+                        p2.y -= ydelta;
+                        Point3 p3 = swingView.getCamera().transformPxToGu(p2.x, p2.y);
+                        swingView.getCamera().setViewCenter(p3.x, p3.y, 0);
+                    }
+                    
+                    last = evt;
+                }
+            }
+
             @Override
             public void mouseReleased(MouseEvent evt)
             {
@@ -868,7 +901,7 @@ final public class GraphViewer extends javax.swing.JFrame
                         element = lastNode;
                     }
                     
-                    if (element != null)
+                    if (element != null && last == null)
                     {
                         Node node = swingViewer.getGraphicGraph().getNode(element.getId());
                         
@@ -898,6 +931,8 @@ final public class GraphViewer extends javax.swing.JFrame
                 {
                     super.mousePressed(evt);
                 }
+                
+                this.last = null;
             }
             
             @Override
@@ -1108,6 +1143,7 @@ final public class GraphViewer extends javax.swing.JFrame
             {
                 parent.getModel().getAutoLayout().moveLocomotive(this.clipboard != null ? this.clipboard.getName() : parent.getActiveLoc().getName(), this.lastHoveredNode, false);
                 this.clipboard = null;
+                parent.repaintAutoLocList(false);
             }
         }
         else if (!isRunning && (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE || controlPressed && keyCode == KeyEvent.VK_X))
@@ -1121,6 +1157,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 }
                 
                 parent.getModel().getAutoLayout().moveLocomotive(null, this.lastHoveredNode, true);
+                parent.repaintAutoLocList(false);
             }
         }
         // Default key commands
