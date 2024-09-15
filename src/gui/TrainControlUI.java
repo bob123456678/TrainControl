@@ -11067,8 +11067,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (this.hideReversing.isSelected() && 
                     (p.isReversing() 
-                    || this.model.getAutoLayout().hasOnlyReversingIncoming(p)
-                    || this.model.getAutoLayout().hasOnlyReversingNeighbors(p)
+                    && (this.model.getAutoLayout().hasOnlyReversingIncoming(p)
+                    || this.model.getAutoLayout().hasOnlyReversingNeighbors(p))
                     )
             )
             {
@@ -11076,7 +11076,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             else if (this.hideInactive.isSelected() && 
                     (!p.isActive()
-                    && (this.model.getAutoLayout().hasOnlyInactiveIncoming(p) || this.model.getAutoLayout().hasOnlyReversingNeighbors(p))
+                    && (this.model.getAutoLayout().hasOnlyInactiveIncoming(p) 
+                    || this.model.getAutoLayout().hasOnlyInactiveNeighbors(p))
                     )
             )
             {

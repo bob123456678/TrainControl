@@ -229,6 +229,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.2.7 [9/14/2024]
+    - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node
+    - Fixed bug where certain inactive/reversing points would not be hidden when requested
+
 * v2.2.6 [8/19/2024]
     - Improved the S88 active icon for straight and curved track segments
     - Autonomy graphs can now be moved around by dragging

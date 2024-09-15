@@ -44,6 +44,7 @@ final public class GraphViewer extends javax.swing.JFrame
     private final Graph mainGraph;
     
     private String lastHoveredNode;
+    private String lastClickedNode;
     
     private Locomotive clipboard;
 
@@ -465,6 +466,42 @@ final public class GraphViewer extends javax.swing.JFrame
             
             add(menuItem);
             
+            if (lastClickedNode != null && !lastClickedNode.equals(p.getName()))
+            {
+                menuItem = new JMenuItem("Connect to " + lastClickedNode);
+                menuItem.setToolTipText("Last node that was left-clicked.");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        if (parent.getModel().getAutoLayout().getPoint(lastClickedNode) == null)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "This point name does not exist.");
+                        }
+                        else
+                        {
+                            // Add the edge
+                            parent.getModel().getAutoLayout().createEdge(nodeName, lastClickedNode);
+
+                            Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, lastClickedNode);
+
+                            ui.addEdge(e, mainGraph);
+                            parent.repaintAutoLocList(false);
+                            parent.getModel().getAutoLayout().refreshUI();
+                            lastClickedNode = null;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "Error adding edge.");
+                    }
+                });
+  
+                add(menuItem);
+            }
+            
             if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
             {
                 menuItem = new JMenuItem("Edit outgoing Edge...");
@@ -727,6 +764,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 {
                     try 
                     {
+                        lastClickedNode = null;
                         parent.getModel().getAutoLayout().deletePoint(p.getName());
                         mainGraph.removeNode(p.getUniqueId());
                         parent.repaintAutoLocList(false);
@@ -912,6 +950,8 @@ final public class GraphViewer extends javax.swing.JFrame
                             parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
 
                             parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
+                        
+                            lastClickedNode = parent.getModel().getAutoLayout().getPointById(node.getId()).getName();
                         }
                     }
                 }

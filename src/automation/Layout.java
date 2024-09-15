@@ -502,77 +502,63 @@ public class Layout
     }
     
     /**
-     * Returns whether the given point only has incoming edges from reversing points
+     * Returns false if any of the given point's incoming edges are from non-reversing points
      * @param p
      * @return 
      */
     public boolean hasOnlyReversingIncoming(Point p)
     {        
-        boolean hasNeighbor = false;
-
         for (Edge e : this.getIncomingEdges(p))
         {
-            hasNeighbor = true;
-
             if (!e.getStart().isReversing()) return false;
         }
         
-        return hasNeighbor;
+        return true;
     }
     
     /**
-     * Returns whether the given point only has incoming edges from inactive points
+     * Returns false if any of the given point's incoming edges are from active points
      * @param p
      * @return 
      */
     public boolean hasOnlyInactiveIncoming(Point p)
     {        
-        boolean hasNeighbor = false;
-
         for (Edge e : this.getIncomingEdges(p))
         {
-            hasNeighbor = true;
-
             if (e.getStart().isActive()) return false;
         }
         
-        return hasNeighbor;
+        return true;
     }
     
     /**
-     * Returns whether the given point's neighbors are all inactive points
+     * Returns false if any of the given point's neighbors are active points
      * @param p
      * @return 
      */
     public boolean hasOnlyInactiveNeighbors(Point p)
-    {       
-        boolean hasNeighbor = false;
-        
+    {               
         for (Edge e : this.getNeighbors(p))
         {
-            hasNeighbor = true;
             if (e.getEnd().isActive()) return false;
         }
         
-        return hasNeighbor;
+        return true;
     }
     
     /**
-     * Returns whether the given point's neighbors are all reversing points
+     * Returns false if any of the given point's neighbors are reversing points
      * @param p
      * @return 
      */
     public boolean hasOnlyReversingNeighbors(Point p)
-    {       
-        boolean hasNeighbor = false;
-        
+    {               
         for (Edge e : this.getNeighbors(p))
         {
-            hasNeighbor = true;
             if (!e.getEnd().isReversing()) return false;
         }
         
-        return hasNeighbor;
+        return true;
     }
     
     /**
