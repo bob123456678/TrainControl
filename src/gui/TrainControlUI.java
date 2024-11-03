@@ -8780,22 +8780,31 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {        
         try
         {
-            String input = JOptionPane.showInputDialog(this, "Enter new ID:");
+            MarklinRoute currentRoute = this.model.getRoute(routeName);
             
-            if (input != null)
+            if (currentRoute != null)
             {
-                int newId = Math.abs(Integer.parseInt(input));
-                if (!this.model.changeRouteId(routeName, newId))
-                {
-                    JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the route first.");
-                }
+                String input = JOptionPane.showInputDialog(this, "Enter new route ID:", currentRoute.getId());
 
-                this.refreshRouteList();
+                if (input != null)
+                {
+                    int newId = Math.abs(Integer.parseInt(input));
+
+                    if (newId != currentRoute.getId())
+                    {    
+                        if (!this.model.changeRouteId(routeName, newId))
+                        {
+                            JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the route first.");
+                        }
+
+                        this.refreshRouteList();
+                    }
+                }
             }
         }
         catch (HeadlessException | NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, "Must be a positive integer.");
+            JOptionPane.showMessageDialog(this, "ID must be a positive integer.");
         }
     }
     

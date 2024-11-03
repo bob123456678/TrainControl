@@ -229,6 +229,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
+* v2.2.8 [Beta]
+    - Minor enhancements to the route editing UI
+
 * v2.2.7 [9/14/2024]
     - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node
     - Fixed bug where certain inactive/reversing points would not be hidden when requested
