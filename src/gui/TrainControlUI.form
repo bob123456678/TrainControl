@@ -70,12 +70,12 @@
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="locomotiveMenuKeyPressed"/>
           </Events>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="syncMenuItem">
+            <MenuItem class="javax.swing.JMenuItem" name="viewDatabaseMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Synchronize w/ Central Station"/>
+                <Property name="text" type="java.lang.String" value="Browse Database"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncMenuItemActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewDatabaseMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="addLocomotiveMenuItem">
@@ -86,12 +86,14 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addLocomotiveMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="viewDatabaseMenuItem">
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator6">
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="syncMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Browse Database"/>
+                <Property name="text" type="java.lang.String" value="Sync Database w/ Central Station"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewDatabaseMenuItemActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>
@@ -121,9 +123,11 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="turnOffFunctionsMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator16">
+            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="syncFullLocStateMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Sync Full Locomotive Function State"/>
+                <Property name="text" type="java.lang.String" value="Sync Full Function State w/ Central Station"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncFullLocStateMenuItemActionPerformed"/>
@@ -203,13 +207,13 @@
       <Connection code="Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource(&quot;resources/locicon.png&quot;))" type="code"/>
     </Property>
     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[1090, 659]"/>
+      <Dimension value="[1090, 655]"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[1090, 659]"/>
+      <Dimension value="[1090, 655]"/>
     </Property>
     <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[1090, 659]"/>
+      <Dimension value="[1090, 655]"/>
     </Property>
     <Property name="resizable" type="boolean" value="false"/>
   </Properties>
@@ -246,8 +250,8 @@
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="KeyboardTab" pref="590" max="32767" attributes="0"/>
           <Component id="LocFunctionsPanel" max="32767" attributes="0"/>
+          <Component id="KeyboardTab" min="-2" pref="585" max="-2" attributes="0"/>
       </Group>
     </DimensionLayout>
   </Layout>
@@ -301,14 +305,12 @@
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace pref="18" max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Group type="102" attributes="0">
                               <Component id="locMappingLabel" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="keyboardType" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="alwaysOnTopCheckbox" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="sliderSetting" min="-2" max="-2" attributes="0"/>
                           </Group>
@@ -319,6 +321,11 @@
                           </Group>
                           <Component id="jPanel6" alignment="0" max="32767" attributes="0"/>
                           <Component id="LocContainer" alignment="0" pref="0" max="32767" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="alwaysOnTopCheckbox" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="toggleMenuBar" min="-2" max="-2" attributes="0"/>
+                          </Group>
                       </Group>
                       <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                   </Group>
@@ -330,9 +337,8 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="locMappingLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="sliderSetting" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="alwaysOnTopCheckbox" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="keyboardType" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="sliderSetting" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="LocContainer" min="-2" pref="338" max="-2" attributes="0"/>
@@ -343,7 +349,12 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel6" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="alwaysOnTopCheckbox" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="toggleMenuBar" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="21" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -355,6 +366,7 @@
                   <Color blue="9b" green="0" red="0" type="rgb"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Locomotive Mapping"/>
+                <Property name="toolTipText" type="java.lang.String" value="Right-click any button for options and to delete locomotives."/>
               </Properties>
             </Component>
             <Container class="javax.swing.JPanel" name="LocContainer">
@@ -2705,6 +2717,15 @@
                 <Property name="toolTipText" type="java.lang.String" value="Network latency should consistently be low to ensure a stable connection."/>
               </Properties>
             </Component>
+            <Component class="javax.swing.JCheckBox" name="toggleMenuBar">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Toggle menu bar"/>
+                <Property name="focusable" type="boolean" value="false"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="toggleMenuBarActionPerformed"/>
+              </Events>
+            </Component>
           </SubComponents>
         </Container>
         <Container class="javax.swing.JPanel" name="layoutPanel">
@@ -2759,7 +2780,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="LayoutArea" pref="504" max="32767" attributes="0"/>
+                      <Component id="LayoutArea" pref="499" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="103" alignment="1" groupAlignment="3" attributes="0">
@@ -2826,12 +2847,12 @@
                   <Layout>
                     <DimensionLayout dim="0">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <EmptySpace min="0" pref="796" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="842" max="32767" attributes="0"/>
                       </Group>
                     </DimensionLayout>
                     <DimensionLayout dim="1">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <EmptySpace min="0" pref="536" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="541" max="32767" attributes="0"/>
                       </Group>
                     </DimensionLayout>
                   </Layout>
@@ -2976,7 +2997,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane5" pref="481" max="32767" attributes="0"/>
+                      <Component id="jScrollPane5" pref="476" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="jSeparator7" alignment="1" min="-2" pref="23" max="-2" attributes="0"/>
@@ -5852,7 +5873,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane3" pref="539" max="32767" attributes="0"/>
+                      <Component id="jScrollPane3" pref="534" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -5948,9 +5969,9 @@
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="SpeedSlider" min="-2" pref="49" max="-2" attributes="0"/>
                   <EmptySpace min="-2" pref="2" max="-2" attributes="0"/>
-                  <Component id="locIcon" min="-2" pref="103" max="-2" attributes="0"/>
+                  <Component id="locIcon" min="-2" pref="120" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="FunctionTabs" max="32767" attributes="0"/>
+                  <Component id="FunctionTabs" min="-2" pref="293" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
           </Group>
@@ -6095,7 +6116,7 @@
               <Dimension value="[290, 78]"/>
             </Property>
             <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-              <Dimension value="[318, 173]"/>
+              <Dimension value="[293, 173]"/>
             </Property>
           </Properties>
 
@@ -7046,7 +7067,7 @@
                               </Group>
                               <Component id="f28Label" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="0" pref="109" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>

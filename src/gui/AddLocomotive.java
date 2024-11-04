@@ -55,7 +55,7 @@ public class AddLocomotive extends javax.swing.JFrame
         AddNewLocLabel = new javax.swing.JLabel();
 
         setTitle("Add Locomotive");
-        setBackground(new java.awt.Color(240, 240, 240));
+        setBackground(new java.awt.Color(238, 238, 238));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
 
         jPanel2.setBackground(new java.awt.Color(245, 245, 245));

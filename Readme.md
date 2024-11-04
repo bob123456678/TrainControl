@@ -144,6 +144,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Delete/Backspace (remove locomotive from currently hovered node, clear clipboard if non-empty)
     * Control+X (remove locomotive from currently hovered node and place it in the clipboard)
 * UI shortcuts
+    * Control+M (show menu bar)
     * Backspace/Alt+backspace (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
@@ -221,7 +222,7 @@ If have an older CS3 or don't want to use the CS3 Track Board layouts, you can v
 
 A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
 
-If you change the local files, clicking on "Sync Central Station" from the Tools tab will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
+If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives tab in the menu bar will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
@@ -230,6 +231,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.3.0 [Beta]
+    - Rearranged the "Tools" tab into a standard menu bar
+        - The visiblility of the menu bar can be toggled from the keyboard mapping UI
+        - The visibility of the menu bar will be remembered between runs
+        - Locomotives can now be added to the database through a dedicated popup menu
+    - Increased the size of the active locomotive icon
     - Locomotives in the locomotive selector are now sorted alphabetically
     - Minor enhancements to the route editing UI
 

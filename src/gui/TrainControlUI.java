@@ -104,6 +104,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop";
+    public static final String MENUBAR_SETTING_PREF = "MenuBar";
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
@@ -133,7 +134,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
-    public static final Integer LOC_ICON_HEIGHT = 103;
+    public static final Integer LOC_ICON_HEIGHT = 120;
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
@@ -525,6 +526,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Restore UI component state
         this.sliderSetting.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.alwaysOnTopCheckbox.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
         this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
@@ -558,7 +560,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.NextLocMapping.addMouseListener(rcm);
         
         // UI editor bugs out when this is too wide
-        this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");        
+        // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");        
     }
     
      /**
@@ -1355,7 +1357,41 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setVisible(true);
              
         // Restore correct preference
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));             
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true)); 
+        displayMenuBar();
+    }
+    
+    private void displayMenuBar()
+    {
+        int barHeight = this.mainMenuBar.getHeight(); // 23
+        int newHeight;
+        
+        if (this.mainMenuBar.isVisible() && !prefs.getBoolean(MENUBAR_SETTING_PREF, true))
+        {
+            this.mainMenuBar.setVisible(false);
+            setResizable(true);
+            
+            newHeight = this.getHeight() - barHeight;
+            
+            setMaximumSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            setMinimumSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            setPreferredSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            pack();
+            setResizable(false);
+        }
+        else if (!this.mainMenuBar.isVisible() && prefs.getBoolean(MENUBAR_SETTING_PREF, true))
+        {
+            this.mainMenuBar.setVisible(true);
+            setResizable(true);
+            
+            newHeight = this.getHeight() + barHeight;
+
+            setMaximumSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            setMinimumSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            setPreferredSize(new java.awt.Dimension(this.getWidth(), newHeight));
+            pack();
+            setResizable(false);
+        }
     }
     
     /**
@@ -2618,6 +2654,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         alwaysOnTopCheckbox = new javax.swing.JCheckBox();
         keyboardType = new javax.swing.JComboBox<>();
         latencyLabel = new javax.swing.JLabel();
+        toggleMenuBar = new javax.swing.JCheckBox();
         layoutPanel = new javax.swing.JPanel();
         LayoutList = new javax.swing.JComboBox();
         layoutListLabel = new javax.swing.JLabel();
@@ -2856,12 +2893,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         backupDataMenuItem = new javax.swing.JMenuItem();
         aboutMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
-        syncMenuItem = new javax.swing.JMenuItem();
-        addLocomotiveMenuItem = new javax.swing.JMenuItem();
         viewDatabaseMenuItem = new javax.swing.JMenuItem();
+        addLocomotiveMenuItem = new javax.swing.JMenuItem();
+        jSeparator6 = new javax.swing.JPopupMenu.Separator();
+        syncMenuItem = new javax.swing.JMenuItem();
         functionsMenu = new javax.swing.JMenu();
         turnOnLightsMenuItem = new javax.swing.JMenuItem();
         turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
+        jSeparator16 = new javax.swing.JPopupMenu.Separator();
         syncFullLocStateMenuItem = new javax.swing.JMenuItem();
         layoutMenu = new javax.swing.JMenu();
         showCurrentLayoutFolderMenuItem = new javax.swing.JMenuItem();
@@ -2884,9 +2923,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1090, 659));
-        setMinimumSize(new java.awt.Dimension(1090, 659));
-        setPreferredSize(new java.awt.Dimension(1090, 659));
+        setMaximumSize(new java.awt.Dimension(1090, 655));
+        setMinimumSize(new java.awt.Dimension(1090, 655));
+        setPreferredSize(new java.awt.Dimension(1090, 655));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -2924,6 +2963,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
         locMappingLabel.setText("Locomotive Mapping");
+        locMappingLabel.setToolTipText("Right-click any button for options and to delete locomotives.");
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -4440,19 +4480,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         latencyLabel.setText("Latency:");
         latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
 
+        toggleMenuBar.setText("Toggle menu bar");
+        toggleMenuBar.setFocusable(false);
+        toggleMenuBar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                toggleMenuBarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout LocControlPanelLayout = new javax.swing.GroupLayout(LocControlPanel);
         LocControlPanel.setLayout(LocControlPanelLayout);
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(18, Short.MAX_VALUE)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(locMappingLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(alwaysOnTopCheckbox)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sliderSetting))
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
@@ -4460,7 +4506,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(latencyLabel))
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                        .addComponent(alwaysOnTopCheckbox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(toggleMenuBar)))
                 .addGap(12, 12, 12))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -4469,9 +4519,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locMappingLabel)
-                    .addComponent(sliderSetting)
-                    .addComponent(alwaysOnTopCheckbox)
-                    .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(sliderSetting))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -4480,7 +4529,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(alwaysOnTopCheckbox)
+                    .addComponent(toggleMenuBar))
+                .addContainerGap(21, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Locomotive Control", LocControlPanel);
@@ -4507,11 +4560,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         InnerLayoutPanel.setLayout(InnerLayoutPanelLayout);
         InnerLayoutPanelLayout.setHorizontalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 796, Short.MAX_VALUE)
+            .addGap(0, 842, Short.MAX_VALUE)
         );
         InnerLayoutPanelLayout.setVerticalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 536, Short.MAX_VALUE)
+            .addGap(0, 541, Short.MAX_VALUE)
         );
 
         LayoutArea.setViewportView(InnerLayoutPanel);
@@ -4601,7 +4654,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 504, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 499, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4758,7 +4811,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 481, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 476, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6473,7 +6526,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 539, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6582,7 +6635,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FunctionTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
         FunctionTabs.setFocusable(false);
         FunctionTabs.setMinimumSize(new java.awt.Dimension(290, 78));
-        FunctionTabs.setPreferredSize(new java.awt.Dimension(318, 173));
+        FunctionTabs.setPreferredSize(new java.awt.Dimension(293, 173));
 
         functionPanel.setBackground(new java.awt.Color(255, 255, 255));
         functionPanel.setPreferredSize(new java.awt.Dimension(313, 123));
@@ -7482,7 +7535,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(f29Label)
                         .addComponent(f31Label))
                     .addComponent(f28Label))
-                .addGap(0, 109, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         FunctionTabs.addTab("F20-F31", F20AndUpPanel);
@@ -7529,9 +7582,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(SpeedSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(2, 2, 2)
-                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(FunctionTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(FunctionTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 293, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -7577,13 +7630,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        syncMenuItem.setText("Synchronize w/ Central Station");
-        syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        viewDatabaseMenuItem.setText("Browse Database");
+        viewDatabaseMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                syncMenuItemActionPerformed(evt);
+                viewDatabaseMenuItemActionPerformed(evt);
             }
         });
-        locomotiveMenu.add(syncMenuItem);
+        locomotiveMenu.add(viewDatabaseMenuItem);
 
         addLocomotiveMenuItem.setText("Add Locomotive");
         addLocomotiveMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -7592,14 +7645,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         locomotiveMenu.add(addLocomotiveMenuItem);
+        locomotiveMenu.add(jSeparator6);
 
-        viewDatabaseMenuItem.setText("Browse Database");
-        viewDatabaseMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        syncMenuItem.setText("Sync Database w/ Central Station");
+        syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                viewDatabaseMenuItemActionPerformed(evt);
+                syncMenuItemActionPerformed(evt);
             }
         });
-        locomotiveMenu.add(viewDatabaseMenuItem);
+        locomotiveMenu.add(syncMenuItem);
 
         mainMenuBar.add(locomotiveMenu);
 
@@ -7626,8 +7680,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         functionsMenu.add(turnOffFunctionsMenuItem);
+        functionsMenu.add(jSeparator16);
 
-        syncFullLocStateMenuItem.setText("Sync Full Locomotive Function State");
+        syncFullLocStateMenuItem.setText("Sync Full Function State w/ Central Station");
         syncFullLocStateMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 syncFullLocStateMenuItemActionPerformed(evt);
@@ -7703,8 +7758,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 590, Short.MAX_VALUE)
             .addComponent(LocFunctionsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 585, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         KeyboardTab.getAccessibleContext().setAccessibleName("");
@@ -7762,6 +7817,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (controlPressed && keyCode == KeyEvent.VK_N)
         {
             this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_M)
+        {
+            this.toggleMenuBar.setSelected(!this.toggleMenuBar.isSelected());
+            toggleMenuBarActionPerformed(null);
         }
         else if (controlPressed && keyCode == KeyEvent.VK_DELETE)
         {
@@ -10428,6 +10488,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource(), true);
     }//GEN-LAST:event_LetterButtonPressed
 
+    private void toggleMenuBarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toggleMenuBarActionPerformed
+        prefs.putBoolean(MENUBAR_SETTING_PREF, this.toggleMenuBar.isSelected());
+        displayMenuBar();
+    }//GEN-LAST:event_toggleMenuBarActionPerformed
+
     public void deleteTimetableEntry(MouseEvent evt)
     {
         try
@@ -11614,10 +11679,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator13;
     private javax.swing.JSeparator jSeparator14;
     private javax.swing.JSeparator jSeparator15;
+    private javax.swing.JPopupMenu.Separator jSeparator16;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
+    private javax.swing.JPopupMenu.Separator jSeparator6;
     private javax.swing.JSeparator jSeparator7;
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
@@ -11658,6 +11725,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTable timetable;
     private javax.swing.JToggleButton timetableCapture;
     private javax.swing.JPanel timetablePanel;
+    private javax.swing.JCheckBox toggleMenuBar;
     private javax.swing.JMenuItem turnOffFunctionsMenuItem;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
