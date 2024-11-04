@@ -255,6 +255,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Locomotive selector
     private LocomotiveSelector selector;
+    private AddLocomotive adder;
     
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
@@ -1228,6 +1229,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         selector = new LocomotiveSelector(this.model, this);
         selector.init();
         
+        adder = new AddLocomotive(this.model, this);
+        
         // Load autonomy data
         try
         {
@@ -1262,7 +1265,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
          // Hide CS3 app button on non-CS3 controllers
         if (!this.model.isCS3())
         {
-            this.CS3OpenBrowser.setVisible(false);
+            this.openCS3AppMenuItem.setVisible(false);
         }
                 
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
@@ -1433,12 +1436,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     this.model.log(e);
                 }
                 
-                this.initNewLayoutButton.setEnabled(true);      
+                this.initializeLocalLayoutMenuItem.setEnabled(true);      
             }));
         }
         else
         {
-            this.initNewLayoutButton.setEnabled(true);
+            this.initializeLocalLayoutMenuItem.setEnabled(true);
         }
     }
     
@@ -2793,10 +2796,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel12 = new javax.swing.JPanel();
         jLabel32 = new javax.swing.JLabel();
         LayoutPathLabel = new javax.swing.JLabel();
-        OverrideCS2DataPath = new javax.swing.JButton();
-        CS3OpenBrowser = new javax.swing.JButton();
-        initNewLayoutButton = new javax.swing.JButton();
-        useCS2Layout = new javax.swing.JButton();
         jSeparator6 = new javax.swing.JSeparator();
         dataSourceLabel = new javax.swing.JLabel();
         aboutLabel = new javax.swing.JButton();
@@ -2879,6 +2878,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         F30 = new javax.swing.JToggleButton();
         f25Label = new javax.swing.JLabel();
         F31 = new javax.swing.JToggleButton();
+        mainMenuBar = new javax.swing.JMenuBar();
+        fileMenu = new javax.swing.JMenu();
+        backupDataMenuItem = new javax.swing.JMenuItem();
+        aboutMenuItem = new javax.swing.JMenuItem();
+        locomotiveMenu = new javax.swing.JMenu();
+        syncMenuItem = new javax.swing.JMenuItem();
+        addLocomotiveMenuItem = new javax.swing.JMenuItem();
+        viewDatabaseMenuItem = new javax.swing.JMenuItem();
+        functionsMenu = new javax.swing.JMenu();
+        turnOnLightsMenuItem = new javax.swing.JMenuItem();
+        turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
+        syncFullLocStateMenuItem = new javax.swing.JMenuItem();
+        layoutMenu = new javax.swing.JMenu();
+        showCurrentLayoutFolderMenuItem = new javax.swing.JMenuItem();
+        chooseLocalDataFolderMenuItem = new javax.swing.JMenuItem();
+        initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
+        jSeparator8 = new javax.swing.JPopupMenu.Separator();
+        switchCSLayoutMenuItem = new javax.swing.JMenuItem();
+        openCS3AppMenuItem = new javax.swing.JMenuItem();
 
         jList1.setModel(new javax.swing.AbstractListModel() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
@@ -2893,8 +2911,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMinimumSize(new java.awt.Dimension(1090, 619));
-        setPreferredSize(new java.awt.Dimension(1090, 619));
+        setMaximumSize(new java.awt.Dimension(1090, 659));
+        setMinimumSize(new java.awt.Dimension(1090, 659));
+        setPreferredSize(new java.awt.Dimension(1090, 659));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -4609,7 +4628,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 504, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4627,7 +4646,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap())
         );
 
-        KeyboardTab.addTab("Layout", layoutPanel);
+        KeyboardTab.addTab("Track Diagram", layoutPanel);
 
         RoutePanel.setBackground(new java.awt.Color(238, 238, 238));
         RoutePanel.setFocusable(false);
@@ -4766,7 +4785,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 510, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 481, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6692,44 +6711,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         LayoutPathLabel.setText("path to layout folder");
 
-        OverrideCS2DataPath.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        OverrideCS2DataPath.setText("Choose Local Data Folder");
-        OverrideCS2DataPath.setFocusable(false);
-        OverrideCS2DataPath.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OverrideCS2DataPathActionPerformed(evt);
-            }
-        });
-
-        CS3OpenBrowser.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        CS3OpenBrowser.setText("Open CS3 Web App");
-        CS3OpenBrowser.setFocusable(false);
-        CS3OpenBrowser.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                CS3OpenBrowserActionPerformed(evt);
-            }
-        });
-
-        initNewLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        initNewLayoutButton.setText("Initialize New Local Layout");
-        initNewLayoutButton.setToolTipText("Creates a blank track diagram that you can edit visually.");
-        initNewLayoutButton.setFocusable(false);
-        initNewLayoutButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                initNewLayoutButtonActionPerformed(evt);
-            }
-        });
-
-        useCS2Layout.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        useCS2Layout.setText("Switch to Central Station Layout");
-        useCS2Layout.setToolTipText("Reverts to using the track diagram on your Central Station, if any.");
-        useCS2Layout.setFocusable(false);
-        useCS2Layout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                useCS2LayoutActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
         jPanel12.setLayout(jPanel12Layout);
         jPanel12Layout.setHorizontalGroup(
@@ -6739,17 +6720,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel32)
                     .addComponent(LayoutPathLabel)
-                    .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel12Layout.createSequentialGroup()
-                            .addComponent(useCS2Layout)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(CS3OpenBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addComponent(jSeparator6, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel12Layout.createSequentialGroup()
-                            .addComponent(OverrideCS2DataPath)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(initNewLayoutButton))))
-                .addContainerGap(374, Short.MAX_VALUE))
+                    .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 372, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(366, Short.MAX_VALUE))
         );
         jPanel12Layout.setVerticalGroup(
             jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6758,17 +6730,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(jLabel32)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LayoutPathLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(OverrideCS2DataPath)
-                    .addComponent(initNewLayoutButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(34, 34, 34)
                 .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, 0)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(useCS2Layout)
-                    .addComponent(CS3OpenBrowser))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(28, Short.MAX_VALUE))
         );
 
         dataSourceLabel.setForeground(new java.awt.Color(0, 0, 115));
@@ -6806,7 +6770,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(toolsLabel)
                             .addComponent(dataSourceLabel))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 353, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         ManageLocPanelLayout.setVerticalGroup(
@@ -6851,7 +6815,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 568, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 539, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7860,7 +7824,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(f29Label)
                         .addComponent(f31Label))
                     .addComponent(f28Label))
-                .addGap(0, 138, Short.MAX_VALUE))
+                .addGap(0, 109, Short.MAX_VALUE))
         );
 
         FunctionTabs.addTab("F20-F31", F20AndUpPanel);
@@ -7916,6 +7880,160 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PowerOff.getAccessibleContext().setAccessibleName("");
         ActiveLocLabel.getAccessibleContext().setAccessibleName("LocomotiveNameBig");
 
+        mainMenuBar.setFocusable(false);
+        mainMenuBar.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                mainMenuBarKeyPressed(evt);
+            }
+        });
+
+        fileMenu.setText("File");
+        fileMenu.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                fileMenuKeyPressed(evt);
+            }
+        });
+
+        backupDataMenuItem.setText("Backup TrainControl Data");
+        backupDataMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backupDataMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(backupDataMenuItem);
+
+        aboutMenuItem.setText("About / Readme");
+        aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                aboutMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(aboutMenuItem);
+
+        mainMenuBar.add(fileMenu);
+
+        locomotiveMenu.setText("Locomotives");
+        locomotiveMenu.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                locomotiveMenuKeyPressed(evt);
+            }
+        });
+
+        syncMenuItem.setText("Synchronize w/ Central Station");
+        syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                syncMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(syncMenuItem);
+
+        addLocomotiveMenuItem.setText("Add Locomotive");
+        addLocomotiveMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addLocomotiveMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(addLocomotiveMenuItem);
+
+        viewDatabaseMenuItem.setText("Browse Database");
+        viewDatabaseMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                viewDatabaseMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(viewDatabaseMenuItem);
+
+        mainMenuBar.add(locomotiveMenu);
+
+        functionsMenu.setText("Functions");
+        functionsMenu.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                functionsMenuKeyReleased(evt);
+            }
+        });
+
+        turnOnLightsMenuItem.setText("Turn On All Lights");
+        turnOnLightsMenuItem.setToolTipText("Turns on lights for all mapped locomotives");
+        turnOnLightsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                turnOnLightsMenuItemActionPerformed(evt);
+            }
+        });
+        functionsMenu.add(turnOnLightsMenuItem);
+
+        turnOffFunctionsMenuItem.setText("Turn Off All Functions");
+        turnOffFunctionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                turnOffFunctionsMenuItemActionPerformed(evt);
+            }
+        });
+        functionsMenu.add(turnOffFunctionsMenuItem);
+
+        syncFullLocStateMenuItem.setText("Sync Full Locomotive Function State");
+        syncFullLocStateMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                syncFullLocStateMenuItemActionPerformed(evt);
+            }
+        });
+        functionsMenu.add(syncFullLocStateMenuItem);
+
+        mainMenuBar.add(functionsMenu);
+
+        layoutMenu.setText("Layout");
+        layoutMenu.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                layoutMenuKeyPressed(evt);
+            }
+        });
+
+        showCurrentLayoutFolderMenuItem.setText("Show Current Layout Data Folder");
+        showCurrentLayoutFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showCurrentLayoutFolderMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(showCurrentLayoutFolderMenuItem);
+
+        chooseLocalDataFolderMenuItem.setText("Choose Local Data Folder");
+        chooseLocalDataFolderMenuItem.setToolTipText("Select the location of layout files on the filesystem.  Lets you switch between diagrams.");
+        chooseLocalDataFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chooseLocalDataFolderMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(chooseLocalDataFolderMenuItem);
+
+        initializeLocalLayoutMenuItem.setText("Initialize New Local Layout");
+        initializeLocalLayoutMenuItem.setToolTipText("Creates a blank track diagram that you can edit visually.");
+        initializeLocalLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                initializeLocalLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(initializeLocalLayoutMenuItem);
+        layoutMenu.add(jSeparator8);
+
+        switchCSLayoutMenuItem.setText("Switch to Central Station Layout");
+        switchCSLayoutMenuItem.setToolTipText("Reverts to using the track diagram on your Central Station, if any.");
+        switchCSLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                switchCSLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(switchCSLayoutMenuItem);
+
+        openCS3AppMenuItem.setText("Open CS3 Web App");
+        openCS3AppMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openCS3AppMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(openCS3AppMenuItem);
+
+        mainMenuBar.add(layoutMenu);
+
+        setJMenuBar(mainMenuBar);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -7927,7 +8045,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 590, Short.MAX_VALUE)
             .addComponent(LocFunctionsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
@@ -8580,89 +8698,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         //this.LocFunctionsPanel.requestFocus();
     }//GEN-LAST:event_ManageLocPanelMouseClicked
 
-    private void CS3OpenBrowserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CS3OpenBrowserActionPerformed
-        new Thread(()->
-        { 
-            String url = this.model.getCS3AppUrl();
-
-            if(Desktop.isDesktopSupported())
-            {
-                Desktop desktop = Desktop.getDesktop();
-
-                try
-                {
-                    desktop.browse(new URI(url));
-                }
-                catch (IOException | URISyntaxException e) {}
-            }
-            else
-            {
-                Runtime runtime = Runtime.getRuntime();
-
-                try
-                {
-                    runtime.exec("xdg-open " + url);
-                }
-                catch (IOException e) {}
-            }
-        }).start();
-    }//GEN-LAST:event_CS3OpenBrowserActionPerformed
-
-    private void OverrideCS2DataPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OverrideCS2DataPathActionPerformed
-        new Thread(()->
-        { 
-            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
-            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            int i = fc.showOpenDialog(this);
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
-                String filepath = f.getPath();
-
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
-            }
-            else
-            {
-                return;
-            }
-
-            this.model.syncWithCS2();
-            
-            if (!this.model.getLayoutList().isEmpty())
-            {   
-                this.initializeTrackDiagram(true);
-            }
-            else
-            {
-                this.repaintLoc();
-                JOptionPane.showMessageDialog(this, "Invalid path. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
-            }    
-        }).start();
-    }//GEN-LAST:event_OverrideCS2DataPathActionPerformed
-
     private void TurnOnLightsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOnLightsButtonActionPerformed
 
-        new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            List<String> locs = new ArrayList<>();
+
+            for (Map<JButton, Locomotive> m : this.locMapping)
             {
-                List<String> locs = new ArrayList<>();
-
-                for (Map<JButton, Locomotive> m : this.locMapping)
+                for (Locomotive l : m.values())
                 {
-                    for (Locomotive l : m.values())
-                    {
-                        locs.add(l.getName());
-                    }
+                    locs.add(l.getName());
                 }
+            }
 
-                this.model.lightsOn(locs);
-            }).start();
+            this.model.lightsOn(locs);
+        }));
     }//GEN-LAST:event_TurnOnLightsButtonActionPerformed
 
     private void TurnOffFnButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOffFnButtonActionPerformed
-        new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             this.model.allFunctionsOff();
-        }).start();
+        }));
     }//GEN-LAST:event_TurnOffFnButtonActionPerformed
 
     private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
@@ -8901,7 +8959,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
 
             // Ensure the text area is in focus
-            textArea.addAncestorListener(new AncestorListener() {
+            textArea.addAncestorListener(new AncestorListener()
+            {
                 @Override
                 public void ancestorRemoved(AncestorEvent event) {}
 
@@ -10436,58 +10495,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
-    private void initNewLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initNewLayoutButtonActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            JOptionPane.showMessageDialog(this, "In the next window, please select a folder for the new layout.");
-
-            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
-            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            int i = fc.showOpenDialog(this);
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
-                String filepath = f.getPath();
-
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
-                
-                this.initNewLayoutButton.setEnabled(false);
-
-                this.createAndApplyEmptyLayout(filepath, false);
-            }
-        }));
-    }//GEN-LAST:event_initNewLayoutButtonActionPerformed
-
-    private void useCS2LayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCS2LayoutActionPerformed
-        
-        // Hide the tab in case loading fails but the model still has the local diagram
-        this.useCS2Layout.setEnabled(false);
-
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            try
-            {
-                this.KeyboardTab.remove(this.layoutPanel);
-
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
-                this.model.clearLayouts();
-                this.model.syncWithCS2();
-                
-                // Set the updated list of layout pages
-                initializeTrackDiagram(true);
-            }
-            catch (Exception e)
-            {
-                this.model.log("Error synchronizing layout from CS2.");
-            }
-            
-            this.useCS2Layout.setEnabled(true);
-            this.repaintPathLabel();
-            
-        }));
-    }//GEN-LAST:event_useCS2LayoutActionPerformed
-
     private void aboutLabelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutLabelActionPerformed
         try 
         {
@@ -10798,6 +10805,214 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.showStationLengths.setSelected(!this.showStationLengths.isSelected());
         }
     }//GEN-LAST:event_showStationLengthsMouseReleased
+
+    private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
+            if(dialogResult == JOptionPane.YES_OPTION)
+            {
+                new Thread(() ->
+                {
+                    for (String s : this.model.getLocList())
+                    {
+                        this.model.syncLocomotive(s);
+                    }
+                }).start();
+            }
+        }));
+    }//GEN-LAST:event_syncFullLocStateMenuItemActionPerformed
+
+    private void syncMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncMenuItemActionPerformed
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            doSync(ManageLocPanel);
+        }));
+    }//GEN-LAST:event_syncMenuItemActionPerformed
+
+    private void viewDatabaseMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewDatabaseMenuItemActionPerformed
+         ActiveLocLabelMouseReleased(null);
+    }//GEN-LAST:event_viewDatabaseMenuItemActionPerformed
+
+    private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            List<String> locs = new ArrayList<>();
+
+            for (Map<JButton, Locomotive> m : this.locMapping)
+            {
+                for (Locomotive l : m.values())
+                {
+                    locs.add(l.getName());
+                }
+            }
+
+            this.model.lightsOn(locs);
+        }));
+    }//GEN-LAST:event_turnOnLightsMenuItemActionPerformed
+
+    private void turnOffFunctionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsMenuItemActionPerformed
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            this.model.allFunctionsOff();
+        }));
+    }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
+
+    private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
+        new Thread(() ->
+        {
+            this.backupDataMenuItem.setEnabled(false);
+            this.saveState(true);
+            this.model.saveState(true);
+            this.backupDataMenuItem.setEnabled(true);
+            JOptionPane.showMessageDialog(this, "Backup complete: check log.");
+        }).start();
+    }//GEN-LAST:event_backupDataMenuItemActionPerformed
+
+    private void addLocomotiveMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveMenuItemActionPerformed
+        this.getLocAdder().setVisible(true);
+    }//GEN-LAST:event_addLocomotiveMenuItemActionPerformed
+
+    private void openCS3AppMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openCS3AppMenuItemActionPerformed
+        new Thread(()->
+        { 
+            String url = this.model.getCS3AppUrl();
+
+            if(Desktop.isDesktopSupported())
+            {
+                Desktop desktop = Desktop.getDesktop();
+
+                try
+                {
+                    desktop.browse(new URI(url));
+                }
+                catch (IOException | URISyntaxException e) {}
+            }
+            else
+            {
+                Runtime runtime = Runtime.getRuntime();
+
+                try
+                {
+                    runtime.exec("xdg-open " + url);
+                }
+                catch (IOException e) {}
+            }
+        }).start();
+    }//GEN-LAST:event_openCS3AppMenuItemActionPerformed
+
+    private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
+        try 
+        {
+            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
+        } catch (IOException | URISyntaxException e1) { }
+    }//GEN-LAST:event_aboutMenuItemActionPerformed
+
+    private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed
+        // Hide the tab in case loading fails but the model still has the local diagram
+        this.switchCSLayoutMenuItem.setEnabled(false);
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            try
+            {
+                this.KeyboardTab.remove(this.layoutPanel);
+
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+                this.model.clearLayouts();
+                this.model.syncWithCS2();
+                
+                // Set the updated list of layout pages
+                initializeTrackDiagram(true);
+            }
+            catch (Exception e)
+            {
+                this.model.log("Error synchronizing layout from CS2.");
+            }
+            
+            this.switchCSLayoutMenuItem.setEnabled(true);
+            this.repaintPathLabel();
+            
+        }));
+    }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
+
+    private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            JOptionPane.showMessageDialog(this, "In the next window, please select a folder for the new layout.");
+
+            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int i = fc.showOpenDialog(this);
+            if (i == JFileChooser.APPROVE_OPTION)
+            {
+                File f = fc.getSelectedFile();
+                String filepath = f.getPath();
+
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+                
+                this.initializeLocalLayoutMenuItem.setEnabled(false);
+
+                this.createAndApplyEmptyLayout(filepath, false);
+            }
+        }));
+    }//GEN-LAST:event_initializeLocalLayoutMenuItemActionPerformed
+
+    private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
+        new Thread(()->
+        { 
+            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int i = fc.showOpenDialog(this);
+            if (i == JFileChooser.APPROVE_OPTION)
+            {
+                File f = fc.getSelectedFile();
+                String filepath = f.getPath();
+
+                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+            }
+            else
+            {
+                return;
+            }
+
+            this.model.syncWithCS2();
+            
+            if (!this.model.getLayoutList().isEmpty())
+            {   
+                this.initializeTrackDiagram(true);
+            }
+            else
+            {
+                this.repaintLoc();
+                JOptionPane.showMessageDialog(this, "Invalid path. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
+            }    
+        }).start();
+    }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
+
+    private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
+        JOptionPane.showMessageDialog(this, this.getLayoutPath());
+    }//GEN-LAST:event_showCurrentLayoutFolderMenuItemActionPerformed
+
+    private void mainMenuBarKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_mainMenuBarKeyPressed
+        LocControlPanelKeyPressed(evt);
+    }//GEN-LAST:event_mainMenuBarKeyPressed
+
+    private void fileMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_fileMenuKeyPressed
+        LocControlPanelKeyPressed(evt);
+    }//GEN-LAST:event_fileMenuKeyPressed
+
+    private void locomotiveMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locomotiveMenuKeyPressed
+        LocControlPanelKeyPressed(evt);
+    }//GEN-LAST:event_locomotiveMenuKeyPressed
+
+    private void functionsMenuKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_functionsMenuKeyReleased
+        LocControlPanelKeyPressed(evt);
+    }//GEN-LAST:event_functionsMenuKeyReleased
+
+    private void layoutMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_layoutMenuKeyPressed
+        LocControlPanelKeyPressed(evt);
+    }//GEN-LAST:event_layoutMenuKeyPressed
 
     public void deleteTimetableEntry(MouseEvent evt)
     {
@@ -11681,7 +11896,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton BulkEnable;
     private javax.swing.JButton CButton;
     private javax.swing.JTextField CLabel;
-    private javax.swing.JButton CS3OpenBrowser;
     private javax.swing.JSlider CSlider;
     private javax.swing.JLabel CurrentKeyLabel;
     private javax.swing.JButton DButton;
@@ -11787,7 +12001,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider OSlider;
     private javax.swing.JButton OnButton;
     private javax.swing.JButton OneButton;
-    private javax.swing.JButton OverrideCS2DataPath;
     private javax.swing.JButton PButton;
     private javax.swing.JTextField PLabel;
     private javax.swing.JSlider PSlider;
@@ -11909,6 +12122,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
     private javax.swing.JButton aboutLabel;
+    private javax.swing.JMenuItem aboutMenuItem;
+    private javax.swing.JMenuItem addLocomotiveMenuItem;
     private javax.swing.JButton allButton;
     private javax.swing.JCheckBox alwaysOnTopCheckbox;
     private javax.swing.JCheckBox atomicRoutes;
@@ -11918,9 +12133,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTextArea autonomyJSON;
     private javax.swing.JPanel autonomyPanel;
     private javax.swing.JCheckBox autosave;
+    private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JButton checkDuplicates;
+    private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JButton clearNonParkedLocs;
     private javax.swing.JLabel dataSourceLabel;
     private javax.swing.JTextArea debugArea;
@@ -11961,12 +12178,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel f7Label;
     private javax.swing.JLabel f8Label;
     private javax.swing.JLabel f9Label;
+    private javax.swing.JMenu fileMenu;
     private javax.swing.JPanel functionPanel;
+    private javax.swing.JMenu functionsMenu;
     private javax.swing.JButton gracefulStop;
     private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
     private javax.swing.JButton importRoutes;
-    private javax.swing.JButton initNewLayoutButton;
+    private javax.swing.JMenuItem initializeLocalLayoutMenuItem;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
@@ -12011,12 +12230,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
     private javax.swing.JSeparator jSeparator7;
+    private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JPanel keyboardButtonPanel;
     private javax.swing.JComboBox<String> keyboardType;
     private javax.swing.JLabel latencyLabel;
     private javax.swing.JLabel layoutListLabel;
+    private javax.swing.JMenu layoutMenu;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
     private javax.swing.JButton loadDefaultBlankGraph;
@@ -12025,11 +12246,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
     private javax.swing.JLabel locMappingLabel;
+    private javax.swing.JMenu locomotiveMenu;
     private javax.swing.JPanel logPanel;
+    private javax.swing.JMenuBar mainMenuBar;
     private javax.swing.JSlider maxDelay;
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider minDelay;
+    private javax.swing.JMenuItem openCS3AppMenuItem;
     private javax.swing.JSlider preArrivalSpeedReduction;
+    private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;
@@ -12038,15 +12263,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButton sortByID;
     private javax.swing.JRadioButton sortByName;
     private javax.swing.JButton startAutonomy;
+    private javax.swing.JMenuItem switchCSLayoutMenuItem;
+    private javax.swing.JMenuItem syncFullLocStateMenuItem;
     private javax.swing.JButton syncLocStateButton;
+    private javax.swing.JMenuItem syncMenuItem;
     private javax.swing.JTable timetable;
     private javax.swing.JToggleButton timetableCapture;
     private javax.swing.JPanel timetablePanel;
     private javax.swing.JLabel toolsLabel;
+    private javax.swing.JMenuItem turnOffFunctionsMenuItem;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
-    private javax.swing.JButton useCS2Layout;
+    private javax.swing.JMenuItem turnOnLightsMenuItem;
     private javax.swing.JButton validateButton;
+    private javax.swing.JMenuItem viewDatabaseMenuItem;
     // End of variables declaration//GEN-END:variables
 
     // Lap strings in the size dropdown to icon sizes
@@ -12065,6 +12295,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Gets the active layout path
+     * @return 
+     */
+    public String getLayoutPath()
+    {
+        if (!isLocalLayout())
+        {
+            return "Central Station: " + prefs.get(IP_PREF, "(none loaded)");
+        }
+        else
+        {
+            return "Local Layout: " + prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+        }
+    }
+    
+    /**
      * Repaints the label with the layout file path
      */
     public void repaintPathLabel()
@@ -12074,13 +12320,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Set UI label
             if (!isLocalLayout())
             {
-                LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
-                this.useCS2Layout.setVisible(false);
+                // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
+                this.switchCSLayoutMenuItem.setEnabled(false);
             }
             else
             {
-                LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
-                this.useCS2Layout.setVisible(true);
+                // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+                this.switchCSLayoutMenuItem.setEnabled(true);
             }
         }));
     }
@@ -12090,6 +12336,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         repaintLayout(false, false);
     }  
+    
+    public AddLocomotive getLocAdder()
+    {
+        return adder;
+    }
     
     /**
      * Repaints layout from cache - called from UI dropdown/hotkeys
@@ -12118,10 +12369,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 else 
                 {
-                    if (!this.KeyboardTab.getTitleAt(1).contains("Layout"))
+                    if (!this.KeyboardTab.getTitleAt(1).contains("Track Diagram"))
                     {
                         this.KeyboardTab.add(this.layoutPanel, 1);
-                        this.KeyboardTab.setTitleAt(1, "Layout");                        
+                        this.KeyboardTab.setTitleAt(1, "Track Diagram");                        
                     };
 
                     //InnerLayoutPanel.setVisible(false);

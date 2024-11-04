@@ -1,11 +1,13 @@
 package gui;
 
+import base.Locomotive;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import marklin.MarklinLocomotive;
 import model.ViewListener;
 
@@ -13,8 +15,8 @@ import model.ViewListener;
  *
  * @author Adam
  */
-public final class LocomotiveSelector extends javax.swing.JFrame {
-
+public final class LocomotiveSelector extends javax.swing.JFrame
+{
     private final ViewListener model;
     private final TrainControlUI parent;
     
@@ -58,7 +60,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
 
             this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING));
 
-            for (MarklinLocomotive l : this.model.getLocomotives())
+            List<MarklinLocomotive> locs = this.model.getLocomotives();
+            locs.sort((Locomotive l1, Locomotive l2) ->
+            {
+                return l1.getName().compareTo(l2.getName());
+            });
+            
+            for (MarklinLocomotive l : locs)
             {
                 LocomotiveSelectorItem loc = new LocomotiveSelectorItem(l, parent, this.MainLocList);
 
@@ -322,11 +330,12 @@ public final class LocomotiveSelector extends javax.swing.JFrame {
     }//GEN-LAST:event_formFocusGained
 
     private void addLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveActionPerformed
-        
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            this.toBack();
-            this.parent.showTab("Tools");
+            this.parent.getLocAdder().setVisible(true);
+
+            // this.toBack();
+            // this.parent.showTab("Tools");
         }));
     }//GEN-LAST:event_addLocomotiveActionPerformed
 
