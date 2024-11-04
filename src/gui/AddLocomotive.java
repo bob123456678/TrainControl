@@ -315,13 +315,11 @@ public class AddLocomotive extends javax.swing.JFrame
                 this.parent.getLocSelector().refreshLocSelectorList();
 
                 // Rest form
-                JOptionPane.showMessageDialog(this,
-                    "Locomotive added successfully");
+                JOptionPane.showMessageDialog(this, "Locomotive added successfully");
 
                 this.LocAddressInput.setText("");
                 this.LocNameInput.setText("");
-                
-                
+  
             }).start();
     }//GEN-LAST:event_AddLocButtonActionPerformed
 
@@ -337,63 +335,63 @@ public class AddLocomotive extends javax.swing.JFrame
     private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
 
         new Thread(()->
+        {
+            int locAddress;
+
+            try
             {
-                int locAddress;
-
-                try
+                if (this.LocTypeMFX.isSelected())
                 {
-                    if (this.LocTypeMFX.isSelected())
-                    {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                    }
-                }
-                catch (NumberFormatException e)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a numerical address");
-                    return;
-                }
-
-                Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
-                String message;
-
-                if (locs.containsKey(locAddress))
-                {
-                    message = "Locomotive address is already in use.  See log for details.";
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
                 }
                 else
                 {
-                    message = "Address is free.  See log for details.";
+                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
                 }
+            }
+            catch (NumberFormatException e)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a numerical address");
+                return;
+            }
 
-                if (!locs.isEmpty())
+            Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
+            String message;
+
+            if (locs.containsKey(locAddress))
+            {
+                message = "Locomotive address is already in use.  See log for details.";
+            }
+            else
+            {
+                message = "Address is free.  See log for details.";
+            }
+
+            if (!locs.isEmpty())
+            {
+                List<Integer> sortedLocs = new ArrayList(locs.keySet());
+                Collections.sort(sortedLocs, Collections.reverseOrder());
+
+                for (Integer addr : sortedLocs)
                 {
-                    List<Integer> sortedLocs = new ArrayList(locs.keySet());
-                    Collections.sort(sortedLocs, Collections.reverseOrder());
-
-                    for (Integer addr : sortedLocs)
+                    for (MarklinLocomotive l : locs.get(addr))
                     {
-                        for (MarklinLocomotive l : locs.get(addr))
-                        {
-                            this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
-                        }
-
-                        this.model.log("---- Address " + addr + " ----");
+                        this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                     }
 
-                    this.model.log("Duplicate locomotive address report:");
-                }
-                else
-                {
-                    this.model.log("There are no duplicate locomotive addresses in the database.");
+                    this.model.log("---- Address " + addr + " ----");
                 }
 
-                JOptionPane.showMessageDialog(this, message);
-            }).start();
+                this.model.log("Duplicate locomotive address report:");
+            }
+            else
+            {
+                this.model.log("There are no duplicate locomotive addresses in the database.");
+            }
+
+            JOptionPane.showMessageDialog(this, message);
+        }).start();
     }//GEN-LAST:event_checkDuplicatesActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

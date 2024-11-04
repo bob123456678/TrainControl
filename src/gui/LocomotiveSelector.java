@@ -313,7 +313,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_formComponentResized
 
     private void SyncWithCSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncWithCSActionPerformed
-
         this.parent.doSync(this);
     }//GEN-LAST:event_SyncWithCSActionPerformed
 

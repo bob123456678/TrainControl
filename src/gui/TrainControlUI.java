@@ -1361,6 +1361,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         displayMenuBar();
     }
     
+    /**
+     * Shows or hides the menu bar depending on the user's preference
+     */
     private void displayMenuBar()
     {
         int barHeight = this.mainMenuBar.getHeight(); // 23
@@ -1395,7 +1398,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
-     *
+     * Updates the latency value
      * @param latency
      */
     @Override
@@ -2962,8 +2965,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
-        locMappingLabel.setText("Locomotive Mapping");
-        locMappingLabel.setToolTipText("Right-click any button for options and to delete locomotives.");
+        locMappingLabel.setText("Locomotive Mapping (Right-click for Options)");
+        locMappingLabel.setToolTipText("");
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));

@@ -365,8 +365,8 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="9b" green="0" red="0" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Locomotive Mapping"/>
-                <Property name="toolTipText" type="java.lang.String" value="Right-click any button for options and to delete locomotives."/>
+                <Property name="text" type="java.lang.String" value="Locomotive Mapping (Right-click for Options)"/>
+                <Property name="toolTipText" type="java.lang.String" value=""/>
               </Properties>
             </Component>
             <Container class="javax.swing.JPanel" name="LocContainer">
