@@ -7668,7 +7668,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         turnOnLightsMenuItem.setText("Turn On All Lights");
-        turnOnLightsMenuItem.setToolTipText("Turns on lights for all mapped locomotives");
+        turnOnLightsMenuItem.setToolTipText("Turns on lights for all mapped locomotives.");
         turnOnLightsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 turnOnLightsMenuItemActionPerformed(evt);

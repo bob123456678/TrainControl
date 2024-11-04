@@ -109,7 +109,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="turnOnLightsMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Turn On All Lights"/>
-                <Property name="toolTipText" type="java.lang.String" value="Turns on lights for all mapped locomotives"/>
+                <Property name="toolTipText" type="java.lang.String" value="Turns on lights for all mapped locomotives."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="turnOnLightsMenuItemActionPerformed"/>

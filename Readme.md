@@ -232,9 +232,10 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 * v2.3.0 [Beta]
     - Rearranged the "Tools" tab into a standard menu bar
-        - The visiblility of the menu bar can be toggled from the keyboard mapping UI
+        - The visiblility of the menu bar can be toggled from the keyboard mapping UI / Control+M
         - The visibility of the menu bar will be remembered between runs
         - Locomotives can now be added to the database through a dedicated popup menu
+    - Slightly increased the height of the track diagram UI
     - Increased the size of the active locomotive icon
     - Locomotives in the locomotive selector are now sorted alphabetically
     - Minor enhancements to the route editing UI
