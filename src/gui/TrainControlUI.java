@@ -1265,7 +1265,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
          // Hide CS3 app button on non-CS3 controllers
         if (!this.model.isCS3())
         {
-            this.openCS3AppMenuItem.setVisible(false);
+            this.openCS3AppMenuItem.setEnabled(false);
         }
                 
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
@@ -2772,33 +2772,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         validateButton = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
         gracefulStop = new javax.swing.JButton();
-        ManageLocPanel = new javax.swing.JPanel();
-        jPanel2 = new javax.swing.JPanel();
-        LocTypeMM2 = new javax.swing.JRadioButton();
-        jLabel4 = new javax.swing.JLabel();
-        AddLocButton = new javax.swing.JButton();
-        LocAddressInput = new javax.swing.JTextField();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel1 = new javax.swing.JLabel();
-        LocNameInput = new javax.swing.JTextField();
-        LocTypeMFX = new javax.swing.JRadioButton();
-        LocTypeDCC = new javax.swing.JRadioButton();
-        checkDuplicates = new javax.swing.JButton();
-        AddNewLocLabel = new javax.swing.JLabel();
-        toolsLabel = new javax.swing.JLabel();
-        jPanel8 = new javax.swing.JPanel();
-        SyncButton = new javax.swing.JButton();
-        TurnOffFnButton = new javax.swing.JButton();
-        TurnOnLightsButton = new javax.swing.JButton();
-        syncLocStateButton = new javax.swing.JButton();
-        ViewDBButton = new javax.swing.JButton();
-        BackupButton = new javax.swing.JButton();
-        jPanel12 = new javax.swing.JPanel();
-        jLabel32 = new javax.swing.JLabel();
-        LayoutPathLabel = new javax.swing.JLabel();
-        jSeparator6 = new javax.swing.JSeparator();
-        dataSourceLabel = new javax.swing.JLabel();
-        aboutLabel = new javax.swing.JButton();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         debugArea = new javax.swing.JTextArea();
@@ -6480,321 +6453,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Autonomy", autoPanel);
 
-        ManageLocPanel.setBackground(new java.awt.Color(238, 238, 238));
-        ManageLocPanel.setToolTipText(null);
-        ManageLocPanel.setFocusable(false);
-        ManageLocPanel.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                ManageLocPanelMouseClicked(evt);
-            }
-        });
-
-        jPanel2.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-        jPanel2.setFocusable(false);
-
-        buttonGroup1.add(LocTypeMM2);
-        LocTypeMM2.setText("MM2");
-        LocTypeMM2.setFocusable(false);
-        LocTypeMM2.setInheritsPopupMenu(true);
-
-        jLabel4.setText("Locomotive Type");
-        jLabel4.setFocusable(false);
-
-        AddLocButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        AddLocButton.setText("Add");
-        AddLocButton.setFocusable(false);
-        AddLocButton.setInheritsPopupMenu(true);
-        AddLocButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddLocButtonActionPerformed(evt);
-            }
-        });
-
-        LocAddressInput.setColumns(5);
-        LocAddressInput.setInheritsPopupMenu(true);
-        LocAddressInput.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                LocAddressInputKeyReleased(evt);
-            }
-        });
-
-        jLabel3.setText("Locomotive Address");
-        jLabel3.setToolTipText("Enter as integer or hex for MFX, and integer to DCC/MM2.");
-        jLabel3.setFocusable(false);
-
-        jLabel1.setText("Locomotive Name");
-        jLabel1.setFocusable(false);
-
-        LocNameInput.setInheritsPopupMenu(true);
-        LocNameInput.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                LocNameInputKeyReleased(evt);
-            }
-        });
-
-        buttonGroup1.add(LocTypeMFX);
-        LocTypeMFX.setText("MFX");
-        LocTypeMFX.setFocusable(false);
-        LocTypeMFX.setInheritsPopupMenu(true);
-
-        buttonGroup1.add(LocTypeDCC);
-        LocTypeDCC.setSelected(true);
-        LocTypeDCC.setText("DCC");
-        LocTypeDCC.setFocusable(false);
-
-        checkDuplicates.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        checkDuplicates.setText("Check Duplicates");
-        checkDuplicates.setFocusable(false);
-        checkDuplicates.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkDuplicatesActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(AddLocButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel1))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(LocNameInput)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(checkDuplicates, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(LocTypeMM2)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeMFX)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(LocTypeDCC)
-                                .addGap(0, 0, Short.MAX_VALUE)))))
-                .addContainerGap())
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(LocNameInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(LocAddressInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(checkDuplicates))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(LocTypeMM2)
-                    .addComponent(LocTypeMFX)
-                    .addComponent(LocTypeDCC))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(AddLocButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        AddNewLocLabel.setForeground(new java.awt.Color(0, 0, 115));
-        AddNewLocLabel.setText("Add Locomotive to Database");
-
-        toolsLabel.setForeground(new java.awt.Color(0, 0, 115));
-        toolsLabel.setText("Tools");
-
-        jPanel8.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel8.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-
-        SyncButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        SyncButton.setText("Sync Central Station Loc DB & Layout");
-        SyncButton.setFocusable(false);
-        SyncButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SyncButtonActionPerformed(evt);
-            }
-        });
-
-        TurnOffFnButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        TurnOffFnButton.setText("Turn Off All Functions");
-        TurnOffFnButton.setFocusable(false);
-        TurnOffFnButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                TurnOffFnButtonActionPerformed(evt);
-            }
-        });
-
-        TurnOnLightsButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        TurnOnLightsButton.setText("Turn On All Lights");
-        TurnOnLightsButton.setFocusable(false);
-        TurnOnLightsButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                TurnOnLightsButtonActionPerformed(evt);
-            }
-        });
-
-        syncLocStateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        syncLocStateButton.setText("Sync Full Locomotive Function State");
-        syncLocStateButton.setFocusable(false);
-        syncLocStateButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                syncLocStateButtonActionPerformed(evt);
-            }
-        });
-
-        ViewDBButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        ViewDBButton.setText("View DB");
-        ViewDBButton.setFocusable(false);
-        ViewDBButton.setInheritsPopupMenu(true);
-        ViewDBButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ViewDBButtonActionPerformed(evt);
-            }
-        });
-
-        BackupButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        BackupButton.setText("Backup TrainControl Data");
-        BackupButton.setFocusable(false);
-        BackupButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                BackupButtonActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
-        jPanel8.setLayout(jPanel8Layout);
-        jPanel8Layout.setHorizontalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel8Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(TurnOnLightsButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(TurnOffFnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(syncLocStateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel8Layout.createSequentialGroup()
-                        .addComponent(SyncButton, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(ViewDBButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(2, 2, 2))
-                    .addComponent(BackupButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        jPanel8Layout.setVerticalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel8Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(SyncButton)
-                    .addComponent(ViewDBButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(syncLocStateButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(BackupButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(TurnOnLightsButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(TurnOffFnButton)
-                .addGap(12, 12, 12))
-        );
-
-        jPanel12.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel12.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
-
-        jLabel32.setText("\"Gleisbild\" layout files are currently being loaded from:");
-
-        LayoutPathLabel.setText("path to layout folder");
-
-        javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
-        jPanel12.setLayout(jPanel12Layout);
-        jPanel12Layout.setHorizontalGroup(
-            jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel12Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel32)
-                    .addComponent(LayoutPathLabel)
-                    .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 372, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(366, Short.MAX_VALUE))
-        );
-        jPanel12Layout.setVerticalGroup(
-            jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel12Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel32)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(LayoutPathLabel)
-                .addGap(34, 34, 34)
-                .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(28, Short.MAX_VALUE))
-        );
-
-        dataSourceLabel.setForeground(new java.awt.Color(0, 0, 115));
-        dataSourceLabel.setText("Layout Diagram Data Source");
-
-        aboutLabel.setForeground(new java.awt.Color(0, 0, 155));
-        aboutLabel.setText("About / Readme");
-        aboutLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        aboutLabel.setBorderPainted(false);
-        aboutLabel.setContentAreaFilled(false);
-        aboutLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        aboutLabel.setFocusable(false);
-        aboutLabel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                aboutLabelActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout ManageLocPanelLayout = new javax.swing.GroupLayout(ManageLocPanel);
-        ManageLocPanel.setLayout(ManageLocPanelLayout);
-        ManageLocPanelLayout.setHorizontalGroup(
-            ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addComponent(AddNewLocLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(aboutLabel))
-                    .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                        .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(toolsLabel)
-                            .addComponent(dataSourceLabel))
-                        .addGap(0, 353, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-        ManageLocPanelLayout.setVerticalGroup(
-            ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(ManageLocPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(ManageLocPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(AddNewLocLabel)
-                    .addComponent(aboutLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(toolsLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(9, 9, 9)
-                .addComponent(dataSourceLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        KeyboardTab.addTab("Tools", ManageLocPanel);
-
         logPanel.setBackground(new java.awt.Color(238, 238, 238));
 
         debugArea.setColumns(20);
@@ -7986,7 +7644,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        showCurrentLayoutFolderMenuItem.setText("Show Current Layout Data Folder");
+        showCurrentLayoutFolderMenuItem.setText("Show Current Data Folder");
         showCurrentLayoutFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showCurrentLayoutFolderMenuItemActionPerformed(evt);
@@ -8507,52 +8165,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_NextKeyboardActionPerformed
-    {//GEN-HEADEREND:event_NextKeyboardActionPerformed
-        this.switchKeyboard(this.keyboardNumber + 1);
-    }//GEN-LAST:event_NextKeyboardActionPerformed
-
-    private void PrevKeyboardActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_PrevKeyboardActionPerformed
-    {//GEN-HEADEREND:event_PrevKeyboardActionPerformed
-        this.switchKeyboard(this.keyboardNumber - 1);
-    }//GEN-LAST:event_PrevKeyboardActionPerformed
-
-    private void UpdateSwitchState(java.awt.event.ActionEvent evt)//GEN-FIRST:event_UpdateSwitchState
-    {//GEN-HEADEREND:event_UpdateSwitchState
-        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
-        int switchId = Integer.parseInt(b.getText());
-
-        if (b.isSelected())
-        {
-            b.setBackground(COLOR_SWITCH_RED);
-        }
-        else
-        {
-            b.setBackground(COLOR_SWITCH_GREEN);
-        }
-        
-        // Underline when red
-        Font font = b.getFont();
-        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-        attributes.put(TextAttribute.UNDERLINE, b.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
-        b.setFont(font.deriveFont(attributes));
-        
-        new Thread(() ->
-        {
-            this.model.setAccessoryState(switchId, b.isSelected());
-        }).start();
-    }//GEN-LAST:event_UpdateSwitchState
-
-    private void LayoutListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_LayoutListActionPerformed
-    {//GEN-HEADEREND:event_LayoutListActionPerformed
-        repaintLayoutFromCache();
-    }//GEN-LAST:event_LayoutListActionPerformed
-
-    private void SizeListActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_SizeListActionPerformed
-    {//GEN-HEADEREND:event_SizeListActionPerformed
-        repaintLayoutFromCache();
-    }//GEN-LAST:event_SizeListActionPerformed
-
     public int getRouteId (Object route)
     {
         return this.model.getRouteId(route.toString());
@@ -8573,52 +8185,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         return currentRoute.getName() + " (ID: " + getRouteId(route) + " | " + (currentRoute.isEnabled() ? "Auto" : "Manual") + ")";
     }
     
-    private void RouteListMouseClicked(java.awt.event.MouseEvent evt)//GEN-FIRST:event_RouteListMouseClicked
-    {//GEN-HEADEREND:event_RouteListMouseClicked
-        if (SwingUtilities.isLeftMouseButton(evt))
-        {
-            //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
-            Object route = this.getRouteAtCursor(evt);
-
-            if (route != null)
-            {
-                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
-                if(dialogResult == JOptionPane.YES_OPTION)
-                {
-                    new Thread(() -> 
-                    {
-                        executeRoute(route.toString());
-                    }).start();
-                }
-            }   
-        }
-    }//GEN-LAST:event_RouteListMouseClicked
-
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
         this.LocControlPanelKeyPressed(evt);
     }
-    
-    private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            LayoutPopupUI popup = new LayoutPopupUI(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get("Large"),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-            );
-
-            popup.render();
-            popups.add(popup);
-            updatePopups(false);
-        }));
-    }//GEN-LAST:event_layoutNewWindowActionPerformed
-    
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
-        javax.swing.JToggleButton b =
-        (javax.swing.JToggleButton) evt.getSource();
+        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
 
         Integer fNumber = this.functionMapping.get(b);
         Boolean state = b.isSelected();
@@ -8654,101 +8227,33 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         go();
     }//GEN-LAST:event_OnButtonActionPerformed
 
-    private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
-        
-        new Thread(() ->
-        {
-            LayoutPopupUI popup = new LayoutPopupUI(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get("Small"),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-            );
-
-            popup.render();
-            popups.add(popup);
-            updatePopups(false);
-        }).start();
-    }//GEN-LAST:event_smallButtonActionPerformed
-
-    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
-        
-        int size = this.LayoutList.getItemCount();
-        for (int i = 0; i < size; i++)
-        {
-            String layoutName = LayoutList.getItemAt(i).toString();
-
-            new Thread(() ->
-            {
-                LayoutPopupUI popup = new LayoutPopupUI(
-                    this.model.getLayout(layoutName),
-                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                popup.render();
-                popups.add(popup);
-                updatePopups(false);
-            }).start();
-        } 
-    }//GEN-LAST:event_allButtonActionPerformed
-
-    private void ManageLocPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ManageLocPanelMouseClicked
-        //this.LocFunctionsPanel.requestFocus();
-    }//GEN-LAST:event_ManageLocPanelMouseClicked
-
-    private void TurnOnLightsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOnLightsButtonActionPerformed
-
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            List<String> locs = new ArrayList<>();
-
-            for (Map<JButton, Locomotive> m : this.locMapping)
-            {
-                for (Locomotive l : m.values())
-                {
-                    locs.add(l.getName());
-                }
-            }
-
-            this.model.lightsOn(locs);
-        }));
-    }//GEN-LAST:event_TurnOnLightsButtonActionPerformed
-
-    private void TurnOffFnButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TurnOffFnButtonActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            this.model.allFunctionsOff();
-        }));
-    }//GEN-LAST:event_TurnOffFnButtonActionPerformed
-
-    private void SyncButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncButtonActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            doSync(ManageLocPanel);
-        }));
-    }//GEN-LAST:event_SyncButtonActionPerformed
-
     public void doSync(Component c)
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            Integer r = this.model.syncWithCS2();
-            refreshRouteList();
-            this.selector.refreshLocSelectorList();
-            this.repaintLoc(true, null);
-            this.repaintLayout();
+            this.syncMenuItem.setEnabled(false);
+            this.functionsMenu.setEnabled(false);
+            
+            new Thread(() ->
+            {
+                Integer r = this.model.syncWithCS2();
+                refreshRouteList();
+                this.selector.refreshLocSelectorList();
+                this.repaintLoc(true, null);
+                this.repaintLayout();
 
-            if ("-1".equals(r.toString()))
-            {
-                JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
-            }
-            else
-            {
-                JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
-            }
+                this.syncMenuItem.setEnabled(true);
+                this.functionsMenu.setEnabled(true);
+
+                if ("-1".equals(r.toString()))
+                {
+                    JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
+                }
+            }).start();
         }));
     }
     
@@ -8767,7 +8272,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         if (pageCopied())
         {
-            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to replace the mappings on the current page with those from page " + this.pageToCopy + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to replace the mappings on the current page with those from page " + this.pageToCopy + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
@@ -8799,7 +8304,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         new Thread(() ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(ManageLocPanel, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard Mappings", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard Mappings", JOptionPane.YES_NO_OPTION);
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.activeLoc = null;
@@ -9014,92 +8519,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    private void syncLocStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncLocStateButtonActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
-            if(dialogResult == JOptionPane.YES_OPTION)
-            {
-                new Thread(() ->
-                {
-                    for (String s : this.model.getLocList())
-                    {
-                        this.model.syncLocomotive(s);
-                    }
-                }).start();
-            }
-        }));
-    }//GEN-LAST:event_syncLocStateButtonActionPerformed
-
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
         
         this.showLocSelector();
         
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
-
-    private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
-        setLocSpeed(44);
-    }//GEN-LAST:event_FiveButtonActionPerformed
-
-    private void SixButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SixButtonActionPerformed
-        setLocSpeed(55);
-    }//GEN-LAST:event_SixButtonActionPerformed
-
-    private void OneButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneButtonActionPerformed
-        setLocSpeed(0);
-    }//GEN-LAST:event_OneButtonActionPerformed
-
-    private void TwoButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoButtonActionPerformed
-        setLocSpeed(11);
-    }//GEN-LAST:event_TwoButtonActionPerformed
-
-    private void ThreeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeButtonActionPerformed
-        setLocSpeed(22);
-    }//GEN-LAST:event_ThreeButtonActionPerformed
-
-    private void FourButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FourButtonActionPerformed
-        setLocSpeed(33);
-    }//GEN-LAST:event_FourButtonActionPerformed
-
-    private void SevenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SevenButtonActionPerformed
-        setLocSpeed(66);
-    }//GEN-LAST:event_SevenButtonActionPerformed
-
-    private void NineButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NineButtonActionPerformed
-        setLocSpeed(88);
-    }//GEN-LAST:event_NineButtonActionPerformed
-
-    private void EightButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EightButtonActionPerformed
-        setLocSpeed(77);
-    }//GEN-LAST:event_EightButtonActionPerformed
-
-    private void ZeroButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ZeroButtonActionPerformed
-        setLocSpeed(100);
-    }//GEN-LAST:event_ZeroButtonActionPerformed
-
-    private void AltEmergencyStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AltEmergencyStopActionPerformed
-        new Thread(() ->
-        {
-            this.model.stopAllLocs();
-        }).start();
-    }//GEN-LAST:event_AltEmergencyStopActionPerformed
-
-    private void ShiftButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShiftButtonActionPerformed
-        setLocSpeed(0);
-    }//GEN-LAST:event_ShiftButtonActionPerformed
-
-    private void SpacebarButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SpacebarButtonActionPerformed
-        stopLoc();
-    }//GEN-LAST:event_SpacebarButtonActionPerformed
-
-    private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LeftArrowLetterButtonPressed
-        switchDirection();
-    }//GEN-LAST:event_LeftArrowLetterButtonPressed
-
-    private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RightArrowLetterButtonPressed
-        switchDirection();
-    }//GEN-LAST:event_RightArrowLetterButtonPressed
 
     private void DownArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt)
     {                                                  
@@ -9117,25 +8541,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP, 0));
-        }
-    }//GEN-LAST:event_DownArrowLetterButtonPressed
-
-    private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP, 100));
-        }
-    }//GEN-LAST:event_UpArrowLetterButtonPressed
-
-    private void sliderClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sliderClicked
-
-        sliderClickedSynced(evt);
-    }//GEN-LAST:event_sliderClicked
-
     private synchronized void sliderClickedSynced(java.awt.event.MouseEvent evt)
     {
         if (evt.getClickCount() == 2 && SwingUtilities.isRightMouseButton(evt))
@@ -9168,174 +8573,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
         
-    private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
-        JSlider slider = (JSlider) evt.getSource();
-        
-        new Thread(() ->
-        {
-            JButton b = this.rSliderMapping.get(slider);
-            
-            Locomotive l = this.currentLocMapping().get(b);
-
-            if (l != null)
-            {               
-                if (l.getSpeed() != slider.getValue())
-                {
-                    l.setSpeed(slider.getValue());
-                }
-                
-                // Change active loc if setting selected
-                if (prefs.getBoolean(SLIDER_SETTING_PREF, false))
-                {
-                    this.displayCurrentButtonLoc(b);
-                }
-            }
-        }).start();  
-    }//GEN-LAST:event_updateSliderSpeed
-
-    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber + 1);
-    }//GEN-LAST:event_NextLocMappingActionPerformed
-
-    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
-        this.switchLocMapping(this.locMappingNumber - 1);
-    }//GEN-LAST:event_PrevLocMappingActionPerformed
-
-    private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
-        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource(), true);
-    }//GEN-LAST:event_LetterButtonPressed
-
     private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
        setLocSpeed(SpeedSlider.getValue());
     }//GEN-LAST:event_SpeedSliderDragged
-
-    private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
-        prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
-    }//GEN-LAST:event_sliderSettingActionPerformed
-
-    private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
-        // TODO - make this generic
-        new Thread(()->
-        { 
-            String locName = this.LocNameInput.getText();
-
-            if (locName == null)
-            {
-                return;
-            }
-
-            if (locName.trim().length() == 0)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a locomotive name");
-                return;
-            }
-
-            if (locName.length() >= MAX_LOC_NAME_DATABASE)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
-                return;
-            }
-
-            if (this.model.getLocByName(locName) != null)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "A locomotive by this name already exists.");
-                return;
-            }
-
-            marklin.MarklinLocomotive.decoderType type;
-
-            if (this.LocTypeMFX.isSelected())
-            {
-                type = marklin.MarklinLocomotive.decoderType.MFX;
-            }
-            else if (this.LocTypeDCC.isSelected())
-            {
-                type = marklin.MarklinLocomotive.decoderType.DCC;
-            }
-            else
-            {
-                type = marklin.MarklinLocomotive.decoderType.MM2;
-            }
-
-            int locAddress;
-
-            try
-            {
-                if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-                }
-                else
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                }
-            }
-            catch (NumberFormatException e)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a numerical address");
-                return;
-            }
-            
-            locAddress = Math.abs(locAddress);
-
-            if (type == marklin.MarklinLocomotive.decoderType.MM2)
-            {
-                if (locAddress > marklin.MarklinLocomotive.MM2_MAX_ADDR)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "MM2 address out of range");
-                    return;
-                }
-            }
-
-            if (type == marklin.MarklinLocomotive.decoderType.MM2)
-            {
-                if (locAddress > marklin.MarklinLocomotive.DCC_MAX_ADDR)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "DCC address out of range");
-                    return;
-                }
-            }
-
-            if (type == marklin.MarklinLocomotive.decoderType.MFX)
-            {
-                if (locAddress > marklin.MarklinLocomotive.MFX_MAX_ADDR)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        "MFX address out of range");
-                    return;
-                }
-            }
-
-            if (type == marklin.MarklinLocomotive.decoderType.MFX)
-            {
-                this.model.newMFXLocomotive(locName, locAddress);
-            }
-            else if (type == marklin.MarklinLocomotive.decoderType.DCC)
-            {
-                this.model.newDCCLocomotive(locName, locAddress);
-            }
-            else
-            {
-                this.model.newMM2Locomotive(locName, locAddress);
-            }
-
-            // Add list of locomotives to dropdown
-            this.selector.refreshLocSelectorList();
-
-            // Rest form
-            JOptionPane.showMessageDialog(this,
-                "Locomotive added successfully");
-
-            this.LocAddressInput.setText("");
-            this.LocNameInput.setText("");
-        }).start();
-    }//GEN-LAST:event_AddLocButtonActionPerformed
 
     /**
      * Callback to edit or add a route
@@ -9493,33 +8733,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             field.setText(field.getText().substring(0, maxLength));
         }
     }
-    
-    private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
-
-        new Thread(()->
-        {            
-            String proposedName = "Route %s";
-            int i = 1;
-
-            while (this.model.getRoute(String.format(proposedName, i)) != null)
-            {
-                i++;
-            }
-
-            RouteEditor edit = new RouteEditor(this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
-
-            int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if(dialogResult == JOptionPane.OK_OPTION)
-            {
-                RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                      edit.getExecutionAuto().isSelected(),
-                    edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                    edit.getConditionS88s().getText(), edit.getConditionAccs().getText()
-                );
-            }
-        }).start();
-    }//GEN-LAST:event_AddRouteButtonActionPerformed
- 
+     
     public void editRoute(MouseEvent evt)
     {
         new Thread(()->
@@ -9618,22 +8832,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }
         
-    private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
-        new Thread(()->
-        {  
-            prefs.putBoolean(ROUTE_SORT_PREF, true);
-            this.refreshRouteList();
-        }).start();
-    }//GEN-LAST:event_sortByNameActionPerformed
-
-    private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
-        new Thread(()->
-        {  
-            prefs.putBoolean(ROUTE_SORT_PREF, false);
-            this.refreshRouteList();
-        }).start();
-    }//GEN-LAST:event_sortByIDActionPerformed
-
     private void BulkEnableOrDisable(boolean enable)
     {
         new Thread(()->
@@ -9688,23 +8886,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }).start();
     }
-    
-    private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
-
-        new Thread(()->
-        {
-            BulkEnableOrDisable(true);
-        }).start();
-    }//GEN-LAST:event_BulkEnableActionPerformed
-
-    private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
-        
-        new Thread(()->
-        {
-            BulkEnableOrDisable(false);
-        }).start();
-    }//GEN-LAST:event_BulkDisableActionPerformed
-        
+            
     public void generateLocUsageReport()
     {
         new Thread(()->
@@ -9715,530 +8897,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }
     
-    private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
-        
-        new Thread(()->
-        { 
-            int locAddress;
-
-            try
-            {
-                if (this.LocTypeMFX.isSelected())
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-                }
-                else
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                }
-            }
-            catch (NumberFormatException e)
-            {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a numerical address");
-                return;
-            }
-
-            Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
-            String message;
-
-            if (locs.containsKey(locAddress))
-            {   
-                message = "Locomotive address is already in use.  See log for details.";
-            }
-            else
-            {
-                message = "Address is not in use.  See log for details.";
-            }
-
-            if (!locs.isEmpty())
-            {
-                List<Integer> sortedLocs = new ArrayList(locs.keySet());
-                Collections.sort(sortedLocs, Collections.reverseOrder());
-
-                for (Integer addr : sortedLocs)
-                {
-                    for (MarklinLocomotive l : locs.get(addr))
-                    {
-                        this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
-                    }
-
-                    this.model.log("---- Address " + addr + " ----");
-                }   
-
-                this.model.log("Duplicate locomotive address report:");
-            }
-            else
-            {
-                this.model.log("There are no duplicate locomotive addresses in the database.");
-            }
-
-            JOptionPane.showMessageDialog(this, message);
-        }).start();
-    }//GEN-LAST:event_checkDuplicatesActionPerformed
-
-    private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
-
-        new Thread(() -> 
-        {
-            if (!this.model.getPowerState())
-            {
-                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
-                return;
-            }
-            
-            // Show graph window if it was closed
-            if (!this.graphViewer.isVisible())
-            {
-                this.graphViewer.setVisible(true);
-            }
-
-            for (String routeName : this.model.getRouteList())
-            {
-                MarklinRoute r = this.model.getRoute(routeName);
-
-                if (r.isEnabled())
-                {
-                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
-                    
-                    if (!conditionalRouteWarningShown)
-                    {                    
-                        int dialogResult = JOptionPane.showConfirmDialog(this, 
-                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
-
-                        if (dialogResult == JOptionPane.NO_OPTION)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            conditionalRouteWarningShown = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
-            {
-                JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
-                return;
-            }
-
-            if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
-            {
-                new Thread( () ->
-                {
-                    this.model.getAutoLayout().runLocomotives();
-                }).start();
-
-                this.startAutonomy.setEnabled(false);
-                this.gracefulStop.setEnabled(true);
-            }
-            else if (this.model.getAutoLayout().isRunning())
-            {
-                JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
-            }
-            else if (!this.model.getAutoLayout().isValid())
-            {
-                JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
-            }
-        }).start();
-    }//GEN-LAST:event_startAutonomyActionPerformed
-
     public void resetFocus()
     {
         this.KeyboardTab.requestFocus();
     }
     
-    private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
-
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {    
-            // If valid, confirm before we overwrite
-            if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid() 
-                    && !this.model.getAutoLayout().getPoints().isEmpty())
-            {
-                try 
-                {
-                    if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
-                    {
-                        int dialogResult = JOptionPane.showConfirmDialog(
-                                this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
-                                , "Confirm Reset", JOptionPane.YES_NO_OPTION);
-                        
-                        if(dialogResult == JOptionPane.NO_OPTION) return;
-                    }
-                }
-                catch (Exception e)
-                {
-                    this.model.log(e);
-                }
-            }
-            
-            // Offer to load a blank graph if there is no JSON
-            if (this.autonomyJSON.getText().trim().equals(""))
-            {
-                this.loadDefaultBlankGraphActionPerformed(null);
-            }
-            
-            this.model.parseAuto(this.autonomyJSON.getText());
-
-            if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
-            {
-                locCommandPanels.remove(this.locCommandTab);
-                locCommandPanels.remove(this.timetablePanel);
-                locCommandPanels.remove(this.autoSettingsPanel);
-                
-                this.startAutonomy.setEnabled(false);
-                JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.");
-
-                this.KeyboardTab.requestFocus();
-                
-                this.exportJSON.setEnabled(false);      
-            }
-            else
-            {
-                locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
-                locCommandPanels.addTab("Timetable", this.timetablePanel);
-                locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
-                loadAutoLayoutSettings();
-                
-                this.startAutonomy.setEnabled(true);
-                this.executeTimetable.setEnabled(true);
-
-                // Advance to locomotive tab
-                this.locCommandPanels.setSelectedIndex(
-                    1
-                    //(this.locCommandPanels.getSelectedIndex() + 1)
-                    //% this.locCommandPanels.getComponentCount()
-                );
-
-                this.KeyboardTab.requestFocus();
-                
-                this.renderAutoLayoutGraph();
-                
-                this.graphViewer.requestFocus();
-                
-                this.exportJSON.setEnabled(true);
-                this.gracefulStop.setEnabled(false);
-            }
-
-            // Stop all locomotives
-            AltEmergencyStopActionPerformed(null);
-            
-        }));
-    }//GEN-LAST:event_validateButtonActionPerformed
-
-    private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
-        this.KeyboardTab.requestFocus();
-    }//GEN-LAST:event_locCommandPanelsMouseClicked
-
     private void LocFunctionsPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocFunctionsPanelMouseEntered
         this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_LocFunctionsPanelMouseEntered
-
-    private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
-        
-        this.gracefulStop.setEnabled(false);
-        this.startAutonomy.setEnabled(true);
-        
-        new Thread(() ->
-        {
-            this.getModel().getAutoLayout().stopLocomotives();
-            
-            // Ensure list is updated after stopping a timetable run
-            this.repaintAutoLocListLite();
-        }).start();
-    }//GEN-LAST:event_gracefulStopActionPerformed
-
-    private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
-        prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
-    }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
-
-    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_simulateMouseReleased
-
-    private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setTurnOffFunctionsOnArrival(this.turnOffFunctionsOnArrival.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
-
-    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_atomicRoutesMouseReleased
-
-    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
-
-    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_defaultLocSpeedMouseReleased
-
-    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxDelayMouseReleased
-
-    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
-
-    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_minDelayMouseReleased
-
-    private void minDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minDelayStateChanged
-
-    }//GEN-LAST:event_minDelayStateChanged
-
-    private void hideReversingMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideReversingMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.updateVisiblePoints();
-            prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
-        }
-        else
-        {
-            this.hideReversing.setSelected(!this.hideReversing.isSelected());
-        }
-    }//GEN-LAST:event_hideReversingMouseReleased
-
-    private void clearNonParkedLocsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearNonParkedLocsActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            if (!this.isAutoLayoutRunning())
-            {
-                try
-                {
-                    int dialogResult = JOptionPane.showConfirmDialog(
-                        this, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-
-                    if(dialogResult == JOptionPane.YES_OPTION)
-                    {
-                        List<Locomotive> locs = new ArrayList<>(this.model.getAutoLayout().getLocomotivesToRun());
-                        
-                        for (Locomotive l: locs)
-                        {
-                            Point p = this.model.getAutoLayout().getLocomotiveLocation(l);
-
-                            if (p != null && !p.isReversing() && p.isDestination())
-                            {
-                                this.model.getAutoLayout().moveLocomotive(null, p.getName(), false);
-                                this.updatePoint(p, this.graphViewer.getMainGraph());
-                            } 
-                        }
-                        
-                        this.repaintAutoLocList(false);
-                    }
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                    loadAutoLayoutSettings();
-                }
-            }
-        }));
-    }//GEN-LAST:event_clearNonParkedLocsActionPerformed
-
-    private void hideInactiveMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideInactiveMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.updateVisiblePoints();
-            prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
-        }
-        else
-        {
-            this.hideInactive.setSelected(!this.hideInactive.isSelected());
-        }
-    }//GEN-LAST:event_hideInactiveMouseReleased
-
-    private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
-        this.loadJSONButton.setEnabled(false);
-        new Thread(()->
-            {
-                try
-                {
-                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
-                    int i = fc.showOpenDialog(this);
-
-                    if (i == JFileChooser.APPROVE_OPTION)
-                    {
-                        File f = fc.getSelectedFile();
-
-                        this.autonomyJSON.setText(new String(Files.readAllBytes(Paths.get(f.getPath()))));
-                        prefs.put(LAST_USED_FOLDER, f.getParent());
-
-                        validateButtonActionPerformed(null);
-                    }
-                }
-                catch (HeadlessException | IOException e)
-                {
-                    JOptionPane.showMessageDialog(this, "Error opening file.");
-
-                    this.model.log(e);
-                }
-
-                this.loadJSONButton.setEnabled(true);
-            }).start();
-    }//GEN-LAST:event_loadJSONButtonActionPerformed
-
-    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
-        prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
-    }//GEN-LAST:event_autosaveActionPerformed
-
-    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
-
-        new Thread(() ->
-        {
-            try
-            {
-                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy"),
-                    "JSON for current state", JOptionPane.PLAIN_MESSAGE
-                );
-
-                // Place in clipboard
-                StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-            }
-            catch (Exception e)
-            {
-                this.model.log(e);
-                
-                this.model.log("JSON error: " + e.getMessage());
-
-                JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
-            }
-        }).start();
-    }//GEN-LAST:event_exportJSONActionPerformed
-
-    private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
-       try
-        {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
-        }
-        catch (IOException | URISyntaxException e1) { }
-    }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
-
-    private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
-                int dialogResult = JOptionPane.showConfirmDialog(this,
-            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
-            "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if(dialogResult == JOptionPane.OK_OPTION)
-        {
-            this.autonomyJSON.setText(
-                "{\n" +
-                "    \"points\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"edges\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"minDelay\": 3,\n" +
-                "    \"maxDelay\": 10,\n" +
-                "    \"defaultLocSpeed\": 35,\n" +
-                "    \"preArrivalSpeedReduction\": 0.5,\n" +
-                "    \"turnOffFunctionsOnArrival\": true,\n" +
-                "    \"turnOnFunctionsOnDeparture\": true,\n" +        
-                "    \"atomicRoutes\": true,\n" +
-                "    \"maxLocInactiveSeconds\": 120,\n" +
-                "    \"timetable\": []\n" +
-                "}"
-            );
-
-            if (evt != null) this.validateButtonActionPerformed(null);
-        }
-    }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
 
     /**
      * Checks if the current OS is Windows
@@ -10396,177 +9062,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    /**
-     * Opens the layout editor app for the current layout
-     * @param evt 
-     */
-    private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
-                
-        if (!this.isWindows())
-        {
-            JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
-            return;
-        }
-        
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                    + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
-            return;
-        }
-        
-        this.editLayoutButton.setEnabled(false);
-
-        // Force window to not be on top
-        this.setAlwaysOnTop(false);
-        
-        new Thread(() -> 
-        {
-            try
-            {
-                String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");         
-                Path p = Paths.get(new URL(layoutUrl).toURI());
-
-                File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
-                                
-                // Extract the binary
-                if (!app.exists())
-                {
-                    File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
-
-                    this.model.log("Unpacking track diagram editor executable...");
-
-                    copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
-                    
-                    this.model.log("Attempting to extract " + zippedApp.getAbsolutePath());
-
-                    this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
-                    zippedApp.delete();
-                }
-                
-                // Delete the binary on exit
-                app.deleteOnExit();
-                
-                // Execute the app
-                String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
-
-                this.model.log("Running layout editor: " + cmd);        
-
-                Runtime rt = Runtime.getRuntime();
-                Process pr = rt.exec(cmd);
-
-                pr.waitFor();
-
-                this.model.log("Editing session complete.");
-
-                this.model.syncWithCS2();
-                
-                // Store previously selected page
-                int oldIndex = this.LayoutList.getSelectedIndex();
-                
-                // Update list of pages
-                if (this.model.getLayoutList() != null && !this.model.getLayoutList().isEmpty())
-                {
-                    this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
-                }
-                
-                // Restore index
-                if (this.LayoutList.getModel().getSize() > oldIndex)
-                {
-                    this.LayoutList.setSelectedIndex(oldIndex);
-                }
-                
-                this.repaintLayout(); 
-                
-                this.updatePopups(true);
-            }
-            catch (Exception ex)
-            {
-                this.model.log("Layout editing error: " + ex.getMessage());
-                
-                this.model.log(ex);
-            }
-            
-            this.editLayoutButton.setEnabled(true);
-
-            // Revert preference
-            alwaysOnTopCheckboxActionPerformed(null);                                                    
-
-        }).start();
-    }//GEN-LAST:event_editLayoutButtonActionPerformed
-
-    private void aboutLabelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutLabelActionPerformed
-        try 
-        {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
-        } catch (IOException | URISyntaxException e1) { }
-    }//GEN-LAST:event_aboutLabelActionPerformed
-
-    private void exportAllRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAllRoutesActionPerformed
-        
-        new Thread(() ->
-        {
-            try
-            {
-                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "routes"),
-                    "Export route data", JOptionPane.PLAIN_MESSAGE
-                );
-
-                // Place in clipboard
-                StringSelection selection = new StringSelection(this.model.exportRoutes());
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-            }
-            catch (Exception e)
-            {
-                this.model.log("JSON error: " + e.getMessage());
-                this.model.log(e);
-
-                JOptionPane.showMessageDialog(this, "Failed to generate/export route JSON.  Check log for details.");
-            }
-        }).start();
-    }//GEN-LAST:event_exportAllRoutesActionPerformed
-
-    private void importRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importRoutesActionPerformed
-        
-        this.importRoutes.setEnabled(false);
-        
-        new Thread(() ->
-        {   
-            try
-            {
-                JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
-                int i = fc.showOpenDialog(this);
-
-                if (i == JFileChooser.APPROVE_OPTION)
-                {
-                    File f = fc.getSelectedFile();
-
-                    this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
-
-                    prefs.put(LAST_USED_FOLDER, f.getParent());
-
-                    refreshRouteList();
-
-                    // Ensure route changes are synced
-                    this.model.syncWithCS2();
-                    this.repaintLayout();
-                    this.repaintLoc();
-                }
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
-
-                this.model.log("Route import error: " + e.getMessage());
-
-                this.model.log(e);
-            }
-
-            this.importRoutes.setEnabled(true);
-            
-        }).start();
-    }//GEN-LAST:event_importRoutesActionPerformed
-
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
 
         if(SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
@@ -10597,148 +9092,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }//GEN-LAST:event_locIconMouseReleased
 
-    private void LocAddressInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocAddressInputKeyReleased
-        TrainControlUI.validateInt(evt, true);
-        TrainControlUI.limitLength(evt, 6);
-    }//GEN-LAST:event_LocAddressInputKeyReleased
-
-    private void LocNameInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocNameInputKeyReleased
-        limitLength(evt, TrainControlUI.MAX_LOC_NAME_DATABASE);
-    }//GEN-LAST:event_LocNameInputKeyReleased
-
-    private void keyboardTypeItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_keyboardTypeItemStateChanged
-        
-        if (evt.getStateChange() == ItemEvent.SELECTED && this.keyboardType.getSelectedIndex() >= 0)
-        {
-            prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
-            this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
-
-            if (this.model != null)
-            {
-                this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
-                this.repaintLoc(true, null);
-            }
-        }
-    }//GEN-LAST:event_keyboardTypeItemStateChanged
-
-    private void KeyboardTabStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_KeyboardTabStateChanged
-        if (KeyboardTab.getSelectedIndex() == KeyboardTab.getTabCount() - 2 && this.model != null && this.stats != null)
-        {
-            this.stats.refresh();
-        }
-    }//GEN-LAST:event_KeyboardTabStateChanged
-
-    private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setTurnOnFunctionsOnDeparture(this.turnOnFunctionsOnDeparture.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
-
-    private void ViewDBButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ViewDBButtonActionPerformed
-        ActiveLocLabelMouseReleased(null);
-    }//GEN-LAST:event_ViewDBButtonActionPerformed
-
-    private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
-        
-        this.executeTimetable.setEnabled(false);
-
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            if (!this.getModel().getPowerState())
-            {
-                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
-                this.executeTimetable.setEnabled(true);
-                return;
-            }
-
-            if (this.getModel().getAutoLayout().isRunning())
-            {
-                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
-                this.executeTimetable.setEnabled(true);
-                return;
-            }
-            
-            if (this.model.getAutoLayout().getTimetable().isEmpty())
-            {
-                JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
-                this.executeTimetable.setEnabled(true);
-                return;
-            }
-            
-            // Conditional route warning
-            for (String routeName : this.model.getRouteList())
-            {
-                MarklinRoute r = this.model.getRoute(routeName);
-
-                if (r.isEnabled())
-                {
-                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
-                    
-                    if (!conditionalRouteWarningShown)
-                    {                    
-                        int dialogResult = JOptionPane.showConfirmDialog(this, 
-                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
-
-                        if (dialogResult == JOptionPane.NO_OPTION)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            conditionalRouteWarningShown = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Validate starting locations
-            List<Locomotive> seen = new ArrayList<>();
-
-            for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
-            {
-                TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
-                
-                if (!seen.contains(ttp.getLoc()))
-                {
-                    Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
-                    if (locLocation == null || !locLocation.equals(ttp.getStart()))
-                    {
-                        JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
-                        this.executeTimetable.setEnabled(true);
-                        return;
-                    }
-
-                    seen.add(ttp.getLoc());
-                }
-            }  
-            
-            // Disable capture if it was enabled
-            this.model.getAutoLayout().setTimetableCapture(false);
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-          
-            new Thread(() -> 
-            {
-                this.startAutonomy.setEnabled(false);
-                this.model.getAutoLayout().executeTimetable();
-                this.executeTimetable.setEnabled(true);
-                this.startAutonomy.setEnabled(true);
-                this.exportJSON.setEnabled(true);
-            }).start();
-            
-            this.gracefulStop.setEnabled(true);  
-        }));
-    }//GEN-LAST:event_executeTimetableActionPerformed
-
     public void clearTimetable()
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
@@ -10761,63 +9114,32 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }
     
-    private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            if (this.getModel().getAutoLayout().isRunning())
-            {
-                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
-            }
-            else
-            {
-                this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
-            }
-
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-        }));
-    }//GEN-LAST:event_timetableCaptureActionPerformed
-
     public boolean isShowStationLengthsSelected()
     {
         return this.showStationLengths.isSelected();
     }
     
-    private void BackupButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BackupButtonActionPerformed
-        new Thread(() ->
-        {
-            this.BackupButton.setEnabled(false);
-            this.saveState(true);
-            this.model.saveState(true);
-            this.BackupButton.setEnabled(true);
-            JOptionPane.showMessageDialog(this, "Backup complete: check log.");
-        }).start();
-    }//GEN-LAST:event_BackupButtonActionPerformed
-
-    private void showStationLengthsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_showStationLengthsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.updateVisiblePoints();
-            prefs.putBoolean(SHOW_STATION_LENGTH, this.showStationLengths.isSelected());
-        }
-        else
-        {
-            this.showStationLengths.setSelected(!this.showStationLengths.isSelected());
-        }
-    }//GEN-LAST:event_showStationLengthsMouseReleased
-
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
             if(dialogResult == JOptionPane.YES_OPTION)
             {
+                this.syncMenuItem.setEnabled(false);
+                this.functionsMenu.setEnabled(false);
+
+                this.model.allFunctionsOff();
+                
                 new Thread(() ->
                 {
                     for (String s : this.model.getLocList())
                     {
                         this.model.syncLocomotive(s);
                     }
+                    
+                    this.syncMenuItem.setEnabled(true);
+                    this.functionsMenu.setEnabled(true);
+
                 }).start();
             }
         }));
@@ -10826,7 +9148,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void syncMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            doSync(ManageLocPanel);
+            doSync(this);
         }));
     }//GEN-LAST:event_syncMenuItemActionPerformed
 
@@ -10837,24 +9159,41 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            List<String> locs = new ArrayList<>();
+            this.syncMenuItem.setEnabled(false);
+            this.functionsMenu.setEnabled(false);
 
-            for (Map<JButton, Locomotive> m : this.locMapping)
+            new Thread(() ->
             {
-                for (Locomotive l : m.values())
-                {
-                    locs.add(l.getName());
-                }
-            }
+                List<String> locs = new ArrayList<>();
 
-            this.model.lightsOn(locs);
+                for (Map<JButton, Locomotive> m : this.locMapping)
+                {
+                    for (Locomotive l : m.values())
+                    {
+                        locs.add(l.getName());
+                    }
+                }
+
+                this.model.lightsOn(locs);
+                this.syncMenuItem.setEnabled(true);
+                this.functionsMenu.setEnabled(true);
+
+            }).start();
         }));
     }//GEN-LAST:event_turnOnLightsMenuItemActionPerformed
 
     private void turnOffFunctionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            this.model.allFunctionsOff();
+            this.syncMenuItem.setEnabled(false);
+            this.functionsMenu.setEnabled(false);
+            
+            new Thread(() ->
+            {
+                this.model.allFunctionsOff();
+                this.syncMenuItem.setEnabled(true);
+                this.functionsMenu.setEnabled(true);
+            }).start();
         }));
     }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
 
@@ -11013,6 +9352,1081 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void layoutMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_layoutMenuKeyPressed
         LocControlPanelKeyPressed(evt);
     }//GEN-LAST:event_layoutMenuKeyPressed
+
+    private void KeyboardTabStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_KeyboardTabStateChanged
+        if (KeyboardTab.getSelectedIndex() == KeyboardTab.getTabCount() - 2 && this.model != null && this.stats != null)
+        {
+            this.stats.refresh();
+        }
+    }//GEN-LAST:event_KeyboardTabStateChanged
+
+    private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
+
+        this.gracefulStop.setEnabled(false);
+        this.startAutonomy.setEnabled(true);
+
+        new Thread(() ->
+            {
+                this.getModel().getAutoLayout().stopLocomotives();
+
+                // Ensure list is updated after stopping a timetable run
+                this.repaintAutoLocListLite();
+            }).start();
+    }//GEN-LAST:event_gracefulStopActionPerformed
+
+    private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
+
+        new Thread(() ->
+            {
+                if (!this.model.getPowerState())
+                {
+                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                    return;
+                }
+
+                // Show graph window if it was closed
+                if (!this.graphViewer.isVisible())
+                {
+                    this.graphViewer.setVisible(true);
+                }
+
+                for (String routeName : this.model.getRouteList())
+                {
+                    MarklinRoute r = this.model.getRoute(routeName);
+
+                    if (r.isEnabled())
+                    {
+                        this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+
+                        if (!conditionalRouteWarningShown)
+                        {
+                            int dialogResult = JOptionPane.showConfirmDialog(this,
+                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                            if (dialogResult == JOptionPane.NO_OPTION)
+                            {
+                                return;
+                            }
+                            else
+                            {
+                                conditionalRouteWarningShown = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
+                {
+                    JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
+                    return;
+                }
+
+                if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
+                {
+                    new Thread( () ->
+                        {
+                            this.model.getAutoLayout().runLocomotives();
+                        }).start();
+
+                        this.startAutonomy.setEnabled(false);
+                        this.gracefulStop.setEnabled(true);
+                    }
+                    else if (this.model.getAutoLayout().isRunning())
+                    {
+                        JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
+                    }
+                    else if (!this.model.getAutoLayout().isValid())
+                    {
+                        JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
+                    }
+                }).start();
+    }//GEN-LAST:event_startAutonomyActionPerformed
+
+    private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                // If valid, confirm before we overwrite
+                if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid()
+                    && !this.model.getAutoLayout().getPoints().isEmpty())
+                {
+                    try
+                    {
+                        if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
+                        {
+                            int dialogResult = JOptionPane.showConfirmDialog(
+                                this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
+                                , "Confirm Reset", JOptionPane.YES_NO_OPTION);
+
+                            if(dialogResult == JOptionPane.NO_OPTION) return;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        this.model.log(e);
+                    }
+                }
+
+                // Offer to load a blank graph if there is no JSON
+                if (this.autonomyJSON.getText().trim().equals(""))
+                {
+                    this.loadDefaultBlankGraphActionPerformed(null);
+                }
+
+                this.model.parseAuto(this.autonomyJSON.getText());
+
+                if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
+                {
+                    locCommandPanels.remove(this.locCommandTab);
+                    locCommandPanels.remove(this.timetablePanel);
+                    locCommandPanels.remove(this.autoSettingsPanel);
+
+                    this.startAutonomy.setEnabled(false);
+                    JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.");
+
+                    this.KeyboardTab.requestFocus();
+
+                    this.exportJSON.setEnabled(false);
+                }
+                else
+                {
+                    locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+                    locCommandPanels.addTab("Timetable", this.timetablePanel);
+                    locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
+                    loadAutoLayoutSettings();
+
+                    this.startAutonomy.setEnabled(true);
+                    this.executeTimetable.setEnabled(true);
+
+                    // Advance to locomotive tab
+                    this.locCommandPanels.setSelectedIndex(
+                        1
+                        //(this.locCommandPanels.getSelectedIndex() + 1)
+                        //% this.locCommandPanels.getComponentCount()
+                    );
+
+                    this.KeyboardTab.requestFocus();
+
+                    this.renderAutoLayoutGraph();
+
+                    this.graphViewer.requestFocus();
+
+                    this.exportJSON.setEnabled(true);
+                    this.gracefulStop.setEnabled(false);
+                }
+
+                // Stop all locomotives
+                AltEmergencyStopActionPerformed(null);
+
+            }));
+    }//GEN-LAST:event_validateButtonActionPerformed
+
+    private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
+        this.KeyboardTab.requestFocus();
+    }//GEN-LAST:event_locCommandPanelsMouseClicked
+
+    private void showStationLengthsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_showStationLengthsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+            prefs.putBoolean(SHOW_STATION_LENGTH, this.showStationLengths.isSelected());
+        }
+        else
+        {
+            this.showStationLengths.setSelected(!this.showStationLengths.isSelected());
+        }
+    }//GEN-LAST:event_showStationLengthsMouseReleased
+
+    private void hideInactiveMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideInactiveMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+            prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
+        }
+        else
+        {
+            this.hideInactive.setSelected(!this.hideInactive.isSelected());
+        }
+    }//GEN-LAST:event_hideInactiveMouseReleased
+
+    private void clearNonParkedLocsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearNonParkedLocsActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                if (!this.isAutoLayoutRunning())
+                {
+                    try
+                    {
+                        int dialogResult = JOptionPane.showConfirmDialog(
+                            this, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+
+                        if(dialogResult == JOptionPane.YES_OPTION)
+                        {
+                            List<Locomotive> locs = new ArrayList<>(this.model.getAutoLayout().getLocomotivesToRun());
+
+                            for (Locomotive l: locs)
+                            {
+                                Point p = this.model.getAutoLayout().getLocomotiveLocation(l);
+
+                                if (p != null && !p.isReversing() && p.isDestination())
+                                {
+                                    this.model.getAutoLayout().moveLocomotive(null, p.getName(), false);
+                                    this.updatePoint(p, this.graphViewer.getMainGraph());
+                                }
+                            }
+
+                            this.repaintAutoLocList(false);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        loadAutoLayoutSettings();
+                    }
+                }
+            }));
+    }//GEN-LAST:event_clearNonParkedLocsActionPerformed
+
+    private void hideReversingMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideReversingMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            this.updateVisiblePoints();
+            prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
+        }
+        else
+        {
+            this.hideReversing.setSelected(!this.hideReversing.isSelected());
+        }
+    }//GEN-LAST:event_hideReversingMouseReleased
+
+    private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setTurnOnFunctionsOnDeparture(this.turnOnFunctionsOnDeparture.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
+
+    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_simulateMouseReleased
+
+    private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setTurnOffFunctionsOnArrival(this.turnOffFunctionsOnArrival.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
+
+    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_atomicRoutesMouseReleased
+
+    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
+
+    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_defaultLocSpeedMouseReleased
+
+    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxDelayMouseReleased
+
+    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
+
+    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_minDelayMouseReleased
+
+    private void minDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minDelayStateChanged
+
+    }//GEN-LAST:event_minDelayStateChanged
+
+    private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                if (this.getModel().getAutoLayout().isRunning())
+                {
+                    JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                }
+                else
+                {
+                    this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
+                }
+
+                this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            }));
+    }//GEN-LAST:event_timetableCaptureActionPerformed
+
+    private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
+
+        this.executeTimetable.setEnabled(false);
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                if (!this.getModel().getPowerState())
+                {
+                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                if (this.getModel().getAutoLayout().isRunning())
+                {
+                    JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                if (this.model.getAutoLayout().getTimetable().isEmpty())
+                {
+                    JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                // Conditional route warning
+                for (String routeName : this.model.getRouteList())
+                {
+                    MarklinRoute r = this.model.getRoute(routeName);
+
+                    if (r.isEnabled())
+                    {
+                        this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+
+                        if (!conditionalRouteWarningShown)
+                        {
+                            int dialogResult = JOptionPane.showConfirmDialog(this,
+                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                            if (dialogResult == JOptionPane.NO_OPTION)
+                            {
+                                return;
+                            }
+                            else
+                            {
+                                conditionalRouteWarningShown = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Validate starting locations
+                List<Locomotive> seen = new ArrayList<>();
+
+                for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
+                {
+                    TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
+
+                    if (!seen.contains(ttp.getLoc()))
+                    {
+                        Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
+                        if (locLocation == null || !locLocation.equals(ttp.getStart()))
+                        {
+                            JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
+                            this.executeTimetable.setEnabled(true);
+                            return;
+                        }
+
+                        seen.add(ttp.getLoc());
+                    }
+                }
+
+                // Disable capture if it was enabled
+                this.model.getAutoLayout().setTimetableCapture(false);
+                this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+
+                new Thread(() ->
+                    {
+                        this.startAutonomy.setEnabled(false);
+                        this.model.getAutoLayout().executeTimetable();
+                        this.executeTimetable.setEnabled(true);
+                        this.startAutonomy.setEnabled(true);
+                        this.exportJSON.setEnabled(true);
+                    }).start();
+
+                    this.gracefulStop.setEnabled(true);
+                }));
+    }//GEN-LAST:event_executeTimetableActionPerformed
+
+    private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
+        int dialogResult = JOptionPane.showConfirmDialog(this,
+            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
+            "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if(dialogResult == JOptionPane.OK_OPTION)
+        {
+            this.autonomyJSON.setText(
+                "{\n" +
+                "    \"points\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"edges\": [\n" +
+                "\n" +
+                "    ],\n" +
+                "    \"minDelay\": 3,\n" +
+                "    \"maxDelay\": 10,\n" +
+                "    \"defaultLocSpeed\": 35,\n" +
+                "    \"preArrivalSpeedReduction\": 0.5,\n" +
+                "    \"turnOffFunctionsOnArrival\": true,\n" +
+                "    \"turnOnFunctionsOnDeparture\": true,\n" +
+                "    \"atomicRoutes\": true,\n" +
+                "    \"maxLocInactiveSeconds\": 120,\n" +
+                "    \"timetable\": []\n" +
+                "}"
+            );
+
+            if (evt != null) this.validateButtonActionPerformed(null);
+        }
+    }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
+
+    private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
+        try
+        {
+            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
+        }
+        catch (IOException | URISyntaxException e1) { }
+    }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
+
+    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
+        prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
+    }//GEN-LAST:event_autosaveActionPerformed
+
+    private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
+        this.loadJSONButton.setEnabled(false);
+        new Thread(()->
+            {
+                try
+                {
+                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                    int i = fc.showOpenDialog(this);
+
+                    if (i == JFileChooser.APPROVE_OPTION)
+                    {
+                        File f = fc.getSelectedFile();
+
+                        this.autonomyJSON.setText(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+                        prefs.put(LAST_USED_FOLDER, f.getParent());
+
+                        validateButtonActionPerformed(null);
+                    }
+                }
+                catch (HeadlessException | IOException e)
+                {
+                    JOptionPane.showMessageDialog(this, "Error opening file.");
+
+                    this.model.log(e);
+                }
+
+                this.loadJSONButton.setEnabled(true);
+            }).start();
+    }//GEN-LAST:event_loadJSONButtonActionPerformed
+
+    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
+
+        new Thread(() ->
+            {
+                try
+                {
+                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy"),
+                        "JSON for current state", JOptionPane.PLAIN_MESSAGE
+                    );
+
+                    // Place in clipboard
+                    StringSelection selection = new StringSelection(this.model.getAutoLayout().toJSON());
+                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+                }
+                catch (Exception e)
+                {
+                    this.model.log(e);
+
+                    this.model.log("JSON error: " + e.getMessage());
+
+                    JOptionPane.showMessageDialog(this, "Failed to generate/export JSON.  Check log for details.");
+                }
+            }).start();
+    }//GEN-LAST:event_exportJSONActionPerformed
+
+    private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
+        this.switchKeyboard(this.keyboardNumber + 1);
+    }//GEN-LAST:event_NextKeyboardActionPerformed
+
+    private void PrevKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevKeyboardActionPerformed
+        this.switchKeyboard(this.keyboardNumber - 1);
+    }//GEN-LAST:event_PrevKeyboardActionPerformed
+
+    private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
+        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+        int switchId = Integer.parseInt(b.getText());
+
+        if (b.isSelected())
+        {
+            b.setBackground(COLOR_SWITCH_RED);
+        }
+        else
+        {
+            b.setBackground(COLOR_SWITCH_GREEN);
+        }
+
+        // Underline when red
+        Font font = b.getFont();
+        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+        attributes.put(TextAttribute.UNDERLINE, b.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
+        b.setFont(font.deriveFont(attributes));
+
+        new Thread(() ->
+            {
+                this.model.setAccessoryState(switchId, b.isSelected());
+            }).start();
+    }//GEN-LAST:event_UpdateSwitchState
+
+    private void importRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importRoutesActionPerformed
+
+        this.importRoutes.setEnabled(false);
+
+        new Thread(() ->
+            {
+                try
+                {
+                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                    int i = fc.showOpenDialog(this);
+
+                    if (i == JFileChooser.APPROVE_OPTION)
+                    {
+                        File f = fc.getSelectedFile();
+
+                        this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+
+                        prefs.put(LAST_USED_FOLDER, f.getParent());
+
+                        refreshRouteList();
+
+                        // Ensure route changes are synced
+                        this.model.syncWithCS2();
+                        this.repaintLayout();
+                        this.repaintLoc();
+                    }
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, "Failed to import routes.  Check log for details.");
+
+                    this.model.log("Route import error: " + e.getMessage());
+
+                    this.model.log(e);
+                }
+
+                this.importRoutes.setEnabled(true);
+
+            }).start();
+    }//GEN-LAST:event_importRoutesActionPerformed
+
+    private void exportAllRoutesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAllRoutesActionPerformed
+
+        new Thread(() ->
+            {
+                try
+                {
+                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "routes"),
+                        "Export route data", JOptionPane.PLAIN_MESSAGE
+                    );
+
+                    // Place in clipboard
+                    StringSelection selection = new StringSelection(this.model.exportRoutes());
+                    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+                }
+                catch (Exception e)
+                {
+                    this.model.log("JSON error: " + e.getMessage());
+                    this.model.log(e);
+
+                    JOptionPane.showMessageDialog(this, "Failed to generate/export route JSON.  Check log for details.");
+                }
+            }).start();
+    }//GEN-LAST:event_exportAllRoutesActionPerformed
+
+    private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
+
+        new Thread(()->
+            {
+                BulkEnableOrDisable(false);
+            }).start();
+    }//GEN-LAST:event_BulkDisableActionPerformed
+
+    private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
+
+        new Thread(()->
+            {
+                BulkEnableOrDisable(true);
+            }).start();
+    }//GEN-LAST:event_BulkEnableActionPerformed
+
+    private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
+        new Thread(()->
+            {
+                prefs.putBoolean(ROUTE_SORT_PREF, false);
+                this.refreshRouteList();
+            }).start();
+    }//GEN-LAST:event_sortByIDActionPerformed
+
+    private void sortByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByNameActionPerformed
+        new Thread(()->
+            {
+                prefs.putBoolean(ROUTE_SORT_PREF, true);
+                this.refreshRouteList();
+            }).start();
+    }//GEN-LAST:event_sortByNameActionPerformed
+
+    private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
+
+        new Thread(()->
+            {
+                String proposedName = "Route %s";
+                int i = 1;
+
+                while (this.model.getRoute(String.format(proposedName, i)) != null)
+                {
+                    i++;
+                }
+
+                RouteEditor edit = new RouteEditor(this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
+
+                int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                if(dialogResult == JOptionPane.OK_OPTION)
+                {
+                    RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
+                        edit.getExecutionAuto().isSelected(),
+                        edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+                        edit.getConditionS88s().getText(), edit.getConditionAccs().getText()
+                    );
+                }
+            }).start();
+    }//GEN-LAST:event_AddRouteButtonActionPerformed
+
+    private void RouteListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseClicked
+        if (SwingUtilities.isLeftMouseButton(evt))
+        {
+            //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
+            Object route = this.getRouteAtCursor(evt);
+
+            if (route != null)
+            {
+                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                if(dialogResult == JOptionPane.YES_OPTION)
+                {
+                    new Thread(() ->
+                        {
+                            executeRoute(route.toString());
+                        }).start();
+                    }
+                }
+            }
+    }//GEN-LAST:event_RouteListMouseClicked
+
+    /**
+     * Opens the layout editor app for the current layout
+     * @param evt 
+     */
+    private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
+
+        if (!this.isWindows())
+        {
+            JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
+            return;
+        }
+
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
+                + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
+            return;
+        }
+
+        this.editLayoutButton.setEnabled(false);
+
+        // Force window to not be on top
+        this.setAlwaysOnTop(false);
+
+        new Thread(() ->
+            {
+                try
+                {
+                    String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");
+                    Path p = Paths.get(new URL(layoutUrl).toURI());
+
+                    File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
+
+                    // Extract the binary
+                    if (!app.exists())
+                    {
+                        File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
+
+                        this.model.log("Unpacking track diagram editor executable...");
+
+                        copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
+
+                        this.model.log("Attempting to extract " + zippedApp.getAbsolutePath());
+
+                        this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
+                        zippedApp.delete();
+                    }
+
+                    // Delete the binary on exit
+                    app.deleteOnExit();
+
+                    // Execute the app
+                    String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
+
+                    this.model.log("Running layout editor: " + cmd);
+
+                    Runtime rt = Runtime.getRuntime();
+                    Process pr = rt.exec(cmd);
+
+                    pr.waitFor();
+
+                    this.model.log("Editing session complete.");
+
+                    this.model.syncWithCS2();
+
+                    // Store previously selected page
+                    int oldIndex = this.LayoutList.getSelectedIndex();
+
+                    // Update list of pages
+                    if (this.model.getLayoutList() != null && !this.model.getLayoutList().isEmpty())
+                    {
+                        this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+                    }
+
+                    // Restore index
+                    if (this.LayoutList.getModel().getSize() > oldIndex)
+                    {
+                        this.LayoutList.setSelectedIndex(oldIndex);
+                    }
+
+                    this.repaintLayout();
+
+                    this.updatePopups(true);
+                }
+                catch (Exception ex)
+                {
+                    this.model.log("Layout editing error: " + ex.getMessage());
+
+                    this.model.log(ex);
+                }
+
+                this.editLayoutButton.setEnabled(true);
+
+                // Revert preference
+                alwaysOnTopCheckboxActionPerformed(null);
+
+            }).start();
+    }//GEN-LAST:event_editLayoutButtonActionPerformed
+
+    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
+
+        int size = this.LayoutList.getItemCount();
+        for (int i = 0; i < size; i++)
+        {
+            String layoutName = LayoutList.getItemAt(i).toString();
+
+            new Thread(() ->
+                {
+                    LayoutPopupUI popup = new LayoutPopupUI(
+                        this.model.getLayout(layoutName),
+                        this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                        this,
+                        this.LayoutList.getSelectedIndex()
+                    );
+
+                    popup.render();
+                    popups.add(popup);
+                    updatePopups(false);
+                }).start();
+            }
+    }//GEN-LAST:event_allButtonActionPerformed
+
+    private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
+
+        new Thread(() ->
+            {
+                LayoutPopupUI popup = new LayoutPopupUI(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get("Small"),
+                    this,
+                    this.LayoutList.getSelectedIndex()
+                );
+
+                popup.render();
+                popups.add(popup);
+                updatePopups(false);
+            }).start();
+    }//GEN-LAST:event_smallButtonActionPerformed
+
+    private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                LayoutPopupUI popup = new LayoutPopupUI(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get("Large"),
+                    this,
+                    this.LayoutList.getSelectedIndex()
+                );
+
+                popup.render();
+                popups.add(popup);
+                updatePopups(false);
+            }));
+    }//GEN-LAST:event_layoutNewWindowActionPerformed
+
+    private void SizeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeListActionPerformed
+        repaintLayoutFromCache();
+    }//GEN-LAST:event_SizeListActionPerformed
+
+    private void LayoutListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LayoutListActionPerformed
+        repaintLayoutFromCache();
+    }//GEN-LAST:event_LayoutListActionPerformed
+
+    private void keyboardTypeItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_keyboardTypeItemStateChanged
+
+        if (evt.getStateChange() == ItemEvent.SELECTED && this.keyboardType.getSelectedIndex() >= 0)
+        {
+            prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
+            this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
+
+            if (this.model != null)
+            {
+                this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
+                this.repaintLoc(true, null);
+            }
+        }
+    }//GEN-LAST:event_keyboardTypeItemStateChanged
+
+    private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
+        prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+    }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
+
+    private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
+        prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
+    }//GEN-LAST:event_sliderSettingActionPerformed
+
+    private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
+        setLocSpeed(44);
+    }//GEN-LAST:event_FiveButtonActionPerformed
+
+    private void SixButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SixButtonActionPerformed
+        setLocSpeed(55);
+    }//GEN-LAST:event_SixButtonActionPerformed
+
+    private void OneButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneButtonActionPerformed
+        setLocSpeed(0);
+    }//GEN-LAST:event_OneButtonActionPerformed
+
+    private void TwoButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoButtonActionPerformed
+        setLocSpeed(11);
+    }//GEN-LAST:event_TwoButtonActionPerformed
+
+    private void ThreeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeButtonActionPerformed
+        setLocSpeed(22);
+    }//GEN-LAST:event_ThreeButtonActionPerformed
+
+    private void FourButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FourButtonActionPerformed
+        setLocSpeed(33);
+    }//GEN-LAST:event_FourButtonActionPerformed
+
+    private void SevenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SevenButtonActionPerformed
+        setLocSpeed(66);
+    }//GEN-LAST:event_SevenButtonActionPerformed
+
+    private void NineButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NineButtonActionPerformed
+        setLocSpeed(88);
+    }//GEN-LAST:event_NineButtonActionPerformed
+
+    private void EightButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EightButtonActionPerformed
+        setLocSpeed(77);
+    }//GEN-LAST:event_EightButtonActionPerformed
+
+    private void ZeroButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ZeroButtonActionPerformed
+        setLocSpeed(100);
+    }//GEN-LAST:event_ZeroButtonActionPerformed
+
+    private void AltEmergencyStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AltEmergencyStopActionPerformed
+        new Thread(() ->
+            {
+                this.model.stopAllLocs();
+            }).start();
+    }//GEN-LAST:event_AltEmergencyStopActionPerformed
+
+    private void ShiftButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShiftButtonActionPerformed
+        setLocSpeed(0);
+    }//GEN-LAST:event_ShiftButtonActionPerformed
+
+    private void SpacebarButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SpacebarButtonActionPerformed
+        stopLoc();
+    }//GEN-LAST:event_SpacebarButtonActionPerformed
+
+    private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LeftArrowLetterButtonPressed
+        switchDirection();
+    }//GEN-LAST:event_LeftArrowLetterButtonPressed
+
+    private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RightArrowLetterButtonPressed
+        switchDirection();
+    }//GEN-LAST:event_RightArrowLetterButtonPressed
+
+    private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP, 0));
+        }
+    }//GEN-LAST:event_DownArrowLetterButtonPressed
+
+    private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
+        if (this.activeLoc != null)
+        {
+            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP, 100));
+        }
+    }//GEN-LAST:event_UpArrowLetterButtonPressed
+
+    private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
+        JSlider slider = (JSlider) evt.getSource();
+
+        new Thread(() ->
+            {
+                JButton b = this.rSliderMapping.get(slider);
+
+                Locomotive l = this.currentLocMapping().get(b);
+
+                if (l != null)
+                {
+                    if (l.getSpeed() != slider.getValue())
+                    {
+                        l.setSpeed(slider.getValue());
+                    }
+
+                    // Change active loc if setting selected
+                    if (prefs.getBoolean(SLIDER_SETTING_PREF, false))
+                    {
+                        this.displayCurrentButtonLoc(b);
+                    }
+                }
+            }).start();
+    }//GEN-LAST:event_updateSliderSpeed
+
+    private void sliderClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sliderClicked
+
+        sliderClickedSynced(evt);
+    }//GEN-LAST:event_sliderClicked
+
+    private void NextLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber + 1);
+    }//GEN-LAST:event_NextLocMappingActionPerformed
+
+    private void PrevLocMappingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrevLocMappingActionPerformed
+        this.switchLocMapping(this.locMappingNumber - 1);
+    }//GEN-LAST:event_PrevLocMappingActionPerformed
+
+    private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
+        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource(), true);
+    }//GEN-LAST:event_LetterButtonPressed
 
     public void deleteTimetableEntry(MouseEvent evt)
     {
@@ -11883,14 +11297,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JTextField ALabel;
     private javax.swing.JSlider ASlider;
     private javax.swing.JLabel ActiveLocLabel;
-    private javax.swing.JButton AddLocButton;
-    private javax.swing.JLabel AddNewLocLabel;
     private javax.swing.JButton AddRouteButton;
     private javax.swing.JButton AltEmergencyStop;
     private javax.swing.JButton BButton;
     private javax.swing.JTextField BLabel;
     private javax.swing.JSlider BSlider;
-    private javax.swing.JButton BackupButton;
     private javax.swing.JToggleButton Backward;
     private javax.swing.JButton BulkDisable;
     private javax.swing.JButton BulkEnable;
@@ -11975,21 +11386,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider LSlider;
     private javax.swing.JScrollPane LayoutArea;
     private javax.swing.JComboBox LayoutList;
-    private javax.swing.JLabel LayoutPathLabel;
     private javax.swing.JButton LeftArrow;
-    private javax.swing.JTextField LocAddressInput;
     private javax.swing.JPanel LocContainer;
     private javax.swing.JPanel LocControlPanel;
     private javax.swing.JPanel LocFunctionsPanel;
     private javax.swing.JLabel LocMappingNumberLabel;
-    private javax.swing.JTextField LocNameInput;
-    private javax.swing.JRadioButton LocTypeDCC;
-    private javax.swing.JRadioButton LocTypeMFX;
-    private javax.swing.JRadioButton LocTypeMM2;
     private javax.swing.JButton MButton;
     private javax.swing.JTextField MLabel;
     private javax.swing.JSlider MSlider;
-    private javax.swing.JPanel ManageLocPanel;
     private javax.swing.JButton NButton;
     private javax.swing.JTextField NLabel;
     private javax.swing.JSlider NSlider;
@@ -12091,13 +11495,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JToggleButton SwitchButton7;
     private javax.swing.JToggleButton SwitchButton8;
     private javax.swing.JToggleButton SwitchButton9;
-    private javax.swing.JButton SyncButton;
     private javax.swing.JButton TButton;
     private javax.swing.JTextField TLabel;
     private javax.swing.JSlider TSlider;
     private javax.swing.JButton ThreeButton;
-    private javax.swing.JButton TurnOffFnButton;
-    private javax.swing.JButton TurnOnLightsButton;
     private javax.swing.JButton TwoButton;
     private javax.swing.JButton UButton;
     private javax.swing.JTextField ULabel;
@@ -12106,7 +11507,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton VButton;
     private javax.swing.JTextField VLabel;
     private javax.swing.JSlider VSlider;
-    private javax.swing.JButton ViewDBButton;
     private javax.swing.JButton WButton;
     private javax.swing.JTextField WLabel;
     private javax.swing.JSlider WSlider;
@@ -12121,7 +11521,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider ZSlider;
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
-    private javax.swing.JButton aboutLabel;
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
     private javax.swing.JButton allButton;
@@ -12136,10 +11535,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
-    private javax.swing.JButton checkDuplicates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JButton clearNonParkedLocs;
-    private javax.swing.JLabel dataSourceLabel;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton editLayoutButton;
@@ -12186,12 +11583,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JCheckBox hideReversing;
     private javax.swing.JButton importRoutes;
     private javax.swing.JMenuItem initializeLocalLayoutMenuItem;
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel32;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel43;
     private javax.swing.JLabel jLabel46;
     private javax.swing.JLabel jLabel47;
@@ -12205,12 +11598,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
     private javax.swing.JPanel jPanel10;
-    private javax.swing.JPanel jPanel12;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -12228,7 +11618,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
-    private javax.swing.JSeparator jSeparator6;
     private javax.swing.JSeparator jSeparator7;
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
@@ -12265,12 +11654,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton startAutonomy;
     private javax.swing.JMenuItem switchCSLayoutMenuItem;
     private javax.swing.JMenuItem syncFullLocStateMenuItem;
-    private javax.swing.JButton syncLocStateButton;
     private javax.swing.JMenuItem syncMenuItem;
     private javax.swing.JTable timetable;
     private javax.swing.JToggleButton timetableCapture;
     private javax.swing.JPanel timetablePanel;
-    private javax.swing.JLabel toolsLabel;
     private javax.swing.JMenuItem turnOffFunctionsMenuItem;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
