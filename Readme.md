@@ -229,7 +229,8 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.2.8 [Beta]
+* v2.3.0 [Beta]
+    - Locomotives in the locomotive selector are now sorted alphabetically
     - Minor enhancements to the route editing UI
 
 * v2.2.7 [9/14/2024]
