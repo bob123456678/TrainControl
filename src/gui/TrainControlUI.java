@@ -134,7 +134,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
-    public static final Integer LOC_ICON_HEIGHT = 120;
+    public static final Integer LOC_ICON_HEIGHT = 118;
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
@@ -4201,6 +4201,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         LeftArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         LeftArrow.setText("←");
+        LeftArrow.setToolTipText("Switch Direction");
         LeftArrow.setFocusable(false);
         LeftArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4210,7 +4211,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         SpacebarButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         SpacebarButton.setText("Spacebar");
-        SpacebarButton.setToolTipText("Spacebar: emergency stop");
+        SpacebarButton.setToolTipText("Spacebar: emergency stop of current locomotive.");
         SpacebarButton.setFocusable(false);
         SpacebarButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4238,7 +4239,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         AltEmergencyStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         AltEmergencyStop.setText("Enter");
-        AltEmergencyStop.setToolTipText("Shift: stop locomotive");
+        AltEmergencyStop.setToolTipText("Enter: stops all running locomotives.");
         AltEmergencyStop.setFocusable(false);
         AltEmergencyStop.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4484,6 +4485,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
 
         toggleMenuBar.setText("Toggle menu bar");
+        toggleMenuBar.setToolTipText("Control+M");
         toggleMenuBar.setFocusable(false);
         toggleMenuBar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5894,7 +5896,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardPanelLayout.setVerticalGroup(
             KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(KeyboardPanelLayout.createSequentialGroup()
-                .addGap(9, 9, 9)
+                .addContainerGap()
                 .addComponent(KeyboardLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -7571,10 +7573,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocFunctionsPanelLayout.setVerticalGroup(
             LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
+                .addGap(1, 1, 1)
                 .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(PowerOff)
                     .addComponent(OnButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(6, 6, 6)
                 .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(ActiveLocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -9267,7 +9270,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.saveState(true);
             this.model.saveState(true);
             this.backupDataMenuItem.setEnabled(true);
-            JOptionPane.showMessageDialog(this, "Backup complete: check log.");
+            JOptionPane.showMessageDialog(this, "Backup complete: check log for file path.");
+            
+            // Advance to last tab (log)
+            this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
         }).start();
     }//GEN-LAST:event_backupDataMenuItemActionPerformed
 
@@ -9304,10 +9310,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_openCS3AppMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        try 
-        {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
-        } catch (IOException | URISyntaxException e1) { }
+        
+        JOptionPane.showMessageDialog(this, new About(), "About", JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed
