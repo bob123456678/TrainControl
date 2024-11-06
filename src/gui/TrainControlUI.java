@@ -2895,6 +2895,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         fileMenu = new javax.swing.JMenu();
         backupDataMenuItem = new javax.swing.JMenuItem();
         aboutMenuItem = new javax.swing.JMenuItem();
+        jSeparator17 = new javax.swing.JPopupMenu.Separator();
+        exitMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
         viewDatabaseMenuItem = new javax.swing.JMenuItem();
         addLocomotiveMenuItem = new javax.swing.JMenuItem();
@@ -7626,6 +7628,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         fileMenu.add(aboutMenuItem);
+        fileMenu.add(jSeparator17);
+
+        exitMenuItem.setText("Exit");
+        exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exitMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(exitMenuItem);
 
         mainMenuBar.add(fileMenu);
 
@@ -10500,6 +10511,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         displayMenuBar();
     }//GEN-LAST:event_toggleMenuBarActionPerformed
 
+    private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
+        WindowClosed(null);
+    }//GEN-LAST:event_exitMenuItemActionPerformed
+
     public void deleteTimetableEntry(MouseEvent evt)
     {
         try
@@ -11613,6 +11628,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton editLayoutButton;
     private javax.swing.JButton executeTimetable;
+    private javax.swing.JMenuItem exitMenuItem;
     private javax.swing.JButton exportAllRoutes;
     private javax.swing.JButton exportJSON;
     private javax.swing.JLabel f0Label;
@@ -11687,6 +11703,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator14;
     private javax.swing.JSeparator jSeparator15;
     private javax.swing.JPopupMenu.Separator jSeparator16;
+    private javax.swing.JPopupMenu.Separator jSeparator17;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
