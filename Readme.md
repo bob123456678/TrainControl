@@ -118,7 +118,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * F1-F24 (toggle functions F1-F24)
     * Numpad 1-9, Alt+1-9 (toggle functions F1-F9)
     * Control+0-9 (toggle functions F10-F19)
-    * Control+Alt+0-9 (toggle functions F20-F19)
+    * Control+Alt+0-9 (toggle functions F20-F29)
     * Shift (slow stop)
     * Spacebar (instant stop)
     * Enter (stop all locs)
@@ -209,20 +209,20 @@ Because the CS3 uses a different layout format than the CS2, this program does n
 However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
 In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
 
-If have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
+If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
 
 - If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
     - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
-    - Start TrainControl, then from the Settings tab, click on "Choose Local Data Folder", then select the path to your folder
+    - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
     - The static local layout will now be shown in the Layout tab
 - Otherwise
-    - Start TrainControl, then from the Settings tab, click on "Initialize New Local Layout"
+    - Start TrainControl, then from the Layout menu, click on "Initialize New Local Layout"
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
 
 A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
 
-If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives tab in the menu bar will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
+If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
