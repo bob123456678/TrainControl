@@ -57,7 +57,7 @@ public class About extends javax.swing.JPanel {
             }
         });
 
-        jLabel2.setText("TrainControl is free software to allow you to conveniently control & fully");
+        jLabel2.setText("TrainControl is free software that allows you to conveniently control & fully");
 
         jLabel3.setText("Designed for users with many trains and accessories where two knobs ");
 

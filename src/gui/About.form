@@ -96,7 +96,7 @@
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel2">
       <Properties>
-        <Property name="text" type="java.lang.String" value="TrainControl is free software to allow you to conveniently control &amp; fully"/>
+        <Property name="text" type="java.lang.String" value="TrainControl is free software that allows you to conveniently control &amp; fully"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel3">

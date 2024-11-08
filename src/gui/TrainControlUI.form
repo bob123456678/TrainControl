@@ -703,16 +703,16 @@
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="WButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="EButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="RButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="TButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="YButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="UButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="QButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="IButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="OButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="PButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
+                              <Component id="WButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="EButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="RButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="TButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="YButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="UButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="QButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="IButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="OButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="PButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
@@ -744,15 +744,15 @@
                           </Group>
                           <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="GButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="HButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="JButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="KButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="LButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="AButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="SButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="DButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
-                              <Component id="FButton" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
+                              <Component id="GButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="HButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="JButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="KButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="LButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="AButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="SButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="DButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                              <Component id="FButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="1" attributes="0">
@@ -786,13 +786,13 @@
                           <Group type="103" groupAlignment="1" attributes="0">
                               <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="3" max="-2" attributes="0">
-                                      <Component id="ZButton" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="XButton" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="CButton" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="VButton" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="BButton" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="MButton" alignment="3" min="-2" pref="41" max="-2" attributes="0"/>
-                                      <Component id="NButton" min="-2" pref="41" max="-2" attributes="0"/>
+                                      <Component id="ZButton" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="XButton" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="CButton" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="VButton" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="BButton" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="MButton" alignment="3" min="-2" pref="44" max="-2" attributes="0"/>
+                                      <Component id="NButton" min="-2" pref="44" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -3240,8 +3240,8 @@
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-              <JTabbedPaneConstraints tabName="Keyboard">
-                <Property name="tabTitle" type="java.lang.String" value="Keyboard"/>
+              <JTabbedPaneConstraints tabName="Signals &amp; Switches">
+                <Property name="tabTitle" type="java.lang.String" value="Signals &amp; Switches"/>
               </JTabbedPaneConstraints>
             </Constraint>
           </Constraints>
@@ -3283,7 +3283,7 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Signals and Switches"/>
+                <Property name="text" type="java.lang.String" value="Keyboard"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
             </Component>
@@ -3430,7 +3430,7 @@
                                       <Component id="SwitchButton7" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton8" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="SwitchButton9" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="3" attributes="0">
@@ -3443,7 +3443,7 @@
                                           <Component id="SwitchButton16" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton17" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton18" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3454,7 +3454,7 @@
                                       <Component id="SwitchButton24" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton20" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton25" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton26" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3465,7 +3465,7 @@
                                       <Component id="SwitchButton31" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton32" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton33" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton34" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3476,7 +3476,7 @@
                                       <Component id="SwitchButton39" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton40" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton41" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton42" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3487,7 +3487,7 @@
                                       <Component id="SwitchButton47" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton48" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton49" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton50" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -3498,7 +3498,7 @@
                                       <Component id="SwitchButton55" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton56" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="SwitchButton57" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
                                       <Component id="SwitchButton58" alignment="3" min="-2" pref="37" max="-2" attributes="0"/>
@@ -6015,7 +6015,7 @@
                       <Component id="PowerOff" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="OnButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="4" max="-2" attributes="0"/>
                   <Component id="CurrentKeyLabel" min="-2" pref="14" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="ActiveLocLabel" max="-2" attributes="0"/>
@@ -6207,9 +6207,9 @@
                                       <Component id="f8Label" alignment="0" max="32767" attributes="0"/>
                                       <Component id="f0Label" alignment="0" max="32767" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="F8" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                          <Component id="F4" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                          <Component id="F0" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F8" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                          <Component id="F4" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                          <Component id="F0" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                       <Component id="f4Label" alignment="0" max="32767" attributes="0"/>
                                   </Group>
@@ -6218,36 +6218,36 @@
                                       <Component id="f5Label" max="32767" attributes="0"/>
                                       <Component id="f9Label" alignment="1" max="32767" attributes="0"/>
                                       <Component id="f1Label" alignment="1" max="32767" attributes="0"/>
-                                      <Component id="F9" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                      <Component id="F5" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                      <Component id="F1" linkSize="3" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F9" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                      <Component id="F5" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                      <Component id="F1" linkSize="3" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
                                       <Group type="102" alignment="0" attributes="0">
-                                          <Component id="F2" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F2" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
-                                          <Component id="F3" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F3" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="F6" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F6" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                               <Component id="f2Label" max="32767" attributes="0"/>
                                           </Group>
                                           <EmptySpace min="12" pref="12" max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="F7" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F7" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                               <Component id="f3Label" max="32767" attributes="0"/>
                                           </Group>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                               <Component id="f10Label" max="32767" attributes="0"/>
-                                              <Component id="F10" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F10" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="F11" linkSize="3" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F11" linkSize="3" min="-2" pref="65" max="-2" attributes="0"/>
                                               <Component id="f11Label" max="32767" attributes="0"/>
                                           </Group>
                                       </Group>
@@ -6261,19 +6261,19 @@
                               <Group type="102" alignment="1" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="f12Label" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="F12" alignment="1" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F12" alignment="1" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="f13Label" alignment="1" max="32767" attributes="0"/>
-                                      <Component id="F13" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F13" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Group type="102" alignment="0" attributes="0">
-                                          <Component id="F14" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F14" min="-2" pref="65" max="-2" attributes="0"/>
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
-                                          <Component id="F15" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F15" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
                                           <Component id="f14Label" max="32767" attributes="0"/>
@@ -6284,20 +6284,20 @@
                               </Group>
                               <Group type="102" alignment="1" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                      <Component id="F16" alignment="1" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F16" alignment="1" min="-2" pref="65" max="-2" attributes="0"/>
                                       <Component id="f16Label" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="f17Label" max="32767" attributes="0"/>
-                                      <Component id="F17" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F17" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Group type="102" alignment="0" attributes="0">
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
-                                          <Component id="F18" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F18" min="-2" pref="65" max="-2" attributes="0"/>
                                           <EmptySpace min="12" pref="12" max="-2" attributes="0"/>
-                                          <Component id="F19" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F19" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
                                           <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
@@ -7016,21 +7016,21 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="f20Label" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="F20" alignment="1" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F20" alignment="1" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="f21Label" alignment="1" max="32767" attributes="0"/>
-                                      <Component id="F21" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F21" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="f22Label" max="32767" attributes="0"/>
-                                      <Component id="F22" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F22" min="-2" pref="65" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="F23" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F23" min="-2" pref="65" max="-2" attributes="0"/>
                                       <Component id="f23Label" max="32767" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
@@ -7040,16 +7040,16 @@
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="f24Label" alignment="0" max="32767" attributes="0"/>
                                       <Group type="103" alignment="1" groupAlignment="0" attributes="0">
-                                          <Component id="F28" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                          <Component id="F24" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F28" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                          <Component id="F24" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                       <Component id="f28Label" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Component id="f29Label" max="32767" attributes="0"/>
-                                      <Component id="F29" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
-                                      <Component id="F25" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                      <Component id="F29" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                      <Component id="F25" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                       <Component id="f25Label" min="-2" pref="64" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
@@ -7057,20 +7057,20 @@
                                       <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                               <Component id="f30Label" max="32767" attributes="0"/>
-                                              <Component id="F30" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F30" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                               <Component id="f26Label" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="F31" alignment="0" min="-2" pref="64" max="-2" attributes="0"/>
+                                              <Component id="F31" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
                                               <Component id="f27Label" alignment="0" max="32767" attributes="0"/>
                                               <Component id="f31Label" min="-2" pref="64" max="-2" attributes="0"/>
                                           </Group>
                                       </Group>
                                       <Group type="102" alignment="0" attributes="0">
-                                          <Component id="F26" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F26" min="-2" pref="65" max="-2" attributes="0"/>
                                           <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
-                                          <Component id="F27" min="-2" pref="64" max="-2" attributes="0"/>
+                                          <Component id="F27" min="-2" pref="65" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
                               </Group>
