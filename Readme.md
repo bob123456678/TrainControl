@@ -190,6 +190,10 @@ Requires JDK 1.8+ and the following libraries:
 
 **Running the application (build or release JAR):**
 
+Some operating systems allow you to simply double-click the JAR file to run it.  On others, you may wish to create a `.sh` or `.bat` file to execute the command above.
+
+To run TrainControl, open a terminal / command prompt window, and from the directory containing TrainControl.jar, execute the following command.
+
 ```java -jar TrainControl.jar [CS2_IP_address [debug [simulate]]]```
 
 Examples:
