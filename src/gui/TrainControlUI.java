@@ -104,7 +104,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop";
-    public static final String MENUBAR_SETTING_PREF = "MenuBar";
+    public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
@@ -524,8 +524,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
         // Restore UI component state
-        this.sliderSetting.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
-        this.alwaysOnTopCheckbox.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
+        this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
@@ -543,8 +543,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.timetable.addMouseListener(new RightClickTimetableMenu(this));   
 
         // Keyboard layout preference
-        this.keyboardType.setSelectedIndex(prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0));
-        this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex() >= 0 ? this.keyboardType.getSelectedIndex() : 0]);
+        switch (prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0))
+        {
+            case 0:
+                this.keyboardQwertyMenuItem.setSelected(true);
+                break;
+            case 1:
+                this.keyboardQwertzMenuItem.setSelected(true);
+                break;
+            case 2:
+                this.keyboardAzertyMenuItem.setSelected(true);
+                break;
+        }
+        
+        this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
 
         // Layout editing only supported on windows
         if (!this.isWindows())
@@ -563,7 +575,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");        
     }
     
-     /**
+    /**
+     * Gets the keyboard type preference from the radio button group
+     * @return 
+     */
+    private int getSelectedKeyboardType()
+    {        
+        try 
+        {
+            return Integer.parseInt(this.buttonGroup3.getSelection().getActionCommand());
+        }
+        catch (NumberFormatException e)
+        {
+            return -1;
+        }  
+    }
+    
+    /**
      * Switches to a different keyboard layout
      * @param type 
      */
@@ -2542,6 +2570,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jList1 = new javax.swing.JList();
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
+        buttonGroup3 = new javax.swing.ButtonGroup();
         KeyboardTab = new javax.swing.JTabbedPane();
         LocControlPanel = new javax.swing.JPanel();
         locMappingLabel = new javax.swing.JLabel();
@@ -2653,9 +2682,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FiveButton = new javax.swing.JButton();
         ZeroPercentSpeedLabel = new javax.swing.JLabel();
         PrimaryControls = new javax.swing.JLabel();
-        sliderSetting = new javax.swing.JCheckBox();
-        alwaysOnTopCheckbox = new javax.swing.JCheckBox();
-        keyboardType = new javax.swing.JComboBox<>();
         latencyLabel = new javax.swing.JLabel();
         toggleMenuBar = new javax.swing.JCheckBox();
         layoutPanel = new javax.swing.JPanel();
@@ -2894,7 +2920,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         mainMenuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         backupDataMenuItem = new javax.swing.JMenuItem();
-        aboutMenuItem = new javax.swing.JMenuItem();
         jSeparator17 = new javax.swing.JPopupMenu.Separator();
         exitMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
@@ -2914,6 +2939,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator8 = new javax.swing.JPopupMenu.Separator();
         switchCSLayoutMenuItem = new javax.swing.JMenuItem();
         openCS3AppMenuItem = new javax.swing.JMenuItem();
+        interfaceMenu = new javax.swing.JMenu();
+        windowAlwaysOnTopMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator19 = new javax.swing.JPopupMenu.Separator();
+        locomotiveControlMenu = new javax.swing.JMenu();
+        slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator20 = new javax.swing.JPopupMenu.Separator();
+        keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
+        keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
+        keyboardAzertyMenuItem = new javax.swing.JRadioButtonMenuItem();
+        helpMenu = new javax.swing.JMenu();
+        aboutMenuItem = new javax.swing.JMenuItem();
 
         jList1.setModel(new javax.swing.AbstractListModel() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
@@ -4458,34 +4494,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
         PrimaryControls.setText("Primary Keyboard Controls");
 
-        sliderSetting.setText("Sliders change active loc");
-        sliderSetting.setFocusable(false);
-        sliderSetting.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                sliderSettingActionPerformed(evt);
-            }
-        });
-
-        alwaysOnTopCheckbox.setText("Window always on top");
-        alwaysOnTopCheckbox.setFocusable(false);
-        alwaysOnTopCheckbox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                alwaysOnTopCheckboxActionPerformed(evt);
-            }
-        });
-
-        keyboardType.setModel( new javax.swing.DefaultComboBoxModel<>(KEYBOARD_TYPES));
-        keyboardType.setFocusable(false);
-        keyboardType.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                keyboardTypeItemStateChanged(evt);
-            }
-        });
-
         latencyLabel.setForeground(new java.awt.Color(255, 0, 0));
         latencyLabel.setText("Latency:");
         latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
 
+        toggleMenuBar.setSelected(true);
         toggleMenuBar.setText("Toggle menu bar");
         toggleMenuBar.setToolTipText("Control+M");
         toggleMenuBar.setFocusable(false);
@@ -4505,19 +4518,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(locMappingLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(sliderSetting))
+                        .addComponent(toggleMenuBar))
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(PrimaryControls)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(latencyLabel))
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(LocControlPanelLayout.createSequentialGroup()
-                        .addComponent(alwaysOnTopCheckbox)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(toggleMenuBar)))
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addGap(12, 12, 12))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -4526,8 +4533,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locMappingLabel)
-                    .addComponent(keyboardType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sliderSetting))
+                    .addComponent(toggleMenuBar))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -4536,11 +4542,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(alwaysOnTopCheckbox)
-                    .addComponent(toggleMenuBar))
-                .addContainerGap(21, Short.MAX_VALUE))
+                .addContainerGap(56, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Locomotive Control", LocControlPanel);
@@ -7620,14 +7622,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         fileMenu.add(backupDataMenuItem);
-
-        aboutMenuItem.setText("About / Readme");
-        aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                aboutMenuItemActionPerformed(evt);
-            }
-        });
-        fileMenu.add(aboutMenuItem);
         fileMenu.add(jSeparator17);
 
         exitMenuItem.setText("Exit");
@@ -7761,6 +7755,84 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         layoutMenu.add(openCS3AppMenuItem);
 
         mainMenuBar.add(layoutMenu);
+
+        interfaceMenu.setText("Interface");
+
+        windowAlwaysOnTopMenuItem.setSelected(true);
+        windowAlwaysOnTopMenuItem.setText("Window always on top");
+        windowAlwaysOnTopMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                windowAlwaysOnTopMenuItemActionPerformed(evt);
+            }
+        });
+        interfaceMenu.add(windowAlwaysOnTopMenuItem);
+        interfaceMenu.add(jSeparator19);
+
+        locomotiveControlMenu.setText("Locomotive Control");
+
+        slidersChangeActiveLocMenuItem.setSelected(true);
+        slidersChangeActiveLocMenuItem.setText("Sliders change active loc");
+        slidersChangeActiveLocMenuItem.setToolTipText("Change the active locomotive when using the sliders on the Locomotive Control page.");
+        slidersChangeActiveLocMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                slidersChangeActiveLocMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(slidersChangeActiveLocMenuItem);
+        locomotiveControlMenu.add(jSeparator20);
+
+        buttonGroup3.add(keyboardQwertyMenuItem);
+        keyboardQwertyMenuItem.setSelected(true);
+        keyboardQwertyMenuItem.setText("QWERTY Keyboard");
+        keyboardQwertyMenuItem.setToolTipText("Select the type of keyboard your computer has.");
+        keyboardQwertyMenuItem.setActionCommand("0");
+        keyboardQwertyMenuItem.setName("0"); // NOI18N
+        keyboardQwertyMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                keyboardQwertyMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(keyboardQwertyMenuItem);
+
+        buttonGroup3.add(keyboardQwertzMenuItem);
+        keyboardQwertzMenuItem.setText("QWERTZ Keyboard");
+        keyboardQwertzMenuItem.setToolTipText("Select the type of keyboard your computer has.");
+        keyboardQwertzMenuItem.setActionCommand("1");
+        keyboardQwertzMenuItem.setName("1"); // NOI18N
+        keyboardQwertzMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                keyboardQwertyMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(keyboardQwertzMenuItem);
+
+        buttonGroup3.add(keyboardAzertyMenuItem);
+        keyboardAzertyMenuItem.setText("AZERTY Keyboard");
+        keyboardAzertyMenuItem.setToolTipText("Select the type of keyboard your computer has.");
+        keyboardAzertyMenuItem.setActionCommand("2");
+        keyboardAzertyMenuItem.setName("2"); // NOI18N
+        keyboardAzertyMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                keyboardQwertyMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(keyboardAzertyMenuItem);
+
+        interfaceMenu.add(locomotiveControlMenu);
+
+        mainMenuBar.add(interfaceMenu);
+
+        helpMenu.setText("Help");
+
+        aboutMenuItem.setText("About / Readme");
+        aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                aboutMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(aboutMenuItem);
+
+        mainMenuBar.add(helpMenu);
 
         setJMenuBar(mainMenuBar);
 
@@ -10293,7 +10365,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.editLayoutButton.setEnabled(true);
 
                 // Revert preference
-                alwaysOnTopCheckboxActionPerformed(null);
+                windowAlwaysOnTopMenuItemActionPerformed(null);
 
             }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
@@ -10362,30 +10434,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void LayoutListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LayoutListActionPerformed
         repaintLayoutFromCache();
     }//GEN-LAST:event_LayoutListActionPerformed
-
-    private void keyboardTypeItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_keyboardTypeItemStateChanged
-
-        if (evt.getStateChange() == ItemEvent.SELECTED && this.keyboardType.getSelectedIndex() >= 0)
-        {
-            prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.keyboardType.getSelectedIndex()));
-            this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
-
-            if (this.model != null)
-            {
-                this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.keyboardType.getSelectedIndex()]);
-                this.repaintLoc(true, null);
-            }
-        }
-    }//GEN-LAST:event_keyboardTypeItemStateChanged
-
-    private void alwaysOnTopCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alwaysOnTopCheckboxActionPerformed
-        prefs.putBoolean(ONTOP_SETTING_PREF, this.alwaysOnTopCheckbox.isSelected());
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
-    }//GEN-LAST:event_alwaysOnTopCheckboxActionPerformed
-
-    private void sliderSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sliderSettingActionPerformed
-        prefs.putBoolean(SLIDER_SETTING_PREF, this.sliderSetting.isSelected());
-    }//GEN-LAST:event_sliderSettingActionPerformed
 
     private void FiveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FiveButtonActionPerformed
         setLocSpeed(44);
@@ -10514,6 +10562,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         WindowClosed(null);
     }//GEN-LAST:event_exitMenuItemActionPerformed
+
+    private void keyboardQwertyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_keyboardQwertyMenuItemActionPerformed
+        if (this.getSelectedKeyboardType() >= 0)
+        {
+            prefs.put(TrainControlUI.KEYBOARD_LAYOUT, Integer.toString(this.getSelectedKeyboardType()));
+            this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[this.getSelectedKeyboardType()]);
+
+            if (this.model != null)
+            {
+                this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.getSelectedKeyboardType()]);
+                this.repaintLoc(true, null);
+            }
+        }
+    }//GEN-LAST:event_keyboardQwertyMenuItemActionPerformed
+
+    private void slidersChangeActiveLocMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_slidersChangeActiveLocMenuItemActionPerformed
+        prefs.putBoolean(SLIDER_SETTING_PREF, this.slidersChangeActiveLocMenuItem.isSelected());
+    }//GEN-LAST:event_slidersChangeActiveLocMenuItemActionPerformed
+
+    private void windowAlwaysOnTopMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_windowAlwaysOnTopMenuItemActionPerformed
+        prefs.putBoolean(ONTOP_SETTING_PREF, this.windowAlwaysOnTopMenuItem.isSelected());
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+    }//GEN-LAST:event_windowAlwaysOnTopMenuItemActionPerformed
 
     public void deleteTimetableEntry(MouseEvent evt)
     {
@@ -11611,7 +11682,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
     private javax.swing.JButton allButton;
-    private javax.swing.JCheckBox alwaysOnTopCheckbox;
     private javax.swing.JCheckBox atomicRoutes;
     private javax.swing.JPanel autoLocPanel;
     private javax.swing.JPanel autoPanel;
@@ -11622,6 +11692,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
+    private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JButton clearNonParkedLocs;
     private javax.swing.JTextArea debugArea;
@@ -11667,10 +11738,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel functionPanel;
     private javax.swing.JMenu functionsMenu;
     private javax.swing.JButton gracefulStop;
+    private javax.swing.JMenu helpMenu;
     private javax.swing.JCheckBox hideInactive;
     private javax.swing.JCheckBox hideReversing;
     private javax.swing.JButton importRoutes;
     private javax.swing.JMenuItem initializeLocalLayoutMenuItem;
+    private javax.swing.JMenu interfaceMenu;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel43;
@@ -11704,7 +11777,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator15;
     private javax.swing.JPopupMenu.Separator jSeparator16;
     private javax.swing.JPopupMenu.Separator jSeparator17;
+    private javax.swing.JPopupMenu.Separator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JPopupMenu.Separator jSeparator20;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
@@ -11713,8 +11788,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JButton jsonDocumentationButton;
+    private javax.swing.JRadioButtonMenuItem keyboardAzertyMenuItem;
     private javax.swing.JPanel keyboardButtonPanel;
-    private javax.swing.JComboBox<String> keyboardType;
+    private javax.swing.JRadioButtonMenuItem keyboardQwertyMenuItem;
+    private javax.swing.JRadioButtonMenuItem keyboardQwertzMenuItem;
     private javax.swing.JLabel latencyLabel;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JMenu layoutMenu;
@@ -11726,6 +11803,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
     private javax.swing.JLabel locMappingLabel;
+    private javax.swing.JMenu locomotiveControlMenu;
     private javax.swing.JMenu locomotiveMenu;
     private javax.swing.JPanel logPanel;
     private javax.swing.JMenuBar mainMenuBar;
@@ -11738,7 +11816,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;
-    private javax.swing.JCheckBox sliderSetting;
+    private javax.swing.JCheckBoxMenuItem slidersChangeActiveLocMenuItem;
     private javax.swing.JButton smallButton;
     private javax.swing.JRadioButton sortByID;
     private javax.swing.JRadioButton sortByName;
@@ -11756,6 +11834,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JMenuItem turnOnLightsMenuItem;
     private javax.swing.JButton validateButton;
     private javax.swing.JMenuItem viewDatabaseMenuItem;
+    private javax.swing.JCheckBoxMenuItem windowAlwaysOnTopMenuItem;
     // End of variables declaration//GEN-END:variables
 
     // Lap strings in the size dropdown to icon sizes
