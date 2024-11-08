@@ -58,6 +58,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -97,6 +98,15 @@ import util.ImageUtil;
  */
 public class TrainControlUI extends javax.swing.JFrame implements View 
 {    
+    // Tab icons
+    public static final Icon TAB_ICON_CONTROL = getTabIcon(30, "tabs/loc.png");
+    public static final Icon TAB_ICON_KEYBOARD = getTabIcon(30, "tabs/signal.png");
+    public static final Icon TAB_ICON_STATS = getTabIcon(30, "tabs/stats.png");
+    public static final Icon TAB_ICON_LAYOUT = getTabIcon(30, "tabs/track.png");
+    public static final Icon TAB_ICON_ROUTES = getTabIcon(30, "tabs/route.png");
+    public static final Icon TAB_ICON_AUTONOMY = getTabIcon(30, "tabs/autonomy.png");
+    public static final Icon TAB_ICON_LOG = getTabIcon(30, "tabs/log.png");
+    
     // Preferences fields
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
@@ -571,7 +581,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.NextLocMapping.addMouseListener(rcm);
         
         // UI editor bugs out when this is too wide
-        // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");        
+        // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");  
     }
     
     /**
@@ -1033,7 +1043,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
             
             // Display current mapping number in the tab label
-            this.KeyboardTab.setTitleAt(0, "Locomotive Control (" + this.locMappingNumber + ")");
+            // this.KeyboardTab.setTitleAt(0, "Locomotive Control (" + this.locMappingNumber + ")");
+            setTitle(MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION + " (Page " + this.locMappingNumber + ")");
        }
        else 
        {
@@ -1175,6 +1186,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             repaintSwitches();
         }));
+    }
+    
+    /**
+     * Fetches and scales a resource icon
+     * @param size
+     * @param file
+     * @return 
+     */
+    private static ImageIcon getTabIcon(int size, String file)
+    {
+        ImageIcon icon = new ImageIcon(TrainControlUI.class.getResource("resources/" + file)); 
+        Image scaledImage = icon.getImage().getScaledInstance(-1, size, Image.SCALE_SMOOTH); 
+        return new ImageIcon(scaledImage);
     }
     
     public void setViewListener(ViewListener listener, CountDownLatch latch) throws IOException
@@ -1319,6 +1343,29 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.stats = new LocomotiveStats(this);
         this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
         
+        // Set pane icons   
+        this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
+        this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control");
+        this.KeyboardTab.setTitleAt(0, "");
+        this.KeyboardTab.setIconAt(1, TAB_ICON_LAYOUT);
+        this.KeyboardTab.setToolTipTextAt(1, "Layout");
+        this.KeyboardTab.setTitleAt(1, "");
+        this.KeyboardTab.setIconAt(2, TAB_ICON_ROUTES);
+        this.KeyboardTab.setToolTipTextAt(2, "Routes");
+        this.KeyboardTab.setTitleAt(2, "");
+        this.KeyboardTab.setIconAt(3, TAB_ICON_KEYBOARD);
+        this.KeyboardTab.setToolTipTextAt(3, "Keyboard");
+        this.KeyboardTab.setTitleAt(3, "");
+        this.KeyboardTab.setIconAt(4, TAB_ICON_AUTONOMY);
+        this.KeyboardTab.setToolTipTextAt(4, "Autonomy");
+        this.KeyboardTab.setTitleAt(4, "");
+        this.KeyboardTab.setIconAt(5, TAB_ICON_STATS);
+        this.KeyboardTab.setToolTipTextAt(5, "Statistics");
+        this.KeyboardTab.setTitleAt(5, "");
+        this.KeyboardTab.setIconAt(6, TAB_ICON_LOG);
+        this.KeyboardTab.setToolTipTextAt(6, "Log");
+        this.KeyboardTab.setTitleAt(6, "");
+
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
         {            
@@ -2963,9 +3010,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1090, 655));
-        setMinimumSize(new java.awt.Dimension(1090, 655));
-        setPreferredSize(new java.awt.Dimension(1090, 655));
+        setMaximumSize(new java.awt.Dimension(1132, 655));
+        setMinimumSize(new java.awt.Dimension(1132, 655));
+        setPreferredSize(new java.awt.Dimension(1132, 655));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -2979,7 +3026,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         KeyboardTab.setBackground(new java.awt.Color(255, 255, 255));
+        KeyboardTab.setTabPlacement(javax.swing.JTabbedPane.LEFT);
         KeyboardTab.setToolTipText(null);
+        KeyboardTab.setMinimumSize(new java.awt.Dimension(995, 585));
+        KeyboardTab.setPreferredSize(new java.awt.Dimension(1119, 585));
         KeyboardTab.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 KeyboardTabStateChanged(evt);
@@ -4498,7 +4548,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
 
         toggleMenuBar.setSelected(true);
-        toggleMenuBar.setText("Toggle menu bar");
+        toggleMenuBar.setText("Toggle Menu Bar");
         toggleMenuBar.setToolTipText("Control+M");
         toggleMenuBar.setFocusable(false);
         toggleMenuBar.addActionListener(new java.awt.event.ActionListener() {
@@ -4512,12 +4562,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap(18, Short.MAX_VALUE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(LocControlPanelLayout.createSequentialGroup()
-                        .addComponent(locMappingLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(toggleMenuBar))
+                    .addComponent(locMappingLabel)
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(PrimaryControls)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -4525,14 +4572,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addGap(12, 12, 12))
+            .addGroup(LocControlPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(toggleMenuBar)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(locMappingLabel)
-                    .addComponent(toggleMenuBar))
+                .addComponent(locMappingLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -4541,10 +4590,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(56, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(toggleMenuBar)
+                .addContainerGap(29, Short.MAX_VALUE))
         );
 
-        KeyboardTab.addTab("Locomotive Control", LocControlPanel);
+        KeyboardTab.addTab("Ctrl", LocControlPanel);
 
         layoutPanel.setBackground(new java.awt.Color(238, 238, 238));
         layoutPanel.setFocusable(false);
@@ -4568,7 +4619,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         InnerLayoutPanel.setLayout(InnerLayoutPanelLayout);
         InnerLayoutPanelLayout.setHorizontalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 842, Short.MAX_VALUE)
+            .addGap(0, 920, Short.MAX_VALUE)
         );
         InnerLayoutPanelLayout.setVerticalGroup(
             InnerLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4662,7 +4713,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 499, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 538, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4680,7 +4731,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap())
         );
 
-        KeyboardTab.addTab("Track Diagram", layoutPanel);
+        KeyboardTab.addTab("Diag", layoutPanel);
 
         RoutePanel.setBackground(new java.awt.Color(238, 238, 238));
         RoutePanel.setFocusable(false);
@@ -4819,7 +4870,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 476, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 515, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4835,14 +4886,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap())
         );
 
-        KeyboardTab.addTab("Routes", RoutePanel);
+        KeyboardTab.addTab("Rout", RoutePanel);
 
         KeyboardPanel.setBackground(new java.awt.Color(238, 238, 238));
         KeyboardPanel.setToolTipText(null);
         KeyboardPanel.setFocusable(false);
 
         KeyboardLabel.setForeground(new java.awt.Color(0, 0, 115));
-        KeyboardLabel.setText("Keyboard");
+        KeyboardLabel.setText("Signals & Switches");
         KeyboardLabel.setFocusable(false);
 
         keyboardButtonPanel.setBackground(new java.awt.Color(245, 245, 245));
@@ -5910,7 +5961,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        KeyboardTab.addTab("Signals & Switches", KeyboardPanel);
+        KeyboardTab.addTab("Keyb", KeyboardPanel);
 
         autoPanel.setBackground(new java.awt.Color(238, 238, 238));
 
@@ -6045,7 +6096,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addContainerGap(445, Short.MAX_VALUE))
+                .addContainerGap(476, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
@@ -6134,7 +6185,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(executeTimetable)
                     .addComponent(timetableCapture))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 439, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 470, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6512,7 +6563,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap())
         );
 
-        KeyboardTab.addTab("Autonomy", autoPanel);
+        KeyboardTab.addTab("Auto", autoPanel);
 
         logPanel.setBackground(new java.awt.Color(238, 238, 238));
 
@@ -6527,14 +6578,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 746, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 726, Short.MAX_VALUE)
                 .addContainerGap())
         );
         logPanelLayout.setVerticalGroup(
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -7758,7 +7809,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         interfaceMenu.setText("Interface");
 
         windowAlwaysOnTopMenuItem.setSelected(true);
-        windowAlwaysOnTopMenuItem.setText("Window always on top");
+        windowAlwaysOnTopMenuItem.setText("Window Always on Top");
         windowAlwaysOnTopMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 windowAlwaysOnTopMenuItemActionPerformed(evt);
@@ -7770,7 +7821,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locomotiveControlMenu.setText("Locomotive Control");
 
         slidersChangeActiveLocMenuItem.setSelected(true);
-        slidersChangeActiveLocMenuItem.setText("Sliders change active loc");
+        slidersChangeActiveLocMenuItem.setText("Sliders Change Active Loc");
         slidersChangeActiveLocMenuItem.setToolTipText("Change the active locomotive when using the sliders on the Locomotive Control page.");
         slidersChangeActiveLocMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7840,7 +7891,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 758, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 802, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocFunctionsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -8208,18 +8259,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (keyCode == KeyEvent.VK_BACK_SPACE && !altPressed)
         {
             // Easy tab cycling
-            this.KeyboardTab.setSelectedIndex(
-                (this.KeyboardTab.getSelectedIndex() + 1) 
-                    % this.KeyboardTab.getComponentCount()
-            );
+            do
+            {
+                this.KeyboardTab.setSelectedIndex(
+                    (this.KeyboardTab.getSelectedIndex() + 1) 
+                        % this.KeyboardTab.getComponentCount()
+                );
+            }
+            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
         } 
         else if (keyCode == KeyEvent.VK_BACK_SPACE && altPressed)
         {
-            this.KeyboardTab.setSelectedIndex(
-                Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
-                        this.KeyboardTab.getComponentCount()
-                )
-            );
+            do
+            {
+                this.KeyboardTab.setSelectedIndex(
+                    Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
+                            this.KeyboardTab.getComponentCount()
+                    )
+                );
+            }
+            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
         } 
         else if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_LESS)
         {
@@ -8258,14 +8317,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_WindowClosed
 
     /**
-     * Shows the tab with the specified name
-     * @param title 
+     * Shows the tab with the specified icon
+     * @param tabIcon 
      */
-    public void showTab(String title)
+    public void showTab(Icon tabIcon)
     {
         for (int i = 0; i < this.KeyboardTab.getTabCount(); i++)
         {
-            if (title.equals(this.KeyboardTab.getTitleAt(i)))
+            if (tabIcon.equals(this.KeyboardTab.getIconAt(i)))
             {
                 this.KeyboardTab.setSelectedIndex(i);
                 this.KeyboardTab.requestFocus();
@@ -9404,8 +9463,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             try
             {
-                this.KeyboardTab.remove(this.layoutPanel);
-
+                //this.KeyboardTab.remove(this.layoutPanel);
+                this.KeyboardTab.setEnabledAt(1, false);
+                if (this.KeyboardTab.getSelectedIndex() == 1)
+                {
+                    this.KeyboardTab.setSelectedIndex(0);
+                }
+                
                 prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
                 this.model.clearLayouts();
                 this.model.syncWithCS2();
@@ -11922,15 +11986,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                 if (this.model.getLayoutList().isEmpty())
                 {
-                    this.KeyboardTab.remove(this.layoutPanel);
+                    this.KeyboardTab.setEnabledAt(1, false);
+                    if (this.KeyboardTab.getSelectedIndex() == 1)
+                    {
+                        this.KeyboardTab.setSelectedIndex(0);
+                    }
+                    // this.KeyboardTab.remove(this.layoutPanel);
                 }
                 else 
                 {
-                    if (!this.KeyboardTab.getTitleAt(1).contains("Track Diagram"))
+                    this.KeyboardTab.setEnabledAt(1, true);
+                    /*if (!this.KeyboardTab.getTitleAt(1).contains("Track Diagram"))
                     {
                         this.KeyboardTab.add(this.layoutPanel, 1);
-                        this.KeyboardTab.setTitleAt(1, "Track Diagram");                        
-                    };
+                        this.KeyboardTab.setTitleAt(1, "Track Diagram");     
+                    };*/
 
                     //InnerLayoutPanel.setVisible(false);
                     String cacheKey = this.LayoutList.getSelectedItem().toString() + this.SizeList.getSelectedItem().toString();

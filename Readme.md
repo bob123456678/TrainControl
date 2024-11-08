@@ -177,6 +177,8 @@ This is free software released under the GNU General Public License v3.
 
 No copyright claim is made to any Central Station icons rendered during the use of this program.
 
+Tab icons provided by Free pik.
+
 ## Running TrainControl
 
 **Building the project from source:**
@@ -241,6 +243,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
         - The visibility of the menu bar will be remembered between runs
         - Locomotives can now be added to the database through a dedicated popup menu
+    - Moved main UI tabs to the left, and replaced text headings with icons
     - Minor UI enhancements
         - Slightly increased the height of the track diagram UI
         - Increased the size of the active locomotive icon

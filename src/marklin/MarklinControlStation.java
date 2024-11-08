@@ -61,7 +61,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public static final String RAW_VERSION = "2.3.0";
     
     // Window/UI titles
-    public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
+    public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station";
     public static final String PROG_TITLE = "TrainControl ";
     
     //// Settings
