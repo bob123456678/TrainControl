@@ -19,7 +19,7 @@ import marklin.MarklinLayoutComponent;
  */
 public class LayoutGrid
 {
-    public LayoutLabel[][] grid;
+    private LayoutLabel[][] grid;
     public final int maxWidth;
     public final int maxHeight;
     
@@ -28,6 +28,8 @@ public class LayoutGrid
     
     // Component that holds the layout
     private JPanel container;
+    
+    private boolean cacheable = false;
     
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
@@ -57,9 +59,8 @@ public class LayoutGrid
         parent.removeAll();
         
         // We need a non scaling panel for small layouts
-        if (width * size < parent.getWidth() 
-                || height * size < parent.getHeight() || popup)
-        {
+        // if (width * size < parent.getWidth() || height * size < parent.getHeight() || popup)
+        // {
             container = new JPanel();
             container.setBackground(Color.white);
             
@@ -73,11 +74,14 @@ public class LayoutGrid
                 // If we want to left-align smaller layouts
                 parent.setLayout(new FlowLayout(FlowLayout.LEFT));
             }
-        }
-        else
-        {
-            container = parent;
-        }
+            
+            // We can only cache these panels
+            cacheable = true;
+        // }
+        // else
+        // {
+        //     container = parent;
+        // }
 
         // Generate grid
         container.setLayout(new GridBagLayout());
@@ -202,5 +206,10 @@ public class LayoutGrid
     public JPanel getContainer()
     {
         return container;
+    }
+    
+    public boolean isCacheable()
+    {
+        return cacheable;
     }
 }

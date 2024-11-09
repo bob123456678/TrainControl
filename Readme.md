@@ -253,6 +253,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Improvements to UI alignment
     - Locomotives in the locomotive selector are now sorted alphabetically
     - Locomotives can now be added to the database through a dedicated popup menu
+    - Fixed bug where "Large" track diagrams would not always render correctly 
 
 * v2.2.7 [9/14/2024]
     - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node

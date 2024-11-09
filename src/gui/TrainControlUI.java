@@ -12080,7 +12080,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             this.layoutCache = new HashMap<>();
                         }
 
-                        this.layoutCache.put(cacheKey, this.trainGrid.getContainer());
+                        if (this.trainGrid.isCacheable())
+                        {
+                            this.layoutCache.put(cacheKey, this.trainGrid.getContainer());
+                        }
                     }
                     
                     InnerLayoutPanel.setVisible(true);
