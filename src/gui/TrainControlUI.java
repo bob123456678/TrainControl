@@ -13,6 +13,7 @@ import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
@@ -57,9 +58,12 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -1377,7 +1381,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.KeyboardTab.setIconAt(6, TAB_ICON_LOG);
         this.KeyboardTab.setToolTipTextAt(6, "Log");
         this.KeyboardTab.setTitleAt(6, "");
-
+        
+        // Remove the default action for the up/down arrow keys
+        InputMap inputMap = this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "none");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), "none");
+        
         // Monitor for network activity and show a warning if CS2/3 seems unresponsive
         new Thread(() ->
         {            
