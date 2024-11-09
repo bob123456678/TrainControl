@@ -145,7 +145,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+X (remove locomotive from currently hovered node and place it in the clipboard)
 * UI shortcuts
     * Control+M (show menu bar)
-    * Backspace/Alt+backspace (cycle through tabs)
+    * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
 
@@ -249,6 +249,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Increased the size of the active locomotive icon
         - Increased the height of keyboard button locomotive icons
         - The route ID is now pre-filled when editing route IDs
+        - Tabs can now also be cyled using the CapsLock key
         - Improvements to UI tooltips
         - Improvements to UI alignment
     - Locomotives in the locomotive selector are now sorted alphabetically

@@ -14,6 +14,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import javax.swing.ImageIcon;
 
 /**
  * Image manipulation utility functions
@@ -255,5 +256,21 @@ public class ImageUtil
         g2d.dispose();
 
         return mergedImage;
+    }
+
+    public static BufferedImage convertIconToBufferedImage(ImageIcon icon)
+    {
+        // Extract the image from the icon
+        Image image = icon.getImage();
+
+        // Create a buffered image with transparency
+        BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the image onto the buffered image
+        Graphics2D g2d = bufferedImage.createGraphics();
+        g2d.drawImage(image, 0, 0, null);
+        g2d.dispose();
+
+        return bufferedImage;
     }
 }

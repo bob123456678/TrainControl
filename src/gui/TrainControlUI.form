@@ -368,7 +368,7 @@
           <Dimension value="[995, 585]"/>
         </Property>
         <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-          <Dimension value="[1119, 585]"/>
+          <Dimension value="[995, 585]"/>
         </Property>
       </Properties>
       <AccessibilityProperties>
@@ -5865,7 +5865,7 @@
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                   <Font name="Tahoma" size="11" style="1"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Validate JSON &amp; Open Graph UI"/>
+                <Property name="text" type="java.lang.String" value="Validate Configuration &amp; Open Graph UI"/>
                 <Property name="toolTipText" type="java.lang.String" value="Parses the JSON data and displays the graph UI.  Force stops any running trains."/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>

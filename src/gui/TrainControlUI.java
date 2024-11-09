@@ -1043,8 +1043,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
             
             // Display current mapping number in the tab label
-            // this.KeyboardTab.setTitleAt(0, "Locomotive Control (" + this.locMappingNumber + ")");
-            setTitle(MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION + " (Page " + this.locMappingNumber + ")");
+            this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control (Page " + this.locMappingNumber + ")");
+           
+            // Add page number to icon
+            BufferedImage textImage = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.WHITE, AButton.getFont(), 
+                30, 30, 0, 0);
+
+            BufferedImage textImage2 = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.BLACK, AButton.getFont(), 
+                30, 30, 1, 1);
+
+            ImageIcon ic = new javax.swing.ImageIcon(
+                ImageUtil.mergeImages(ImageUtil.mergeImages(ImageUtil.convertIconToBufferedImage((ImageIcon) TAB_ICON_CONTROL), textImage2), textImage)
+            );
+
+            this.KeyboardTab.setIconAt(0, ic);
        }
        else 
        {
@@ -1344,8 +1356,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
         
         // Set pane icons   
-        this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
-        this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control");
+        // this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
+        // this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control");
         this.KeyboardTab.setTitleAt(0, "");
         this.KeyboardTab.setIconAt(1, TAB_ICON_LAYOUT);
         this.KeyboardTab.setToolTipTextAt(1, "Layout");
@@ -3029,7 +3041,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardTab.setTabPlacement(javax.swing.JTabbedPane.LEFT);
         KeyboardTab.setToolTipText(null);
         KeyboardTab.setMinimumSize(new java.awt.Dimension(995, 585));
-        KeyboardTab.setPreferredSize(new java.awt.Dimension(1119, 585));
+        KeyboardTab.setPreferredSize(new java.awt.Dimension(995, 585));
         KeyboardTab.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 KeyboardTabStateChanged(evt);
@@ -6500,7 +6512,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
 
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        validateButton.setText("Validate JSON & Open Graph UI");
+        validateButton.setText("Validate Configuration & Open Graph UI");
         validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
@@ -8256,7 +8268,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             AltEmergencyStopActionPerformed(null);
         }
-        else if (keyCode == KeyEvent.VK_BACK_SPACE && !altPressed)
+        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && !altPressed)
         {
             // Easy tab cycling
             do
@@ -8268,7 +8280,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
             while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
         } 
-        else if (keyCode == KeyEvent.VK_BACK_SPACE && altPressed)
+        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && altPressed)
         {
             do
             {
