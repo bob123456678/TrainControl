@@ -3065,7 +3065,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
         locMappingLabel.setText("Locomotive Mapping (Right-click for Options)");
-        locMappingLabel.setToolTipText("");
+        locMappingLabel.setToolTipText(null);
 
         LocContainer.setBackground(new java.awt.Color(245, 245, 245));
         LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -4613,6 +4613,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         layoutPanel.setFocusable(false);
 
         LayoutList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        LayoutList.setToolTipText("- / + to cycle");
         LayoutList.setFocusable(false);
         LayoutList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5815,7 +5816,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(SwitchButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -5826,7 +5827,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(SwitchButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(SwitchButton15, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(SwitchButton16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton17, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton18, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5836,7 +5837,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton23, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton24, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton20, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton25, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton26, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5846,7 +5847,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton30, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton31, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton32, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton33, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton34, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5856,7 +5857,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton38, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton39, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton40, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton41, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton42, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5866,7 +5867,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton46, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton47, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton48, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton49, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton50, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -5876,7 +5877,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(SwitchButton54, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton55, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton56, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(17, 17, 17)
                         .addGroup(keyboardButtonPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(SwitchButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(SwitchButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6712,6 +6713,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         functionPanel.setPreferredSize(new java.awt.Dimension(313, 123));
 
         F8.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F8.setToolTipText("Alt-8 / F8");
         F8.setFocusable(false);
         F8.setMaximumSize(new java.awt.Dimension(75, 35));
         F8.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6728,6 +6730,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F9.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F9.setToolTipText("Alt-9 / F9");
         F9.setFocusable(false);
         F9.setMaximumSize(new java.awt.Dimension(75, 35));
         F9.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6744,6 +6747,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F7.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F7.setToolTipText("Alt-7 / F7");
         F7.setFocusable(false);
         F7.setMaximumSize(new java.awt.Dimension(75, 35));
         F7.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6760,6 +6764,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F10.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F10.setToolTipText("Control-0");
         F10.setFocusable(false);
         F10.setMaximumSize(new java.awt.Dimension(75, 35));
         F10.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6776,6 +6781,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F11.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F11.setToolTipText("Control-1 / F11");
         F11.setFocusable(false);
         F11.setMaximumSize(new java.awt.Dimension(75, 35));
         F11.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6809,6 +6815,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F3.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F3.setToolTipText("Alt-3 / F3");
         F3.setFocusable(false);
         F3.setMaximumSize(new java.awt.Dimension(75, 35));
         F3.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6825,6 +6832,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F1.setToolTipText("Alt-1 / F1");
         F1.setFocusable(false);
         F1.setMaximumSize(new java.awt.Dimension(75, 35));
         F1.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6841,6 +6849,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F2.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F2.setToolTipText("Alt-2 / F2");
         F2.setFocusable(false);
         F2.setMaximumSize(new java.awt.Dimension(75, 35));
         F2.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6857,6 +6866,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F4.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F4.setToolTipText("Alt-4 / F4");
         F4.setFocusable(false);
         F4.setMaximumSize(new java.awt.Dimension(75, 35));
         F4.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6873,6 +6883,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F5.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F5.setToolTipText("Alt-5 / F5");
         F5.setFocusable(false);
         F5.setMaximumSize(new java.awt.Dimension(75, 35));
         F5.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6889,6 +6900,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F6.setToolTipText("Alt-6 / F6");
         F6.setFocusable(false);
         F6.setMaximumSize(new java.awt.Dimension(75, 35));
         F6.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6957,6 +6969,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f12Label.setText("F12");
 
         F12.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F12.setToolTipText("Control-2 / F12");
         F12.setFocusable(false);
         F12.setMaximumSize(new java.awt.Dimension(75, 35));
         F12.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6977,6 +6990,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f13Label.setText("F13");
 
         F13.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F13.setToolTipText("Control-3");
         F13.setFocusable(false);
         F13.setMaximumSize(new java.awt.Dimension(75, 35));
         F13.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -6997,6 +7011,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f14Label.setText("F14");
 
         F14.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F14.setToolTipText("Control-4");
         F14.setFocusable(false);
         F14.setMaximumSize(new java.awt.Dimension(75, 35));
         F14.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7017,6 +7032,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f15Label.setText("F15");
 
         F15.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F15.setToolTipText("Control-5");
         F15.setFocusable(false);
         F15.setMaximumSize(new java.awt.Dimension(75, 35));
         F15.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7033,6 +7049,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F16.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F16.setToolTipText("Control-6");
         F16.setFocusable(false);
         F16.setMaximumSize(new java.awt.Dimension(75, 35));
         F16.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7049,6 +7066,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F17.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F17.setToolTipText("Control-7");
         F17.setFocusable(false);
         F17.setMaximumSize(new java.awt.Dimension(75, 35));
         F17.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7065,6 +7083,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F18.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F18.setToolTipText("Control-8");
         F18.setFocusable(false);
         F18.setMaximumSize(new java.awt.Dimension(75, 35));
         F18.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7093,6 +7112,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f18Label.setText("F18");
 
         F19.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F19.setToolTipText("Control-9");
         F19.setFocusable(false);
         F19.setMaximumSize(new java.awt.Dimension(75, 35));
         F19.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7281,6 +7301,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f20Label.setText("F20");
 
         F22.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F22.setToolTipText("Control-Alt-2");
         F22.setFocusable(false);
         F22.setMaximumSize(new java.awt.Dimension(75, 35));
         F22.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7297,6 +7318,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F23.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F23.setToolTipText("Control-Alt-3");
         F23.setFocusable(false);
         F23.setMaximumSize(new java.awt.Dimension(75, 35));
         F23.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7321,6 +7343,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f21Label.setText("F21");
 
         F20.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F20.setToolTipText("Control-Alt-0");
         F20.setFocusable(false);
         F20.setMaximumSize(new java.awt.Dimension(75, 35));
         F20.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7337,6 +7360,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F21.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F21.setToolTipText("Control-Alt-1");
         F21.setFocusable(false);
         F21.setMaximumSize(new java.awt.Dimension(75, 35));
         F21.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7361,6 +7385,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f29Label.setText("F29");
 
         F24.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F24.setToolTipText("Control-Alt-4");
         F24.setFocusable(false);
         F24.setMaximumSize(new java.awt.Dimension(75, 35));
         F24.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7381,6 +7406,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f30Label.setText("F30");
 
         F27.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F27.setToolTipText("Control-Alt-7");
         F27.setFocusable(false);
         F27.setMaximumSize(new java.awt.Dimension(75, 35));
         F27.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7405,6 +7431,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f24Label.setText("F24");
 
         F25.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F25.setToolTipText("Control-Alt-5");
         F25.setFocusable(false);
         F25.setMaximumSize(new java.awt.Dimension(75, 35));
         F25.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7421,6 +7448,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F26.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F26.setToolTipText("Control-Alt-6");
         F26.setFocusable(false);
         F26.setMaximumSize(new java.awt.Dimension(75, 35));
         F26.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7437,6 +7465,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         F28.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F28.setToolTipText("Control-Alt-8");
         F28.setFocusable(false);
         F28.setMaximumSize(new java.awt.Dimension(75, 35));
         F28.setMinimumSize(new java.awt.Dimension(75, 35));
@@ -7457,6 +7486,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         f28Label.setText("F28");
 
         F29.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        F29.setToolTipText("Control-Alt-9");
         F29.setFocusable(false);
         F29.setMaximumSize(new java.awt.Dimension(75, 35));
         F29.setMinimumSize(new java.awt.Dimension(75, 35));

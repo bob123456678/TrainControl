@@ -242,7 +242,6 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Moved UI preferences to the menu bar
         - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
         - The visibility of the menu bar will be remembered between runs
-        - Locomotives can now be added to the database through a dedicated popup menu
     - Moved main UI tabs to the left, and replaced text headings with icons
     - Minor UI enhancements
         - Slightly increased the height of the track diagram UI
@@ -253,6 +252,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Improvements to UI tooltips
         - Improvements to UI alignment
     - Locomotives in the locomotive selector are now sorted alphabetically
+    - Locomotives can now be added to the database through a dedicated popup menu
 
 * v2.2.7 [9/14/2024]
     - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node
