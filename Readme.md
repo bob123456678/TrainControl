@@ -242,17 +242,19 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
         - Moved UI preferences to the menu bar
         - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
         - The visibility of the menu bar will be remembered between runs
-    - Moved main UI tabs to the left, and replaced text headings with icons
-    - Minor UI enhancements
-        - Slightly increased the height of the track diagram UI
-        - Increased the size of the active locomotive icon
-        - Increased the height of keyboard button locomotive icons
-        - The route ID is now pre-filled when editing route IDs
-        - Tabs can now also be cyled using the CapsLock key
-        - Improvements to UI tooltips
-        - Improvements to UI alignment
-    - Locomotives in the locomotive selector are now sorted alphabetically
-    - Locomotives can now be added to the database through a dedicated popup menu
+    - UI enhancements
+        - Applied a modern look & feel to the whole UI
+        - Moved main UI tabs to the left, and replaced text headings with icons
+            - Tabs can now also be cyled using the CapsLock key
+            - Improvements to UI tooltips
+            - Improvements to UI alignment
+        - Autonomy 
+            - Consolidated start / stop buttons onto the Locomotive Control tab of the autonomy UI
+        - Routes
+            - The route ID is now pre-filled when editing route IDs
+        - Locomotive Management
+            - Locomotives in the locomotive selector are now sorted alphabetically
+            - Locomotives can now be added to the database through a dedicated popup menu
     - Fixed bug where "Large" track diagrams would not always render correctly 
 
 * v2.2.7 [9/14/2024]

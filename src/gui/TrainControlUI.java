@@ -2881,14 +2881,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         autosave = new javax.swing.JCheckBox();
         jsonDocumentationButton = new javax.swing.JButton();
         loadDefaultBlankGraph = new javax.swing.JButton();
-        startAutonomy = new javax.swing.JButton();
-        gracefulStop = new javax.swing.JButton();
         validateButton = new javax.swing.JButton();
         jSeparator3 = new javax.swing.JSeparator();
         jSeparator4 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
+        gracefulStop = new javax.swing.JButton();
+        startAutonomy = new javax.swing.JButton();
         timetablePanel = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
         timetable = new javax.swing.JTable();
@@ -6156,30 +6156,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
-        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        startAutonomy.setText("Start Autonomous Operation");
-        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
-        startAutonomy.setEnabled(false);
-        startAutonomy.setFocusable(false);
-        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startAutonomyActionPerformed(evt);
-            }
-        });
-
-        gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
-        gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        gracefulStop.setText("Graceful Stop");
-        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
-        gracefulStop.setEnabled(false);
-        gracefulStop.setFocusable(false);
-        gracefulStop.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gracefulStopActionPerformed(evt);
-            }
-        });
-
         validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         validateButton.setText("Validate Configuration & Open Graph UI");
         validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
@@ -6218,10 +6194,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jScrollPane2)
                     .addGroup(autonomyPanelLayout.createSequentialGroup()
                         .addComponent(validateButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(gracefulStop)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(startAutonomy)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel6))
         );
@@ -6240,10 +6213,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(startAutonomy)
-                    .addComponent(gracefulStop)
-                    .addComponent(validateButton))
+                .addComponent(validateButton)
                 .addContainerGap())
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
@@ -6251,29 +6221,69 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(508, Short.MAX_VALUE))
         );
 
-        locCommandPanels.addTab("Autonomy JSON", autonomyPanel);
+        locCommandPanels.addTab("Autonomy Configuration", autonomyPanel);
 
+        locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
         locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
 
         jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
         jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
 
-        autoLocPanel.setBackground(new java.awt.Color(238, 238, 238));
+        autoLocPanel.setBackground(new java.awt.Color(255, 255, 255));
         autoLocPanel.setEnabled(false);
         autoLocPanel.setFocusable(false);
         autoLocPanel.setMaximumSize(new java.awt.Dimension(716, 5000));
         autoLocPanel.setLayout(new java.awt.GridLayout(100, 3, 5, 5));
         jScrollPane4.setViewportView(autoLocPanel);
 
+        gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
+        gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        gracefulStop.setText("Graceful Stop");
+        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
+        gracefulStop.setEnabled(false);
+        gracefulStop.setFocusable(false);
+        gracefulStop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gracefulStopActionPerformed(evt);
+            }
+        });
+
+        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
+        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        startAutonomy.setText("Start Autonomous Operation");
+        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
+        startAutonomy.setEnabled(false);
+        startAutonomy.setFocusable(false);
+        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startAutonomyActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
         locCommandTab.setLayout(locCommandTabLayout);
         locCommandTabLayout.setHorizontalGroup(
             locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
+            .addGroup(locCommandTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(locCommandTabLayout.createSequentialGroup()
+                        .addComponent(gracefulStop)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(startAutonomy)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         locCommandTabLayout.setVerticalGroup(
             locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, locCommandTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(startAutonomy)
+                    .addComponent(gracefulStop))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 502, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         locCommandPanels.addTab("Locomotive Commands", locCommandTab);
