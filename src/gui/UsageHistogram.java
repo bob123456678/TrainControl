@@ -95,8 +95,9 @@ public class UsageHistogram extends javax.swing.JFrame
                     // Draw date labels
                     g.setColor(Color.BLACK);
                     Graphics2D g2d = (Graphics2D) g;
+                    g2d.setFont(new Font("Tahoma", Font.BOLD, 12)); 
                     g2d.rotate(Math.toRadians(270), x + barWidth / 2.0 + 8, y + 63);
-                    g2d.drawString(date, x + 8, y + 63);
+                    g2d.drawString(date, x + 2, y + 63);
                     g2d.rotate(-Math.toRadians(270), x + barWidth / 2.0 + 8, y + 63);
 
                     // Draw value labels
@@ -121,7 +122,7 @@ public class UsageHistogram extends javax.swing.JFrame
                 g.setColor(Color.BLACK);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.rotate(Math.toRadians(270), 17, y / 2 + 65);
-                g2d.setFont(g2d.getFont().deriveFont(Font.BOLD)); 
+                g2d.setFont(new Font("Tahoma", Font.BOLD, 12)); 
                 g2d.drawString("Hours (# Locs)", 32, y / 2 + 65);
                 g2d.rotate(-Math.toRadians(270), 17, y / 2 + 65); 
                 
@@ -161,9 +162,10 @@ public class UsageHistogram extends javax.swing.JFrame
         setTitle("Cumulative Locomotive Runtime - Past 30 Days");
         setBackground(new java.awt.Color(246, 246, 246));
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(960, 330));
-        setMinimumSize(new java.awt.Dimension(960, 330));
-        setPreferredSize(new java.awt.Dimension(940, 330));
+        setMaximumSize(new java.awt.Dimension(960, 332));
+        setMinimumSize(new java.awt.Dimension(960, 332));
+        setPreferredSize(new java.awt.Dimension(960, 332));
+        setResizable(false);
 
         prev.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         prev.setText("<<<");
@@ -212,7 +214,7 @@ public class UsageHistogram extends javax.swing.JFrame
                 .addComponent(reset, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(next, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(131, Short.MAX_VALUE))
+                .addContainerGap(671, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -222,7 +224,7 @@ public class UsageHistogram extends javax.swing.JFrame
                     .addComponent(prev, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(next, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(reset, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(274, Short.MAX_VALUE))
+                .addContainerGap(320, Short.MAX_VALUE))
         );
 
         pack();
