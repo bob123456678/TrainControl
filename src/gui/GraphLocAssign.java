@@ -249,6 +249,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         departureFuncLabel1 = new javax.swing.JLabel();
         trainLength = new javax.swing.JComboBox<>();
 
+        setMaximumSize(new java.awt.Dimension(262, 246));
+        setPreferredSize(new java.awt.Dimension(262, 246));
+
         locAssign.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locAssign.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         locAssign.addActionListener(new java.awt.event.ActionListener() {

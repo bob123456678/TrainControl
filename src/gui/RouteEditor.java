@@ -249,6 +249,7 @@ public class RouteEditor extends javax.swing.JPanel
         jSeparator2 = new javax.swing.JSeparator();
         jLabel19 = new javax.swing.JLabel();
 
+        routeName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         routeName.setText("jTextField1");
         routeName.setMinimumSize(new java.awt.Dimension(159, 26));
         routeName.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -257,9 +258,11 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(0, 0, 115));
         jLabel1.setText("Route Name");
 
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
         jLabel2.setText("Accessory Command Wizard");
 
@@ -269,10 +272,12 @@ public class RouteEditor extends javax.swing.JPanel
         jPanel2.setMinimumSize(new java.awt.Dimension(259, 196));
         jPanel2.setName(""); // NOI18N
 
+        jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel4.setForeground(new java.awt.Color(0, 0, 115));
         jLabel4.setText("Triggering S88");
 
         s88.setColumns(6);
+        s88.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88.setMaximumSize(new java.awt.Dimension(90, 26));
         s88.setMinimumSize(new java.awt.Dimension(90, 26));
         s88.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -281,32 +286,40 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(0, 0, 115));
         jLabel3.setText("Trigger Condition");
 
         buttonGroup1.add(triggerClearThenOccupied);
+        triggerClearThenOccupied.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         triggerClearThenOccupied.setText("Clear then Occupied");
         triggerClearThenOccupied.setFocusable(false);
 
         buttonGroup1.add(triggerOccupiedThenClear);
+        triggerOccupiedThenClear.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         triggerOccupiedThenClear.setText("Occupied then Clear");
         triggerOccupiedThenClear.setFocusable(false);
 
+        jLabel5.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel5.setForeground(new java.awt.Color(0, 0, 115));
         jLabel5.setText("Automatic Execution");
 
         buttonGroup2.add(executionManual);
+        executionManual.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         executionManual.setText("Off");
         executionManual.setFocusable(false);
 
         buttonGroup2.add(executionAuto);
+        executionAuto.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         executionAuto.setText("On");
         executionAuto.setFocusable(false);
 
+        jLabel9.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
         jLabel9.setText("Optional S88 Conditions");
 
         conditionS88.setColumns(11);
+        conditionS88.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         conditionS88.setRows(3);
         conditionS88.setWrapStyleWord(true);
         jScrollPane2.setViewportView(conditionS88);
@@ -314,10 +327,12 @@ public class RouteEditor extends javax.swing.JPanel
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         conditionAccs.setColumns(11);
+        conditionAccs.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         conditionAccs.setRows(3);
         conditionAccs.setWrapStyleWord(true);
         jScrollPane3.setViewportView(conditionAccs);
 
+        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(0, 0, 115));
         jLabel13.setText("Optional Accessory Conditions");
 
@@ -389,6 +404,7 @@ public class RouteEditor extends javax.swing.JPanel
                 .addContainerGap())
         );
 
+        jLabel6.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
         jLabel6.setText("Optional Settings");
 
@@ -399,6 +415,7 @@ public class RouteEditor extends javax.swing.JPanel
         jPanel5.setName(""); // NOI18N
 
         routeContents.setColumns(20);
+        routeContents.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         routeContents.setRows(5);
         jScrollPane1.setViewportView(routeContents);
 
@@ -441,10 +458,12 @@ public class RouteEditor extends javax.swing.JPanel
         jPanel6.setMinimumSize(new java.awt.Dimension(259, 196));
         jPanel6.setName(""); // NOI18N
 
+        jLabel8.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel8.setForeground(new java.awt.Color(0, 0, 115));
         jLabel8.setText("Accessory Address");
 
         accAddr.setColumns(6);
+        accAddr.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accAddr.setMaximumSize(new java.awt.Dimension(90, 26));
         accAddr.setMinimumSize(new java.awt.Dimension(90, 26));
         accAddr.setPreferredSize(new java.awt.Dimension(90, 26));
@@ -463,17 +482,21 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel10.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel10.setForeground(new java.awt.Color(0, 0, 115));
         jLabel10.setText("Accessory Type");
 
+        jLabel11.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel11.setForeground(new java.awt.Color(0, 0, 115));
         jLabel11.setText("Accessory State");
 
+        accState.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accState.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Turnout", "Signal", "3-way Turnout" }));
         accState.setMaximumSize(new java.awt.Dimension(136, 26));
         accState.setName(""); // NOI18N
 
         buttonGroup4.add(accTypeTurnout);
+        accTypeTurnout.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accTypeTurnout.setSelected(true);
         accTypeTurnout.setText("Turnout");
         accTypeTurnout.addActionListener(new java.awt.event.ActionListener() {
@@ -483,6 +506,7 @@ public class RouteEditor extends javax.swing.JPanel
         });
 
         buttonGroup4.add(accType3Way);
+        accType3Way.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accType3Way.setText("3-way Turnout");
         accType3Way.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -491,6 +515,7 @@ public class RouteEditor extends javax.swing.JPanel
         });
 
         buttonGroup4.add(accTypeSignal);
+        accTypeSignal.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accTypeSignal.setText("Signal");
         accTypeSignal.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -498,9 +523,11 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel12.setForeground(new java.awt.Color(0, 0, 115));
         jLabel12.setText("Delay (ms)");
 
+        delay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         delay.setText("0");
         delay.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -584,6 +611,7 @@ public class RouteEditor extends javax.swing.JPanel
                 .addGap(36, 36, 36))
         );
 
+        jLabel7.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel7.setForeground(new java.awt.Color(0, 0, 115));
         jLabel7.setText("Route Commands");
 
@@ -595,6 +623,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel14.setForeground(new java.awt.Color(0, 0, 115));
         jLabel14.setText("S88 Condition Editing Wizard");
 
@@ -602,6 +631,7 @@ public class RouteEditor extends javax.swing.JPanel
         s88Panel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
         s88CondAddr.setColumns(6);
+        s88CondAddr.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88CondAddr.setMaximumSize(new java.awt.Dimension(90, 26));
         s88CondAddr.setMinimumSize(new java.awt.Dimension(90, 26));
         s88CondAddr.setPreferredSize(new java.awt.Dimension(90, 26));
@@ -611,17 +641,21 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        jLabel15.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel15.setForeground(new java.awt.Color(0, 0, 115));
         jLabel15.setText("S88 Address");
 
+        jLabel16.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel16.setForeground(new java.awt.Color(0, 0, 115));
         jLabel16.setText("S88 State");
 
         buttonGroup5.add(s88Occupied);
+        s88Occupied.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88Occupied.setSelected(true);
         s88Occupied.setText("Occupied (1)");
 
         buttonGroup5.add(s88Clear);
+        s88Clear.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88Clear.setText("Clear (0)");
 
         addS88Condition.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
@@ -680,6 +714,7 @@ public class RouteEditor extends javax.swing.JPanel
         s88Panel1.setBackground(new java.awt.Color(245, 245, 245));
         s88Panel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
+        jLabel18.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel18.setForeground(new java.awt.Color(0, 0, 115));
         jLabel18.setText("Locomotive Name");
 
@@ -692,6 +727,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        commandTypeList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         commandTypeList.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Speed", "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", "F28", "F29", "F30", "F31" }));
         commandTypeList.setMaximumSize(new java.awt.Dimension(136, 26));
         commandTypeList.setName(""); // NOI18N
@@ -701,9 +737,11 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        locFuncStateLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locFuncStateLabel.setForeground(new java.awt.Color(0, 0, 115));
         locFuncStateLabel.setText("Function State");
 
+        locNameList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locNameList.setMaximumSize(new java.awt.Dimension(136, 26));
         locNameList.setName(""); // NOI18N
         locNameList.addItemListener(new java.awt.event.ItemListener() {
@@ -712,6 +750,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
+        locDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locDelay.setText("0");
         locDelay.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -720,15 +759,19 @@ public class RouteEditor extends javax.swing.JPanel
         });
 
         buttonGroup3.add(locFuncOn);
+        locFuncOn.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locFuncOn.setSelected(true);
         locFuncOn.setText("On");
 
         buttonGroup3.add(locFuncOff);
+        locFuncOff.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locFuncOff.setText("Off");
 
+        jLabel21.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel21.setForeground(new java.awt.Color(0, 0, 115));
         jLabel21.setText("Command Type");
 
+        locSpeedSlider.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locSpeedSlider.setMajorTickSpacing(20);
         locSpeedSlider.setMinorTickSpacing(10);
         locSpeedSlider.setPaintLabels(true);
@@ -736,6 +779,7 @@ public class RouteEditor extends javax.swing.JPanel
 
         jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
+        jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel19.setForeground(new java.awt.Color(0, 0, 115));
         jLabel19.setText("Delay (ms)");
 
