@@ -28,7 +28,7 @@
                   <Component id="addressLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                   <Component id="locNameLabel" alignment="0" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace pref="65" max="32767" attributes="0"/>
+              <EmptySpace pref="74" max="32767" attributes="0"/>
               <Group type="103" groupAlignment="1" max="-2" attributes="0">
                   <Component id="locName" max="32767" attributes="0"/>
                   <Component id="address" alignment="1" max="32767" attributes="0"/>
@@ -41,7 +41,7 @@
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
-              <EmptySpace min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="32767" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="locNameLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="locName" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -56,7 +56,6 @@
                   <Component id="decoderTypeInput" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="decoderTypeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -64,6 +63,9 @@
   <SubComponents>
     <Component class="javax.swing.JComboBox" name="decoderTypeInput">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
           <StringArray count="4">
             <StringItem index="0" value="MFX"/>
@@ -86,6 +88,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="decoderTypeLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -94,6 +99,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="addressLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -102,6 +110,9 @@
     </Component>
     <Component class="javax.swing.JTextField" name="address">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="text" type="java.lang.String" value="jTextField1"/>
       </Properties>
       <Events>
@@ -110,11 +121,17 @@
     </Component>
     <Component class="javax.swing.JTextField" name="locName">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="text" type="java.lang.String" value="jTextField1"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="locNameLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>

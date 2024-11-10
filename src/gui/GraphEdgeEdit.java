@@ -170,17 +170,21 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         departureFuncLabel1 = new javax.swing.JLabel();
         edgeLength = new javax.swing.JComboBox<>();
 
+        arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Signal/Switch Commands");
 
+        departureFuncLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel.setText("Edge Length");
 
         configCommands.setColumns(10);
+        configCommands.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         configCommands.setRows(5);
         configCommands.setToolTipText("Format: Signal 1,red/green or Switch 2,turn/straight");
         jScrollPane2.setViewportView(configCommands);
 
+        lockEdges.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lockEdges.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
             public int getSize() { return strings.length; }
@@ -193,9 +197,11 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(lockEdges);
 
+        departureFuncLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel1.setText("Lock Edges");
 
+        edgeLength.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         edgeLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
         edgeLength.setFocusable(false);
 

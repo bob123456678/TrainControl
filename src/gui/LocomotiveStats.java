@@ -190,6 +190,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         viewUsageGraph = new javax.swing.JButton();
 
         setBackground(new java.awt.Color(238, 238, 238));
+        setPreferredSize(new java.awt.Dimension(806, 605));
         addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 formMouseClicked(evt);
@@ -227,9 +228,11 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
         });
 
+        filterLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         filterLabel.setForeground(new java.awt.Color(0, 0, 115));
         filterLabel.setText("Filter List:");
 
+        filterField.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         filterField.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 filterFieldKeyReleased(evt);
@@ -242,30 +245,36 @@ public class LocomotiveStats extends javax.swing.JPanel
         todaysRuntimeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         todaysRuntimeVal.setText("jLabel2");
 
+        todaysRuntimeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         todaysRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
         todaysRuntimeLabel.setText("Today's runtime:");
 
+        cumulativeRuntimeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         cumulativeRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
         cumulativeRuntimeLabel.setText("Cumulative runtime:");
 
         cumulativeRuntimeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         cumulativeRuntimeVal.setText("jLabel5");
 
+        byLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         byLabel.setForeground(new java.awt.Color(0, 0, 115));
         byLabel.setText("by");
 
         locCountVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         locCountVal.setText("jLabel2");
 
+        locomotivesLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locomotivesLabel.setForeground(new java.awt.Color(0, 0, 115));
         locomotivesLabel.setText("locomotives");
 
+        byLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         byLabel1.setForeground(new java.awt.Color(0, 0, 115));
         byLabel1.setText("by");
 
         locCountCumulativeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         locCountCumulativeVal.setText("jLabel2");
 
+        locomotivesCumulativeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locomotivesCumulativeLabel.setForeground(new java.awt.Color(0, 0, 115));
         locomotivesCumulativeLabel.setText("locomotives");
 
@@ -286,7 +295,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator1)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 753, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 800, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(filterLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -317,13 +326,13 @@ public class LocomotiveStats extends javax.swing.JPanel
                         .addComponent(locCountCumulativeVal)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(locomotivesCumulativeLabel)))
-                .addContainerGap())
+                .addGap(0, 0, 0))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 405, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(todaysRuntimeLabel)
@@ -345,7 +354,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                     .addComponent(filterLabel)
                     .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(viewUsageGraph))
-                .addContainerGap())
+                .addContainerGap(18, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 

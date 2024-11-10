@@ -101,6 +101,7 @@ public class GraphLocExclude extends javax.swing.JPanel
         includeLoc = new javax.swing.JButton();
 
         excludedLocList.setBackground(new java.awt.Color(254, 254, 254));
+        excludedLocList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         excludedLocList.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
             public int getSize() { return strings.length; }
@@ -108,12 +109,15 @@ public class GraphLocExclude extends javax.swing.JPanel
         });
         jScrollPane1.setViewportView(excludedLocList);
 
+        allowedLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         allowedLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         allowedLocLabel.setText("Allowed Locomotives (Default)");
 
+        infoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
 
         allowedLocList.setBackground(new java.awt.Color(254, 254, 254));
+        allowedLocList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         allowedLocList.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
             public int getSize() { return strings.length; }
@@ -133,6 +137,7 @@ public class GraphLocExclude extends javax.swing.JPanel
             }
         });
 
+        excludeLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         excludeLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         excludeLocLabel.setText("Excluded Locomotives");
 

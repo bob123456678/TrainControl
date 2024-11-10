@@ -63,10 +63,12 @@ public class AddLocomotive extends javax.swing.JFrame
         jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         jPanel2.setFocusable(false);
 
+        LocTypeMM2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeMM2.setText("MM2");
         LocTypeMM2.setFocusable(false);
         LocTypeMM2.setInheritsPopupMenu(true);
 
+        jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel4.setText("Locomotive Type");
         jLabel4.setFocusable(false);
 
@@ -81,6 +83,7 @@ public class AddLocomotive extends javax.swing.JFrame
         });
 
         LocAddressInput.setColumns(5);
+        LocAddressInput.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocAddressInput.setInheritsPopupMenu(true);
         LocAddressInput.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -88,13 +91,16 @@ public class AddLocomotive extends javax.swing.JFrame
             }
         });
 
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel3.setText("Locomotive Address");
         jLabel3.setToolTipText("Enter as integer or hex for MFX, and integer to DCC/MM2.");
         jLabel3.setFocusable(false);
 
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel1.setText("Locomotive Name");
         jLabel1.setFocusable(false);
 
+        LocNameInput.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocNameInput.setInheritsPopupMenu(true);
         LocNameInput.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -102,10 +108,12 @@ public class AddLocomotive extends javax.swing.JFrame
             }
         });
 
+        LocTypeMFX.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeMFX.setText("MFX");
         LocTypeMFX.setFocusable(false);
         LocTypeMFX.setInheritsPopupMenu(true);
 
+        LocTypeDCC.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeDCC.setSelected(true);
         LocTypeDCC.setText("DCC");
         LocTypeDCC.setFocusable(false);
@@ -171,6 +179,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        AddNewLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         AddNewLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         AddNewLocLabel.setText("Add Locomotive to Database");
 

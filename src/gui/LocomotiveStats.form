@@ -5,6 +5,9 @@
     <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
       <Color blue="ee" green="ee" red="ee" type="rgb"/>
     </Property>
+    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+      <Dimension value="[806, 605]"/>
+    </Property>
   </Properties>
   <Events>
     <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="formMouseClicked"/>
@@ -28,7 +31,7 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="jSeparator1" max="32767" attributes="0"/>
-                  <Component id="jScrollPane1" alignment="0" pref="753" max="32767" attributes="0"/>
+                  <Component id="jScrollPane1" alignment="0" pref="800" max="32767" attributes="0"/>
                   <Group type="102" alignment="0" attributes="0">
                       <Component id="filterLabel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -62,7 +65,7 @@
                       <Component id="locomotivesCumulativeLabel" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
-              <EmptySpace max="-2" attributes="0"/>
+              <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -70,7 +73,7 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jScrollPane1" pref="405" max="32767" attributes="0"/>
+              <Component id="jScrollPane1" pref="511" max="32767" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="todaysRuntimeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -94,7 +97,7 @@
                   <Component id="filterField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="viewUsageGraph" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace max="-2" attributes="0"/>
+              <EmptySpace pref="18" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -147,6 +150,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="filterLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -154,6 +160,11 @@
       </Properties>
     </Component>
     <Component class="javax.swing.JTextField" name="filterField">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
+      </Properties>
       <Events>
         <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="filterFieldKeyReleased"/>
         <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="filterFieldKeyTyped"/>
@@ -169,6 +180,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="todaysRuntimeLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -177,6 +191,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="cumulativeRuntimeLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -193,6 +210,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="byLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -209,6 +229,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="locomotivesLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -217,6 +240,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="byLabel1">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
@@ -233,6 +259,9 @@
     </Component>
     <Component class="javax.swing.JLabel" name="locomotivesCumulativeLabel">
       <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>

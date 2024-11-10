@@ -183,9 +183,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
+        fNoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fNoLabel.setForeground(new java.awt.Color(0, 0, 115));
         fNoLabel.setText("Function Number");
 
+        fNo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fNo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         fNo.setMinimumSize(new java.awt.Dimension(100, 27));
         fNo.setPreferredSize(new java.awt.Dimension(100, 27));
@@ -195,10 +197,12 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
+        fIcon.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIcon.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         fIcon.setMinimumSize(new java.awt.Dimension(300, 27));
         fIcon.setPreferredSize(new java.awt.Dimension(300, 27));
 
+        fIconlabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIconlabel.setForeground(new java.awt.Color(0, 0, 115));
         fIconlabel.setText("Function Icon");
 
@@ -219,9 +223,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
+        fIconlabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIconlabel1.setForeground(new java.awt.Color(0, 0, 115));
         fIconlabel1.setText("Duration");
 
+        functionTriggerType.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         functionTriggerType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Toggle", "Momentary", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s", "16s", "17s", "18s", "19s", "20s", "21s", "22s", "23s", "24s", "25s", "26s", "27s", "28s", "29s", "30s" }));
 
         useCustomFunctionIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
@@ -234,7 +240,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         });
 
         deleteCustomIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        deleteCustomIcon.setText("Delete Custom Icon");
+        deleteCustomIcon.setText("Clear Custom Icon");
         deleteCustomIcon.setFocusable(false);
         deleteCustomIcon.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -250,54 +256,50 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(useCustomFunctionIcon)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(deleteCustomIcon)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(customFunctionIcon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fIconlabel1))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(applyButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(fIconlabel, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(fIcon, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(fNo, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(functionTriggerType, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(resetButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGap(0, 6, Short.MAX_VALUE))))
+                        .addComponent(useCustomFunctionIcon)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(deleteCustomIcon))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(applyButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(fIconlabel, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(fIcon, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(resetButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(fNoLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(fIconlabel1)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(fNo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(functionTriggerType, 0, 300, Short.MAX_VALUE))
+                    .addComponent(customFunctionIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(fNoLabel)
-                    .addComponent(fNo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(fNoLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(fIconlabel1)
-                    .addComponent(functionTriggerType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(9, 9, 9)
+                .addComponent(fNo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(fIconlabel1)
+                .addGap(5, 5, 5)
+                .addComponent(functionTriggerType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(fIconlabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(fIcon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(useCustomFunctionIcon)
-                    .addComponent(deleteCustomIcon)
-                    .addComponent(customFunctionIcon))
-                .addGap(25, 25, 25)
+                    .addComponent(deleteCustomIcon))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(customFunctionIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(applyButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 3, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(8, 8, 8)
                 .addComponent(resetButton)
-                .addGap(13, 13, 13))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 

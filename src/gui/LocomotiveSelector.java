@@ -156,9 +156,11 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
         });
 
+        locListLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locListLabel.setForeground(new java.awt.Color(0, 0, 155));
         locListLabel.setText("Assign Locomotive to Active Button:");
 
+        LocFilterBox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocFilterBox.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 LocFilterBoxKeyReleased(evt);
@@ -168,6 +170,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
         });
 
+        renameLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         renameLabel.setForeground(new java.awt.Color(0, 0, 155));
         renameLabel.setText("Filter List:");
 
@@ -208,6 +211,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
         });
 
+        closeOnLocSel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         closeOnLocSel.setSelected(true);
         closeOnLocSel.setText("Close Window on Assignment");
         closeOnLocSel.setFocusPainted(false);
@@ -251,7 +255,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                     .addComponent(locListLabel)
                     .addComponent(closeOnLocSel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
+                .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 575, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(LocFilterBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)

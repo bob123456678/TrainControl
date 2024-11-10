@@ -37,6 +37,7 @@ public class About extends javax.swing.JPanel {
         jLabel5 = new javax.swing.JLabel();
         versionLabel = new javax.swing.JLabel();
 
+        linkLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         linkLabel.setForeground(new java.awt.Color(0, 51, 255));
         linkLabel.setText("Readme (Instructions & API)");
         linkLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -48,6 +49,7 @@ public class About extends javax.swing.JPanel {
 
         jLabel1.setText("|");
 
+        linkLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         linkLabel1.setForeground(new java.awt.Color(0, 51, 255));
         linkLabel1.setText("Support this Project");
         linkLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -57,12 +59,16 @@ public class About extends javax.swing.JPanel {
             }
         });
 
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel2.setText("TrainControl is free software that allows you to conveniently control & fully");
 
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel3.setText("Designed for users with many trains and accessories where two knobs ");
 
+        jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel4.setText("automate large model train layouts using your computer and keyboard. ");
 
+        jLabel5.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel5.setText("just aren't enough. Requires the Marklin Central Station 2 or 3 controller.");
 
         versionLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N

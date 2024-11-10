@@ -249,6 +249,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         departureFuncLabel1 = new javax.swing.JLabel();
         trainLength = new javax.swing.JComboBox<>();
 
+        locAssign.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locAssign.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         locAssign.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -256,18 +257,24 @@ public class GraphLocAssign extends javax.swing.JPanel
             }
         });
 
+        reversible.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         reversible.setText("Reversible");
 
+        arrivalFunc.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         arrivalFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31" }));
 
+        arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Arrival Function");
 
+        departureFuncLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel.setText("Departure Function");
 
+        departureFunc.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         departureFunc.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "None", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31" }));
 
+        speedLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         speedLabel.setForeground(new java.awt.Color(0, 0, 115));
         speedLabel.setText("Speed");
 
@@ -281,9 +288,11 @@ public class GraphLocAssign extends javax.swing.JPanel
             }
         });
 
+        departureFuncLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel1.setText("Train Length");
 
+        trainLength.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         trainLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);

@@ -60,17 +60,21 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
+        decoderTypeInput.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         decoderTypeInput.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "MFX", "MM2", "DCC", "Multi-unit" }));
         decoderTypeInput.setFocusable(false);
         decoderTypeInput.setMinimumSize(new java.awt.Dimension(100, 27));
         decoderTypeInput.setPreferredSize(new java.awt.Dimension(100, 27));
 
+        decoderTypeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         decoderTypeLabel.setForeground(new java.awt.Color(0, 0, 115));
         decoderTypeLabel.setText("Decoder Type");
 
+        addressLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         addressLabel.setForeground(new java.awt.Color(0, 0, 115));
         addressLabel.setText("Address");
 
+        address.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         address.setText("jTextField1");
         address.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -78,8 +82,10 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
             }
         });
 
+        locName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locName.setText("jTextField1");
 
+        locNameLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locNameLabel.setForeground(new java.awt.Color(0, 0, 115));
         locNameLabel.setText("Name");
 
@@ -93,7 +99,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
                     .addComponent(decoderTypeLabel)
                     .addComponent(addressLabel)
                     .addComponent(locNameLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 65, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 74, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(locName)
                     .addComponent(address)
@@ -103,7 +109,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locNameLabel)
                     .addComponent(locName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -114,8 +120,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(decoderTypeInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(decoderTypeLabel))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(decoderTypeLabel)))
         );
     }// </editor-fold>//GEN-END:initComponents
 
