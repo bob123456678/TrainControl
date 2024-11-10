@@ -2737,7 +2737,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BLabel = new javax.swing.JTextField();
         NLabel = new javax.swing.JTextField();
         MLabel = new javax.swing.JTextField();
-        jPanel6 = new javax.swing.JPanel();
+        controlsPanel = new javax.swing.JPanel();
         UpArrow = new javax.swing.JButton();
         DownArrow = new javax.swing.JButton();
         RightArrow = new javax.swing.JButton();
@@ -3044,9 +3044,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1132, 665));
-        setMinimumSize(new java.awt.Dimension(1132, 665));
-        setPreferredSize(new java.awt.Dimension(1132, 665));
+        setMaximumSize(new java.awt.Dimension(1129, 665));
+        setMinimumSize(new java.awt.Dimension(1129, 665));
+        setPreferredSize(new java.awt.Dimension(1129, 665));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -3723,7 +3723,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         ELabel.setBackground(new java.awt.Color(245, 245, 245));
-        ELabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ELabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ELabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ELabel.setText("label");
         ELabel.setAutoscrolls(false);
@@ -3735,7 +3735,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ELabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         QLabel.setBackground(new java.awt.Color(245, 245, 245));
-        QLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        QLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         QLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         QLabel.setText("label");
         QLabel.setAutoscrolls(false);
@@ -3747,7 +3747,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         QLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         WLabel.setBackground(new java.awt.Color(245, 245, 245));
-        WLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        WLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         WLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         WLabel.setText("label");
         WLabel.setAutoscrolls(false);
@@ -3759,7 +3759,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         WLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         RLabel.setBackground(new java.awt.Color(245, 245, 245));
-        RLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        RLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         RLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         RLabel.setText("label");
         RLabel.setAutoscrolls(false);
@@ -3771,7 +3771,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         TLabel.setBackground(new java.awt.Color(245, 245, 245));
-        TLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        TLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         TLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         TLabel.setText("label");
         TLabel.setAutoscrolls(false);
@@ -3783,7 +3783,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         YLabel.setBackground(new java.awt.Color(245, 245, 245));
-        YLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        YLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         YLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         YLabel.setText("label");
         YLabel.setAutoscrolls(false);
@@ -3795,7 +3795,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         YLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         ULabel.setBackground(new java.awt.Color(245, 245, 245));
-        ULabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ULabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ULabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ULabel.setText("label");
         ULabel.setAutoscrolls(false);
@@ -3807,7 +3807,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ULabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         ILabel.setBackground(new java.awt.Color(245, 245, 245));
-        ILabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ILabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ILabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ILabel.setText("label");
         ILabel.setAutoscrolls(false);
@@ -3819,7 +3819,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ILabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         OLabel.setBackground(new java.awt.Color(245, 245, 245));
-        OLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        OLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         OLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         OLabel.setText("label");
         OLabel.setAutoscrolls(false);
@@ -3831,7 +3831,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         OLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         PLabel.setBackground(new java.awt.Color(245, 245, 245));
-        PLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        PLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         PLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         PLabel.setText("label");
         PLabel.setAutoscrolls(false);
@@ -3843,7 +3843,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         PLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         ALabel.setBackground(new java.awt.Color(245, 245, 245));
-        ALabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ALabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ALabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ALabel.setText("label");
         ALabel.setAutoscrolls(false);
@@ -3855,7 +3855,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ALabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         SLabel.setBackground(new java.awt.Color(245, 245, 245));
-        SLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         SLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         SLabel.setText("label");
         SLabel.setAutoscrolls(false);
@@ -3867,7 +3867,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         SLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         ZLabel.setBackground(new java.awt.Color(245, 245, 245));
-        ZLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ZLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ZLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ZLabel.setText("label");
         ZLabel.setAutoscrolls(false);
@@ -3879,7 +3879,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ZLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         DLabel.setBackground(new java.awt.Color(245, 245, 245));
-        DLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        DLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         DLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         DLabel.setText("label");
         DLabel.setAutoscrolls(false);
@@ -3891,7 +3891,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         DLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         FLabel.setBackground(new java.awt.Color(245, 245, 245));
-        FLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        FLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         FLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         FLabel.setText("label");
         FLabel.setAutoscrolls(false);
@@ -3903,7 +3903,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         GLabel.setBackground(new java.awt.Color(245, 245, 245));
-        GLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        GLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         GLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         GLabel.setText("label");
         GLabel.setAutoscrolls(false);
@@ -3915,7 +3915,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         GLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         HLabel.setBackground(new java.awt.Color(245, 245, 245));
-        HLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        HLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         HLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         HLabel.setText("label");
         HLabel.setAutoscrolls(false);
@@ -3927,7 +3927,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         HLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         JLabel.setBackground(new java.awt.Color(245, 245, 245));
-        JLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        JLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         JLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         JLabel.setText("label");
         JLabel.setAutoscrolls(false);
@@ -3939,7 +3939,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         JLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         KLabel.setBackground(new java.awt.Color(245, 245, 245));
-        KLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        KLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         KLabel.setText("label");
         KLabel.setAutoscrolls(false);
@@ -3951,7 +3951,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         LLabel.setBackground(new java.awt.Color(245, 245, 245));
-        LLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        LLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         LLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         LLabel.setText("label");
         LLabel.setAutoscrolls(false);
@@ -3963,7 +3963,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         XLabel.setBackground(new java.awt.Color(245, 245, 245));
-        XLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        XLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         XLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         XLabel.setText("label");
         XLabel.setAutoscrolls(false);
@@ -3975,7 +3975,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         XLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         CLabel.setBackground(new java.awt.Color(245, 245, 245));
-        CLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        CLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         CLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         CLabel.setText("label");
         CLabel.setAutoscrolls(false);
@@ -3987,7 +3987,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         VLabel.setBackground(new java.awt.Color(245, 245, 245));
-        VLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        VLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         VLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         VLabel.setText("label");
         VLabel.setAutoscrolls(false);
@@ -3999,7 +3999,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         VLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         BLabel.setBackground(new java.awt.Color(245, 245, 245));
-        BLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         BLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         BLabel.setText("label");
         BLabel.setAutoscrolls(false);
@@ -4011,7 +4011,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         BLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         NLabel.setBackground(new java.awt.Color(245, 245, 245));
-        NLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        NLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         NLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         NLabel.setText("label");
         NLabel.setAutoscrolls(false);
@@ -4023,7 +4023,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         NLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
         MLabel.setBackground(new java.awt.Color(245, 245, 245));
-        MLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        MLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         MLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         MLabel.setText("label");
         MLabel.setAutoscrolls(false);
@@ -4317,8 +4317,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel6.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel6.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        controlsPanel.setBackground(new java.awt.Color(245, 245, 245));
+        controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
         UpArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         UpArrow.setText("↑");
@@ -4501,68 +4501,68 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ZeroPercentSpeedLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         ZeroPercentSpeedLabel.setText("0% Speed");
 
-        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
-        jPanel6.setLayout(jPanel6Layout);
-        jPanel6Layout.setHorizontalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
+        javax.swing.GroupLayout controlsPanelLayout = new javax.swing.GroupLayout(controlsPanel);
+        controlsPanel.setLayout(controlsPanelLayout);
+        controlsPanelLayout.setHorizontalGroup(
+            controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(controlsPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addComponent(ZeroPercentSpeedLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(FullSpeedLabel))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(jPanel6Layout.createSequentialGroup()
+                    .addGroup(controlsPanelLayout.createSequentialGroup()
+                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(controlsPanelLayout.createSequentialGroup()
                                     .addComponent(OneButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGap(6, 6, 6)
                                     .addComponent(TwoButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addComponent(ShiftButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(SlowStopLabel))
                         .addGap(6, 6, 6)
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(controlsPanelLayout.createSequentialGroup()
                                     .addComponent(ThreeButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGap(6, 6, 6)
                                     .addComponent(FourButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addComponent(SpacebarButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(jLabel8))
                         .addGap(6, 6, 6)
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(controlsPanelLayout.createSequentialGroup()
                                     .addComponent(FiveButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGap(6, 6, 6)
                                     .addComponent(SixButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
                                 .addComponent(AltEmergencyStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(EStopLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(controlsPanelLayout.createSequentialGroup()
                                 .addComponent(DirectionLabel)
                                 .addGap(0, 0, Short.MAX_VALUE))
-                            .addGroup(jPanel6Layout.createSequentialGroup()
-                                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                            .addGroup(controlsPanelLayout.createSequentialGroup()
+                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(controlsPanelLayout.createSequentialGroup()
                                         .addComponent(SevenButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(0, 0, Short.MAX_VALUE))
                                     .addComponent(LeftArrow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addGap(6, 6, 6)
-                                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(controlsPanelLayout.createSequentialGroup()
                                         .addComponent(EightButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
                                         .addGap(6, 6, 6)
                                         .addComponent(NineButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(6, 6, 6)
                                         .addComponent(ZeroButton, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
-                                    .addGroup(jPanel6Layout.createSequentialGroup()
+                                    .addGroup(controlsPanelLayout.createSequentialGroup()
                                         .addComponent(RightArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(6, 6, 6)
-                                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addGroup(jPanel6Layout.createSequentialGroup()
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addGroup(controlsPanelLayout.createSequentialGroup()
                                                 .addComponent(UpArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                 .addGap(6, 6, 6)
                                                 .addComponent(DownArrow, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -4570,14 +4570,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel6Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {EightButton, FiveButton, FourButton, NineButton, OneButton, SevenButton, SixButton, ThreeButton, TwoButton, ZeroButton});
+        controlsPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {EightButton, FiveButton, FourButton, NineButton, OneButton, SevenButton, SixButton, ThreeButton, TwoButton, ZeroButton});
 
-        jPanel6Layout.setVerticalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+        controlsPanelLayout.setVerticalGroup(
+            controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(NineButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(ZeroButton))
                     .addComponent(EightButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -4589,11 +4589,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(TwoButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(OneButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(ZeroPercentSpeedLabel)
                     .addComponent(FullSpeedLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(SpacebarButton)
                     .addComponent(ShiftButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(AltEmergencyStop)
@@ -4602,7 +4602,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(UpArrow)
                     .addComponent(DownArrow))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel8)
                     .addComponent(EStopLabel)
                     .addComponent(DirectionLabel)
@@ -4645,7 +4645,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(latencyLabel))
                         .addComponent(locMappingLabel)
-                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(72, Short.MAX_VALUE))
         );
@@ -4661,10 +4661,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(PrimaryControls)
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(toggleMenuBar)
-                .addContainerGap(47, Short.MAX_VALUE))
+                .addContainerGap(84, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -4972,7 +4972,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 518, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6722,7 +6722,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 574, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 611, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -11962,6 +11962,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JButton clearNonParkedLocs;
+    private javax.swing.JPanel controlsPanel;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JButton editLayoutButton;
@@ -12028,7 +12029,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
