@@ -3356,7 +3356,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
+        LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
@@ -6273,12 +6273,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 721, Short.MAX_VALUE)
                     .addGroup(locCommandTabLayout.createSequentialGroup()
                         .addComponent(gracefulStop)
-                        .addGap(404, 404, 404)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(startAutonomy)))
-                .addGap(0, 9, Short.MAX_VALUE))
+                .addContainerGap())
         );
         locCommandTabLayout.setVerticalGroup(
             locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
