@@ -77,6 +77,7 @@ import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.MatteBorder;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import javax.swing.filechooser.FileFilter;
@@ -3051,7 +3052,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LocControlPanel.setBackground(new java.awt.Color(238, 238, 238));
+        LocControlPanel.setBackground(new java.awt.Color(255, 255, 255));
         LocControlPanel.setToolTipText(null);
         LocControlPanel.setMaximumSize(new java.awt.Dimension(806, 589));
         LocControlPanel.setMinimumSize(new java.awt.Dimension(806, 589));
@@ -4611,7 +4612,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(9, 9, 9)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(PrimaryControls)
@@ -4623,7 +4624,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(toggleMenuBar))
                     .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(72, Short.MAX_VALUE))
+                .addContainerGap(69, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4640,7 +4641,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(67, Short.MAX_VALUE))
+                .addContainerGap(113, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -4764,7 +4765,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(editLayoutButton, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 112, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(smallButton, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4934,7 +4935,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(exportAllRoutes)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(importRoutes)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 86, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sortByName)
@@ -4948,7 +4949,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 522, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 568, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4967,7 +4968,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Rout", RoutePanel);
 
-        KeyboardPanel.setBackground(new java.awt.Color(238, 238, 238));
+        KeyboardPanel.setBackground(new java.awt.Color(255, 255, 255));
         KeyboardPanel.setToolTipText(null);
         KeyboardPanel.setFocusable(false);
         KeyboardPanel.setMaximumSize(new java.awt.Dimension(806, 589));
@@ -6023,7 +6024,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardPanelLayout.setHorizontalGroup(
             KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(KeyboardPanelLayout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(9, 9, 9)
                 .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(KeyboardLabel)
                     .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -6047,7 +6048,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Keyb", KeyboardPanel);
 
-        autoPanel.setBackground(new java.awt.Color(238, 238, 238));
+        autoPanel.setBackground(new java.awt.Color(255, 255, 255));
         autoPanel.setMaximumSize(null);
         autoPanel.setPreferredSize(new java.awt.Dimension(806, 589));
 
@@ -6693,20 +6694,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 794, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
                 .addContainerGap())
         );
         logPanelLayout.setVerticalGroup(
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 577, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 623, Short.MAX_VALUE)
                 .addGap(6, 6, 6))
         );
 
         KeyboardTab.addTab("Log", logPanel);
 
         LocFunctionsPanel.setBackground(new java.awt.Color(255, 255, 255));
+        LocFunctionsPanel.setBorder(new MatteBorder(0, 1, 0, 0, new Color(192,192,192)));
         LocFunctionsPanel.setToolTipText(null);
         LocFunctionsPanel.setMinimumSize(new java.awt.Dimension(326, 560));
         LocFunctionsPanel.addMouseListener(new java.awt.event.MouseAdapter() {

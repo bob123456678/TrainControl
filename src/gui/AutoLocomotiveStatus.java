@@ -162,7 +162,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         locAvailPaths = new javax.swing.JList<>();
         locStation = new javax.swing.JLabel();
 
-        setBackground(new java.awt.Color(238, 238, 238));
+        setBackground(new java.awt.Color(255, 255, 255));
         setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         setFocusable(false);
         setMaximumSize(new java.awt.Dimension(219, 223));
