@@ -2446,7 +2446,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setText("");
 
-                        this.ActiveLocLabel.setText("No Locomotive (Right-click button)");
+                        this.ActiveLocLabel.setText("No Locomotive (Click here)");
 
                         this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
                             + this.currentButton.getText()    
@@ -3102,7 +3102,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
         LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
-        CButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        CButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         CButton.setText("C");
         CButton.setFocusable(false);
         CButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3111,7 +3111,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        VButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        VButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         VButton.setText("V");
         VButton.setFocusable(false);
         VButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3120,7 +3120,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ZButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        ZButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         ZButton.setText("Z");
         ZButton.setFocusable(false);
         ZButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3129,7 +3129,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        XButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        XButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         XButton.setText("X");
         XButton.setFocusable(false);
         XButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3138,7 +3138,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        MButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        MButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         MButton.setText("M");
         MButton.setFocusable(false);
         MButton.setMaximumSize(new java.awt.Dimension(39, 23));
@@ -3149,7 +3149,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        BButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         BButton.setText("B");
         BButton.setFocusable(false);
         BButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3158,7 +3158,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        NButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        NButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         NButton.setText("N");
         NButton.setFocusable(false);
         NButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3167,7 +3167,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        OButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        OButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         OButton.setText("O");
         OButton.setFocusable(false);
         OButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3176,7 +3176,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        PButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        PButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         PButton.setText("P");
         PButton.setFocusable(false);
         PButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3185,7 +3185,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        AButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        AButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         AButton.setText("A");
         AButton.setFocusable(false);
         AButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3194,7 +3194,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        SButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         SButton.setText("S");
         SButton.setFocusable(false);
         SButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3203,7 +3203,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        DButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        DButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         DButton.setText("D");
         DButton.setFocusable(false);
         DButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3212,7 +3212,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        FButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        FButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         FButton.setText("F");
         FButton.setFocusable(false);
         FButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3221,7 +3221,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        GButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        GButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         GButton.setText("G");
         GButton.setFocusable(false);
         GButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3230,7 +3230,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        HButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        HButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         HButton.setText("H");
         HButton.setFocusable(false);
         HButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3239,7 +3239,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        JButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        JButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         JButton.setText("J");
         JButton.setFocusable(false);
         JButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3248,7 +3248,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        LButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         LButton.setText("L");
         LButton.setFocusable(false);
         LButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3257,7 +3257,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        KButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        KButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         KButton.setText("K");
         KButton.setFocusable(false);
         KButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3266,7 +3266,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        YButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        YButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         YButton.setText("Y");
         YButton.setFocusable(false);
         YButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3275,7 +3275,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        RButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        RButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         RButton.setText("R");
         RButton.setFocusable(false);
         RButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3284,7 +3284,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        TButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        TButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         TButton.setText("T");
         TButton.setFocusable(false);
         TButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3293,7 +3293,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        WButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        WButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         WButton.setText("W");
         WButton.setFocusable(false);
         WButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3302,7 +3302,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        EButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        EButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         EButton.setText("E");
         EButton.setFocusable(false);
         EButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3311,7 +3311,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        QButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        QButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         QButton.setText("Q");
         QButton.setFocusable(false);
         QButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3320,7 +3320,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        IButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        IButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         IButton.setText("I");
         IButton.setFocusable(false);
         IButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3329,7 +3329,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        UButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        UButton.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         UButton.setText("U");
         UButton.setFocusable(false);
         UButton.addActionListener(new java.awt.event.ActionListener() {
