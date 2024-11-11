@@ -6271,6 +6271,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         timetablePanel.setBackground(new java.awt.Color(255, 255, 255));
 
+        timetable.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         timetable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
