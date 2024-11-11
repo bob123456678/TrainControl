@@ -44,17 +44,17 @@ From v2.0.0, on Windows only, you can also edit local track diagrams via a bundl
 
 ![UI screenshot: layout editor](assets/track_diagram_editor.png?raw=true)
 
-**Keyboard**
-
-Useful for testing, individual accessories can be directly controlled via their digital address.
-
-![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
-
 **Routes**
 
 Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Manual routes can also be defined and activated directly or via the layout tab.
 
 ![UI screenshot: layout](assets/ui_route.png?raw=true)
+
+**Keyboard**
+
+Useful for testing, individual accessories can be directly controlled via their digital address.
+
+![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
 
 **Full Autonomy**
 
@@ -237,17 +237,17 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 ## Changelog
 
 * v2.3.0 [Beta]
-    - Added a standard menu bar with various options
-        - Rearranged the "Tools" tab across the menu bar
-        - Moved UI preferences to the menu bar
-        - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
-        - The visibility of the menu bar will be remembered between runs
     - UI enhancements
         - Applied a modern look & feel to the whole UI
+        - Added a standard menu bar with various options
+            - Rearranged the "Tools" tab across the menu bar
+            - Moved UI preferences to the menu bar
+            - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
         - Moved main UI tabs to the left, and replaced text headings with icons
             - Tabs can now also be cyled using the CapsLock key
             - Improvements to UI tooltips
             - Improvements to UI alignment
+            - Increased the size of locomotive icons
         - Autonomy 
             - Consolidated start / stop buttons onto the Locomotive Control tab of the autonomy UI
         - Routes
