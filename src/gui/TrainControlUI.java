@@ -551,7 +551,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
            
         // Restore UI component state
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
-        this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
+        this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));

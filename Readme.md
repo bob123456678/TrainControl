@@ -26,7 +26,7 @@ automate switches while operating trains manually.
 
 You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.
 
-![UI screenshot: locomotive control](assets/ui_v4.png?raw=true)
+![UI screenshot: locomotive control](assets/main23.png?raw=true)
 
 Right-click a locomotive or function icon to change it or set additional options, such as preferred speed or function presets.
 
@@ -38,7 +38,7 @@ Right-click a locomotive or function icon to change it or set additional options
 
 Track diagrams for your layout are downloaded automatically from the CS2, or configurable manually via local layout files if using the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
-![UI screenshot: layout viewer](assets/tc_layout_v2.png?raw=true)
+![UI screenshot: layout viewer](assets/layout23.png?raw=true)
 
 From v2.0.0, on Windows only, you can also edit local track diagrams via a bundled app.
 
@@ -74,7 +74,7 @@ In addition to the continuous automated operation and point-to-point commands, y
 
 Monitor the usage of different locomotives.
 
-![UI screenshot: locomotive statistics](assets/stats.png?raw=true)
+![UI screenshot: locomotive statistics](assets/stats23.png?raw=true)
 
 ## Features
 
