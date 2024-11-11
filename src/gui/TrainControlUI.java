@@ -147,7 +147,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
-    public static final Integer LOC_ICON_HEIGHT = 106;
+    public static final Integer LOC_ICON_HEIGHT = 118;
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
@@ -159,7 +159,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Maximum page name length
     public static final Integer MAX_PAGE_NAME_LENGTH = 40;
-    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 10;
+    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 9;
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
@@ -3359,6 +3359,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
+        LocMappingNumberLabel.setMaximumSize(new java.awt.Dimension(135, 18));
 
         QSlider.setMajorTickSpacing(10);
         QSlider.setMinorTickSpacing(5);
@@ -4160,7 +4161,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 .addComponent(NextLocMapping, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(LocContainerLayout.createSequentialGroup()
                                 .addGap(3, 3, 3)
-                                .addComponent(LocMappingNumberLabel))
+                                .addComponent(LocMappingNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                 .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -4313,7 +4314,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             .addComponent(NLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
-                        .addComponent(LocMappingNumberLabel)
+                        .addComponent(LocMappingNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(PrevLocMapping)
@@ -4669,7 +4670,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(68, Short.MAX_VALUE))
+                .addContainerGap(67, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -4977,7 +4978,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 523, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 522, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6729,7 +6730,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 578, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 577, Short.MAX_VALUE)
                 .addGap(6, 6, 6))
         );
 
@@ -6825,11 +6826,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         CurrentKeyLabel.setBackground(new java.awt.Color(255, 255, 255));
-        CurrentKeyLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        CurrentKeyLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         CurrentKeyLabel.setForeground(new java.awt.Color(0, 0, 115));
         CurrentKeyLabel.setText("Key Name");
         CurrentKeyLabel.setToolTipText(null);
         CurrentKeyLabel.setFocusable(false);
+        CurrentKeyLabel.setMaximumSize(new java.awt.Dimension(296, 18));
 
         locIcon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         locIcon.setToolTipText("Right-click to change icon");
@@ -7055,67 +7057,67 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f0Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f0Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f0Label.setForeground(new java.awt.Color(0, 0, 115));
         f0Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f0Label.setText("F0");
 
-        f4Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f4Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f4Label.setForeground(new java.awt.Color(0, 0, 115));
         f4Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f4Label.setText("F4");
 
-        f8Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f8Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f8Label.setForeground(new java.awt.Color(0, 0, 115));
         f8Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f8Label.setText("F8");
 
-        f6Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f6Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f6Label.setForeground(new java.awt.Color(0, 0, 115));
         f6Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f6Label.setText("F6");
 
-        f1Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f1Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f1Label.setForeground(new java.awt.Color(0, 0, 115));
         f1Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f1Label.setText("F1");
 
-        f3Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f3Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f3Label.setForeground(new java.awt.Color(0, 0, 115));
         f3Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f3Label.setText("F3");
 
-        f5Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f5Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f5Label.setForeground(new java.awt.Color(0, 0, 115));
         f5Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f5Label.setText("F5");
 
-        f7Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f7Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f7Label.setForeground(new java.awt.Color(0, 0, 115));
         f7Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f7Label.setText("F7");
 
-        f10Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f10Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f10Label.setForeground(new java.awt.Color(0, 0, 115));
         f10Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f10Label.setText("F10");
 
-        f9Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f9Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f9Label.setForeground(new java.awt.Color(0, 0, 115));
         f9Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f9Label.setText("F9");
 
-        f11Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f11Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f11Label.setForeground(new java.awt.Color(0, 0, 115));
         f11Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f11Label.setText("F11");
 
-        f2Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f2Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f2Label.setForeground(new java.awt.Color(0, 0, 115));
         f2Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f2Label.setText("F2");
 
-        f12Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f12Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f12Label.setForeground(new java.awt.Color(0, 0, 115));
         f12Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f12Label.setText("F12");
@@ -7137,7 +7139,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f13Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f13Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f13Label.setForeground(new java.awt.Color(0, 0, 115));
         f13Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f13Label.setText("F13");
@@ -7159,7 +7161,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f14Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f14Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f14Label.setForeground(new java.awt.Color(0, 0, 115));
         f14Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f14Label.setText("F14");
@@ -7181,7 +7183,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f15Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f15Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f15Label.setForeground(new java.awt.Color(0, 0, 115));
         f15Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f15Label.setText("F15");
@@ -7254,17 +7256,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f16Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f16Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f16Label.setForeground(new java.awt.Color(0, 0, 115));
         f16Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f16Label.setText("F16");
 
-        f17Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f17Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f17Label.setForeground(new java.awt.Color(0, 0, 115));
         f17Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f17Label.setText("F17");
 
-        f18Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f18Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f18Label.setForeground(new java.awt.Color(0, 0, 115));
         f18Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f18Label.setText("F18");
@@ -7286,7 +7288,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f19Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f19Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f19Label.setForeground(new java.awt.Color(0, 0, 115));
         f19Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f19Label.setText("F19");
@@ -7451,12 +7453,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         F20AndUpPanel.setBackground(new java.awt.Color(255, 255, 255));
 
-        f23Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f23Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f23Label.setForeground(new java.awt.Color(0, 0, 115));
         f23Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f23Label.setText("F23");
 
-        f20Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f20Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f20Label.setForeground(new java.awt.Color(0, 0, 115));
         f20Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f20Label.setText("F20");
@@ -7495,12 +7497,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f22Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f22Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f22Label.setForeground(new java.awt.Color(0, 0, 115));
         f22Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f22Label.setText("F22");
 
-        f21Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f21Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f21Label.setForeground(new java.awt.Color(0, 0, 115));
         f21Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f21Label.setText("F21");
@@ -7539,12 +7541,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f27Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f27Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f27Label.setForeground(new java.awt.Color(0, 0, 115));
         f27Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f27Label.setText("F27");
 
-        f29Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f29Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f29Label.setForeground(new java.awt.Color(0, 0, 115));
         f29Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f29Label.setText("F29");
@@ -7566,7 +7568,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f30Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f30Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f30Label.setForeground(new java.awt.Color(0, 0, 115));
         f30Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f30Label.setText("F30");
@@ -7588,12 +7590,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f31Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f31Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f31Label.setForeground(new java.awt.Color(0, 0, 115));
         f31Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f31Label.setText("F31");
 
-        f24Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f24Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f24Label.setForeground(new java.awt.Color(0, 0, 115));
         f24Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f24Label.setText("F24");
@@ -7649,7 +7651,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f28Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f28Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f28Label.setForeground(new java.awt.Color(0, 0, 115));
         f28Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f28Label.setText("F28");
@@ -7671,7 +7673,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f26Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f26Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f26Label.setForeground(new java.awt.Color(0, 0, 115));
         f26Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f26Label.setText("F26");
@@ -7692,7 +7694,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        f25Label.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        f25Label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         f25Label.setForeground(new java.awt.Color(0, 0, 115));
         f25Label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         f25Label.setText("F25");
@@ -7845,7 +7847,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(PowerOff, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(OnButton))
                 .addGap(4, 4, 4)
-                .addComponent(CurrentKeyLabel)
+                .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(ActiveLocLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -7855,10 +7857,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(SpeedSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(1, 1, 1)
-                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(5, 5, 5)
-                .addComponent(FunctionTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, 0))
+                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(FunctionTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 301, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(1, 1, 1))
         );
 
         PowerOff.getAccessibleContext().setAccessibleName("");
