@@ -3356,7 +3356,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
