@@ -6350,8 +6350,8 @@
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="SpeedSlider" min="-2" pref="49" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
-                  <Component id="locIcon" min="-2" pref="118" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
+                  <Component id="locIcon" min="-2" pref="116" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="FunctionTabs" min="-2" pref="301" max="-2" attributes="0"/>
                   <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>

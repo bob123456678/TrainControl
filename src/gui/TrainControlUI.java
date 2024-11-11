@@ -147,7 +147,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
-    public static final Integer LOC_ICON_HEIGHT = 118;
+    public static final Integer LOC_ICON_HEIGHT = 116;
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
@@ -7856,8 +7856,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(Forward))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(SpeedSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(1, 1, 1)
-                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(3, 3, 3)
+                .addComponent(locIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(FunctionTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 301, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(1, 1, 1))

@@ -1,6 +1,7 @@
 package gui;
 
 import base.Locomotive;
+import java.awt.Font;
 import java.awt.HeadlessException;
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.RowFilter;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import marklin.MarklinLocomotive;
@@ -34,6 +36,9 @@ public class LocomotiveStats extends javax.swing.JPanel
     {
         initComponents();
         this.tcui = tcui;
+        
+        JTableHeader header = statsTable.getTableHeader(); 
+        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
         
         refresh();
     }
@@ -197,6 +202,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
         });
 
+        statsTable.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         statsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
