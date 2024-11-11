@@ -290,40 +290,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public TrainControlUI()
     {
         System.setProperty("org.graphstream.ui", "swing");
-        //System.setProperty( "flatlaf.menuBarEmbedded", "false" );
-        //System.setProperty( "flatlaf.useWindowDecorations", "false" );
-        //getRootPane().putClientProperty("JRootPane.menuBarEmbedded", false);
-        //getRootPane().putClientProperty("JRootPane.useWindowDecorations", false);
-        //setDefaultLookAndFeelDecorated( true );
-        //setDefaultLookAndFeelDecorated( true );
+
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
 
         // Makes tabs narrower
         javax.swing.UIManager.put( "TabbedPane.tabWidthMode", "compact");
         javax.swing.UIManager.put( "TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
-
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         
-        try
-        {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels())
-            {
-                if ("Nimbus".equals(info.getName()))
-                {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex)
-        {
-            java.util.logging.Logger.getLogger(TrainControlUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-        */
         
         initComponents();
         
@@ -598,10 +571,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.PrevLocMapping.addMouseListener(rcm);
         this.NextLocMapping.addMouseListener(rcm);
         
-        displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
-
-        // UI editor bugs out when this is too wide
-        // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");  
+        displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true)); 
     }
     
     /**
@@ -8340,11 +8310,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.NextKeyboardActionPerformed(null);
             } 
         }
-        else if (keyCode == KeyEvent.VK_COMMA || keyCode == KeyEvent.VK_SEMICOLON || (keyCode == KeyEvent.VK_LEFT && altPressed))
+        else if ((keyCode == KeyEvent.VK_COMMA && altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && altPressed))
+        {
+            this.switchLocMapping(1);    
+        }
+        else if ((keyCode == KeyEvent.VK_PERIOD && altPressed) || (keyCode == KeyEvent.VK_COLON && altPressed))
+        {
+            this.switchLocMapping(TrainControlUI.NUM_LOC_MAPPINGS); 
+        }
+        else if ((keyCode == KeyEvent.VK_COMMA && !altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && !altPressed) || (keyCode == KeyEvent.VK_LEFT && altPressed))
         {
             this.PrevLocMappingActionPerformed(null);   
         }
-        else if (keyCode == KeyEvent.VK_PERIOD || keyCode == KeyEvent.VK_COLON || (keyCode == KeyEvent.VK_RIGHT && altPressed))
+        else if ((keyCode == KeyEvent.VK_PERIOD && !altPressed) || (keyCode == KeyEvent.VK_COLON && !altPressed) || (keyCode == KeyEvent.VK_RIGHT && altPressed))
         {
             this.NextLocMappingActionPerformed(null);
         }

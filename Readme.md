@@ -130,6 +130,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Alt+V (apply saved speed preset for current loc)
 * Locomotive management
     * Comma/period, semicolon/colon, Alt+left/right arrow (cycle to previous/next loc page)
+    * Alt+comma/period, Alt+semicolon/colon (jump to first/last loc page)
     * Control+F (quickly jump to/search for any locomotive)
     * Control+C (copy locomotive at currently active button)
     * Control+X (cut locomotive and clear mapping of currently active button)
@@ -155,7 +156,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 * Install Java 8 on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
-* Must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
+* Your computer must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (a warning will be shown after 15 seconds if this is not enabled)
 * For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
 
@@ -254,7 +255,9 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - The route ID is now pre-filled when editing route IDs
         - Locomotive Management
             - Locomotives in the locomotive selector are now sorted alphabetically
-            - Locomotives can now be added to the database through a dedicated popup menu
+            - Locomotives can now be added to the database through a separate popup window
+            - Alt+comma/period, Alt+semicolon/colon will now jump to the first/last key mapping page
+            - QWERTY/QWERTZ/AZERTY keyboard options moved to the menu bar
     - Fixed bug where "Large" track diagrams would not always render correctly 
 
 * v2.2.7 [9/14/2024]
