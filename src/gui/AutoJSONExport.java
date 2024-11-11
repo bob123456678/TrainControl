@@ -57,7 +57,7 @@ public class AutoJSONExport extends javax.swing.JPanel
         jsonTextArea.setRows(25);
         jScrollPane1.setViewportView(jsonTextArea);
 
-        jsonSaveAs.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jsonSaveAs.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jsonSaveAs.setText("Save to File...");
         jsonSaveAs.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

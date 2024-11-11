@@ -84,6 +84,11 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
 
         locName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locName.setText("jTextField1");
+        locName.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                locNameKeyReleased(evt);
+            }
+        });
 
         locNameLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locNameLabel.setForeground(new java.awt.Color(0, 0, 115));
@@ -129,6 +134,9 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
         TrainControlUI.limitLength(evt, 6);
     }//GEN-LAST:event_addressKeyReleased
 
+    private void locNameKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locNameKeyReleased
+        TrainControlUI.limitLength(evt, TrainControlUI.MAX_LOC_NAME_DATABASE);
+    }//GEN-LAST:event_locNameKeyReleased
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;

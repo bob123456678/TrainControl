@@ -109,7 +109,7 @@ public class GraphLocExclude extends javax.swing.JPanel
         });
         jScrollPane1.setViewportView(excludedLocList);
 
-        allowedLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        allowedLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         allowedLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         allowedLocLabel.setText("Allowed Locomotives (Default)");
 
@@ -137,7 +137,7 @@ public class GraphLocExclude extends javax.swing.JPanel
             }
         });
 
-        excludeLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        excludeLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         excludeLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         excludeLocLabel.setText("Excluded Locomotives");
 

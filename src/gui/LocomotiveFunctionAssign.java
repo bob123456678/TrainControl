@@ -206,7 +206,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         fIconlabel.setForeground(new java.awt.Color(0, 0, 115));
         fIconlabel.setText("Function Icon");
 
-        applyButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        applyButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         applyButton.setText("Apply");
         applyButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -214,7 +214,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
-        resetButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        resetButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         resetButton.setText("Reset All Customizations");
         resetButton.setFocusable(false);
         resetButton.addActionListener(new java.awt.event.ActionListener() {
@@ -230,7 +230,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         functionTriggerType.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         functionTriggerType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Toggle", "Momentary", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s", "16s", "17s", "18s", "19s", "20s", "21s", "22s", "23s", "24s", "25s", "26s", "27s", "28s", "29s", "30s" }));
 
-        useCustomFunctionIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        useCustomFunctionIcon.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         useCustomFunctionIcon.setText("Use Custom Icon");
         useCustomFunctionIcon.setFocusable(false);
         useCustomFunctionIcon.addActionListener(new java.awt.event.ActionListener() {
@@ -239,7 +239,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
-        deleteCustomIcon.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        deleteCustomIcon.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         deleteCustomIcon.setText("Clear Custom Icon");
         deleteCustomIcon.setFocusable(false);
         deleteCustomIcon.addActionListener(new java.awt.event.ActionListener() {

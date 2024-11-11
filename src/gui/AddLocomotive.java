@@ -72,7 +72,7 @@ public class AddLocomotive extends javax.swing.JFrame
         jLabel4.setText("Locomotive Type");
         jLabel4.setFocusable(false);
 
-        AddLocButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        AddLocButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         AddLocButton.setText("Add");
         AddLocButton.setFocusable(false);
         AddLocButton.setInheritsPopupMenu(true);
@@ -118,7 +118,7 @@ public class AddLocomotive extends javax.swing.JFrame
         LocTypeDCC.setText("DCC");
         LocTypeDCC.setFocusable(false);
 
-        checkDuplicates.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        checkDuplicates.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         checkDuplicates.setText("Check Duplicates");
         checkDuplicates.setFocusable(false);
         checkDuplicates.addActionListener(new java.awt.event.ActionListener() {
@@ -179,7 +179,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        AddNewLocLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        AddNewLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         AddNewLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         AddNewLocLabel.setText("Add Locomotive to Database");
 

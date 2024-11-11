@@ -167,7 +167,7 @@ public class UsageHistogram extends javax.swing.JFrame
         setPreferredSize(new java.awt.Dimension(960, 332));
         setResizable(false);
 
-        prev.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        prev.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         prev.setText("<<<");
         prev.setFocusable(false);
         prev.setMaximumSize(new java.awt.Dimension(90, 20));
@@ -179,7 +179,7 @@ public class UsageHistogram extends javax.swing.JFrame
             }
         });
 
-        next.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        next.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         next.setText(">>>");
         next.setFocusable(false);
         next.setMaximumSize(new java.awt.Dimension(90, 20));
@@ -191,7 +191,7 @@ public class UsageHistogram extends javax.swing.JFrame
             }
         });
 
-        reset.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        reset.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         reset.setText("Reset");
         reset.setFocusable(false);
         reset.setMaximumSize(new java.awt.Dimension(90, 20));

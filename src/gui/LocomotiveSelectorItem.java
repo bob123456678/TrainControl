@@ -140,7 +140,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
             }
         });
 
-        LocLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        LocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 20)); // NOI18N
         LocLabel.setText("jLabel1");
         LocLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -148,6 +148,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
             }
         });
 
+        AddrLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         AddrLabel.setForeground(new java.awt.Color(0, 0, 155));
         AddrLabel.setText("jLabel1");
 

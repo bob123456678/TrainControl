@@ -156,9 +156,9 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
         });
 
-        locListLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        locListLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         locListLabel.setForeground(new java.awt.Color(0, 0, 155));
-        locListLabel.setText("Assign Locomotive to Active Button:");
+        locListLabel.setText("Assign Locomotive to Active Button");
 
         LocFilterBox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocFilterBox.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -202,7 +202,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
         LocScroller.setViewportView(MainLocList);
 
-        SyncWithCS.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SyncWithCS.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         SyncWithCS.setText("Sync with Central Station DB");
         SyncWithCS.setFocusable(false);
         SyncWithCS.addActionListener(new java.awt.event.ActionListener() {
@@ -216,7 +216,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         closeOnLocSel.setText("Close Window on Assignment");
         closeOnLocSel.setFocusPainted(false);
 
-        addLocomotive.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addLocomotive.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addLocomotive.setText("Add Locomotive");
         addLocomotive.setFocusable(false);
         addLocomotive.addActionListener(new java.awt.event.ActionListener() {

@@ -225,6 +225,15 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="slidersChangeActiveLocMenuItemActionPerformed"/>
                   </Events>
                 </MenuItem>
+                <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showKeyboardHintsMenuItem">
+                  <Properties>
+                    <Property name="selected" type="boolean" value="true"/>
+                    <Property name="text" type="java.lang.String" value="Show Keyboard Control Hits"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showKeyboardHintsMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
                 <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator20">
                 </MenuItem>
                 <MenuItem class="javax.swing.JRadioButtonMenuItem" name="keyboardQwertyMenuItem">
@@ -421,18 +430,19 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="toggleMenuBar" min="-2" max="-2" attributes="0"/>
-                          <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
-                              <Group type="102" alignment="0" attributes="0">
-                                  <Component id="PrimaryControls" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="32767" attributes="0"/>
-                                  <Component id="latencyLabel" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <Component id="locMappingLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="controlsPanel" alignment="0" max="32767" attributes="0"/>
-                              <Component id="LocContainer" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="PrimaryControls" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="latencyLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="locMappingLabel" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="toggleMenuBar" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Component id="controlsPanel" alignment="0" max="32767" attributes="0"/>
+                          <Component id="LocContainer" alignment="0" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace pref="72" max="32767" attributes="0"/>
                   </Group>
@@ -441,9 +451,12 @@
             <DimensionLayout dim="1">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="locMappingLabel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="locMappingLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="toggleMenuBar" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
                       <Component id="LocContainer" min="-2" pref="338" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
@@ -452,9 +465,7 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="controlsPanel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="toggleMenuBar" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="84" max="32767" attributes="0"/>
+                      <EmptySpace pref="76" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -463,7 +474,7 @@
             <Component class="javax.swing.JLabel" name="locMappingLabel">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="14" style="0"/>
+                  <Font name="Segoe UI Semibold" size="13" style="1"/>
                 </Property>
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="9b" green="0" red="0" type="rgb"/>
@@ -852,7 +863,7 @@
                 <Component class="javax.swing.JButton" name="CButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="C"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -864,7 +875,7 @@
                 <Component class="javax.swing.JButton" name="VButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="V"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -876,7 +887,7 @@
                 <Component class="javax.swing.JButton" name="ZButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Z"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -888,7 +899,7 @@
                 <Component class="javax.swing.JButton" name="XButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="X"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -900,7 +911,7 @@
                 <Component class="javax.swing.JButton" name="MButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="M"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -918,7 +929,7 @@
                 <Component class="javax.swing.JButton" name="BButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="B"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -930,7 +941,7 @@
                 <Component class="javax.swing.JButton" name="NButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="N"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -942,7 +953,7 @@
                 <Component class="javax.swing.JButton" name="OButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="O"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -954,7 +965,7 @@
                 <Component class="javax.swing.JButton" name="PButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="P"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -966,7 +977,7 @@
                 <Component class="javax.swing.JButton" name="AButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="A"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -978,7 +989,7 @@
                 <Component class="javax.swing.JButton" name="SButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="S"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -990,7 +1001,7 @@
                 <Component class="javax.swing.JButton" name="DButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="D"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1002,7 +1013,7 @@
                 <Component class="javax.swing.JButton" name="FButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="F"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1014,7 +1025,7 @@
                 <Component class="javax.swing.JButton" name="GButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="G"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1026,7 +1037,7 @@
                 <Component class="javax.swing.JButton" name="HButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="H"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1038,7 +1049,7 @@
                 <Component class="javax.swing.JButton" name="JButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="J"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1050,7 +1061,7 @@
                 <Component class="javax.swing.JButton" name="LButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="L"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1062,7 +1073,7 @@
                 <Component class="javax.swing.JButton" name="KButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="K"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1074,7 +1085,7 @@
                 <Component class="javax.swing.JButton" name="YButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Y"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1086,7 +1097,7 @@
                 <Component class="javax.swing.JButton" name="RButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="R"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1098,7 +1109,7 @@
                 <Component class="javax.swing.JButton" name="TButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="T"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1110,7 +1121,7 @@
                 <Component class="javax.swing.JButton" name="WButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="W"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1122,7 +1133,7 @@
                 <Component class="javax.swing.JButton" name="EButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="E"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1134,7 +1145,7 @@
                 <Component class="javax.swing.JButton" name="QButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Q"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1146,7 +1157,7 @@
                 <Component class="javax.swing.JButton" name="IButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="I"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1158,7 +1169,7 @@
                 <Component class="javax.swing.JButton" name="UButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="U"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1170,7 +1181,7 @@
                 <Component class="javax.swing.JButton" name="PrevLocMapping">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&lt;&lt; ,"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1182,7 +1193,7 @@
                 <Component class="javax.swing.JButton" name="NextLocMapping">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value=". &gt;&gt;"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -1194,7 +1205,7 @@
                 <Component class="javax.swing.JLabel" name="LocMappingNumberLabel">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI Semibold" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Page"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2605,7 +2616,7 @@
                 <Component class="javax.swing.JButton" name="UpArrow">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="12" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2191;"/>
                     <Property name="toolTipText" type="java.lang.String" value="Increase Speed"/>
@@ -2618,7 +2629,7 @@
                 <Component class="javax.swing.JButton" name="DownArrow">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="12" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2193;"/>
                     <Property name="toolTipText" type="java.lang.String" value="Decrease Speed"/>
@@ -2631,7 +2642,7 @@
                 <Component class="javax.swing.JButton" name="RightArrow">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="12" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2192;"/>
                     <Property name="toolTipText" type="java.lang.String" value="Switch Direction"/>
@@ -2644,7 +2655,7 @@
                 <Component class="javax.swing.JButton" name="LeftArrow">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="12" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2190;"/>
                     <Property name="toolTipText" type="java.lang.String" value="Switch Direction"/>
@@ -2657,7 +2668,7 @@
                 <Component class="javax.swing.JButton" name="SpacebarButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Spacebar"/>
                     <Property name="toolTipText" type="java.lang.String" value="Spacebar: emergency stop of current locomotive."/>
@@ -2686,7 +2697,7 @@
                 <Component class="javax.swing.JButton" name="ShiftButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Shift"/>
                     <Property name="toolTipText" type="java.lang.String" value="Shift: stop locomotive"/>
@@ -2715,7 +2726,7 @@
                 <Component class="javax.swing.JButton" name="AltEmergencyStop">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Enter"/>
                     <Property name="toolTipText" type="java.lang.String" value="Enter: stops all running locomotives."/>
@@ -2736,7 +2747,7 @@
                 <Component class="javax.swing.JButton" name="ZeroButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="0"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2756,7 +2767,7 @@
                 <Component class="javax.swing.JButton" name="EightButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="8"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2768,7 +2779,7 @@
                 <Component class="javax.swing.JButton" name="NineButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="9"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2780,7 +2791,7 @@
                 <Component class="javax.swing.JButton" name="SevenButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="7"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2792,7 +2803,7 @@
                 <Component class="javax.swing.JButton" name="FourButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="4"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2804,7 +2815,7 @@
                 <Component class="javax.swing.JButton" name="ThreeButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2816,7 +2827,7 @@
                 <Component class="javax.swing.JButton" name="TwoButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="2"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2828,7 +2839,7 @@
                 <Component class="javax.swing.JButton" name="OneButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="1"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2840,7 +2851,7 @@
                 <Component class="javax.swing.JButton" name="SixButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="6"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2852,7 +2863,7 @@
                 <Component class="javax.swing.JButton" name="FiveButton">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="5"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -2874,7 +2885,7 @@
             <Component class="javax.swing.JLabel" name="PrimaryControls">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="14" style="0"/>
+                  <Font name="Segoe UI Semibold" size="13" style="0"/>
                 </Property>
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="9b" green="0" red="0" type="rgb"/>
@@ -2974,20 +2985,22 @@
                       <Component id="LayoutArea" min="-2" pref="547" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Group type="103" alignment="0" groupAlignment="3" attributes="0">
-                              <Component id="LayoutList" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="layoutListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="sizeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="SizeList" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="SizeList" max="32767" attributes="0"/>
+                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                              <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                                  <Component id="LayoutList" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="layoutListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="sizeLabel" alignment="3" min="-2" pref="22" max="-2" attributes="0"/>
+                              </Group>
+                              <Component id="editLayoutButton" alignment="0" max="32767" attributes="0"/>
+                              <Component id="allButton" alignment="0" max="32767" attributes="0"/>
+                              <Component id="jLabel19" alignment="0" max="32767" attributes="0"/>
+                              <Component id="layoutNewWindow" alignment="0" max="32767" attributes="0"/>
+                              <Component id="smallButton" alignment="0" max="32767" attributes="0"/>
+                              <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
                           </Group>
-                          <Component id="editLayoutButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="allButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jLabel19" alignment="0" max="32767" attributes="0"/>
-                          <Component id="layoutNewWindow" alignment="0" max="32767" attributes="0"/>
-                          <Component id="smallButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
                       </Group>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace pref="15" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -3009,10 +3022,10 @@
                 <Property name="toolTipText" type="java.lang.String" value="- / + to cycle"/>
                 <Property name="focusable" type="boolean" value="false"/>
                 <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="[90, 22]"/>
+                  <Dimension value="[90, 24]"/>
                 </Property>
                 <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="[90, 22]"/>
+                  <Dimension value="[90, 24]"/>
                 </Property>
               </Properties>
               <Events>
@@ -3108,19 +3121,10 @@
             <Component class="javax.swing.JButton" name="layoutNewWindow">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Large"/>
                 <Property name="focusable" type="boolean" value="false"/>
-                <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
-                <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
-                <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="layoutNewWindowActionPerformed"/>
@@ -3129,19 +3133,10 @@
             <Component class="javax.swing.JButton" name="smallButton">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Small"/>
                 <Property name="focusable" type="boolean" value="false"/>
-                <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
-                <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
-                <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="null"/>
-                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="smallButtonActionPerformed"/>
@@ -3159,7 +3154,7 @@
             <Component class="javax.swing.JButton" name="allButton">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="All"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3176,7 +3171,7 @@
             <Component class="javax.swing.JButton" name="editLayoutButton">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Edit"/>
                 <Property name="toolTipText" type="java.lang.String" value="Launch the layout editor (Windows only)"/>
@@ -3228,16 +3223,18 @@
                               <EmptySpace min="-2" pref="9" max="-2" attributes="0"/>
                               <Component id="jSeparator2" min="-2" pref="6" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="BulkEnable" min="-2" max="-2" attributes="0"/>
+                              <Component id="BulkEnable" min="-2" pref="102" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="BulkDisable" min="-2" max="-2" attributes="0"/>
                               <EmptySpace min="-2" pref="9" max="-2" attributes="0"/>
                               <Component id="jSeparator7" min="-2" pref="6" max="-2" attributes="0"/>
-                              <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
-                              <Component id="exportAllRoutes" min="-2" pref="72" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="importRoutes" min="-2" pref="74" max="-2" attributes="0"/>
-                              <EmptySpace pref="16" max="32767" attributes="0"/>
+                              <Component id="exportAllRoutes" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="importRoutes" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace pref="25" max="32767" attributes="0"/>
+                              <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
                               <Component id="sortByName" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="sortByID" min="-2" max="-2" attributes="0"/>
@@ -3253,7 +3250,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane5" pref="555" max="32767" attributes="0"/>
+                      <Component id="jScrollPane5" pref="519" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="jSeparator7" alignment="1" min="-2" pref="23" max="-2" attributes="0"/>
@@ -3265,6 +3262,7 @@
                               <Component id="sortByID" alignment="3" min="-2" pref="23" max="-2" attributes="0"/>
                               <Component id="exportAllRoutes" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="importRoutes" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="jLabel1" alignment="3" min="-2" pref="24" max="-2" attributes="0"/>
                           </Group>
                           <Component id="jSeparator2" alignment="1" min="-2" pref="23" max="-2" attributes="0"/>
                       </Group>
@@ -3277,7 +3275,7 @@
             <Component class="javax.swing.JLabel" name="jLabel2">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="14" style="0"/>
+                  <Font name="Segoe UI Semibold" size="13" style="0"/>
                 </Property>
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
@@ -3295,7 +3293,7 @@
                 <Component class="javax.swing.JTable" name="RouteList">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="14" style="0"/>
+                      <Font name="Segoe UI" size="14" style="0"/>
                     </Property>
                     <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
                       <Table columnCount="0" rowCount="0"/>
@@ -3325,7 +3323,7 @@
             <Component class="javax.swing.JButton" name="AddRouteButton">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Add Route"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3342,7 +3340,7 @@
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                   <Font name="Segoe UI" size="14" style="0"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Sort by Name"/>
+                <Property name="text" type="java.lang.String" value="Name"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
               <Events>
@@ -3357,7 +3355,7 @@
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                   <Font name="Segoe UI" size="14" style="0"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Sort by ID"/>
+                <Property name="text" type="java.lang.String" value="ID"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
               <Events>
@@ -3367,7 +3365,7 @@
             <Component class="javax.swing.JButton" name="BulkEnable">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Bulk Enable"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3379,7 +3377,7 @@
             <Component class="javax.swing.JButton" name="BulkDisable">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Tahoma" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Bulk Disable"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3402,7 +3400,7 @@
             <Component class="javax.swing.JButton" name="exportAllRoutes">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Export"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3425,7 +3423,7 @@
             <Component class="javax.swing.JButton" name="importRoutes">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="11" style="1"/>
+                  <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Import"/>
                 <Property name="focusable" type="boolean" value="false"/>
@@ -3433,6 +3431,17 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="importRoutesActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JLabel" name="jLabel1">
+              <Properties>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Segoe UI" size="14" style="0"/>
+                </Property>
+                <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                  <Color blue="9b" green="0" red="0" type="rgb"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Sort by:"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>
@@ -3498,7 +3507,7 @@
             <Component class="javax.swing.JLabel" name="KeyboardLabel">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="14" style="0"/>
+                  <Font name="Segoe UI Semibold" size="13" style="0"/>
                 </Property>
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
@@ -3743,7 +3752,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton1">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="1"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3764,7 +3773,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton2">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="2"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3785,7 +3794,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton3">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="3"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3806,7 +3815,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton4">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="4"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3827,7 +3836,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton5">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="5"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3848,7 +3857,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton6">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="6"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3869,7 +3878,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton7">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="7"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3890,7 +3899,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton8">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="8"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3911,7 +3920,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton9">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="9"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3932,7 +3941,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton10">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="10"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3953,7 +3962,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton11">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="11"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3974,7 +3983,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton12">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="12"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -3995,7 +4004,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton13">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="13"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4016,7 +4025,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton14">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="14"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4037,7 +4046,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton15">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="15"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4058,7 +4067,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton16">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="16"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4079,7 +4088,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton17">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="17"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4100,7 +4109,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton18">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="18"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4121,7 +4130,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton19">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="19"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4142,7 +4151,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton21">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="21"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4163,7 +4172,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton22">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="22"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4184,7 +4193,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton23">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="23"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4205,7 +4214,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton24">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="24"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4226,7 +4235,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton26">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="26"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4247,7 +4256,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton27">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="27"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4268,7 +4277,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton29">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="29"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4289,7 +4298,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton28">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="28"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4310,7 +4319,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton30">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="30"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4331,7 +4340,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton31">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="31"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4352,7 +4361,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton32">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="32"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4373,7 +4382,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton33">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="33"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4394,7 +4403,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton34">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="34"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4415,7 +4424,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton35">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="35"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4436,7 +4445,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton36">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="36"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4457,7 +4466,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton37">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="37"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4478,7 +4487,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton38">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="38"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4499,7 +4508,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton39">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="39"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4520,7 +4529,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton40">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="40"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4541,7 +4550,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton41">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="41"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4562,7 +4571,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton42">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="42"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4583,7 +4592,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton43">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="43"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4604,7 +4613,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton44">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="44"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4625,7 +4634,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton45">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="45"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4646,7 +4655,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton46">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="46"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4667,7 +4676,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton47">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="47"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4688,7 +4697,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton48">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="48"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4709,7 +4718,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton49">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="49"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4730,7 +4739,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton50">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="50"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4751,7 +4760,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton51">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="51"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4772,7 +4781,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton52">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="52"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4793,7 +4802,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton53">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="53"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4814,7 +4823,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton54">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="54"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4835,7 +4844,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton55">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="55"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4856,7 +4865,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton57">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="57"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4877,7 +4886,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton58">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="58"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4898,7 +4907,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton59">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="59"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4919,7 +4928,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton60">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="60"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4940,7 +4949,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton61">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="61"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4961,7 +4970,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton62">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="62"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -4982,7 +4991,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton63">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="63"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5003,7 +5012,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton20">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="20"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5024,7 +5033,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton56">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="56"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5045,7 +5054,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton25">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="25"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5066,7 +5075,7 @@
                 <Component class="javax.swing.JToggleButton" name="SwitchButton64">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="13" style="1"/>
+                      <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="64"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5169,7 +5178,7 @@
                 <Component class="javax.swing.JButton" name="PrevKeyboard">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&lt;&lt;&lt; -"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5181,7 +5190,7 @@
                 <Component class="javax.swing.JLabel" name="KeyboardNumberLabel">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI Semibold" size="13" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="Keyboard "/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5190,7 +5199,7 @@
                 <Component class="javax.swing.JButton" name="NextKeyboard">
                   <Properties>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Tahoma" size="11" style="1"/>
+                      <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="+ &gt;&gt;&gt;"/>
                     <Property name="focusable" type="boolean" value="false"/>
@@ -5204,7 +5213,7 @@
             <Component class="javax.swing.JLabel" name="KeyboardLabel1">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="14" style="0"/>
+                  <Font name="Segoe UI Semibold" size="13" style="0"/>
                 </Property>
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
@@ -5299,7 +5308,7 @@
                                       <Component id="loadJSONButton" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                       <Component id="exportJSON" min="-2" pref="158" max="-2" attributes="0"/>
-                                      <EmptySpace pref="32" max="32767" attributes="0"/>
+                                      <EmptySpace pref="30" max="32767" attributes="0"/>
                                       <Component id="autosave" min="-2" pref="118" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                       <Component id="jSeparator3" min="-2" max="-2" attributes="0"/>
@@ -5377,7 +5386,7 @@
                     <Component class="javax.swing.JButton" name="exportJSON">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Export Current Graph"/>
                         <Property name="enabled" type="boolean" value="false"/>
@@ -5390,7 +5399,7 @@
                     <Component class="javax.swing.JButton" name="loadJSONButton">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Load JSON from File"/>
                         <Property name="focusable" type="boolean" value="false"/>
@@ -5477,7 +5486,7 @@
                     <Component class="javax.swing.JButton" name="validateButton">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Validate Configuration &amp; Open Graph UI"/>
                         <Property name="toolTipText" type="java.lang.String" value="Parses the JSON data and displays the graph UI.  Force stops any running trains."/>
@@ -5542,7 +5551,7 @@
                                   <Component id="gracefulStop" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane4" pref="502" max="32767" attributes="0"/>
+                              <Component id="jScrollPane4" pref="500" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -5588,7 +5597,7 @@
                           <Color blue="cc" green="cc" red="ff" type="rgb"/>
                         </Property>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Graceful Stop"/>
                         <Property name="toolTipText" type="java.lang.String" value="Active locomotives will stop at the next station."/>
@@ -5605,7 +5614,7 @@
                           <Color blue="cc" green="ff" red="cc" type="rgb"/>
                         </Property>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Start Autonomous Operation"/>
                         <Property name="toolTipText" type="java.lang.String" value="Continuously runs active locomotives within the graph."/>
@@ -5658,7 +5667,7 @@
                                   <Component id="timetableCapture" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane6" pref="502" max="32767" attributes="0"/>
+                              <Component id="jScrollPane6" pref="500" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -5695,7 +5704,7 @@
                           <Color blue="cc" green="ff" red="cc" type="rgb"/>
                         </Property>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Execute Timetable"/>
                         <Property name="toolTipText" type="java.lang.String" value="Sequentially executes the timetable."/>
@@ -5708,7 +5717,7 @@
                     <Component class="javax.swing.JToggleButton" name="timetableCapture">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Tahoma" size="11" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Capture Locomotive Commands"/>
                         <Property name="toolTipText" type="java.lang.String" value="Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!"/>
@@ -5748,7 +5757,7 @@
                                   <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel52" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="18" max="32767" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -6084,9 +6093,12 @@
                     <Component class="javax.swing.JLabel" name="jLabel51">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="14" style="0"/>
+                          <Font name="Segoe UI Semibold" size="13" style="0"/>
                         </Property>
-                        <Property name="text" type="java.lang.String" value="Fine tune the behavior of autonomous operation: hover for setting details."/>
+                        <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                          <Color blue="73" green="0" red="0" type="rgb"/>
+                        </Property>
+                        <Property name="text" type="java.lang.String" value="Train Behavior"/>
                       </Properties>
                     </Component>
                     <Container class="javax.swing.JPanel" name="jPanel4">
@@ -6149,7 +6161,7 @@
                         <Component class="javax.swing.JButton" name="clearNonParkedLocs">
                           <Properties>
                             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                              <Font name="Segoe UI" size="11" style="1"/>
+                              <Font name="Segoe UI" size="12" style="1"/>
                             </Property>
                             <Property name="text" type="java.lang.String" value="Clear Locomotives from Graph"/>
                             <Property name="toolTipText" type="java.lang.String" value="This button removes all non-parked locomotives from the autonomy graph."/>
@@ -6190,7 +6202,7 @@
                     <Component class="javax.swing.JLabel" name="jLabel52">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="14" style="0"/>
+                          <Font name="Segoe UI Semibold" size="13" style="0"/>
                         </Property>
                         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                           <Color blue="73" green="0" red="0" type="rgb"/>
@@ -6241,7 +6253,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane3" pref="611" max="32767" attributes="0"/>
+                      <Component id="jScrollPane3" pref="574" max="32767" attributes="0"/>
                       <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -6394,7 +6406,7 @@
         <Component class="javax.swing.JLabel" name="ActiveLocLabel">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-              <Font name="Tahoma" size="19" style="0"/>
+              <Font name="Segoe UI Semibold" size="20" style="0"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Locomotive Name"/>
             <Property name="toolTipText" type="java.lang.String" value="Click to change mapping"/>
@@ -6419,7 +6431,7 @@
         <Component class="javax.swing.JSlider" name="SpeedSlider">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-              <Font name="Segoe UI" size="14" style="0"/>
+              <Font name="Segoe UI Semibold" size="13" style="0"/>
             </Property>
             <Property name="majorTickSpacing" type="int" value="10"/>
             <Property name="minorTickSpacing" type="int" value="5"/>
@@ -6439,9 +6451,10 @@
         <Component class="javax.swing.JToggleButton" name="Backward">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-              <Font name="Tahoma" size="11" style="1"/>
+              <Font name="Segoe UI" size="12" style="1"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="&lt;&lt;&lt;&lt;&lt; REV"/>
+            <Property name="text" type="java.lang.String" value="&lt;&lt;&lt;&lt;&lt;&lt;&lt;"/>
+            <Property name="toolTipText" type="java.lang.String" value="Reverse"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
@@ -6451,9 +6464,10 @@
         <Component class="javax.swing.JToggleButton" name="Forward">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-              <Font name="Tahoma" size="11" style="1"/>
+              <Font name="Segoe UI" size="12" style="1"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="FWD &gt;&gt;&gt;&gt;&gt;"/>
+            <Property name="text" type="java.lang.String" value="&gt;&gt;&gt;&gt;&gt;&gt;&gt;"/>
+            <Property name="toolTipText" type="java.lang.String" value="Forward"/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>
@@ -6481,7 +6495,7 @@
         <Component class="javax.swing.JLabel" name="locIcon">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
-            <Property name="toolTipText" type="java.lang.String" value="Locomotive icon.  Right-click to change."/>
+            <Property name="toolTipText" type="java.lang.String" value="Right-click to change icon"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
           </Properties>

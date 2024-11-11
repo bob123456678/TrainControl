@@ -96,12 +96,12 @@
     <Component class="javax.swing.JLabel" name="locListLabel">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Segoe UI" size="14" style="0"/>
+          <Font name="Segoe UI Semibold" size="13" style="0"/>
         </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="9b" green="0" red="0" type="rgb"/>
         </Property>
-        <Property name="text" type="java.lang.String" value="Assign Locomotive to Active Button:"/>
+        <Property name="text" type="java.lang.String" value="Assign Locomotive to Active Button"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JTextField" name="LocFilterBox">
@@ -181,7 +181,7 @@
     <Component class="javax.swing.JButton" name="SyncWithCS">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="11" style="1"/>
+          <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Sync with Central Station DB"/>
         <Property name="focusable" type="boolean" value="false"/>
@@ -203,7 +203,7 @@
     <Component class="javax.swing.JButton" name="addLocomotive">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="11" style="1"/>
+          <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Add Locomotive"/>
         <Property name="focusable" type="boolean" value="false"/>

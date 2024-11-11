@@ -69,7 +69,7 @@
     <Component class="javax.swing.JButton" name="prev">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="11" style="1"/>
+          <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="&lt;&lt;&lt;"/>
         <Property name="focusable" type="boolean" value="false"/>
@@ -90,7 +90,7 @@
     <Component class="javax.swing.JButton" name="next">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="11" style="1"/>
+          <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="&gt;&gt;&gt;"/>
         <Property name="focusable" type="boolean" value="false"/>
@@ -111,7 +111,7 @@
     <Component class="javax.swing.JButton" name="reset">
       <Properties>
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="11" style="1"/>
+          <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Reset"/>
         <Property name="focusable" type="boolean" value="false"/>

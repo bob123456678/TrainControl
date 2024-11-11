@@ -210,7 +210,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         ));
         jScrollPane1.setViewportView(statsTable);
 
-        exportData.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        exportData.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         exportData.setText("Export Raw Data");
         exportData.setFocusable(false);
         exportData.addActionListener(new java.awt.event.ActionListener() {
@@ -219,7 +219,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
         });
 
-        refresh.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        refresh.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         refresh.setText("Refresh");
         refresh.setFocusable(false);
         refresh.addActionListener(new java.awt.event.ActionListener() {
@@ -278,7 +278,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         locomotivesCumulativeLabel.setForeground(new java.awt.Color(0, 0, 115));
         locomotivesCumulativeLabel.setText("locomotives");
 
-        viewUsageGraph.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        viewUsageGraph.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         viewUsageGraph.setText("30-day Usage Graph");
         viewUsageGraph.setFocusable(false);
         viewUsageGraph.addActionListener(new java.awt.event.ActionListener() {

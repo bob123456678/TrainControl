@@ -170,7 +170,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         departureFuncLabel1 = new javax.swing.JLabel();
         edgeLength = new javax.swing.JComboBox<>();
 
-        arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Signal/Switch Commands");
 
@@ -197,7 +197,7 @@ public class GraphEdgeEdit extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(lockEdges);
 
-        departureFuncLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        departureFuncLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel1.setText("Lock Edges");
 

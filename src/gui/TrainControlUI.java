@@ -5,7 +5,6 @@ import automation.Point;
 import automation.TimetablePath;
 import base.Locomotive;
 import base.RouteCommand;
-import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
@@ -125,7 +124,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
-    
+    public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
+
     public static final String NO_LOC_MESSAGE = "There are no locomotives currently in the database. Add some in the Tools tab, or via the Central Station, and then synchronize.";
     
     // Keyboard layout constants
@@ -299,11 +299,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
 
-        javax.swing.UIManager.put( "TabbedPane.tabWidthMode", "compact" );
-        javax.swing.UIManager.put( "TabbedPane.tabInsets", new Insets(8, 8, 8, 8 ));
+        // Makes tabs narrower
+        javax.swing.UIManager.put( "TabbedPane.tabWidthMode", "compact");
+        javax.swing.UIManager.put( "TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
 
-        
-        
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -552,6 +551,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
            
         // Restore UI component state
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
+        this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, true));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
@@ -598,6 +598,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.PrevLocMapping.addMouseListener(rcm);
         this.NextLocMapping.addMouseListener(rcm);
         
+        displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
+
         // UI editor bugs out when this is too wide
         // this.locMappingLabel.setText("Locomotive Mapping (Right-click for options)");  
     }
@@ -2791,6 +2793,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         exportAllRoutes = new javax.swing.JButton();
         jSeparator7 = new javax.swing.JSeparator();
         importRoutes = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         keyboardButtonPanel = new javax.swing.JPanel();
@@ -3024,6 +3027,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator19 = new javax.swing.JPopupMenu.Separator();
         locomotiveControlMenu = new javax.swing.JMenu();
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
+        showKeyboardHintsMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator20 = new javax.swing.JPopupMenu.Separator();
         keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -3088,7 +3092,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        locMappingLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        locMappingLabel.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
         locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
         locMappingLabel.setText("Locomotive Key Mapping");
         locMappingLabel.setToolTipText("Right-click any button for options");
@@ -3098,7 +3102,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
         LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
-        CButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        CButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         CButton.setText("C");
         CButton.setFocusable(false);
         CButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3107,7 +3111,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        VButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        VButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         VButton.setText("V");
         VButton.setFocusable(false);
         VButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3116,7 +3120,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ZButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        ZButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         ZButton.setText("Z");
         ZButton.setFocusable(false);
         ZButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3125,7 +3129,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        XButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        XButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         XButton.setText("X");
         XButton.setFocusable(false);
         XButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3134,7 +3138,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        MButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        MButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         MButton.setText("M");
         MButton.setFocusable(false);
         MButton.setMaximumSize(new java.awt.Dimension(39, 23));
@@ -3145,7 +3149,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        BButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         BButton.setText("B");
         BButton.setFocusable(false);
         BButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3154,7 +3158,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        NButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        NButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         NButton.setText("N");
         NButton.setFocusable(false);
         NButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3163,7 +3167,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        OButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        OButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         OButton.setText("O");
         OButton.setFocusable(false);
         OButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3172,7 +3176,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        PButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        PButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         PButton.setText("P");
         PButton.setFocusable(false);
         PButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3181,7 +3185,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        AButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        AButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         AButton.setText("A");
         AButton.setFocusable(false);
         AButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3190,7 +3194,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SButton.setText("S");
         SButton.setFocusable(false);
         SButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3199,7 +3203,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        DButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        DButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         DButton.setText("D");
         DButton.setFocusable(false);
         DButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3208,7 +3212,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        FButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        FButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         FButton.setText("F");
         FButton.setFocusable(false);
         FButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3217,7 +3221,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        GButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        GButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         GButton.setText("G");
         GButton.setFocusable(false);
         GButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3226,7 +3230,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        HButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        HButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         HButton.setText("H");
         HButton.setFocusable(false);
         HButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3235,7 +3239,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        JButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        JButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         JButton.setText("J");
         JButton.setFocusable(false);
         JButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3244,7 +3248,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        LButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         LButton.setText("L");
         LButton.setFocusable(false);
         LButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3253,7 +3257,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        KButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        KButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         KButton.setText("K");
         KButton.setFocusable(false);
         KButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3262,7 +3266,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        YButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        YButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         YButton.setText("Y");
         YButton.setFocusable(false);
         YButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3271,7 +3275,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        RButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        RButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         RButton.setText("R");
         RButton.setFocusable(false);
         RButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3280,7 +3284,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        TButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        TButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         TButton.setText("T");
         TButton.setFocusable(false);
         TButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3289,7 +3293,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        WButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        WButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         WButton.setText("W");
         WButton.setFocusable(false);
         WButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3298,7 +3302,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        EButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        EButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         EButton.setText("E");
         EButton.setFocusable(false);
         EButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3307,7 +3311,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        QButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        QButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         QButton.setText("Q");
         QButton.setFocusable(false);
         QButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3316,7 +3320,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        IButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        IButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         IButton.setText("I");
         IButton.setFocusable(false);
         IButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3325,7 +3329,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        UButton.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        UButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         UButton.setText("U");
         UButton.setFocusable(false);
         UButton.addActionListener(new java.awt.event.ActionListener() {
@@ -3334,7 +3338,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        PrevLocMapping.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        PrevLocMapping.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         PrevLocMapping.setText("<< ,");
         PrevLocMapping.setFocusable(false);
         PrevLocMapping.addActionListener(new java.awt.event.ActionListener() {
@@ -3343,7 +3347,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        NextLocMapping.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        NextLocMapping.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         NextLocMapping.setText(". >>");
         NextLocMapping.setFocusable(false);
         NextLocMapping.addActionListener(new java.awt.event.ActionListener() {
@@ -3352,7 +3356,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LocMappingNumberLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setFocusable(false);
 
@@ -4320,7 +4324,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         controlsPanel.setBackground(new java.awt.Color(245, 245, 245));
         controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
-        UpArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        UpArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         UpArrow.setText("↑");
         UpArrow.setToolTipText("Increase Speed");
         UpArrow.setFocusable(false);
@@ -4330,7 +4334,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        DownArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        DownArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         DownArrow.setText("↓");
         DownArrow.setToolTipText("Decrease Speed");
         DownArrow.setFocusable(false);
@@ -4340,7 +4344,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        RightArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        RightArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         RightArrow.setText("→");
         RightArrow.setToolTipText("Switch Direction");
         RightArrow.setFocusable(false);
@@ -4350,7 +4354,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        LeftArrow.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        LeftArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         LeftArrow.setText("←");
         LeftArrow.setToolTipText("Switch Direction");
         LeftArrow.setFocusable(false);
@@ -4360,7 +4364,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SpacebarButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SpacebarButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         SpacebarButton.setText("Spacebar");
         SpacebarButton.setToolTipText("Spacebar: emergency stop of current locomotive.");
         SpacebarButton.setFocusable(false);
@@ -4376,7 +4380,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         EStopLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         EStopLabel.setText("Stop All");
 
-        ShiftButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ShiftButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         ShiftButton.setText("Shift");
         ShiftButton.setToolTipText("Shift: stop locomotive");
         ShiftButton.setFocusable(false);
@@ -4392,7 +4396,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel7.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel7.setText("Increment Speed");
 
-        AltEmergencyStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        AltEmergencyStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         AltEmergencyStop.setText("Enter");
         AltEmergencyStop.setToolTipText("Enter: stops all running locomotives.");
         AltEmergencyStop.setFocusable(false);
@@ -4405,7 +4409,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel8.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel8.setText("Instant Stop");
 
-        ZeroButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ZeroButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         ZeroButton.setText("0");
         ZeroButton.setFocusable(false);
         ZeroButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4417,7 +4421,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         FullSpeedLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         FullSpeedLabel.setText("100% Speed");
 
-        EightButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        EightButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         EightButton.setText("8");
         EightButton.setFocusable(false);
         EightButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4426,7 +4430,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        NineButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        NineButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         NineButton.setText("9");
         NineButton.setFocusable(false);
         NineButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4435,7 +4439,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SevenButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SevenButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         SevenButton.setText("7");
         SevenButton.setFocusable(false);
         SevenButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4444,7 +4448,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        FourButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        FourButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         FourButton.setText("4");
         FourButton.setFocusable(false);
         FourButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4453,7 +4457,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ThreeButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ThreeButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         ThreeButton.setText("3");
         ThreeButton.setFocusable(false);
         ThreeButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4462,7 +4466,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        TwoButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        TwoButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         TwoButton.setText("2");
         TwoButton.setFocusable(false);
         TwoButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4471,7 +4475,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        OneButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        OneButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         OneButton.setText("1");
         OneButton.setFocusable(false);
         OneButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4480,7 +4484,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SixButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        SixButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         SixButton.setText("6");
         SixButton.setFocusable(false);
         SixButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4489,7 +4493,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        FiveButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        FiveButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         FiveButton.setText("5");
         FiveButton.setFocusable(false);
         FiveButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4611,7 +4615,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        PrimaryControls.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        PrimaryControls.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
         PrimaryControls.setText("Primary Keyboard Controls");
 
@@ -4637,24 +4641,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(toggleMenuBar)
-                    .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addGroup(LocControlPanelLayout.createSequentialGroup()
-                            .addComponent(PrimaryControls)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(latencyLabel))
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                        .addComponent(PrimaryControls)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(latencyLabel))
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(locMappingLabel)
-                        .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(toggleMenuBar))
+                    .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(72, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(locMappingLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(3, 3, 3)
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(locMappingLabel)
+                    .addComponent(toggleMenuBar))
+                .addGap(3, 3, 3)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -4662,9 +4669,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(toggleMenuBar)
-                .addContainerGap(84, Short.MAX_VALUE))
+                .addContainerGap(76, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -4679,8 +4684,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LayoutList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         LayoutList.setToolTipText("- / + to cycle");
         LayoutList.setFocusable(false);
-        LayoutList.setMinimumSize(new java.awt.Dimension(90, 22));
-        LayoutList.setPreferredSize(new java.awt.Dimension(90, 22));
+        LayoutList.setMinimumSize(new java.awt.Dimension(90, 24));
+        LayoutList.setPreferredSize(new java.awt.Dimension(90, 24));
         LayoutList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LayoutListActionPerformed(evt);
@@ -4727,24 +4732,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        layoutNewWindow.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        layoutNewWindow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         layoutNewWindow.setText("Large");
         layoutNewWindow.setFocusable(false);
-        layoutNewWindow.setMaximumSize(null);
-        layoutNewWindow.setMinimumSize(null);
-        layoutNewWindow.setPreferredSize(null);
         layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 layoutNewWindowActionPerformed(evt);
             }
         });
 
-        smallButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        smallButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         smallButton.setText("Small");
         smallButton.setFocusable(false);
-        smallButton.setMaximumSize(null);
-        smallButton.setMinimumSize(null);
-        smallButton.setPreferredSize(null);
         smallButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 smallButtonActionPerformed(evt);
@@ -4755,7 +4754,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel19.setText("Pop-up:");
         jLabel19.setToolTipText("Show the current track diagram in a pop-up window");
 
-        allButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        allButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         allButton.setText("All");
         allButton.setFocusable(false);
         allButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4766,7 +4765,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
-        editLayoutButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        editLayoutButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         editLayoutButton.setText("Edit");
         editLayoutButton.setToolTipText("Launch the layout editor (Windows only)");
         editLayoutButton.setFocusable(false);
@@ -4813,18 +4812,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(LayoutArea, javax.swing.GroupLayout.PREFERRED_SIZE, 547, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(layoutListLabel)
-                        .addComponent(sizeLabel)
-                        .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(allButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator1))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(SizeList, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(layoutListLabel)
+                            .addComponent(sizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(allButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jSeparator1)))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Diag", layoutPanel);
@@ -4835,11 +4835,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         RoutePanel.setMinimumSize(new java.awt.Dimension(806, 595));
         RoutePanel.setPreferredSize(new java.awt.Dimension(806, 595));
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
         jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
 
-        RouteList.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        RouteList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         RouteList.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
@@ -4862,7 +4862,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
         jScrollPane5.setViewportView(RouteList);
 
-        AddRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        AddRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         AddRouteButton.setText("Add Route");
         AddRouteButton.setFocusable(false);
         AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
@@ -4873,7 +4873,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         buttonGroup2.add(sortByName);
         sortByName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByName.setText("Sort by Name");
+        sortByName.setText("Name");
         sortByName.setFocusable(false);
         sortByName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4883,7 +4883,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         buttonGroup2.add(sortByID);
         sortByID.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByID.setText("Sort by ID");
+        sortByID.setText("ID");
         sortByID.setFocusable(false);
         sortByID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4891,7 +4891,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BulkEnable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BulkEnable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         BulkEnable.setText("Bulk Enable");
         BulkEnable.setFocusable(false);
         BulkEnable.addActionListener(new java.awt.event.ActionListener() {
@@ -4900,7 +4900,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        BulkDisable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        BulkDisable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         BulkDisable.setText("Bulk Disable");
         BulkDisable.setFocusable(false);
         BulkDisable.addActionListener(new java.awt.event.ActionListener() {
@@ -4913,7 +4913,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator2.setMinimumSize(new java.awt.Dimension(10, 10));
         jSeparator2.setPreferredSize(new java.awt.Dimension(30, 10));
 
-        exportAllRoutes.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        exportAllRoutes.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         exportAllRoutes.setText("Export");
         exportAllRoutes.setFocusable(false);
         exportAllRoutes.addActionListener(new java.awt.event.ActionListener() {
@@ -4926,7 +4926,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator7.setMinimumSize(new java.awt.Dimension(10, 10));
         jSeparator7.setPreferredSize(new java.awt.Dimension(30, 10));
 
-        importRoutes.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        importRoutes.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         importRoutes.setText("Import");
         importRoutes.setFocusable(false);
         importRoutes.addActionListener(new java.awt.event.ActionListener() {
@@ -4934,6 +4934,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 importRoutesActionPerformed(evt);
             }
         });
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(0, 0, 155));
+        jLabel1.setText("Sort by:");
 
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
@@ -4951,16 +4955,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addGap(9, 9, 9)
                         .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(BulkEnable)
+                        .addComponent(BulkEnable, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(BulkDisable)
                         .addGap(9, 9, 9)
                         .addComponent(jSeparator7, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(exportAllRoutes, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(importRoutes, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
+                        .addComponent(exportAllRoutes)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(importRoutes)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sortByName)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sortByID)))
@@ -4972,7 +4978,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 519, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4983,7 +4989,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(BulkDisable)
                         .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(exportAllRoutes)
-                        .addComponent(importRoutes))
+                        .addComponent(importRoutes)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18))
         );
@@ -4997,7 +5004,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardPanel.setMinimumSize(new java.awt.Dimension(806, 595));
         KeyboardPanel.setPreferredSize(new java.awt.Dimension(806, 595));
 
-        KeyboardLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        KeyboardLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KeyboardLabel.setForeground(new java.awt.Color(0, 0, 115));
         KeyboardLabel.setText("Accessory Addresses");
         KeyboardLabel.setFocusable(false);
@@ -5006,7 +5013,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         keyboardButtonPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         keyboardButtonPanel.setFocusable(false);
 
-        SwitchButton1.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton1.setText("1");
         SwitchButton1.setFocusable(false);
         SwitchButton1.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5018,7 +5025,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton2.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton2.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton2.setText("2");
         SwitchButton2.setFocusable(false);
         SwitchButton2.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5030,7 +5037,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton3.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton3.setText("3");
         SwitchButton3.setFocusable(false);
         SwitchButton3.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5042,7 +5049,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton4.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton4.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton4.setText("4");
         SwitchButton4.setFocusable(false);
         SwitchButton4.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5054,7 +5061,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton5.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton5.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton5.setText("5");
         SwitchButton5.setFocusable(false);
         SwitchButton5.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5066,7 +5073,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton6.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton6.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton6.setText("6");
         SwitchButton6.setFocusable(false);
         SwitchButton6.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5078,7 +5085,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton7.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton7.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton7.setText("7");
         SwitchButton7.setFocusable(false);
         SwitchButton7.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5090,7 +5097,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton8.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton8.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton8.setText("8");
         SwitchButton8.setFocusable(false);
         SwitchButton8.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5102,7 +5109,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton9.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton9.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton9.setText("9");
         SwitchButton9.setFocusable(false);
         SwitchButton9.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5114,7 +5121,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton10.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton10.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton10.setText("10");
         SwitchButton10.setFocusable(false);
         SwitchButton10.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5126,7 +5133,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton11.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton11.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton11.setText("11");
         SwitchButton11.setFocusable(false);
         SwitchButton11.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5138,7 +5145,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton12.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton12.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton12.setText("12");
         SwitchButton12.setFocusable(false);
         SwitchButton12.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5150,7 +5157,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton13.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton13.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton13.setText("13");
         SwitchButton13.setFocusable(false);
         SwitchButton13.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5162,7 +5169,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton14.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton14.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton14.setText("14");
         SwitchButton14.setFocusable(false);
         SwitchButton14.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5174,7 +5181,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton15.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton15.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton15.setText("15");
         SwitchButton15.setFocusable(false);
         SwitchButton15.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5186,7 +5193,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton16.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton16.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton16.setText("16");
         SwitchButton16.setFocusable(false);
         SwitchButton16.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5198,7 +5205,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton17.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton17.setText("17");
         SwitchButton17.setFocusable(false);
         SwitchButton17.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5210,7 +5217,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton18.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton18.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton18.setText("18");
         SwitchButton18.setFocusable(false);
         SwitchButton18.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5222,7 +5229,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton19.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton19.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton19.setText("19");
         SwitchButton19.setFocusable(false);
         SwitchButton19.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5234,7 +5241,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton21.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton21.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton21.setText("21");
         SwitchButton21.setFocusable(false);
         SwitchButton21.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5246,7 +5253,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton22.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton22.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton22.setText("22");
         SwitchButton22.setFocusable(false);
         SwitchButton22.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5258,7 +5265,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton23.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton23.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton23.setText("23");
         SwitchButton23.setFocusable(false);
         SwitchButton23.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5270,7 +5277,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton24.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton24.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton24.setText("24");
         SwitchButton24.setFocusable(false);
         SwitchButton24.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5282,7 +5289,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton26.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton26.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton26.setText("26");
         SwitchButton26.setFocusable(false);
         SwitchButton26.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5294,7 +5301,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton27.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton27.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton27.setText("27");
         SwitchButton27.setFocusable(false);
         SwitchButton27.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5306,7 +5313,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton29.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton29.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton29.setText("29");
         SwitchButton29.setFocusable(false);
         SwitchButton29.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5318,7 +5325,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton28.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton28.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton28.setText("28");
         SwitchButton28.setFocusable(false);
         SwitchButton28.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5330,7 +5337,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton30.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton30.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton30.setText("30");
         SwitchButton30.setFocusable(false);
         SwitchButton30.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5342,7 +5349,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton31.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton31.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton31.setText("31");
         SwitchButton31.setFocusable(false);
         SwitchButton31.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5354,7 +5361,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton32.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton32.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton32.setText("32");
         SwitchButton32.setFocusable(false);
         SwitchButton32.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5366,7 +5373,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton33.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton33.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton33.setText("33");
         SwitchButton33.setFocusable(false);
         SwitchButton33.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5378,7 +5385,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton34.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton34.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton34.setText("34");
         SwitchButton34.setFocusable(false);
         SwitchButton34.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5390,7 +5397,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton35.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton35.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton35.setText("35");
         SwitchButton35.setFocusable(false);
         SwitchButton35.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5402,7 +5409,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton36.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton36.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton36.setText("36");
         SwitchButton36.setFocusable(false);
         SwitchButton36.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5414,7 +5421,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton37.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton37.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton37.setText("37");
         SwitchButton37.setFocusable(false);
         SwitchButton37.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5426,7 +5433,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton38.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton38.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton38.setText("38");
         SwitchButton38.setFocusable(false);
         SwitchButton38.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5438,7 +5445,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton39.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton39.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton39.setText("39");
         SwitchButton39.setFocusable(false);
         SwitchButton39.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5450,7 +5457,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton40.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton40.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton40.setText("40");
         SwitchButton40.setFocusable(false);
         SwitchButton40.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5462,7 +5469,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton41.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton41.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton41.setText("41");
         SwitchButton41.setFocusable(false);
         SwitchButton41.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5474,7 +5481,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton42.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton42.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton42.setText("42");
         SwitchButton42.setFocusable(false);
         SwitchButton42.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5486,7 +5493,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton43.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton43.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton43.setText("43");
         SwitchButton43.setFocusable(false);
         SwitchButton43.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5498,7 +5505,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton44.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton44.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton44.setText("44");
         SwitchButton44.setFocusable(false);
         SwitchButton44.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5510,7 +5517,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton45.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton45.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton45.setText("45");
         SwitchButton45.setFocusable(false);
         SwitchButton45.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5522,7 +5529,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton46.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton46.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton46.setText("46");
         SwitchButton46.setFocusable(false);
         SwitchButton46.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5534,7 +5541,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton47.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton47.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton47.setText("47");
         SwitchButton47.setFocusable(false);
         SwitchButton47.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5546,7 +5553,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton48.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton48.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton48.setText("48");
         SwitchButton48.setFocusable(false);
         SwitchButton48.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5558,7 +5565,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton49.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton49.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton49.setText("49");
         SwitchButton49.setFocusable(false);
         SwitchButton49.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5570,7 +5577,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton50.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton50.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton50.setText("50");
         SwitchButton50.setFocusable(false);
         SwitchButton50.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5582,7 +5589,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton51.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton51.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton51.setText("51");
         SwitchButton51.setFocusable(false);
         SwitchButton51.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5594,7 +5601,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton52.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton52.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton52.setText("52");
         SwitchButton52.setFocusable(false);
         SwitchButton52.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5606,7 +5613,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton53.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton53.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton53.setText("53");
         SwitchButton53.setFocusable(false);
         SwitchButton53.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5618,7 +5625,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton54.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton54.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton54.setText("54");
         SwitchButton54.setFocusable(false);
         SwitchButton54.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5630,7 +5637,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton55.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton55.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton55.setText("55");
         SwitchButton55.setFocusable(false);
         SwitchButton55.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5642,7 +5649,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton57.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton57.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton57.setText("57");
         SwitchButton57.setFocusable(false);
         SwitchButton57.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5654,7 +5661,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton58.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton58.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton58.setText("58");
         SwitchButton58.setFocusable(false);
         SwitchButton58.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5666,7 +5673,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton59.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton59.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton59.setText("59");
         SwitchButton59.setFocusable(false);
         SwitchButton59.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5678,7 +5685,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton60.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton60.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton60.setText("60");
         SwitchButton60.setFocusable(false);
         SwitchButton60.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5690,7 +5697,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton61.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton61.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton61.setText("61");
         SwitchButton61.setFocusable(false);
         SwitchButton61.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5702,7 +5709,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton62.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton62.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton62.setText("62");
         SwitchButton62.setFocusable(false);
         SwitchButton62.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5714,7 +5721,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton63.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton63.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton63.setText("63");
         SwitchButton63.setFocusable(false);
         SwitchButton63.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5726,7 +5733,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton20.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton20.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton20.setText("20");
         SwitchButton20.setFocusable(false);
         SwitchButton20.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5738,7 +5745,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton56.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton56.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton56.setText("56");
         SwitchButton56.setFocusable(false);
         SwitchButton56.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5750,7 +5757,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton25.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton25.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton25.setText("25");
         SwitchButton25.setFocusable(false);
         SwitchButton25.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5762,7 +5769,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SwitchButton64.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        SwitchButton64.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         SwitchButton64.setText("64");
         SwitchButton64.setFocusable(false);
         SwitchButton64.setMaximumSize(new java.awt.Dimension(24, 20));
@@ -5990,7 +5997,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jPanel10.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         jPanel10.setFocusable(false);
 
-        PrevKeyboard.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        PrevKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         PrevKeyboard.setText("<<< -");
         PrevKeyboard.setFocusable(false);
         PrevKeyboard.addActionListener(new java.awt.event.ActionListener() {
@@ -5999,11 +6006,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        KeyboardNumberLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        KeyboardNumberLabel.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
         KeyboardNumberLabel.setText("Keyboard ");
         KeyboardNumberLabel.setFocusable(false);
 
-        NextKeyboard.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        NextKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         NextKeyboard.setText("+ >>>");
         NextKeyboard.setFocusable(false);
         NextKeyboard.addActionListener(new java.awt.event.ActionListener() {
@@ -6036,7 +6043,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        KeyboardLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        KeyboardLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KeyboardLabel1.setForeground(new java.awt.Color(0, 0, 115));
         KeyboardLabel1.setText("Change Page");
         KeyboardLabel1.setFocusable(false);
@@ -6093,7 +6100,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
 
-        exportJSON.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        exportJSON.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         exportJSON.setText("Export Current Graph");
         exportJSON.setEnabled(false);
         exportJSON.setFocusable(false);
@@ -6103,7 +6110,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        loadJSONButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         loadJSONButton.setText("Load JSON from File");
         loadJSONButton.setFocusable(false);
         loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
@@ -6156,7 +6163,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        validateButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         validateButton.setText("Validate Configuration & Open Graph UI");
         validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
         validateButton.setFocusable(false);
@@ -6181,7 +6188,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
                         .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -6237,7 +6244,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane4.setViewportView(autoLocPanel);
 
         gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
-        gracefulStop.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        gracefulStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         gracefulStop.setText("Graceful Stop");
         gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
         gracefulStop.setEnabled(false);
@@ -6249,7 +6256,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
-        startAutonomy.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        startAutonomy.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         startAutonomy.setText("Start Autonomous Operation");
         startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
         startAutonomy.setEnabled(false);
@@ -6282,7 +6289,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(startAutonomy)
                     .addComponent(gracefulStop))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 502, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6305,7 +6312,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jScrollPane6.setViewportView(timetable);
 
         executeTimetable.setBackground(new java.awt.Color(204, 255, 204));
-        executeTimetable.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         executeTimetable.setText("Execute Timetable");
         executeTimetable.setToolTipText("Sequentially executes the timetable.");
         executeTimetable.setFocusable(false);
@@ -6315,7 +6322,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        timetableCapture.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         timetableCapture.setText("Capture Locomotive Commands");
         timetableCapture.setToolTipText("Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!");
         timetableCapture.setFocusable(false);
@@ -6347,7 +6354,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(executeTimetable)
                     .addComponent(timetableCapture))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 502, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6572,8 +6579,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(simulate))
         );
 
-        jLabel51.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel51.setText("Fine tune the behavior of autonomous operation: hover for setting details.");
+        jLabel51.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel51.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel51.setText("Train Behavior");
 
         jPanel4.setBackground(new java.awt.Color(245, 245, 245));
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
@@ -6588,7 +6596,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        clearNonParkedLocs.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        clearNonParkedLocs.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         clearNonParkedLocs.setText("Clear Locomotives from Graph");
         clearNonParkedLocs.setToolTipText("This button removes all non-parked locomotives from the autonomy graph.");
         clearNonParkedLocs.setFocusable(false);
@@ -6645,7 +6653,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap())
         );
 
-        jLabel52.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel52.setForeground(new java.awt.Color(0, 0, 115));
         jLabel52.setText("Graph UI options");
 
@@ -6662,7 +6670,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6722,7 +6730,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 611, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 574, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -6767,7 +6775,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        ActiveLocLabel.setFont(new java.awt.Font("Tahoma", 0, 19)); // NOI18N
+        ActiveLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 20)); // NOI18N
         ActiveLocLabel.setText("Locomotive Name");
         ActiveLocLabel.setToolTipText("Click to change mapping");
         ActiveLocLabel.setFocusable(false);
@@ -6780,7 +6788,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        SpeedSlider.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        SpeedSlider.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         SpeedSlider.setMajorTickSpacing(10);
         SpeedSlider.setMinorTickSpacing(5);
         SpeedSlider.setPaintLabels(true);
@@ -6797,8 +6805,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        Backward.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        Backward.setText("<<<<< REV");
+        Backward.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        Backward.setText("<<<<<<<");
+        Backward.setToolTipText("Reverse");
         Backward.setFocusable(false);
         Backward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -6806,8 +6815,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
-        Forward.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        Forward.setText("FWD >>>>>");
+        Forward.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        Forward.setText(">>>>>>>");
+        Forward.setToolTipText("Forward");
         Forward.setFocusable(false);
         Forward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -6823,7 +6833,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CurrentKeyLabel.setFocusable(false);
 
         locIcon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        locIcon.setToolTipText("Locomotive icon.  Right-click to change.");
+        locIcon.setToolTipText("Right-click to change icon");
         locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         locIcon.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -8033,6 +8043,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         locomotiveControlMenu.add(slidersChangeActiveLocMenuItem);
+
+        showKeyboardHintsMenuItem.setSelected(true);
+        showKeyboardHintsMenuItem.setText("Show Keyboard Control Hits");
+        showKeyboardHintsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showKeyboardHintsMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(showKeyboardHintsMenuItem);
         locomotiveControlMenu.add(jSeparator20);
 
         buttonGroup3.add(keyboardQwertyMenuItem);
@@ -8827,10 +8846,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         return;
                     }
 
-                    if (newName.length() >= MAX_LOC_NAME_DATABASE)
+                    if (newName.length() > MAX_LOC_NAME_DATABASE)
                     {
                         JOptionPane.showMessageDialog(this,
-                            "Please enter a locomotive name under " + MAX_LOC_NAME_DATABASE + " characters");
+                            "Please enter a locomotive name no longer than " + MAX_LOC_NAME_DATABASE + " characters");
                         return;
                     }
 
@@ -10853,6 +10872,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }).start();
     }//GEN-LAST:event_exportJSONActionPerformed
 
+    private void showKeyboardHintsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showKeyboardHintsMenuItemActionPerformed
+        prefs.putBoolean(SHOW_KEYBOARD_HINTS_PREF, this.showKeyboardHintsMenuItem.isSelected());
+        displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
+    }//GEN-LAST:event_showKeyboardHintsMenuItemActionPerformed
+
+    public final void displayKeyboardHints(boolean visibility)
+    {
+        this.PrimaryControls.setVisible(visibility);
+        this.controlsPanel.setVisible(visibility);
+    }
+    
     public void deleteTimetableEntry(MouseEvent evt)
     {
         try
@@ -12012,6 +12042,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton importRoutes;
     private javax.swing.JMenuItem initializeLocalLayoutMenuItem;
     private javax.swing.JMenu interfaceMenu;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel43;
@@ -12079,6 +12110,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JMenuItem openCS3AppMenuItem;
     private javax.swing.JSlider preArrivalSpeedReduction;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
+    private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;
     private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;

@@ -258,11 +258,11 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
-        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(0, 0, 115));
         jLabel1.setText("Route Name");
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
         jLabel2.setText("Accessory Command Wizard");
 
@@ -404,7 +404,7 @@ public class RouteEditor extends javax.swing.JPanel
                 .addContainerGap())
         );
 
-        jLabel6.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel6.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
         jLabel6.setText("Optional Settings");
 
@@ -419,7 +419,7 @@ public class RouteEditor extends javax.swing.JPanel
         routeContents.setRows(5);
         jScrollPane1.setViewportView(routeContents);
 
-        addStopCommand.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addStopCommand.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addStopCommand.setText("Add \"Power Off\" Command");
         addStopCommand.setToolTipText("Useful if a conditional route is to be used as an emergency stop");
         addStopCommand.setFocusable(false);
@@ -473,7 +473,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
-        addToRouteButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addToRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addToRouteButton.setText("Add to Route");
         addToRouteButton.setFocusable(false);
         addToRouteButton.addActionListener(new java.awt.event.ActionListener() {
@@ -535,7 +535,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
-        addToRouteButton1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addToRouteButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addToRouteButton1.setText("Add as Condition");
         addToRouteButton1.setFocusable(false);
         addToRouteButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -611,11 +611,11 @@ public class RouteEditor extends javax.swing.JPanel
                 .addGap(36, 36, 36))
         );
 
-        jLabel7.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel7.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel7.setForeground(new java.awt.Color(0, 0, 115));
         jLabel7.setText("Route Commands");
 
-        Help.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        Help.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         Help.setText("Help");
         Help.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -623,7 +623,7 @@ public class RouteEditor extends javax.swing.JPanel
             }
         });
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel14.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel14.setForeground(new java.awt.Color(0, 0, 115));
         jLabel14.setText("S88 Condition Editing Wizard");
 
@@ -658,7 +658,7 @@ public class RouteEditor extends javax.swing.JPanel
         s88Clear.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88Clear.setText("Clear (0)");
 
-        addS88Condition.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addS88Condition.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addS88Condition.setText("Add S88 Condition");
         addS88Condition.setFocusable(false);
         addS88Condition.addActionListener(new java.awt.event.ActionListener() {
@@ -708,6 +708,7 @@ public class RouteEditor extends javax.swing.JPanel
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        jLabel17.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel17.setForeground(new java.awt.Color(0, 0, 115));
         jLabel17.setText("Locomotive Command Wizard");
 
@@ -718,7 +719,7 @@ public class RouteEditor extends javax.swing.JPanel
         jLabel18.setForeground(new java.awt.Color(0, 0, 115));
         jLabel18.setText("Locomotive Name");
 
-        addLocCommand.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        addLocCommand.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addLocCommand.setText("Add to Route");
         addLocCommand.setFocusable(false);
         addLocCommand.addActionListener(new java.awt.event.ActionListener() {
