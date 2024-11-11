@@ -73,7 +73,7 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jScrollPane1" pref="511" max="32767" attributes="0"/>
+              <Component id="jScrollPane1" pref="520" max="32767" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="todaysRuntimeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -97,7 +97,7 @@
                   <Component id="filterField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="viewUsageGraph" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace pref="18" max="32767" attributes="0"/>
+              <EmptySpace pref="9" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
