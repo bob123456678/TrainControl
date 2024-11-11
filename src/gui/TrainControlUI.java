@@ -6630,7 +6630,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel52.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel52.setText("Graph UI options");
+        jLabel52.setText("Graph UI Options");
 
         javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
         autoSettingsPanel.setLayout(autoSettingsPanelLayout);

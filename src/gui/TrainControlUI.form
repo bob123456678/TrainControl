@@ -6207,7 +6207,7 @@
                         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                           <Color blue="73" green="0" red="0" type="rgb"/>
                         </Property>
-                        <Property name="text" type="java.lang.String" value="Graph UI options"/>
+                        <Property name="text" type="java.lang.String" value="Graph UI Options"/>
                       </Properties>
                     </Component>
                   </SubComponents>
