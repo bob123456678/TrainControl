@@ -573,6 +573,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.NextLocMapping.addMouseListener(rcm);
         
         displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true)); 
+        
+        // Style tables
+        timetable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
     }
     
     /**

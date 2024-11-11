@@ -37,8 +37,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         initComponents();
         this.tcui = tcui;
         
-        JTableHeader header = statsTable.getTableHeader(); 
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        statsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         
         refresh();
     }
