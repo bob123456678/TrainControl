@@ -8,6 +8,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -828,7 +829,47 @@ final public class GraphViewer extends javax.swing.JFrame
                     }
                 }
             }); 
-             
+            
+            add(menuItem);
+            
+            addSeparator();
+            
+            menuItem = new JMenuItem("Clear Locomotives from Graph");
+            menuItem.addActionListener(event -> 
+            {
+                if (!parent.getModel().getAutoLayout().isRunning())
+                {
+                    try
+                    {
+                        int dialogResult = JOptionPane.showConfirmDialog(
+                            (Component) swingView, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+
+                        if(dialogResult == JOptionPane.YES_OPTION)
+                        {
+                            List<Locomotive> locs = new ArrayList<>(parent.getModel().getAutoLayout().getLocomotivesToRun());
+
+                            for (Locomotive l: locs)
+                            {
+                                Point p = parent.getModel().getAutoLayout().getLocomotiveLocation(l);
+
+                                if (p != null && !p.isReversing() && p.isDestination())
+                                {
+                                    parent.getModel().getAutoLayout().moveLocomotive(null, p.getName(), false);
+                                    ui.updatePoint(p, mainGraph);
+                                }
+                            }
+
+                            parent.repaintAutoLocList(false);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        // loadAutoLayoutSettings();
+                    }
+                }
+            });
+            
             add(menuItem);
         }
     }

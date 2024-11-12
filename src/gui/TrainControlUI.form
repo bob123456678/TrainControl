@@ -6121,10 +6121,9 @@
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="hideReversing" min="-2" max="-2" attributes="0"/>
                                       <Component id="hideInactive" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="clearNonParkedLocs" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="showStationLengths" alignment="0" min="-2" max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace max="32767" attributes="0"/>
+                                  <EmptySpace pref="18" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                         </DimensionLayout>
@@ -6137,8 +6136,6 @@
                                   <Component id="hideInactive" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="32767" attributes="0"/>
                                   <Component id="showStationLengths" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="clearNonParkedLocs" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
                               </Group>
                           </Group>
@@ -6156,19 +6153,6 @@
                           </Properties>
                           <Events>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="hideReversingMouseReleased"/>
-                          </Events>
-                        </Component>
-                        <Component class="javax.swing.JButton" name="clearNonParkedLocs">
-                          <Properties>
-                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                              <Font name="Segoe UI" size="12" style="1"/>
-                            </Property>
-                            <Property name="text" type="java.lang.String" value="Clear Locomotives from Graph"/>
-                            <Property name="toolTipText" type="java.lang.String" value="This button removes all non-parked locomotives from the autonomy graph."/>
-                            <Property name="focusable" type="boolean" value="false"/>
-                          </Properties>
-                          <Events>
-                            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearNonParkedLocsActionPerformed"/>
                           </Events>
                         </Component>
                         <Component class="javax.swing.JCheckBox" name="hideInactive">

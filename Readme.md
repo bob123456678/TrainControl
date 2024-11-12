@@ -252,6 +252,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Increased the size of locomotive icons
         - Autonomy 
             - Consolidated start / stop buttons onto the Locomotive Control tab of the autonomy UI
+            - Moved option to clear locomotives from the graph to the right-click menu in the graph UI (when right clicking any blank space)
         - Routes
             - The route ID is now pre-filled when editing route IDs
         - Locomotive Management
@@ -260,6 +261,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Alt+comma/period, Alt+semicolon/colon will now jump to the first/last key mapping page
             - QWERTY/QWERTZ/AZERTY keyboard options moved to the menu bar
     - Fixed bug where "Large" track diagrams would not always render correctly 
+    - Fixed bug where deleted/edited locomotives would persist in the autonomy graph UI
 
 * v2.2.7 [9/14/2024]
     - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node
