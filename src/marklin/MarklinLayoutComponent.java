@@ -546,7 +546,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isRoute() && this.getRoute() != null)
         {
-            return "Route " + this.getRoute().getId();
+            return "Route " + this.getRoute().getId() + " (" + this.getRoute().getName() + ")";
         }
         else if (this.isLink())
         {

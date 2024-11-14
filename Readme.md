@@ -255,11 +255,15 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Moved option to clear locomotives from the graph to the right-click menu in the graph UI (when right clicking any blank space)
         - Routes
             - The route ID is now pre-filled when editing route IDs
+            - The track diagrams can now be focused while editing routes
+            - When editing routes, errors will no longer result in the window closing
+            - Route names are now shown in track diagram tooltips
         - Locomotive Management
             - Locomotives in the locomotive selector are now sorted alphabetically
             - Locomotives can now be added to the database through a separate popup window
             - Alt+comma/period, Alt+semicolon/colon will now jump to the first/last key mapping page
             - QWERTY/QWERTZ/AZERTY keyboard options moved to the menu bar
+    - When editing routes, live switch/signal commands can now be captured on demand
     - Fixed bug where "Large" track diagrams would not always render correctly 
     - Fixed bug where deleted/edited locomotives would persist in the autonomy graph UI
 

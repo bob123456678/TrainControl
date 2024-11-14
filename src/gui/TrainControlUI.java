@@ -278,6 +278,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Stats UI
     private LocomotiveStats stats;
     
+    // Route editing UI
+    private RouteEditor routeEditor;
+    
     // Quick search cache
     private String lastSearch = "";
     private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
@@ -296,8 +299,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         //FlatIntelliJLaf.setup();
 
         // Makes tabs narrower
-        javax.swing.UIManager.put( "TabbedPane.tabWidthMode", "compact");
-        javax.swing.UIManager.put( "TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
+        javax.swing.UIManager.put("TabbedPane.tabWidthMode", "compact");
+        javax.swing.UIManager.put("TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
         
         initComponents();
         
@@ -2022,7 +2025,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
-
+            
             if (offset + 1 <= address && offset + TrainControlUI.KEYBOARD_KEYS >= address)
             {
                 JToggleButton key = this.switchMapping.get(address - offset);
@@ -2043,6 +2046,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
                 attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
                 key.setFont(font.deriveFont(attributes));
+            }
+            
+            // Pass the event to the route editor if we are capturing commands
+            if (this.routeEditor != null && routeEditor.isVisible() && this.routeEditor.isCaptureCommandsSelected())
+            {
+                this.routeEditor.appendCommand(address, this.model.getAccessoryState(address));
             }
         }));
     }
@@ -8986,118 +8995,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void SpeedSliderDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_SpeedSliderDragged
        setLocSpeed(SpeedSlider.getValue());
     }//GEN-LAST:event_SpeedSliderDragged
-
-    /**
-     * Callback to edit or add a route
-     * @param origName
-     * @param routeName
-     * @param routeContent
-     * @param s88
-     * @param isEnabled
-     * @param triggerType
-     * @param conditionS88s
-     * @param conditionAccs
-     * @return 
-     */
-    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
-            String conditionS88s, String conditionAccs)
-    {
-        if (routeName == null)
-        {
-            return false;
-        }
-        
-        // Remove trailing spaces in route names
-        routeName = routeName.trim();
-
-        if ("".equals(routeName)  || "".equals(routeContent))
-        {
-            return false;
-        }
-                      
-        // Add route
-        try
-        {
-            List<RouteCommand> newRoute = new LinkedList<>();
-
-            for (String line : routeContent.split("\n"))
-            {
-                RouteCommand rc = RouteCommand.fromLine(line);
-                
-                if (rc != null)
-                {
-                    newRoute.add(rc);
-                }
-            }
-            
-            List<RouteCommand> newAccConditions = new LinkedList<>();
-            
-            for (String line : conditionAccs.split("\n"))
-            {
-                if (line.trim().length() > 0)
-                {
-                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    boolean state = line.split(",")[1].trim().equals("1");
-                    
-                    RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
-
-                    newAccConditions.add(rc);
-                }
-            }
-  
-            Map<Integer, Boolean> newConditions = new HashMap<>();
-            
-            for (String line : conditionS88s.split("\n"))
-            {
-                if (line.trim().length() > 0)
-                {
-                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    boolean state = line.split(",")[1].trim().equals("1");
-
-                    newConditions.put(address, state);
-                }
-            }
-            
-            if (!newRoute.isEmpty())
-            {    
-                // Editing a route
-                if (!"".equals(origName))
-                {
-                    this.model.editRoute(origName, routeName, newRoute,
-                                 Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, newAccConditions);
-                                 // TODO read delays from UI
-                }
-                // New route
-                else
-                {
-                    if (this.model.getRouteList().contains(routeName))
-                    {
-                        JOptionPane.showMessageDialog(this, "A route called " + routeName + " already exists.  Please pick a different name.");
-                        return false;
-                    }
-                                        
-                    this.model.newRoute(routeName, newRoute,
-                             Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, newAccConditions);
-                             // TODO read delays from UI
-                }
-                
-                refreshRouteList();
-
-                // Ensure route changes are synced
-                this.model.syncWithCS2();
-                this.repaintLayout();
-                this.repaintLoc();
-            }
-        }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
-        
-            this.model.log(e);
-        }
-        
-        return true;
-    }
     
     /**
      * Validates that a component's value is an integer
@@ -9152,18 +9049,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (route != null)
             {          
-                MarklinRoute currentRoute = this.model.getRoute(route.toString());
-
-                RouteEditor edit = new RouteEditor(this, route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                    currentRoute.getConditionS88String(), currentRoute.getConditionAccessoryCSV());
-                int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",  JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                if(dialogResult == JOptionPane.OK_OPTION)
+                if (routeEditor != null && routeEditor.isVisible())
                 {
-                    RouteCallback(route.toString(), edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                        edit.getExecutionAuto().isSelected(),
-                        edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                        edit.getConditionS88s().getText(), edit.getConditionAccs().getText()
-                    );
+                    JOptionPane.showMessageDialog(this, "You can only edit one route at a time.");
+                }
+                else
+                {
+                    MarklinRoute currentRoute = this.model.getRoute(route.toString());
+
+                    routeEditor = new RouteEditor("Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",
+                            this, route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
+                        currentRoute.getConditionS88String(), currentRoute.getConditionAccessoryCSV());
                 }
             }
         }).start();
@@ -10197,27 +10093,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void AddRouteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddRouteButtonActionPerformed
 
         new Thread(()->
+        {
+            String proposedName = "Route %s";
+            int i = 1;
+
+            while (this.model.getRoute(String.format(proposedName, i)) != null)
             {
-                String proposedName = "Route %s";
-                int i = 1;
+                i++;
+            }
 
-                while (this.model.getRoute(String.format(proposedName, i)) != null)
-                {
-                    i++;
-                }
-
-                RouteEditor edit = new RouteEditor(this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
-
-                int dialogResult = JOptionPane.showConfirmDialog(this, edit, "Add New Route", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                if(dialogResult == JOptionPane.OK_OPTION)
-                {
-                    RouteCallback("", edit.getRouteName().getText(), edit.getRouteContents().getText(), edit.getS88().getText(),
-                        edit.getExecutionAuto().isSelected(),
-                        edit.getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                        edit.getConditionS88s().getText(), edit.getConditionAccs().getText()
-                    );
-                }
-            }).start();
+            if (routeEditor != null && routeEditor.isVisible())
+            {
+                JOptionPane.showMessageDialog(this, "You can only edit one route at a time.");
+            }
+            else
+            {
+                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
+            }
+        }).start();
     }//GEN-LAST:event_AddRouteButtonActionPerformed
 
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseClicked
@@ -10232,12 +10125,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if(dialogResult == JOptionPane.YES_OPTION)
                 {
                     new Thread(() ->
-                        {
-                            executeRoute(route.toString());
-                        }).start();
-                    }
+                    {
+                        executeRoute(route.toString());
+                    }).start();
                 }
             }
+        }
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
@@ -11644,17 +11537,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    private void refreshRouteList()
+    public void refreshRouteList()
     {   
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            DefaultTableModel tableModel = new DefaultTableModel() {
-
+            DefaultTableModel tableModel = new DefaultTableModel()
+            {
                 @Override
-                public boolean isCellEditable(int row, int column) {
+                public boolean isCellEditable(int row, int column)
+                {
                     return false;
                 }
-             };
+            };
 
             tableModel.setColumnCount(4);
 
