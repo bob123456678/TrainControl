@@ -3030,9 +3030,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1127, 665));
-        setMinimumSize(new java.awt.Dimension(1127, 655));
-        setPreferredSize(new java.awt.Dimension(1127, 665));
+        setMaximumSize(new java.awt.Dimension(1128, 665));
+        setMinimumSize(new java.awt.Dimension(1128, 665));
+        setPreferredSize(new java.awt.Dimension(1128, 665));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
