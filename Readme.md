@@ -259,6 +259,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - The track diagrams can now be focused while editing routes
             - When editing routes, errors will no longer result in the window closing
             - Route names are now shown in track diagram tooltips
+            - Export options moved to the menu bar
         - Locomotive Management
             - Locomotives in the locomotive selector are now sorted alphabetically
             - Locomotives can now be added to the database through a separate popup window
