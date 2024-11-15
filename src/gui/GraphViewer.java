@@ -48,6 +48,8 @@ final public class GraphViewer extends javax.swing.JFrame
     private String lastClickedNode;
     
     private Locomotive clipboard;
+    
+    public static final String WINDOW_TITLE = "Autonomy Graph";
 
     public Graph getMainGraph()
     {
@@ -1188,7 +1190,7 @@ final public class GraphViewer extends javax.swing.JFrame
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        setTitle("Auto Layout Graph View");
+        setTitle(WINDOW_TITLE);
         setAlwaysOnTop(true);
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(2000, 2000));

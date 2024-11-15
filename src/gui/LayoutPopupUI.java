@@ -14,10 +14,10 @@ import marklin.MarklinLayout;
  */
 public class LayoutPopupUI extends javax.swing.JFrame
 {
-    TrainControlUI parent;
-    int size;
-    MarklinLayout layout;
-    int pageIndex;
+    private final TrainControlUI parent;
+    private final int size;
+    private MarklinLayout layout;
+    private int pageIndex;
     
     /**
      * Popup window showing train layouts
@@ -51,6 +51,11 @@ public class LayoutPopupUI extends javax.swing.JFrame
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
         pack();
+    }
+    
+    public String getLayoutTitle()
+    {
+        return this.layout.getName();
     }
     
     public void render()

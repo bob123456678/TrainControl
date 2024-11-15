@@ -126,6 +126,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
+    public static final String ACTIVE_LOC_IN_TITLE = "AcitveLocInTitle";
 
     public static final String NO_LOC_MESSAGE = "There are no locomotives currently in the database. Add some in the Tools tab, or via the Central Station, and then synchronize.";
     
@@ -535,7 +536,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
         this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
         this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, true));
- 
+        this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
+        
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -2281,6 +2283,35 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 + this.currentButton.getText()
                                 + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
                                 + ")";
+                            
+                            // Display active locomotive in autonomy UI
+                            String windowTitleString = " [" + this.activeLoc.getName() + " " + 
+                                        (this.activeLoc.getDirection() == Locomotive.locDirection.DIR_FORWARD ? ">>" : "<<") +
+                                        " " + this.activeLoc.getSpeed() + "%]";
+                            
+                            if (this.graphViewer != null)
+                            {
+                                if (this.activeLocInTitle.isSelected())
+                                {
+                                    this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE + windowTitleString);
+                                }
+                                else
+                                {
+                                    this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE);
+                                }
+                            }
+                            
+                            for (LayoutPopupUI popup : this.popups)
+                            {
+                                if (this.activeLocInTitle.isSelected())
+                                {
+                                    popup.setTitle(popup.getLayoutTitle() + windowTitleString);
+                                }
+                                else
+                                {
+                                    popup.setTitle(popup.getLayoutTitle());
+                                }
+                            } 
 
                             // Only repaint icon if the locomotive is changed
                             // Visual stuff
@@ -2443,6 +2474,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         for (int i = 0; i < NUM_FN; i++)
                         {
                             this.rFunctionMapping.get(i).setVisible(false);
+                        }
+                        
+                        // Clear locomotive from graph UI title
+                        if (this.graphViewer != null)
+                        {
+                            this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE);
+                        }
+                        
+                        for (LayoutPopupUI popup : this.popups)
+                        {
+                            popup.setTitle(popup.getLayoutTitle()); 
                         }
                     }
                     
@@ -3010,6 +3052,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locomotiveControlMenu = new javax.swing.JMenu();
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
         showKeyboardHintsMenuItem = new javax.swing.JCheckBoxMenuItem();
+        activeLocInTitle = new javax.swing.JCheckBoxMenuItem();
         jSeparator20 = new javax.swing.JPopupMenu.Separator();
         keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -6618,9 +6661,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addComponent(hideReversing)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(hideInactive)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(showStationLengths)
-                .addContainerGap())
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(showStationLengths, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
@@ -6706,6 +6749,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocFunctionsPanel.setBackground(new java.awt.Color(255, 255, 255));
         LocFunctionsPanel.setBorder(new MatteBorder(0, 1, 0, 0, new Color(192,192,192)));
         LocFunctionsPanel.setToolTipText(null);
+        LocFunctionsPanel.setMaximumSize(new java.awt.Dimension(308, 589));
         LocFunctionsPanel.setMinimumSize(new java.awt.Dimension(308, 589));
         LocFunctionsPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -7797,7 +7841,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(OnButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocFunctionsPanelLayout.createSequentialGroup()
                         .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(locIcon, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(locIcon, javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                                 .addComponent(Backward, javax.swing.GroupLayout.DEFAULT_SIZE, 141, Short.MAX_VALUE)
                                 .addGap(18, 18, 18)
@@ -8021,6 +8065,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         locomotiveControlMenu.add(showKeyboardHintsMenuItem);
+
+        activeLocInTitle.setSelected(true);
+        activeLocInTitle.setText("Active Locomotive in Popup Titles");
+        activeLocInTitle.setToolTipText("Shows the name of the active locomotive in popup windows.");
+        activeLocInTitle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                activeLocInTitleActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(activeLocInTitle);
         locomotiveControlMenu.add(jSeparator20);
 
         buttonGroup3.add(keyboardQwertyMenuItem);
@@ -10251,6 +10305,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     popup.render();
                     popups.add(popup);
                     updatePopups(false);
+                    repaintLoc();
                 }).start();
             }
     }//GEN-LAST:event_allButtonActionPerformed
@@ -10269,6 +10324,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 popup.render();
                 popups.add(popup);
                 updatePopups(false);
+                repaintLoc();
             }).start();
     }//GEN-LAST:event_smallButtonActionPerformed
 
@@ -10286,6 +10342,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 popup.render();
                 popups.add(popup);
                 updatePopups(false);
+                repaintLoc();
             }));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
@@ -10555,6 +10612,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (!this.graphViewer.isVisible())
                 {
                     this.graphViewer.setVisible(true);
+                    this.repaintLoc();
                 }
 
                 for (String routeName : this.model.getRouteList())
@@ -10711,6 +10769,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         prefs.putBoolean(SHOW_KEYBOARD_HINTS_PREF, this.showKeyboardHintsMenuItem.isSelected());
         displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
     }//GEN-LAST:event_showKeyboardHintsMenuItemActionPerformed
+
+    private void activeLocInTitleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_activeLocInTitleActionPerformed
+        prefs.putBoolean(ACTIVE_LOC_IN_TITLE, this.activeLocInTitle.isSelected());
+        this.repaintLoc();
+    }//GEN-LAST:event_activeLocInTitleActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -11819,6 +11882,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JButton ZeroButton;
     private javax.swing.JLabel ZeroPercentSpeedLabel;
     private javax.swing.JMenuItem aboutMenuItem;
+    private javax.swing.JCheckBoxMenuItem activeLocInTitle;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
     private javax.swing.JButton allButton;
     private javax.swing.JCheckBox atomicRoutes;

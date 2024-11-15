@@ -245,6 +245,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Rearranged the "Tools" tab across the menu bar
             - Moved UI preferences to the menu bar
             - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
+            - Added option to display the active locomotive name in the title of popup windows (layouts / autonomy graph)
         - Moved main UI tabs to the left, and replaced text headings with icons
             - Tabs can now also be cyled using the CapsLock key
             - Improvements to UI tooltips
