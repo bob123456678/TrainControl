@@ -3030,9 +3030,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1129, 665));
-        setMinimumSize(new java.awt.Dimension(1129, 665));
-        setPreferredSize(new java.awt.Dimension(1129, 665));
+        setMaximumSize(new java.awt.Dimension(1127, 665));
+        setMinimumSize(new java.awt.Dimension(1127, 655));
+        setPreferredSize(new java.awt.Dimension(1127, 665));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -6706,7 +6706,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         LocFunctionsPanel.setBackground(new java.awt.Color(255, 255, 255));
         LocFunctionsPanel.setBorder(new MatteBorder(0, 1, 0, 0, new Color(192,192,192)));
         LocFunctionsPanel.setToolTipText(null);
-        LocFunctionsPanel.setMinimumSize(new java.awt.Dimension(326, 560));
+        LocFunctionsPanel.setMinimumSize(new java.awt.Dimension(308, 589));
         LocFunctionsPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 LocFunctionsPanelMouseEntered(evt);
