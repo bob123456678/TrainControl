@@ -100,7 +100,7 @@ Monitor the usage of different locomotives.
     * Full UI for editing autonomy graph models
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
-* Track locomotive usage stats
+* Monitor locomotive usage stats
 
 ## Keyboard Commands / Key Mappings
 
@@ -265,6 +265,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Locomotives can now be added to the database through a separate popup window
             - Alt+comma/period, Alt+semicolon/colon will now jump to the first/last key mapping page
             - QWERTY/QWERTZ/AZERTY keyboard options moved to the menu bar
+            - Increased size of the locomotive notes window
     - When editing routes, live switch/signal commands can now be captured on demand
     - Fixed bug where "Large" track diagrams would not always render correctly 
     - Fixed bug where deleted/edited locomotives would persist in the autonomy graph UI

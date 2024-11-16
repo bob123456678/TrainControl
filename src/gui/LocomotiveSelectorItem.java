@@ -39,7 +39,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         this.refreshToolTip();
                 
         // Set icon
-        if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null)
+        if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null && loc.getImageURL().length() > 0)
         {
             this.tcui.getImageLoader().submit(new Thread(() ->
             {

@@ -3080,6 +3080,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setMinimumSize(new java.awt.Dimension(1128, 665));
         setPreferredSize(new java.awt.Dimension(1128, 665));
         setResizable(false);
+        setSize(new java.awt.Dimension(1128, 665));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 WindowClosed(evt);
@@ -8136,7 +8137,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(layout.createSequentialGroup()
                 .addComponent(KeyboardTab, javax.swing.GroupLayout.PREFERRED_SIZE, 802, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, 0)
-                .addComponent(LocFunctionsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(LocFunctionsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -8920,7 +8921,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (l != null)
         {
             JTextArea textArea = new JTextArea(l.getNotes());
-            textArea.setColumns(50);
+            textArea.setColumns(70);
             textArea.setRows(20);
             //textArea.setLineWrap(true);
             //textArea.setWrapStyleWord(true);
