@@ -14,10 +14,10 @@
       <Connection code="Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource(&quot;resources/locicon.png&quot;))" type="code"/>
     </Property>
     <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[2000, 4000]"/>
+      <Dimension value="[4000, 4000]"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[800, 670]"/>
+      <Dimension value="[730, 620]"/>
     </Property>
   </Properties>
   <SyntheticProperties>
