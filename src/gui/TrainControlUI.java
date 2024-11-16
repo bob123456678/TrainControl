@@ -1447,6 +1447,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
              
         // Restore correct preference
         setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true)); 
+        pack();
         displayMenuBar();
     }
     
@@ -3078,7 +3079,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1128, 665));
+        setMaximumSize(new java.awt.Dimension(1110, 665));
         setMinimumSize(new java.awt.Dimension(1110, 619));
         setResizable(false);
         setSize(new java.awt.Dimension(1110, 619));
