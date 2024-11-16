@@ -1456,33 +1456,35 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void displayMenuBar()
     {
         int barHeight = this.mainMenuBar.getHeight(); // 23
-        int newHeight;
         
+        int minHeight = this.getMinimumSize().height;
+        int maxHeight = this.getMaximumSize().height;
+        int prefHeight = this.getPreferredSize().height;
+        int sizeHeight = this.getSize().height;
+
         if (this.mainMenuBar.isVisible() && !prefs.getBoolean(MENUBAR_SETTING_PREF, true))
         {
             this.mainMenuBar.setVisible(false);
-            setResizable(true);
             
-            newHeight = this.getHeight() - barHeight;
-            
-            setMaximumSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            setMinimumSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            setPreferredSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            pack();
-            setResizable(false);
+            setMinimumSize(new java.awt.Dimension(this.getMinimumSize().width, minHeight - barHeight));
+            setPreferredSize(new java.awt.Dimension(this.getPreferredSize().width, prefHeight - barHeight));            
+            setMaximumSize(new java.awt.Dimension(this.getMaximumSize().width, maxHeight - barHeight));
+            setSize(new java.awt.Dimension(this.getSize().width, sizeHeight - barHeight));
+
+            revalidate();
+            repaint();
         }
         else if (!this.mainMenuBar.isVisible() && prefs.getBoolean(MENUBAR_SETTING_PREF, true))
-        {
-            this.mainMenuBar.setVisible(true);
-            setResizable(true);
+        {            
+            setMaximumSize(new java.awt.Dimension(this.getMaximumSize().width, maxHeight + barHeight));
+            setPreferredSize(new java.awt.Dimension(this.getPreferredSize().width, prefHeight + barHeight));
+            setMinimumSize(new java.awt.Dimension(this.getMinimumSize().width, minHeight + barHeight));
+            setSize(new java.awt.Dimension(this.getSize().width, sizeHeight + barHeight));
             
-            newHeight = this.getHeight() + barHeight;
+            this.mainMenuBar.setVisible(true);
 
-            setMaximumSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            setMinimumSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            setPreferredSize(new java.awt.Dimension(this.getWidth(), newHeight));
-            pack();
-            setResizable(false);
+            revalidate();
+            repaint();
         }
     }
     
@@ -6370,12 +6372,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         minDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         minDelay.setMajorTickSpacing(10);
-        minDelay.setMaximum(20);
+        minDelay.setMaximum(30);
         minDelay.setMinorTickSpacing(1);
         minDelay.setPaintLabels(true);
         minDelay.setPaintTicks(true);
         minDelay.setToolTipText("Minimum number of seconds to sleep before a locomotive moves.");
         minDelay.setFocusable(false);
+        minDelay.setMaximumSize(new java.awt.Dimension(230, 55));
+        minDelay.setPreferredSize(new java.awt.Dimension(230, 55));
         minDelay.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 minDelayStateChanged(evt);
@@ -6400,6 +6404,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         maxLocInactiveSeconds.setPaintTicks(true);
         maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
         maxLocInactiveSeconds.setFocusable(false);
+        maxLocInactiveSeconds.setMaximumSize(new java.awt.Dimension(230, 55));
+        maxLocInactiveSeconds.setPreferredSize(new java.awt.Dimension(230, 55));
         maxLocInactiveSeconds.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 maxLocInactiveSecondsMouseReleased(evt);
@@ -6413,12 +6419,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         maxDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         maxDelay.setMajorTickSpacing(10);
-        maxDelay.setMaximum(20);
+        maxDelay.setMaximum(30);
         maxDelay.setMinorTickSpacing(1);
         maxDelay.setPaintLabels(true);
         maxDelay.setPaintTicks(true);
         maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
         maxDelay.setFocusable(false);
+        maxDelay.setMaximumSize(new java.awt.Dimension(230, 55));
+        maxDelay.setPreferredSize(new java.awt.Dimension(230, 55));
         maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 maxDelayMouseReleased(evt);
@@ -6431,12 +6439,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jLabel43.setFocusable(false);
 
         defaultLocSpeed.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        defaultLocSpeed.setMajorTickSpacing(10);
+        defaultLocSpeed.setMajorTickSpacing(20);
         defaultLocSpeed.setMinorTickSpacing(5);
         defaultLocSpeed.setPaintLabels(true);
         defaultLocSpeed.setPaintTicks(true);
         defaultLocSpeed.setToolTipText("The speed at which locomotives will run at by defualt.");
         defaultLocSpeed.setFocusable(false);
+        defaultLocSpeed.setMaximumSize(new java.awt.Dimension(230, 55));
+        defaultLocSpeed.setPreferredSize(new java.awt.Dimension(230, 55));
         defaultLocSpeed.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 defaultLocSpeedMouseReleased(evt);
@@ -6456,6 +6466,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         preArrivalSpeedReduction.setPaintTicks(true);
         preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
         preArrivalSpeedReduction.setFocusable(false);
+        preArrivalSpeedReduction.setMaximumSize(new java.awt.Dimension(230, 55));
+        preArrivalSpeedReduction.setPreferredSize(new java.awt.Dimension(230, 55));
         preArrivalSpeedReduction.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 preArrivalSpeedReductionMouseReleased(evt);
@@ -6514,33 +6526,28 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(atomicRoutes)
+                    .addComponent(turnOffFunctionsOnArrival)
+                    .addComponent(simulate)
+                    .addComponent(jLabel49)
+                    .addComponent(jLabel46)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(turnOnFunctionsOnDeparture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel50)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel50)
-                            .addComponent(atomicRoutes)
-                            .addComponent(turnOffFunctionsOnArrival)
-                            .addComponent(simulate)
-                            .addComponent(jLabel49)
-                            .addComponent(jLabel47)
-                            .addComponent(jLabel46))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 1, Short.MAX_VALUE)
-                                    .addComponent(turnOnFunctionsOnDeparture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 1, Short.MAX_VALUE))
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel43)
-                                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel48))))
-                        .addGap(31, 31, 31))))
+                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(maxDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(minDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jLabel47))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel43)
+                            .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel48)
+                            .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGap(25, 25, 25))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6551,20 +6558,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(jLabel48))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel47)
                     .addComponent(jLabel43))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel49)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel50)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -6655,7 +6662,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(18, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -7852,6 +7859,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ActiveLocLabel.getAccessibleContext().setAccessibleName("LocomotiveNameBig");
 
         mainMenuBar.setFocusable(false);
+        mainMenuBar.setMaximumSize(new java.awt.Dimension(1200, 30));
         mainMenuBar.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 mainMenuBarKeyPressed(evt);
