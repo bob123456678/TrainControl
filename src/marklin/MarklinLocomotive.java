@@ -258,7 +258,7 @@ public class MarklinLocomotive extends Locomotive
     {
         String customIconURL = this.getLocalFunctionImageURL(fNo);
 
-        if (customIconURL != null)
+        if (customIconURL != null && customIconURL.length() > 0)
         {
             return customIconURL;
         }

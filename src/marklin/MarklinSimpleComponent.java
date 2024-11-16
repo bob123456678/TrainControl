@@ -1,6 +1,5 @@
 package marklin;
 
-import base.Locomotive;
 import base.RouteCommand;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

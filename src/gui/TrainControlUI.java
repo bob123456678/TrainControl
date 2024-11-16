@@ -4,7 +4,6 @@ import automation.Edge;
 import automation.Point;
 import automation.TimetablePath;
 import base.Locomotive;
-import base.RouteCommand;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
@@ -1950,7 +1949,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 
                 // Only repaint a button if the locomotive has changed
-                for(JButton b : update)
+                for (JButton b : update)
                 {
                     // Grey out if the active page corresponds to the active loc
                     if (b.equals(this.currentButton) 
@@ -1967,13 +1966,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                     Locomotive l = this.currentLocMapping().get(b);  
 
-                    if (l != null)
+                    if (l != null 
+                            && this.model.getLocByName(l.getName()) != null // If this loc no longer exists, don't display it
+                    )
                     {
                         String name = l.getName();
 
                         if (name.length() > 9)
                         {
-                            name = name.substring(0,9);
+                            name = name.substring(0, 9);
                         }
 
                         if (!this.labelMapping.get(b).getText().equals(name) || updateIcon) 
@@ -2188,7 +2189,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 {
                     noImageButton(b);
                 }
-                else if (LOAD_IMAGES && l.getImageURL() != null)
+                else if (LOAD_IMAGES && l.getImageURL() != null && l.getImageURL().length() > 0)
                 {
                     try 
                     {
@@ -2265,7 +2266,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             { 
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
-                    if (this.activeLoc != null)
+                    if (this.activeLoc != null 
+                            && this.model.getLocByName(this.activeLoc.getName()) != null // If this loc no longer exists, don't display it
+                    )
                     {           
                         // Only update if the active locomotive matches the event
                         if (updatedLocs == null || updatedLocs.contains(activeLoc))

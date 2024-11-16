@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.3.0 Beta 11";
+    public static final String RAW_VERSION = "2.3.0 Beta 12";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -2066,18 +2066,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // If all read successfully, remove existing routes and update route DB
         for (MarklinRoute route : routes)
         {
-            // Delete existing routes
-            /*if (this.getRoute(route.getName()) != null)
-            {
-                this.log("Deleting route: " + route.getName());
-                this.deleteRoute(route.getName());
-            }
-            if (this.routeDB.getById(route.getId()) != null)
-            {
-                this.log("Deleting route: " + this.routeDB.getById(route.getId()).getName());
-                this.deleteRoute(this.routeDB.getById(route.getId()).getName());
-            }*/
-
             this.log("Adding route: " + route.getName());
             this.newRoute(route);
         }
@@ -2200,8 +2188,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             model.log("UI rendering...");
 
             try
-            {                // System.out.println(javax.swing.SwingUtilities.isEventDispatchThread());
-
+            {
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     ui.display();
