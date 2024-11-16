@@ -10114,6 +10114,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (route != null)
             {
+                // We need to set this in case there are popup windows
+                this.setAlwaysOnTop(true);
+                
                 int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
                 if(dialogResult == JOptionPane.YES_OPTION)
                 {
@@ -10122,6 +10125,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         executeRoute(route.toString());
                     }).start();
                 }
+                
+                // Revert preference
+                windowAlwaysOnTopMenuItemActionPerformed(null);
             }
         }
     }//GEN-LAST:event_RouteListMouseClicked
