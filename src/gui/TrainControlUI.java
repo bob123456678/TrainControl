@@ -11053,6 +11053,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         updateEdgeLength(e, graph);
     }
     
+    synchronized public void updatePointExternal(Point p)
+    {
+        this.updatePoint(p, this.graphViewer.getMainGraph());
+    }
+    
     /**
      * Updates the visibility of certain points and edges
      */
@@ -11565,7 +11570,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             
             for (Locomotive loc : locs)
             {
-                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model));
+                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model, this));
             }
             
             // Speed up scrolling

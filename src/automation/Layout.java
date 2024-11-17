@@ -1218,7 +1218,9 @@ public class Layout
             {
                 List<Edge> path = this.pickPath(loc);
 
-                if (path != null)
+                if (path != null 
+                    && !loc.isAutonomyPaused() // Sanity check to ensure the locomotive wasn't paused
+                )
                 {
                     this.executePath(path, loc, speed, null);
                 }

@@ -5,6 +5,7 @@ import automation.Layout;
 import automation.Point;
 import base.Locomotive;
 import java.awt.Color;
+import java.awt.Font;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
@@ -21,22 +22,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     private List<List<Edge>> paths;
     private final Layout layout;
     private final ViewListener control;
+    private final TrainControlUI ui;
     
     /**
      * Creates new form AutoLocomotiveStatus
      * @param loc
      * @param control
      */
-    public AutoLocomotiveStatus(Locomotive loc, ViewListener control) 
+    public AutoLocomotiveStatus(Locomotive loc, ViewListener control, TrainControlUI ui) 
     {
         this.layout = control.getAutoLayout();
         this.locomotive = loc;
         this.control = control;
         initComponents();
+        this.ui = ui;
         
         this.locName.setText(locomotive.getName());
         
         updateState(loc);
+        
+        Font font = new Font("Arial Unicode MS", Font.PLAIN, 12); 
+        if (font.canDisplay('\u23F8'))
+        {
+            pauseButton.setFont(font); 
+            pauseButton.setText("\u23F8");
+        }
         
         this.setVisible(true);
     }
@@ -53,7 +63,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
             this.locDest.setForeground(new Color(0, 0, 115));
-                        
+                     
+            this.pauseButton.setEnabled(false);
+            
             // Grey out locomotives on inactive points / not on the graph
             if ((
                     layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
@@ -88,18 +100,22 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                 {
                     this.locDest.setText("No active path.");
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
+                    
+                    this.pauseButton.setEnabled(true);
                 }
                 else
                 {
                     this.locStation.setText("?????");
                     this.locDest.setText("Locomotive is not placed on the graph.");
                 }
-                
+                                
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is standing by.  Show the list.
             else
             {
+                this.pauseButton.setEnabled(true);
+                
                 // true -> Only include unique starts/end pairs
                 this.paths = layout.getPossiblePaths(locomotive, true);
                 
@@ -161,6 +177,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         jScrollPane1 = new javax.swing.JScrollPane();
         locAvailPaths = new javax.swing.JList<>();
         locStation = new javax.swing.JLabel();
+        pauseButton = new javax.swing.JButton();
 
         setBackground(new java.awt.Color(255, 255, 255));
         setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
@@ -204,6 +221,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         locStation.setText("locStation");
         locStation.setFocusable(false);
 
+        pauseButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        pauseButton.setText("P");
+        pauseButton.setToolTipText("Pause locomotive");
+        pauseButton.setFocusable(false);
+        pauseButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                pauseButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -217,20 +244,25 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
                             .addComponent(locDest))
                         .addGap(0, 143, Short.MAX_VALUE))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE)
-                    .addComponent(locName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(locName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(pauseButton)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(locName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(locName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(pauseButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locStation)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 133, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -308,6 +340,29 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
         }*/      
     }//GEN-LAST:event_locAvailPathsMouseMoved
 
+    private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
+        
+        synchronized (layout)
+        {
+            if (!layout.getActiveLocomotives().containsKey(locomotive))
+            {
+                Point p = layout.getLocomotiveLocation(locomotive);
+
+                if (p.isDestination() && p.isOccupied() && locomotive.equals(p.getCurrentLocomotive()))
+                {
+                    p.setActive(!p.isActive());
+
+                    updateState(locomotive);
+                    ui.updatePointExternal(p);
+                }
+            }
+            //this.layout.refreshUI();
+        }
+        // parent.getModel().getAutoLayout().refreshUI();
+        //control.updatePoint(p, mainGraph);
+        //parent.repaintAutoLocList(false); 
+    }//GEN-LAST:event_pauseButtonActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
@@ -315,5 +370,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel {
     private javax.swing.JLabel locDest;
     private javax.swing.JLabel locName;
     private javax.swing.JLabel locStation;
+    private javax.swing.JButton pauseButton;
     // End of variables declaration//GEN-END:variables
 }

@@ -86,6 +86,9 @@ public abstract class Locomotive
  
     // User-defined notes about this locomotive
     private String notes = "";
+    
+    // Used to pause autonomous operation - not persisted
+    private boolean autonomyPaused = false;
 
     /**
      * Constructor with name and all functions off
@@ -1158,5 +1161,21 @@ public abstract class Locomotive
     public void setNotes(String notes)
     {
         this.notes = notes;
+    }
+    
+    public void setAutonomyPaused(boolean state)
+    {
+        synchronized (this)
+        {
+            this.autonomyPaused = state;
+        }
+    }
+    
+    public boolean isAutonomyPaused()
+    {
+        synchronized (this)
+        {
+            return this.autonomyPaused;
+        }
     }
 }
