@@ -8990,6 +8990,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // Remove locomotive from graph
                 if (this.model.getAutoLayout() != null)
                 {
+                    this.model.getAutoLayout().locDeleted(l);
+                    this.repaintAutoLocListFull();
                     this.model.getAutoLayout().refreshUI();
                 }
             }

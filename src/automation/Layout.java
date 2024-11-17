@@ -195,6 +195,17 @@ public class Layout
     {
         return this.locomotivesToRun;
     }
+    
+    /**
+     * To be called externally when a locomotive is deleted from the database
+     * @param l
+     */
+    public void locDeleted(Locomotive l)
+    {
+        this.locomotivesToRun.remove(l);
+        this.activeLocomotives.remove(l);
+        this.locomotiveMilestones.remove(l);     
+    }
        
     /**
      * Gets locomotives currently running
