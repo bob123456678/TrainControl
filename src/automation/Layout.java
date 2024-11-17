@@ -1218,9 +1218,7 @@ public class Layout
             {
                 List<Edge> path = this.pickPath(loc);
 
-                if (path != null 
-                    && !loc.isAutonomyPaused() // Sanity check to ensure the locomotive wasn't paused
-                )
+                if (path != null)
                 {
                     this.executePath(path, loc, speed, null);
                 }
@@ -1267,6 +1265,8 @@ public class Layout
      */
     public List<Edge> pickPath(Locomotive loc)
     {
+        if (loc.isAutonomyPaused()) return null;
+        
         List<Point> ends = new LinkedList<>(this.points.values());
         Collections.shuffle(ends);
 
