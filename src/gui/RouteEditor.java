@@ -1095,13 +1095,14 @@ public class RouteEditor extends javax.swing.JFrame
     private void addStopCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addStopCommandActionPerformed
         
         String[] options = { RouteCommand.RouteCommandLightsOn().toString(), 
-        RouteCommand.RouteCommandFunctionsOff().toString(), 
-        RouteCommand.RouteCommandStop().toString()};
+            RouteCommand.RouteCommandFunctionsOff().toString(), 
+            RouteCommand.RouteCommandStop().toString()
+        };
 
         String selectedValue = (String) JOptionPane.showInputDialog(
                 this,
-                "Select an option",
-                "Dropdown",
+                "Add to route: ",
+                "Special Route Commands",
                 JOptionPane.QUESTION_MESSAGE,
                 null,
                 options,
