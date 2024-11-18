@@ -21,6 +21,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     // Switch state or loc directions
     private boolean state;
+    private int numActuations = 0;
     
     // Locomotive function state and types
     private boolean[] functions;
@@ -65,6 +66,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.name = a.getName();
         this.address = a.getAddress();
         this.state = a.isSwitched();
+        this.numActuations = a.getNumActuations();
     }
     
     public MarklinSimpleComponent(MarklinFeedback a)
@@ -185,6 +187,11 @@ public class MarklinSimpleComponent implements java.io.Serializable
         }
 
         return (List<RouteCommand>) this.route;
+    }
+    
+    public int getNumActuations()
+    {
+        return numActuations;
     }
     
     public boolean[] getFunctions()

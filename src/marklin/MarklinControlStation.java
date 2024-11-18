@@ -58,7 +58,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.3.0 Beta 17";
+    public static final String RAW_VERSION = "2.3.0 Beta 18";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -196,11 +196,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
             {
-                newSignal(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState());                
+                newSignal(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState(), c.getNumActuations());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.SWITCH)
             {
-                newSwitch(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState());                
+                newSwitch(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState(), c.getNumActuations());                
             }
             else if (c.getType() == MarklinSimpleComponent.Type.FEEDBACK)
             {   
@@ -1089,12 +1089,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @param address
      * @param state
+     * @param numActuations
      * @return 
      */
-    @Override
-    public final MarklinAccessory newSignal(String name, int address, boolean state)
+    private MarklinAccessory newSignal(String name, int address, boolean state, int numActuations)
     {
-        return newAccessory("Signal " + name, address, Accessory.accessoryType.SIGNAL, state);
+        return newAccessory("Signal " + name, address, Accessory.accessoryType.SIGNAL, state, numActuations);
     }
     
     /**
@@ -1102,12 +1102,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param name
      * @param address
      * @param state
+     * @param numActuations
      * @return 
      */
+    private MarklinAccessory newSwitch(String name, int address, boolean state, int numActuations)
+    {
+        return newAccessory("Switch " + name, address, Accessory.accessoryType.SWITCH, state, numActuations);
+    }
+    
+    // Public methods assume 0 actuations
+    @Override
+    public final MarklinAccessory newSignal(String name, int address, boolean state)
+    {
+        return newSignal(name, address, state, 0);
+    }
+    
     @Override
     public final MarklinAccessory newSwitch(String name, int address, boolean state)
     {
-        return newAccessory("Switch " + name, address, Accessory.accessoryType.SWITCH, state);
+        return newSwitch(name, address, state, 0);
     }
     
     /**
@@ -1691,9 +1704,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param type
      * @return 
      */
-    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state)
+    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state, int numActuations)
     {
-        MarklinAccessory newAccessory = new MarklinAccessory(this, address, type, name, state);
+        MarklinAccessory newAccessory = new MarklinAccessory(this, address, type, name, state, numActuations);
         
         this.accDB.add(newAccessory, name, newAccessory.getUID());
         
@@ -1960,6 +1973,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         return false;
+    }
+    
+    @Override
+    public MarklinAccessory getAccessoryByAddress(int address)
+    { 
+        // Get by name because UID in database != address
+        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)) != null)
+        {
+            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1));
+        }
+        else
+        {
+            return this.newSwitch(Integer.toString(address), address - 1, false);
+        }        
     }
     
     @Override

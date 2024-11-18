@@ -31,6 +31,9 @@ public class MarklinAccessory extends Accessory
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
     
+    // Number of times this accessory has been actuated
+    private int numActuations;
+    
     /**
      * Constructor
      * @param network
@@ -39,7 +42,7 @@ public class MarklinAccessory extends Accessory
      * @param name
      * @param state
      */
-    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state)
+    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state, int numActuations)
     {
         super(name, type, false);
         
@@ -56,6 +59,8 @@ public class MarklinAccessory extends Accessory
         this._setSwitched(state);
         
         this.tiles = new HashSet<>();
+        
+        this.numActuations = numActuations;
     }
     
     public static int UIDfromAddress(int address)
@@ -70,6 +75,15 @@ public class MarklinAccessory extends Accessory
     public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
         this.tiles.add(l);
+    }
+    
+    /**
+     * Gets the number of time this accessory has been switched
+     * @return 
+     */
+    public int getNumActuations()
+    {
+        return numActuations;
     }
         
     /**
@@ -118,13 +132,15 @@ public class MarklinAccessory extends Accessory
                 }
                 
                 this.updateTiles();
+                
+                this.numActuations += 1;
                                 
                 this.network.log("Setting " + this.getName() + " " +
-                     (this.isSignal() ? 
-                        (this.isSwitched() ? "red" : "green")
-                        :
-                        (this.isSwitched() ? "turn" : "straight")
-                        )
+                    (this.isSignal() ? 
+                       (this.isSwitched() ? "red" : "green")
+                       :
+                       (this.isSwitched() ? "turn" : "straight")
+                       )
                     );
             }
         }
@@ -136,7 +152,7 @@ public class MarklinAccessory extends Accessory
         this._setSwitched(state);
         
         this.updateTiles();
-        
+
         if (this.network.getGUI() != null)
         {
             // Dirty workaround to update UI state

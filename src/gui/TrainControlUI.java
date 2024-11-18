@@ -16,6 +16,7 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -519,6 +520,23 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.switchMapping.put(62,SwitchButton62);
         this.switchMapping.put(63,SwitchButton63);
         this.switchMapping.put(64,SwitchButton64);
+        
+        // Load actuation count dynamically into tooltip
+        for (JToggleButton j : this.switchMapping.values())
+        {
+            j.addMouseMotionListener(new MouseMotionAdapter()
+            {
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {    
+                    int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
+                    
+                    ((JToggleButton) e.getSource()).setToolTipText(
+                            model.getAccessoryByAddress(accAddress).getName() + " actuation count: " + model.getAccessoryByAddress(accAddress).getNumActuations()   
+                    );
+                }
+            });
+        }
         
         // Prevent the tabbed pane from being stupid
         this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED)
@@ -1192,6 +1210,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
                 this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
+
+                // This is not necessary since we are loading the tooltips dynamically
+                // this.switchMapping.get(i).setToolTipText(this.model.getAccessoryByAddress((Integer.valueOf(i + offset))).getName() + " actuation count: " + this.model.getAccessoryByAddress((Integer.valueOf(i + offset))).getNumActuations());   
             }
 
             repaintSwitches();

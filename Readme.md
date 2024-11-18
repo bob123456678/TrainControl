@@ -272,6 +272,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Routes
         - When editing routes, live switch/signal commands can now be captured on demand
         - Added custom route commands for turning off all functions / turning on all lights.  If autonomy is on, only locomotives on the graph will be affected.
+    - Actuation counts for each accessory are now tracked.  These are displayed as tooltips on the Keyboard page.
     - Fixed bug where "Large" track diagrams would not always render correctly 
 
 * v2.2.7 [9/14/2024]

@@ -35,6 +35,7 @@ public interface ViewListener
     public void execRoute(String name);
     public void deleteRoute(String name);
     public boolean getAccessoryState(int address);
+    public MarklinAccessory getAccessoryByAddress(int address);
     public boolean getPowerState();
     public void allFunctionsOff();
     public void locFunctionsOff(MarklinLocomotive l);
