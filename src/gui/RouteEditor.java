@@ -457,8 +457,8 @@ public class RouteEditor extends javax.swing.JFrame
         jScrollPane1.setViewportView(routeContents);
 
         addStopCommand.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        addStopCommand.setText("Add \"Power Off\" Command");
-        addStopCommand.setToolTipText("Useful if a conditional route is to be used as an emergency stop");
+        addStopCommand.setText("Add Special Command...");
+        addStopCommand.setToolTipText("Customize your routes with non-Marklin commands.");
         addStopCommand.setFocusable(false);
         addStopCommand.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1093,7 +1093,25 @@ public class RouteEditor extends javax.swing.JFrame
     }//GEN-LAST:event_delayKeyReleased
 
     private void addStopCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addStopCommandActionPerformed
-         this.routeContents.setText((this.routeContents.getText() + "\nstop").trim());
+        
+        String[] options = { RouteCommand.RouteCommandLightsOn().toString(), 
+        RouteCommand.RouteCommandFunctionsOff().toString(), 
+        RouteCommand.RouteCommandStop().toString()};
+
+        String selectedValue = (String) JOptionPane.showInputDialog(
+                this,
+                "Select an option",
+                "Dropdown",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        
+        if (selectedValue != null)
+        {     
+            this.routeContents.setText((this.routeContents.getText() + "\n" + selectedValue).trim());
+        }
     }//GEN-LAST:event_addStopCommandActionPerformed
 
     private void addToRouteButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToRouteButton1ActionPerformed

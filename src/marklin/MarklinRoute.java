@@ -1,5 +1,6 @@
 package marklin;
 
+import base.Locomotive;
 import base.Route;
 import base.RouteCommand;
 import gui.LayoutLabel;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -278,6 +280,27 @@ public class MarklinRoute extends Route
                             else
                             {
                                 this.network.log("Route condition fired but power was already off");
+                            }
+                        }
+                        else if (rc.isFunctionsOff())
+                        {
+                            this.network.log("Route turning off all functions.");
+                            
+                            this.network.allFunctionsOff();
+                        }
+                        else if (rc.isLightsOn())
+                        {
+                            if (this.network.getAutoLayout() != null)
+                            {
+                                this.network.log("Route turning on lights of autonomy locomotives.");
+
+                                this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
+                            }
+                            else
+                            {
+                                this.network.log("Route turning on lights of all locomotives.");
+                                
+                                this.network.lightsOn(this.network.getLocList());
                             }
                         }
                         else if (rc.isLocomotive())

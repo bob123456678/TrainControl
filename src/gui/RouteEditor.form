@@ -513,8 +513,8 @@
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Segoe UI" size="12" style="1"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="Add &quot;Power Off&quot; Command"/>
-            <Property name="toolTipText" type="java.lang.String" value="Useful if a conditional route is to be used as an emergency stop"/>
+            <Property name="text" type="java.lang.String" value="Add Special Command..."/>
+            <Property name="toolTipText" type="java.lang.String" value="Customize your routes with non-Marklin commands."/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>

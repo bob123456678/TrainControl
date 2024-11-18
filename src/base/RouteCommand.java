@@ -2,6 +2,8 @@ package base;
 
 import static base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
+import static base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
+import static base.RouteCommand.commandType.TYPE_LIGHTS_ON;
 import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static base.RouteCommand.commandType.TYPE_STOP;
 import java.lang.reflect.Field;
@@ -17,7 +19,7 @@ import org.json.JSONObject;
  */
 public class RouteCommand implements java.io.Serializable
 {    
-    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP};
+    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP, TYPE_LIGHTS_ON, TYPE_FUNCTIONS_OFF};
 
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
@@ -109,6 +111,30 @@ public class RouteCommand implements java.io.Serializable
         RouteCommand r = new RouteCommand(TYPE_STOP);
         
         return r;
+    }
+    
+    public static RouteCommand RouteCommandLightsOn()
+    {
+        RouteCommand r = new RouteCommand(TYPE_LIGHTS_ON);
+        
+        return r;
+    }
+    
+    public static RouteCommand RouteCommandFunctionsOff()
+    {
+        RouteCommand r = new RouteCommand(TYPE_FUNCTIONS_OFF);
+        
+        return r;
+    }
+    
+    public boolean isLightsOn()
+    {
+        return this.type == TYPE_LIGHTS_ON;
+    }
+    
+    public boolean isFunctionsOff()
+    {
+        return this.type == TYPE_FUNCTIONS_OFF;
     }
 
     public boolean isStop()
@@ -229,7 +255,15 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (this.isStop())
         {
-            return "stop";
+            return "Emergency Stop";
+        }
+        else if (this.isLightsOn())
+        {
+            return "All Lights On";
+        }
+        else if (this.isFunctionsOff())
+        {
+            return "All Functions Off";
         }
         
         return typeString + ": " + this.commandConfig.toString();
@@ -291,6 +325,14 @@ public class RouteCommand implements java.io.Serializable
             case TYPE_STOP:
                 routeCommand = RouteCommand.RouteCommandStop();
                 break;
+                
+            case TYPE_LIGHTS_ON:
+                routeCommand = RouteCommand.RouteCommandLightsOn();
+                break;
+                
+            case TYPE_FUNCTIONS_OFF:
+                routeCommand = RouteCommand.RouteCommandFunctionsOff();
+                break;
 
             default:
                 throw new IllegalArgumentException("Invalid command type in route command JSON.");
@@ -317,7 +359,7 @@ public class RouteCommand implements java.io.Serializable
         {
             return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
         }
-        else if (this.isStop())
+        else if (this.isStop() || this.isFunctionsOff() || this.isLightsOn())
         {
             return this.toString() + "\n";
         }
@@ -340,9 +382,17 @@ public class RouteCommand implements java.io.Serializable
      */
     public static RouteCommand fromLine(String line)
     {
-        if ("stop".equals(line.trim()))
+        if ("Emergency Stop".equals(line.trim()))
         {
             return RouteCommand.RouteCommandStop();
+        }
+        else if ("All Lights On".equals(line.trim()))
+        {
+            return RouteCommand.RouteCommandLightsOn();
+        }
+        else if ("All Functions Off".equals(line.trim()))
+        {
+            return RouteCommand.RouteCommandFunctionsOff();
         }
         else if (line.trim().startsWith(LOC_SPEED_PREFIX + ","))
         {
