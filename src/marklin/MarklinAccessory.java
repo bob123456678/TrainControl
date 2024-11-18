@@ -33,6 +33,7 @@ public class MarklinAccessory extends Accessory
     
     // Number of times this accessory has been actuated
     private int numActuations;
+    private boolean stateAtLastActuation;
     
     /**
      * Constructor
@@ -61,6 +62,7 @@ public class MarklinAccessory extends Accessory
         this.tiles = new HashSet<>();
         
         this.numActuations = numActuations;
+        this.stateAtLastActuation = this.switched;
     }
     
     public static int UIDfromAddress(int address)
@@ -121,7 +123,7 @@ public class MarklinAccessory extends Accessory
                 int setting = CS2Message.mergeBytes(
                     new byte[] {m.getData()[4]}
                 );
-                                
+                                        
                 if (setting == 0)
                 {
                     this._setSwitched(true);
@@ -130,11 +132,16 @@ public class MarklinAccessory extends Accessory
                 {
                     this._setSwitched(false);
                 }
+                                
+                // Only increment if the state changed
+                if (this.switched != stateAtLastActuation)
+                {
+                    this.stateAtLastActuation = !stateAtLastActuation;
+                    this.numActuations += 1;
+                }
                 
                 this.updateTiles();
-                
-                this.numActuations += 1;
-                                
+                                                
                 this.network.log("Setting " + this.getName() + " " +
                     (this.isSignal() ? 
                        (this.isSwitched() ? "red" : "green")
