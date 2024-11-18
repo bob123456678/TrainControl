@@ -52,7 +52,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 **Keyboard**
 
-Useful for testing, individual accessories can be directly controlled via their digital address.
+Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
 
 ![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
 
