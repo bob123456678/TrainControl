@@ -1094,7 +1094,8 @@ public class RouteEditor extends javax.swing.JFrame
 
     private void addStopCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addStopCommandActionPerformed
         
-        String[] options = { RouteCommand.RouteCommandLightsOn().toString(), 
+        String[] options = { RouteCommand.RouteCommandLightsOn().toString(),
+            RouteCommand.RouteCommandAutonomyLightsOn().toString(),
             RouteCommand.RouteCommandFunctionsOff().toString(), 
             RouteCommand.RouteCommandStop().toString()
         };

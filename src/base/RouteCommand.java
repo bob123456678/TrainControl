@@ -1,9 +1,10 @@
 package base;
 
 import static base.RouteCommand.commandType.TYPE_ACCESSORY;
+import static base.RouteCommand.commandType.TYPE_LIGHTS_ON;
+import static base.RouteCommand.commandType.TYPE_AUTONOMY_LIGHTS_ON;
 import static base.RouteCommand.commandType.TYPE_FUNCTION;
 import static base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
-import static base.RouteCommand.commandType.TYPE_LIGHTS_ON;
 import static base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static base.RouteCommand.commandType.TYPE_STOP;
 import java.lang.reflect.Field;
@@ -19,7 +20,7 @@ import org.json.JSONObject;
  */
 public class RouteCommand implements java.io.Serializable
 {    
-    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP, TYPE_LIGHTS_ON, TYPE_FUNCTIONS_OFF};
+    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON};
 
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
@@ -113,6 +114,13 @@ public class RouteCommand implements java.io.Serializable
         return r;
     }
     
+    public static RouteCommand RouteCommandAutonomyLightsOn()
+    {
+        RouteCommand r = new RouteCommand(TYPE_AUTONOMY_LIGHTS_ON);
+        
+        return r;
+    }
+    
     public static RouteCommand RouteCommandLightsOn()
     {
         RouteCommand r = new RouteCommand(TYPE_LIGHTS_ON);
@@ -130,6 +138,11 @@ public class RouteCommand implements java.io.Serializable
     public boolean isLightsOn()
     {
         return this.type == TYPE_LIGHTS_ON;
+    }
+    
+    public boolean isAutonomyLightsOn()
+    {
+        return this.type == TYPE_AUTONOMY_LIGHTS_ON;
     }
     
     public boolean isFunctionsOff()
@@ -257,6 +270,10 @@ public class RouteCommand implements java.io.Serializable
         {
             return "Emergency Stop";
         }
+        else if (this.isAutonomyLightsOn())
+        {
+            return "All Lights On (Autonomy Locomotives Only)";
+        }
         else if (this.isLightsOn())
         {
             return "All Lights On";
@@ -330,6 +347,10 @@ public class RouteCommand implements java.io.Serializable
                 routeCommand = RouteCommand.RouteCommandLightsOn();
                 break;
                 
+            case TYPE_AUTONOMY_LIGHTS_ON:
+                routeCommand = RouteCommand.RouteCommandAutonomyLightsOn();
+                break;
+                
             case TYPE_FUNCTIONS_OFF:
                 routeCommand = RouteCommand.RouteCommandFunctionsOff();
                 break;
@@ -359,7 +380,7 @@ public class RouteCommand implements java.io.Serializable
         {
             return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
         }
-        else if (this.isStop() || this.isFunctionsOff() || this.isLightsOn())
+        else if (this.isStop() || this.isFunctionsOff() || this.isLightsOn() || this.isAutonomyLightsOn())
         {
             return this.toString() + "\n";
         }
@@ -389,6 +410,10 @@ public class RouteCommand implements java.io.Serializable
         else if ("All Lights On".equals(line.trim()))
         {
             return RouteCommand.RouteCommandLightsOn();
+        }
+        else if ("All Lights On (Autonomy Locomotives Only)".equals(line.trim()))
+        {
+            return RouteCommand.RouteCommandAutonomyLightsOn();
         }
         else if ("All Functions Off".equals(line.trim()))
         {

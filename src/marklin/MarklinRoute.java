@@ -288,7 +288,7 @@ public class MarklinRoute extends Route
                             
                             this.network.allFunctionsOff();
                         }
-                        else if (rc.isLightsOn())
+                        else if (rc.isAutonomyLightsOn())
                         {
                             if (this.network.getAutoLayout() != null)
                             {
@@ -296,12 +296,12 @@ public class MarklinRoute extends Route
 
                                 this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
                             }
-                            else
-                            {
-                                this.network.log("Route turning on lights of all locomotives.");
-                                
-                                this.network.lightsOn(this.network.getLocList());
-                            }
+                        }
+                        else if (rc.isLightsOn())
+                        {
+                            this.network.log("Route turning on lights of all locomotives.");
+
+                            this.network.lightsOn(this.network.getLocList());  
                         }
                         else if (rc.isLocomotive())
                         {
