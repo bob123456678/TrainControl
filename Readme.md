@@ -269,6 +269,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Autonomy
         - In autonomous operation, individual locomotives can now be paused on demand
         - Fixed bug where deleted/edited locomotives would persist in the autonomy graph UI
+        - When validating the autonomy JSON configuration, fatal error details will now be shown in the popup error message.
     - Routes
         - When editing routes, live switch/signal commands can now be captured on demand
         - Added custom route commands for turning off all functions / turning on all lights.  If autonomy is on, only locomotives on the graph will be affected.

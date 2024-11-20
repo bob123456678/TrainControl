@@ -1,6 +1,7 @@
 package gui;
 
 import automation.Edge;
+import automation.Layout;
 import automation.Point;
 import automation.TimetablePath;
 import base.Locomotive;
@@ -10513,7 +10514,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     locCommandPanels.remove(this.autoSettingsPanel);
 
                     this.startAutonomy.setEnabled(false);
-                    JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.");
+                                        
+                    JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.\n\n" + Layout.getLastError());
 
                     this.KeyboardTab.requestFocus();
 
