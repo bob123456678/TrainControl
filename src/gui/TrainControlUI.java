@@ -1471,6 +1471,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true)); 
         pack();
         displayMenuBar();
+        
+        // Dynamically set this to prevent bug where the UI shrinks after computer sleeps
+        setPreferredSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
     }
     
     /**
@@ -3099,10 +3102,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(1129, 667));
-        setMinimumSize(new java.awt.Dimension(1129, 619));
-        setPreferredSize(new java.awt.Dimension(1129, 667));
+        setMinimumSize(new java.awt.Dimension(1110, 619));
+        setPreferredSize(null);
         setResizable(false);
-        setSize(new java.awt.Dimension(1129, 619));
+        setSize(new java.awt.Dimension(1110, 619));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 WindowClosed(evt);
