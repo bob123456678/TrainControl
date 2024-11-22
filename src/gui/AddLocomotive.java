@@ -41,6 +41,7 @@ public class AddLocomotive extends javax.swing.JFrame
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jPanel2 = new javax.swing.JPanel();
         LocTypeMM2 = new javax.swing.JRadioButton();
         jLabel4 = new javax.swing.JLabel();
@@ -63,6 +64,7 @@ public class AddLocomotive extends javax.swing.JFrame
         jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         jPanel2.setFocusable(false);
 
+        buttonGroup1.add(LocTypeMM2);
         LocTypeMM2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeMM2.setText("MM2");
         LocTypeMM2.setFocusable(false);
@@ -108,11 +110,13 @@ public class AddLocomotive extends javax.swing.JFrame
             }
         });
 
+        buttonGroup1.add(LocTypeMFX);
         LocTypeMFX.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeMFX.setText("MFX");
         LocTypeMFX.setFocusable(false);
         LocTypeMFX.setInheritsPopupMenu(true);
 
+        buttonGroup1.add(LocTypeDCC);
         LocTypeDCC.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocTypeDCC.setSelected(true);
         LocTypeDCC.setText("DCC");
@@ -412,6 +416,7 @@ public class AddLocomotive extends javax.swing.JFrame
     private javax.swing.JRadioButton LocTypeDCC;
     private javax.swing.JRadioButton LocTypeMFX;
     private javax.swing.JRadioButton LocTypeMM2;
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JButton checkDuplicates;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;

@@ -38,7 +38,7 @@ public class About extends javax.swing.JPanel {
         versionLabel = new javax.swing.JLabel();
 
         linkLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        linkLabel.setForeground(new java.awt.Color(0, 51, 255));
+        linkLabel.setForeground(new java.awt.Color(0, 0, 115));
         linkLabel.setText("Readme (Instructions & API)");
         linkLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         linkLabel.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -50,7 +50,7 @@ public class About extends javax.swing.JPanel {
         jLabel1.setText("|");
 
         linkLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        linkLabel1.setForeground(new java.awt.Color(0, 51, 255));
+        linkLabel1.setForeground(new java.awt.Color(0, 0, 115));
         linkLabel1.setText("Support this Project");
         linkLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         linkLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
