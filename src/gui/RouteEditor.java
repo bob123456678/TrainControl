@@ -11,11 +11,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.BadLocationException;
 import marklin.MarklinRoute;
 
 /**
@@ -1111,8 +1114,33 @@ public class RouteEditor extends javax.swing.JFrame
         );
         
         if (selectedValue != null)
-        {     
-            this.routeContents.setText((this.routeContents.getText() + "\n" + selectedValue).trim());
+        {              
+            try 
+            {
+                int caretPosition = routeContents.getCaretPosition();
+                int lineNumber = routeContents.getLineOfOffset(caretPosition);
+                int startOfLine = routeContents.getLineStartOffset(lineNumber);
+                int endOfLine = routeContents.getLineEndOffset(lineNumber);
+
+                // First line or start of line - add here
+                if (startOfLine == endOfLine - 1 || caretPosition == 0)
+                {
+                    routeContents.insert(selectedValue + "\n", caretPosition);
+                }
+                // Add as next line
+                else
+                {
+                    int insertPosition = routeContents.getLineEndOffset(lineNumber);
+                    routeContents.insert("\n" + selectedValue + "\n", insertPosition);
+                }
+            }
+            catch (BadLocationException ex)
+            {
+                this.routeContents.setText((this.routeContents.getText() + "\n" + selectedValue).trim());
+            }   
+            
+            // Clean up
+            this.routeContents.setText(this.routeContents.getText().replaceAll("\n{2,}", "\n").trim());
         }
     }//GEN-LAST:event_addStopCommandActionPerformed
 
