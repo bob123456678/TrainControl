@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
@@ -151,6 +149,8 @@ public class RouteEditor extends javax.swing.JFrame
         
         this.pack();
         this.setVisible(true);
+        
+        this.setAlwaysOnTop(parent.isAlwaysOnTop());
     }
     
     public JTextArea getConditionAccs()

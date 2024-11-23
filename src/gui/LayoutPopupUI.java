@@ -60,7 +60,7 @@ public class LayoutPopupUI extends javax.swing.JFrame
     
     public void render()
     {        
-        this.setAlwaysOnTop(true);
+        this.setAlwaysOnTop(parent.isAlwaysOnTop());
                       
         drawGrid();
              
@@ -74,8 +74,7 @@ public class LayoutPopupUI extends javax.swing.JFrame
             {
                 e.getComponent().setVisible(false);
             }
-          }
-        );
+        });
     }
     
     /**

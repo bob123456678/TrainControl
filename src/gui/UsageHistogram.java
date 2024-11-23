@@ -20,7 +20,8 @@ public class UsageHistogram extends javax.swing.JFrame
     long offset = 0;
     final int perPage = 30;
     
-    /** Creates new form UsageHistogram
+    /** 
+     * Creates new form UsageHistogram
      * @param tcui 
      */
     public UsageHistogram(TrainControlUI tcui)
@@ -28,6 +29,10 @@ public class UsageHistogram extends javax.swing.JFrame
         initComponents();
         this.tcui = tcui;
         this.createHistogramPanel();
+        
+        setAlwaysOnTop(tcui.isAlwaysOnTop());
+        toFront();
+        requestFocus();
     }
 
     private void createHistogramPanel()

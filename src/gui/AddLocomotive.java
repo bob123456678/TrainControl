@@ -25,7 +25,7 @@ public class AddLocomotive extends javax.swing.JFrame
         this.model = model;
         this.parent = ui;   
         
-        this.setAlwaysOnTop(true);
+        this.setAlwaysOnTop(parent.isAlwaysOnTop());
         
         initComponents();
         
@@ -214,7 +214,7 @@ public class AddLocomotive extends javax.swing.JFrame
     }// </editor-fold>//GEN-END:initComponents
 
     private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddLocButtonActionPerformed
-        // TODO - make this generic
+        
         new Thread(()->
             {
                 String locName = this.LocNameInput.getText();

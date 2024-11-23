@@ -883,7 +883,7 @@ final public class GraphViewer extends javax.swing.JFrame
      * @param autoLayout
      */
     public GraphViewer(Graph graph, TrainControlUI ui, boolean autoLayout)
-    {
+    {        
         parent = ui;
                 
         // Initialize viewer   
@@ -1179,6 +1179,10 @@ final public class GraphViewer extends javax.swing.JFrame
         setLocationRelativeTo(parent); // center
         pack();
         setVisible(true);
+        
+        setAlwaysOnTop(parent.isAlwaysOnTop());
+        requestFocus();
+        toFront();
     }
 
     /**
@@ -1191,7 +1195,6 @@ final public class GraphViewer extends javax.swing.JFrame
     private void initComponents() {
 
         setTitle(WINDOW_TITLE);
-        setAlwaysOnTop(true);
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(2000, 2000));
         setMinimumSize(new java.awt.Dimension(400, 400));

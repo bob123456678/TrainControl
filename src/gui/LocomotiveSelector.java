@@ -44,7 +44,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         // For some reason, the color set in the form gets ignored
         getContentPane().setBackground(new Color(238,238,238));
         
-        this.setAlwaysOnTop(true);
         pack();
         
         refreshLocSelectorList();
@@ -74,7 +73,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                 loc.setVisible(true);
             }
 
-            this.LocFilterBox.setText("");
+            // this.LocFilterBox.setText("");
             filterLocList();     
         }));
     }
@@ -145,9 +144,19 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                 formWindowStateChanged(evt);
             }
         });
+        addWindowFocusListener(new java.awt.event.WindowFocusListener() {
+            public void windowGainedFocus(java.awt.event.WindowEvent evt) {
+                formWindowGainedFocus(evt);
+            }
+            public void windowLostFocus(java.awt.event.WindowEvent evt) {
+            }
+        });
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowActivated(java.awt.event.WindowEvent evt) {
                 formWindowActivated(evt);
+            }
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
             }
         });
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -318,6 +327,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
     private void SyncWithCSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SyncWithCSActionPerformed
         this.parent.doSync(this);
+        this.LocFilterBox.setText("");
     }//GEN-LAST:event_SyncWithCSActionPerformed
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
@@ -345,6 +355,15 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
         this.LocFilterBox.requestFocus();
     }//GEN-LAST:event_formWindowActivated
+
+    private void formWindowGainedFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowGainedFocus
+        this.setAlwaysOnTop(parent.isAlwaysOnTop());
+    }//GEN-LAST:event_formWindowGainedFocus
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        this.LocFilterBox.setText("");
+        filterLocList();
+    }//GEN-LAST:event_formWindowClosing
 
     public boolean doCloseWindow()
     {

@@ -276,6 +276,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
     - Keyboard
         - Actuation counts for each accessory are now tracked and displayed as tooltips on the Keyboard page
     - Fixed bug where "Large" track diagrams would not always render correctly 
+    - Fixed pop-up window stacking when "always on top" is not selected
 
 * v2.2.7 [9/14/2024]
     - In the graph UI, added a context menu shortcut to add an edge to the last left-clicked node
