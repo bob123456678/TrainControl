@@ -266,6 +266,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - Alt+comma/period, Alt+semicolon/colon will now jump to the first/last key mapping page
             - QWERTY/QWERTZ/AZERTY keyboard options moved to the menu bar
             - Increased size of the locomotive notes window
+            - Added page right-click menu option to fill an entire page with unmapped locomotives
     - Autonomy
         - In autonomous operation, individual locomotives can now be paused on demand
         - Fixed bug where deleted/edited locomotives would persist in the autonomy graph UI

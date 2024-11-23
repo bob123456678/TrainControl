@@ -67,6 +67,13 @@ public class RightClickPageMenu extends MouseAdapter
             
             addSeparator();
             
+            menuItem = new JMenuItem("Map Unassigned Locomotives");
+            menuItem.addActionListener(event -> ui.mapUnassignedLocomotives());
+            menuItem.setToolTipText("Finds locomotives not mapped to any key, and maps them to free keys on this page.");
+            add(menuItem);
+            
+            addSeparator();
+            
             menuItem = new JMenuItem("Reset Current Mappings");
             menuItem.addActionListener(event -> ui.clearCurrentPage());    
             add(menuItem);

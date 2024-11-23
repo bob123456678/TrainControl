@@ -2090,6 +2090,36 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }));
     }
     
+    public void mapUnassignedLocomotives()
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            for (JButton key : this.labelMapping.keySet())
+            {
+                // Is the key free?
+                if (this.currentLocMapping().get(key) == null || this.model.getLocByName(this.currentLocMapping().get(key).getName()) == null)
+                {
+                    List<String> locs = this.model.getLocList();
+                    Collections.sort(locs);
+                    
+                    for (String s : locs)
+                    {
+                        Locomotive l = this.model.getLocByName(s);
+                        
+                        // Is the locomotive mapped anywhere?
+                        if (l != null && this.getAllLocButtonMappings(l).isEmpty())
+                        {
+                            this.currentLocMapping().put(key, l);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            repaintMappings();
+        }));
+    }
+    
     @Override
     public void repaintSwitches()
     {
