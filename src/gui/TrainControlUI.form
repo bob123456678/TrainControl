@@ -256,7 +256,7 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showKeyboardHintsMenuItem">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Show Keyboard Control Hits"/>
+                    <Property name="text" type="java.lang.String" value="Show Keyboard Control Hints"/>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showKeyboardHintsMenuItemActionPerformed"/>

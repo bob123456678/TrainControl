@@ -8120,7 +8120,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locomotiveControlMenu.add(slidersChangeActiveLocMenuItem);
 
         showKeyboardHintsMenuItem.setSelected(true);
-        showKeyboardHintsMenuItem.setText("Show Keyboard Control Hits");
+        showKeyboardHintsMenuItem.setText("Show Keyboard Control Hints");
         showKeyboardHintsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showKeyboardHintsMenuItemActionPerformed(evt);
