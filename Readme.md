@@ -44,6 +44,38 @@ From v2.0.0, on Windows only, you can also edit local track diagrams via a bundl
 
 ![UI screenshot: layout editor](assets/track_diagram_editor.png?raw=true)
 
+<details>
+<summary>Instructions for Managing and Importing Layouts</summary>
+
+**Layouts and the CS3**
+
+This program was originally written to import and display layouts created/configured from within the CS2.
+
+Because the CS3 uses a different layout format than the CS2, this program does not support displaying native CS3 layouts. 
+However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
+In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
+
+If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
+
+- If you have a CS2/CS3 with a layout, import your layout:
+    - Create an empty folder on your PC
+    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+    - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
+    - The static local layout will now be shown in the Layout tab
+- Otherwise
+    - Start TrainControl, then from the Layout menu, click on "Initialize New Local Layout"
+    - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
+
+A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
+
+If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
+
+Some sample files are included in the `cs2_sample_layout` folder.
+
+As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
+
+</summary>
+
 **Routes**
 
 Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Manual routes can also be defined and activated directly or via the layout tab.
@@ -152,18 +184,33 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 ![Key mapping](assets/keyboard.png?raw=true)
 
-**Requirements:**
+## License & Contact
+
+TrainControl was created and is maintained by Adam Oest.
+
+To support development, please feel free to [make a donation via Buy Me a Coffee](
+https://www.buymeacoffee.com/traincontrol).
+
+Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
+
+This is free software released under the GNU General Public License v3.
+
+No copyright claim is made to any Central Station icons rendered during the use of this program.
+
+Tab icons provided by Free pik.
+
+## Prerequisites
 
 * Install Java 8 on your computer
-* Requires a Marklin Central Station 2 or Central Station 3 connected to your network
-* Your computer must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
+* Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
+* The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or ethernet)
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (TrainControl will show a warning popup after 15 seconds if this is not enabled)
 * For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
 
 <details>
 <summary>How to enable CAN broadcasting</summary>
 
-## Central Station 3
+**Central Station 2:**
 
 From the upper-left corner of the CS3 main screen, click on the **System** icon.  Then click on **IP** toward the bottom the page that is shown.
 
@@ -181,7 +228,7 @@ Scroll down to **Settings CAN** and select *broadcast* from the dropdown.  Set t
 
 Many routers assign addresses within the 192.168.1.x range by default, so most users will need to set **192.168.1.255** here.
 
-## Central Station 2
+**Central Station 2:**
 
 On the CS2, identical settings are found by going to the **Setup** tab in the upper-right of the main screen, then the *IP* and *CAN* sub-tabs, respectively.
 
@@ -192,32 +239,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
 * Central Station track diagrams require a CS2, or CS3 v2.5+ (local layout files can be created/used with older CS3s if desired)
 
-## License & Contact
-
-TrainControl was created and is maintained by Adam Oest.
-
-To support development, please feel free to [make a donation via Buy Me a Coffee](
-https://www.buymeacoffee.com/traincontrol).
-
-Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
-
-This is free software released under the GNU General Public License v3.
-
-No copyright claim is made to any Central Station icons rendered during the use of this program.
-
-Tab icons provided by Free pik.
-
 ## Running TrainControl
-
-**Building the project from source:**
-
-Requires JDK 1.8+ and the following libraries:
-
-* org.json (json-20220924.jar) (from v1.6.0)
-* org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
-* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.2.jar) (from v2.3.0)
-
-```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 **Running the application (build or release JAR):**
 
@@ -236,32 +258,15 @@ Examples:
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
-## Layouts and the CS3
+**Building the project from source:**
 
-This program was originally written to import and display layouts created/configured from within the CS2.
+Requires JDK 1.8+ and the following libraries:
 
-Because the CS3 uses a different layout format than the CS2, this program does not support displaying native CS3 layouts. 
-However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
-In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
+* org.json (json-20220924.jar) (from v1.6.0)
+* org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
+* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.2.jar) (from v2.3.0)
 
-If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
-
-- If you have a CS2/CS3 with a layout, import your layout:
-    - Create an empty folder on your PC
-    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
-    - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
-    - The static local layout will now be shown in the Layout tab
-- Otherwise
-    - Start TrainControl, then from the Layout menu, click on "Initialize New Local Layout"
-    - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
-
-A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
-
-If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
-
-Some sample files are included in the `cs2_sample_layout` folder.
-
-As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
+```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
 
