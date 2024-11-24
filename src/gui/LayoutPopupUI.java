@@ -46,7 +46,7 @@ public class LayoutPopupUI extends javax.swing.JFrame
             this,
             true, parent);
         
-        setTitle(this.layout.getName());
+        setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));

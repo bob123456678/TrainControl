@@ -2307,6 +2307,25 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     {
         repaintLoc(false, null);
     }
+    
+    /**
+     * Gets the locomotive name to display in pop-up window titles
+     * @return 
+     */
+    public String getWindowTitleString()
+    {
+        // Show nothing if there is no active locomotive, or the setting is not selected
+        if (this.activeLoc == null || this.model.getLocByName(this.activeLoc.getName()) == null || !this.activeLocInTitle.isSelected())
+        {
+            return "";
+        }
+        else
+        {
+            return " [" + this.activeLoc.getName() + " " + 
+                    (this.activeLoc.getDirection() == Locomotive.locDirection.DIR_FORWARD ? ">>" : "<<") +
+                    " " + this.activeLoc.getSpeed() + "%]";
+        }
+    }
         
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
@@ -2349,32 +2368,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 + ")";
                             
                             // Display active locomotive in autonomy UI
-                            String windowTitleString = " [" + this.activeLoc.getName() + " " + 
-                                        (this.activeLoc.getDirection() == Locomotive.locDirection.DIR_FORWARD ? ">>" : "<<") +
-                                        " " + this.activeLoc.getSpeed() + "%]";
+                            String windowTitleString = getWindowTitleString();
                             
                             if (this.graphViewer != null)
                             {
-                                if (this.activeLocInTitle.isSelected())
-                                {
-                                    this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE + windowTitleString);
-                                }
-                                else
-                                {
-                                    this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE);
-                                }
+                                this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE + windowTitleString);
                             }
                             
                             for (LayoutPopupUI popup : this.popups)
                             {
-                                if (this.activeLocInTitle.isSelected())
-                                {
-                                    popup.setTitle(popup.getLayoutTitle() + windowTitleString);
-                                }
-                                else
-                                {
-                                    popup.setTitle(popup.getLayoutTitle());
-                                }
+                                popup.setTitle(popup.getLayoutTitle() + windowTitleString);
                             } 
 
                             // Only repaint icon if the locomotive is changed
