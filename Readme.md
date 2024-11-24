@@ -157,8 +157,35 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * Install Java 8 on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network
 * Your computer must connect to the same network as the CS2/CS3 (Wi-Fi or ethernet)
-* Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (a warning will be shown after 15 seconds if this is not enabled)
+* Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (TrainControl will show a warning popup after 15 seconds if this is not enabled)
 * For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
+
+<details>
+<summary>How to enable CAN broadcasting</summary>
+
+## Central Station 3
+
+From the upper-left corner of the CS3 main screen, click on the **System** icon.  Then click on **IP** toward the bottom the page that is shown.
+
+![CS3 System page](assets/network1.png?raw=true)
+
+In this example, the network mode is *auto (DHCP)* and the CS3 has been automatically assigned an *IP Address* of 192.168.50.25 on the local network. The *IP Gateway* and *DNS Server* is 192.168.50.1 with an *IP Network Template* of 255.255.255.0.
+
+Typically, you would either manually input a specific IP on this page, or have your router assign a static IP based on the CS3's MAC address.
+
+![CS3 IP settings page](assets/network3.png?raw=true)
+
+Scroll down to **Settings CAN** and select *Broadcast* from the dropdown.  Set the *Destination IP* to the highest allowed address in your subnet, which usually means setting the last octet to 255.  In this case, the *Destination IP* is therefore 192.168.50.255.  You can safely ignore the shown warning icon.
+
+![CS3 CAN settings page](assets/network2.png?raw=true)
+
+Many routers assign addresses within the 192.168.1.x range by default, so most users will need to set **192.168.1.255** here.
+
+## Central Station 2
+
+On the CS2, identical settings are found by going to the **Setup** tab in the upper-right of the main screen, then the *IP* and *CAN* sub-tabs, respectively.
+
+</details>
 
 **Limitations:**
 
