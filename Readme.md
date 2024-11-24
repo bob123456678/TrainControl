@@ -175,7 +175,7 @@ In this example, the network mode is *auto (DHCP)* and the CS3 has been automati
 
 ![CS3 IP settings page](assets/network3.png?raw=true)
 
-Scroll down to **Settings CAN** and select *Broadcast* from the dropdown.  Set the *Destination IP* to the highest allowed address in your subnet, which usually means setting the last octet to 255.  In this case, the *Destination IP* is therefore 192.168.50.255.  You can safely ignore the shown warning icon.
+Scroll down to **Settings CAN** and select *broadcast* from the dropdown.  Set the *Destination Address* to the highest allowed IP in your subnet, which usually means setting the last octet to 255.  In this case, the *Destination Address* is therefore 192.168.50.255.  You can safely ignore the warning icon shown.
 
 ![CS3 CAN settings page](assets/network2.png?raw=true)
 
