@@ -14,8 +14,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -840,7 +838,7 @@ final public class GraphViewer extends javax.swing.JFrame
 
                 addSeparator();
 
-                menuItem = new JMenuItem("Start Autonomy");
+                menuItem = new JMenuItem("Start Autonomous Operation");
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -888,7 +886,6 @@ final public class GraphViewer extends javax.swing.JFrame
                         catch (Exception e)
                         {
                             JOptionPane.showMessageDialog(this, e.getMessage());
-                            // loadAutoLayoutSettings();
                         }
                     }
                 });

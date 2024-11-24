@@ -238,7 +238,7 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 ## Changelog
 
-* v2.3.0 [Beta]
+* v2.3.0 [11/24/2024]
     - UI enhancements
         - Applied a modern look & feel to the whole UI
         - Added a standard menu bar with various options
