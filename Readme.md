@@ -74,6 +74,8 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
+---
+
 </details>
 
 **Routes**
@@ -232,6 +234,8 @@ Many routers assign addresses within the 192.168.1.x range by default, so most u
 
 On the CS2, identical settings are found by going to the **Setup** tab in the upper-right of the main screen, then the *IP* and *CAN* sub-tabs, respectively.
 
+---
+
 </details>
 
 **Limitations:**
@@ -243,7 +247,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 **Running the application (build or release JAR):**
 
-Some operating systems allow you to simply double-click the JAR file to run it.  On others, you may wish to create a `.sh` or `.bat` file to execute the command above.
+Some operating systems allow you to simply double-click the JAR file to run it.  On others, you may wish to create a `.sh` or `.bat` file to execute the command below.
 
 To run TrainControl, open a terminal / command prompt window, and from the directory containing TrainControl.jar, execute the following command.
 
