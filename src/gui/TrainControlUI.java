@@ -10604,6 +10604,38 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
+    /**
+     * Called externally
+     * @throws Exception 
+     */
+    public void requestStartAutonomy() throws Exception
+    {
+        if (this.startAutonomy.isEnabled())
+        {
+            startAutonomyActionPerformed(null);
+        }
+        else
+        {
+            throw new Exception("Unable to start autonomy.  Wait for all trains to reach their stations.");
+        }
+    }
+    
+    /**
+     * Called externally
+     * @throws Exception 
+     */
+    public void requestStopAutonomy() throws Exception
+    {
+        if (this.gracefulStop.isEnabled())
+        {
+            gracefulStopActionPerformed(null);
+        }
+        else
+        {
+            throw new Exception("Stop request already issued. Wait for all trains to reach their stations.");
+        }
+    }
+    
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
         new Thread(() ->
@@ -10656,22 +10688,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
                 {
                     new Thread( () ->
-                        {
-                            this.model.getAutoLayout().runLocomotives();
-                        }).start();
+                    {
+                        this.model.getAutoLayout().runLocomotives();
+                    }).start();
 
-                        this.startAutonomy.setEnabled(false);
-                        this.gracefulStop.setEnabled(true);
-                    }
-                    else if (this.model.getAutoLayout().isRunning())
-                    {
-                        JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
-                    }
-                    else if (!this.model.getAutoLayout().isValid())
-                    {
-                        JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
-                    }
-                }).start();
+                    this.startAutonomy.setEnabled(false);
+                    this.gracefulStop.setEnabled(true);
+                }
+                else if (this.model.getAutoLayout().isRunning())
+                {
+                    JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
+                }
+                else if (!this.model.getAutoLayout().isValid())
+                {
+                    JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
+                }
+            }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed

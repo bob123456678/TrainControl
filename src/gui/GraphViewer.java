@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -787,92 +789,129 @@ final public class GraphViewer extends javax.swing.JFrame
     {
         JMenuItem menuItem;
 
-        public RightClickMenuNew(TrainControlUI ui, int x, int y)
+        public RightClickMenuNew(TrainControlUI ui, int x, int y, boolean running)
         {
-            menuItem = new JMenuItem("Create New Point");
-            menuItem.addActionListener(event -> 
+            if (!running)
             {
-                String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                    "Enter the new point name.",
-                    "");
-
-                if (dialogResult != null && !"".equals(dialogResult))
+                menuItem = new JMenuItem("Create New Point");
+                menuItem.addActionListener(event -> 
                 {
-                    try
+                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                        "Enter the new point name.",
+                        "");
+
+                    if (dialogResult != null && !"".equals(dialogResult))
                     {
-                        if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
+                        try
+                        {
+                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
+                            {
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "This point name is already in use.  Pick another.");
+                            }
+                            else
+                            {
+                                parent.getModel().getAutoLayout().createPoint(dialogResult, false, null);
+
+                                Point p = parent.getModel().getAutoLayout().getPoint(dialogResult);
+
+                                p.setX(x);
+                                p.setY(y);
+
+                                mainGraph.addNode(p.getUniqueId());
+                                mainGraph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
+                                mainGraph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
+                                mainGraph.getNode(p.getUniqueId()).setAttribute("weight", 3);
+
+                                ui.updatePoint(p, mainGraph);                            
+                                parent.getModel().getAutoLayout().refreshUI();
+                                parent.repaintAutoLocList(false);
+                            }
+                        }
+                        catch (Exception e)
                         {
                             JOptionPane.showMessageDialog((Component) swingView,
-                                "This point name is already in use.  Pick another.");
+                                "Error adding node.");
                         }
-                        else
-                        {
-                            parent.getModel().getAutoLayout().createPoint(dialogResult, false, null);
-                            
-                            Point p = parent.getModel().getAutoLayout().getPoint(dialogResult);
-                                                        
-                            p.setX(x);
-                            p.setY(y);
+                    }
+                }); 
 
-                            mainGraph.addNode(p.getUniqueId());
-                            mainGraph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
-                            mainGraph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
-                            mainGraph.getNode(p.getUniqueId()).setAttribute("weight", 3);
-                            
-                            ui.updatePoint(p, mainGraph);                            
-                            parent.getModel().getAutoLayout().refreshUI();
-                            parent.repaintAutoLocList(false);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "Error adding node.");
-                    }
-                }
-            }); 
-            
-            add(menuItem);
-            
-            addSeparator();
-            
-            menuItem = new JMenuItem("Clear Locomotives from Graph");
-            menuItem.addActionListener(event -> 
-            {
-                if (!parent.getModel().getAutoLayout().isRunning())
+                add(menuItem);
+
+                addSeparator();
+
+                menuItem = new JMenuItem("Start Autonomy");
+                menuItem.addActionListener(event -> 
                 {
                     try
                     {
-                        int dialogResult = JOptionPane.showConfirmDialog(
-                            (Component) swingView, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-
-                        if(dialogResult == JOptionPane.YES_OPTION)
-                        {
-                            List<Locomotive> locs = new ArrayList<>(parent.getModel().getAutoLayout().getLocomotivesToRun());
-
-                            for (Locomotive l: locs)
-                            {
-                                Point p = parent.getModel().getAutoLayout().getLocomotiveLocation(l);
-
-                                if (p != null && !p.isReversing() && p.isDestination())
-                                {
-                                    parent.getModel().getAutoLayout().moveLocomotive(null, p.getName(), false);
-                                    ui.updatePoint(p, mainGraph);
-                                }
-                            }
-
-                            parent.repaintAutoLocList(false);
-                        }
+                        parent.requestStartAutonomy();
                     }
                     catch (Exception e)
                     {
                         JOptionPane.showMessageDialog(this, e.getMessage());
-                        // loadAutoLayoutSettings();
                     }
-                }
-            });
-            
-            add(menuItem);
+                });
+                
+                add(menuItem);
+
+                addSeparator();
+
+                menuItem = new JMenuItem("Clear Locomotives from Graph");
+                menuItem.addActionListener(event -> 
+                {
+                    if (!parent.getModel().getAutoLayout().isRunning())
+                    {
+                        try
+                        {
+                            int dialogResult = JOptionPane.showConfirmDialog(
+                                (Component) swingView, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+
+                            if(dialogResult == JOptionPane.YES_OPTION)
+                            {
+                                List<Locomotive> locs = new ArrayList<>(parent.getModel().getAutoLayout().getLocomotivesToRun());
+
+                                for (Locomotive l: locs)
+                                {
+                                    Point p = parent.getModel().getAutoLayout().getLocomotiveLocation(l);
+
+                                    if (p != null && !p.isReversing() && p.isDestination())
+                                    {
+                                        parent.getModel().getAutoLayout().moveLocomotive(null, p.getName(), false);
+                                        ui.updatePoint(p, mainGraph);
+                                    }
+                                }
+
+                                parent.repaintAutoLocList(false);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            JOptionPane.showMessageDialog(this, e.getMessage());
+                            // loadAutoLayoutSettings();
+                        }
+                    }
+                });
+
+                add(menuItem);
+            }
+            else
+            {
+                menuItem = new JMenuItem("Gracefully Stop Autonomy");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        parent.requestStopAutonomy();
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });    
+                
+                add(menuItem);
+            }
         }
     }
     
@@ -1131,10 +1170,17 @@ final public class GraphViewer extends javax.swing.JFrame
                                 // Insert at cursor
                                 Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
 
-                                RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y);
+                                RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y, false);
                                 menu.show(evt.getComponent(), evt.getX(), evt.getY());  
                             }           
                         }    
+                    }
+                    else
+                    {
+                        Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
+
+                        RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y, true);
+                        menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
                     }
                 }
             }

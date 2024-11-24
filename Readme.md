@@ -247,13 +247,14 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
             - The visibility of the menu bar can be toggled from the keyboard mapping UI / Control+M
             - Added option to display the active locomotive name in the title of popup windows (layouts / autonomy graph)
         - Moved main UI tabs to the left, and replaced text headings with icons
-            - Tabs can now also be cyled using the CapsLock key
+            - Tabs can now also be cycled using the CapsLock key
             - Improvements to UI tooltips
             - Improvements to UI alignment
             - Increased the size of locomotive icons
         - Autonomy 
             - Consolidated start / stop buttons onto the Locomotive Control tab of the autonomy UI
             - Moved option to clear locomotives from the graph to the right-click menu in the graph UI (when right clicking any blank space)
+            - Added start and graceful stop shortcuts to the right-click menu in the graph UI
         - Routes
             - The route ID is now pre-filled when editing route IDs
             - The track diagrams can now be focused while editing routes
