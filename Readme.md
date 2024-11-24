@@ -169,9 +169,9 @@ From the upper-left corner of the CS3 main screen, click on the **System** icon.
 
 ![CS3 System page](assets/network1.png?raw=true)
 
-In this example, the network mode is *auto (DHCP)* and the CS3 has been automatically assigned an *IP Address* of 192.168.50.25 on the local network. The *IP Gateway* and *DNS Server* is 192.168.50.1 with an *IP Network Template* of 255.255.255.0.
-
 Typically, you would either manually input a specific IP on this page, or have your router assign a static IP based on the CS3's MAC address.
+
+In this example, the network mode is *auto (DHCP)* and the CS3 has been automatically assigned an *IP Address* of 192.168.50.25 on the local network. The *IP Gateway* and *DNS Server* is 192.168.50.1 with an *IP Network Template* of 255.255.255.0.
 
 ![CS3 IP settings page](assets/network3.png?raw=true)
 
