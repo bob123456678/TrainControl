@@ -74,7 +74,7 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
-</summary>
+</details>
 
 **Routes**
 
