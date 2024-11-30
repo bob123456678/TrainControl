@@ -6,6 +6,7 @@ import base.Locomotive;
 import base.RemoteDeviceCollection;
 import base.RouteCommand;
 import gui.TrainControlUI;
+import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,9 +37,11 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 import marklin.MarklinLocomotive.decoderType;
 import marklin.file.CS2File;
 import marklin.udp.CS2Message;
+import marklin.udp.CSDetect;
 import marklin.udp.NetworkProxy;
 import model.ModelListener;
 import model.View;
@@ -58,7 +61,7 @@ import util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.3.0";
+    public static final String RAW_VERSION = "2.3.1";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -2137,22 +2140,75 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 try
                 {
                     if (initIP == null)
-                    {
-                        initIP = JOptionPane.showInputDialog("Enter Central Station IP Address: ");
-
-                        if (initIP == null)
+                    {       
+                        if (!GraphicsEnvironment.isHeadless())
                         {
-                            System.out.println("No IP entered - shutting down.");
+                            JTextField ipField = new JTextField();
+
+                            Object[] options = {"OK", "Cancel", "Auto-Detect"};
+                            Object[] message = {
+                                "Enter Central Station IP Address:",
+                                ipField
+                            };
+
+                            int selectedOption = JOptionPane.showOptionDialog(null,
+                                message,
+                                "IP Address Input",
+                                JOptionPane.DEFAULT_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                options,
+                                options[0]);
+
+                            switch (selectedOption)
+                            {
+                                case 0: // OK
+                                    initIP = ipField.getText();
+                                    break;
+                                case 1: // Cancel
+                                    break;
+                                case 2: // Auto-Detect
+                                    System.out.println("Attempting to detect Central Station...");
+                                    initIP = CSDetect.detectCentralStation();
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        
+                        if (initIP == null || "".equals(initIP))
+                        {
+                            if (GraphicsEnvironment.isHeadless())
+                            {
+                                System.out.println("No IP entered/found - shutting down.");
+                            }
+                            else
+                            {
+                                JOptionPane.showMessageDialog(null, "No IP entered/found - shutting down.");
+                            }
                             System.exit(1);
                         }
                     }
 
-                    if (!CS2File.ping(initIP))
+                    if (!CSDetect.isReachable(initIP))
                     {
                         JOptionPane.showMessageDialog(null, "No response from " + initIP);
                     }
                     else
                     {
+                        // Verify that the device is actually a central station
+                        if (!CSDetect.isCentralStation(initIP))
+                        {
+                            if (GraphicsEnvironment.isHeadless())
+                            {
+                                System.out.println("Warning: the device at " + initIP + " does not appear to be a Central Station.");
+                            }
+                            else
+                            {
+                                JOptionPane.showMessageDialog(null, "Warning: the device at " + initIP + " does not appear to be a Central Station.");
+                            }
+                        }
+                        
                         try
                         {
                             TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, initIP);
@@ -2168,7 +2224,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (HeadlessException e)
                 {
-                    System.out.println("Invalid IP Specified");
+                    System.out.println("Unable to prompt for IP; restart and specify the correct IP.");
                 }
 
                 initIP = null;

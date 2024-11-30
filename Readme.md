@@ -240,7 +240,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 **Limitations:**
 
-* Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router)
+* Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
 * Central Station track diagrams require a CS2, or CS3 v2.5+ (local layout files can be created/used with older CS3s if desired)
 
 ## Running TrainControl
@@ -273,6 +273,13 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.3.1 [Beta]
+    - Network enhancements
+        - A warning will now be shown if the entered Central Station IP address does not appear to be a Central Station
+        - Added a buton to attempt to auto-detect the Central Station IP at startup
+        - Added an option in the File menu to reset the stored Central Station IP preference
+        - Shortened timeout when an invalid IP is entered at startup
 
 * v2.3.0 [11/24/2024]
     - UI enhancements

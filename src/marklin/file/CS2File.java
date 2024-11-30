@@ -151,7 +151,7 @@ public final class CS2File
      * @param dataPath
      * @return 
      */
-    public String getLayoutMasterURL(String dataPath)
+    public static String getLayoutMasterURL(String dataPath)
     {
         return dataPath + "/config/gleisbild.cs2";
     }

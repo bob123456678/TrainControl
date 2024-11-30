@@ -3090,6 +3090,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         mainMenuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         backupDataMenuItem = new javax.swing.JMenuItem();
+        changeIPMenuItem = new javax.swing.JMenuItem();
         jSeparator17 = new javax.swing.JPopupMenu.Separator();
         exitMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
@@ -7942,6 +7943,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         fileMenu.add(backupDataMenuItem);
+
+        changeIPMenuItem.setText("Change Central Station IP");
+        changeIPMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeIPMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(changeIPMenuItem);
         fileMenu.add(jSeparator17);
 
         exitMenuItem.setText("Exit");
@@ -10879,6 +10888,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }).start();
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
+    private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
+        TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF); 
+        JOptionPane.showMessageDialog(this, "IP preference has been reset.  Restart TrainControl, then specify a new IP.");
+    }//GEN-LAST:event_changeIPMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12000,6 +12014,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
+    private javax.swing.JMenuItem changeIPMenuItem;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JPanel controlsPanel;
     private javax.swing.JTextArea debugArea;

@@ -2,8 +2,8 @@ import javax.swing.JOptionPane;
 import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 
-public class TrainControl {
-        
+public class TrainControl
+{        
     /**
      * Main method, parses command line arguments and initializes the GUI /
      * client
