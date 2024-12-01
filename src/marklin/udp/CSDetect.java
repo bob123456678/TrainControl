@@ -16,13 +16,18 @@ import marklin.file.CS2File;
 
 /**
  * This class attempts to automatically detect a central station on the network
- * @author adamo
+ * @author Adam
  */
 public class CSDetect
 {
-    private static final int WEB_TIMEOUT_MS = 500;
-    private static final int NET_TIMEOUT_MS = 100;
-    private static final int THREAD_POOL_SIZE = 20; // adjust based on your requirement
+    // How long we wait for web requests to complete
+    public static final int WEB_TIMEOUT_MS = 500;
+    
+    // How long we wait for network pings to complete
+    public static final int NET_TIMEOUT_MS = 200;
+    
+    // Concurrent requests to send
+    private static final int THREAD_POOL_SIZE = 20;
 
     public static void main(String[] args)
     {
@@ -130,17 +135,22 @@ public class CSDetect
         return out;
     }
 
-    public static boolean isReachable(String host)
+    public static boolean isReachable(String host, int timeout)
     {
         try
         {
             InetAddress inet = InetAddress.getByName(host);
-            return inet.isReachable(NET_TIMEOUT_MS);
+            return inet.isReachable(timeout);
         }
         catch (Exception e)
         {
             return false;
         }
+    }
+    
+    public static boolean isReachable(String host)
+    {
+        return isReachable(host, NET_TIMEOUT_MS);
     }
 
     private static boolean checkWebServer(String host, String path)

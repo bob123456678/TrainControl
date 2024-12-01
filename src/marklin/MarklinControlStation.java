@@ -2190,7 +2190,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                     }
 
-                    if (!CSDetect.isReachable(initIP))
+                    if (!CSDetect.isReachable(initIP, CSDetect.WEB_TIMEOUT_MS))
                     {
                         JOptionPane.showMessageDialog(null, "No response from " + initIP);
                     }
