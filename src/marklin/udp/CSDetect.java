@@ -21,7 +21,7 @@ import marklin.file.CS2File;
 public class CSDetect
 {
     private static final int WEB_TIMEOUT_MS = 500;
-    private static final int NET_TIMEOUT_MS = 50;
+    private static final int NET_TIMEOUT_MS = 100;
     private static final int THREAD_POOL_SIZE = 20; // adjust based on your requirement
 
     public static void main(String[] args)
