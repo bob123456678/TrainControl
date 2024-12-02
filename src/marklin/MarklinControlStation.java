@@ -8,6 +8,8 @@ import base.RouteCommand;
 import gui.TrainControlUI;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,6 +38,7 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import marklin.MarklinLocomotive.decoderType;
@@ -713,7 +716,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.getById(l.getUID()).isCustomFunctions())
                     {
-                        this.log("Function types for " + l.getName() + " do not match Central Station, but this will be ignored because the locomotive was customized via the UI.");
+                        this.log("Function types for " + l.getName() + " do not match Central Station; this will be ignored because the locomotive was customized via the UI.");
                     }
                     else
                     {
@@ -2115,7 +2118,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException, InterruptedException
     {        
-        System.out.println("TrainControl starting...");
+        System.out.println("TrainControl v" + MarklinControlStation.RAW_VERSION + " starting...");
         
         // User interface
         TrainControlUI ui = new TrainControlUI();
@@ -2151,25 +2154,69 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 ipField
                             };
 
-                            int selectedOption = JOptionPane.showOptionDialog(null,
+                            JOptionPane optionPane = new JOptionPane(
                                 message,
-                                "IP Address Input",
-                                JOptionPane.DEFAULT_OPTION,
                                 JOptionPane.PLAIN_MESSAGE,
+                                JOptionPane.DEFAULT_OPTION,
                                 null,
                                 options,
-                                options[0]);
+                                options[0]
+                            );
+
+                            // To ensure the text field is focused
+                            JDialog dialog = optionPane.createDialog("IP Address Input");
+                            dialog.addWindowFocusListener(new WindowAdapter() 
+                            {
+                                @Override
+                                public void windowGainedFocus(WindowEvent e)
+                                {
+                                    ipField.requestFocusInWindow();
+                                }
+                            });
+
+                            dialog.setVisible(true);
+
+                            int selectedOption = JOptionPane.CLOSED_OPTION;
+                            Object selectedValue = optionPane.getValue();
+                            for (int i = 0; i < options.length; i++)
+                            {
+                                if (options[i].equals(selectedValue))
+                                {
+                                    selectedOption = i;
+                                    break;
+                                }
+                            }
 
                             switch (selectedOption)
                             {
                                 case 0: // OK
                                     initIP = ipField.getText();
+                                    
+                                    if (initIP != null)
+                                    {
+                                        initIP = initIP.trim();
+                                    }
+                                    
                                     break;
                                 case 1: // Cancel
                                     break;
                                 case 2: // Auto-Detect
                                     System.out.println("Attempting to detect Central Station...");
+                                    
+                                    if (!CSDetect.hasLocalSubnets())
+                                    {
+                                        JOptionPane.showMessageDialog(null, "Auto-detection is not possible: no network interfaces found.  Enter IP manually or check firewall permissions.");
+                                        continue;
+                                    }
+                                    
                                     initIP = CSDetect.detectCentralStation();
+
+                                    if (initIP == null)
+                                    {
+                                        JOptionPane.showMessageDialog(null, "No Central Station detected.  Enter IP manually or try again.");
+                                        continue;
+                                    }
+                                    
                                     break;
                                 default:
                                     break;
@@ -2180,17 +2227,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         {
                             if (GraphicsEnvironment.isHeadless())
                             {
-                                System.out.println("No IP entered/found - shutting down.");
+                                System.out.println("No IP entered - shutting down.");
                             }
                             else
                             {
-                                JOptionPane.showMessageDialog(null, "No IP entered/found - shutting down.");
+                                JOptionPane.showMessageDialog(null, "No IP entered - shutting down.");
                             }
+                            
                             System.exit(1);
                         }
                     }
 
-                    if (!CSDetect.isReachable(initIP, CSDetect.WEB_TIMEOUT_MS))
+                    if (!CS2File.ping(initIP))
                     {
                         JOptionPane.showMessageDialog(null, "No response from " + initIP);
                     }

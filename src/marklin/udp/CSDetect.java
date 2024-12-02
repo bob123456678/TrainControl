@@ -27,7 +27,10 @@ public class CSDetect
     public static final int NET_TIMEOUT_MS = 200;
     
     // Concurrent requests to send
-    private static final int THREAD_POOL_SIZE = 20;
+    public static final int THREAD_POOL_SIZE = 10;
+    
+    // Sometimes pings fail.  How many times do we retry?
+    public static final int PING_RETRY = 2;
 
     public static void main(String[] args)
     {
@@ -52,9 +55,11 @@ public class CSDetect
             for (int i = 1; i < 255; i++)
             {
                 final String host = subnet + i;
-                Future<String> future = executor.submit(() -> {
+                
+                Future<String> future = executor.submit(() ->
+                {
                     //System.out.println("Testing " + host);
-                    if (isReachable(host))
+                    if (isReachable(host, PING_RETRY))
                     {
                         System.out.println(host + " is reachable");
                         if (checkWebServer(host, urlPath))
@@ -64,8 +69,10 @@ public class CSDetect
                             return host;
                         }
                     }
+                    
                     return null;
                 });
+                
                 futures.add(future);
             }
 
@@ -91,6 +98,11 @@ public class CSDetect
         }
 
         return null;
+    }
+    
+    public static boolean hasLocalSubnets()
+    {
+        return !getLocalSubnet().isEmpty();
     }
 
     private static List<String> getLocalSubnet()
@@ -134,25 +146,33 @@ public class CSDetect
         
         return out;
     }
-
-    public static boolean isReachable(String host, int timeout)
+    
+    public static boolean isReachable(String host)
     {
         try
         {
             InetAddress inet = InetAddress.getByName(host);
-            return inet.isReachable(timeout);
+            return inet.isReachable(NET_TIMEOUT_MS);
         }
         catch (Exception e)
-        {
+        {            
             return false;
         }
     }
-    
-    public static boolean isReachable(String host)
-    {
-        return isReachable(host, NET_TIMEOUT_MS);
-    }
 
+    public static boolean isReachable(String host, int attempts)
+    {
+        for (int i = 0; i < attempts; i++)
+        {
+            if (isReachable(host))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     private static boolean checkWebServer(String host, String path)
     {
         try

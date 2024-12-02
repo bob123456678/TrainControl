@@ -1530,7 +1530,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                this.latencyLabel.setText("Network Latency: " + String.format("%.1f", latency) + "ms");
+                this.latencyLabel.setText("CS" + (this.model.isCS3() ? "3" : "2") + " Network Latency: " + String.format("%.0f", latency) + "ms");
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
             }));
@@ -10889,8 +10889,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
     private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
-        TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF); 
-        JOptionPane.showMessageDialog(this, "IP preference has been reset.  Restart TrainControl, then specify a new IP.");
+        JOptionPane.showMessageDialog(this, "IP preference (was " + TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, null) + ") has been reset.  Restart TrainControl, then specify a new IP.");
+        TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
     }//GEN-LAST:event_changeIPMenuItemActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)

@@ -279,7 +279,7 @@ Requires JDK 1.8+ and the following libraries:
         - A warning will now be shown if the entered Central Station IP address does not appear to be a Central Station
         - Added a button to attempt to auto-detect the Central Station IP at startup
         - Added an option in the File menu to reset the stored Central Station IP preference
-        - Shortened timeout when an invalid IP is entered at startup
+        - Central Station version is now shown next to the latency
 
 * v2.3.0 [11/24/2024]
     - UI enhancements
