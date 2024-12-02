@@ -58,6 +58,8 @@ public class CSDetect
                 
                 Future<String> future = executor.submit(() ->
                 {
+                    System.out.print(".");
+                    
                     //System.out.println("Testing " + host);
                     if (isReachable(host, PING_RETRY))
                     {

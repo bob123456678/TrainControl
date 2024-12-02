@@ -1,5 +1,5 @@
+import java.awt.GraphicsEnvironment;
 import javax.swing.JOptionPane;
-import marklin.MarklinControlStation;
 import static marklin.MarklinControlStation.init;
 
 public class TrainControl
@@ -11,7 +11,7 @@ public class TrainControl
      * Ensures that informative error messages are printed in the event that an
      * error occurs
      * 
-     * Usage: TrainControl.java [IP] [debug [simulate connection]]
+     * Usage: TrainControl.java [IP [debug [simulate connection]]]
      * 
      * @param args, command line arguments
      */
@@ -22,12 +22,23 @@ public class TrainControl
             boolean simulate = (args.length >= 3);
             boolean debug = (args.length >= 2);
             String initIP = args.length >= 1 ? args[0] : null;
+            
+            if (GraphicsEnvironment.isHeadless())
+            {
+                throw new Exception("This program cannot be run in headless mode.  See the readme for programmatic examples.");
+            }
 
-            MarklinControlStation model = init(initIP, simulate, true, true, debug);
+            init(initIP, simulate, true, true, debug);
         } 
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(null, "Error ocurred: " + e.getMessage());
+            System.out.println("Error ocurred: " + e.getMessage());
+            
+            if (!GraphicsEnvironment.isHeadless())
+            {
+                JOptionPane.showMessageDialog(null, "Error ocurred: " + e.getMessage());
+            }
+
             e.printStackTrace();
             System.exit(0);
         }

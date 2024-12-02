@@ -206,6 +206,7 @@ Tab icons provided by Free pik.
 * Install Java 8 on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
 * The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or ethernet)
+* Ensure that your firewall allows TrainControl/Java to access the local network
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (TrainControl will show a warning popup after 15 seconds if this is not enabled)
 * For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
 
@@ -276,10 +277,13 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.3.1 [Beta]
     - Network enhancements
-        - A warning will now be shown if the entered Central Station IP address does not appear to be a Central Station
+        - A warning will now be shown if the Central Station IP address manually entered at startup exists but does not appear to be a Central Station
         - Added a button to attempt to auto-detect the Central Station IP at startup
         - Added an option in the File menu to reset the stored Central Station IP preference
-        - Central Station version is now shown next to the latency
+        - Central Station version is now shown next to the latency in the main UI
+    - API enhancements
+        - The Central Station IP will now be prompted for if running the program from a custom script in headless mode, and no IP is passed to `init`
+        - Improved standard out logging at startup
 
 * v2.3.0 [11/24/2024]
     - UI enhancements

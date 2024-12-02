@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -2120,8 +2121,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         System.out.println("TrainControl v" + MarklinControlStation.RAW_VERSION + " starting...");
         
-        // User interface
-        TrainControlUI ui = new TrainControlUI();
+        // User interface - only initialize if needed
+        TrainControlUI ui = null;
+        
+        if (showUI) ui = new TrainControlUI();
         
         if (initIP == null)
         {
@@ -2146,6 +2149,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     {       
                         if (!GraphicsEnvironment.isHeadless())
                         {
+                            System.out.println("Prompting for IP in pop-up...");
+                            
                             JTextField ipField = new JTextField();
 
                             Object[] options = {"OK", "Cancel", "Auto-Detect"};
@@ -2222,14 +2227,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                     break;
                             }
                         }
+                        else
+                        {
+                            Scanner scanner = new Scanner(System.in); 
+                            System.out.print("Enter Central Station IP Address: "); 
+                            initIP = scanner.next(); 
+                            scanner.close();
+                        }
                         
                         if (initIP == null || "".equals(initIP))
                         {
-                            if (GraphicsEnvironment.isHeadless())
-                            {
-                                System.out.println("No IP entered - shutting down.");
-                            }
-                            else
+                            System.out.println("No IP entered - shutting down.");
+
+                            if (!GraphicsEnvironment.isHeadless())
                             {
                                 JOptionPane.showMessageDialog(null, "No IP entered - shutting down.");
                             }
@@ -2240,18 +2250,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (!CS2File.ping(initIP))
                     {
-                        JOptionPane.showMessageDialog(null, "No response from " + initIP);
+                        System.out.println("No response from " + initIP);
+
+                        if (!GraphicsEnvironment.isHeadless())
+                        {
+                            JOptionPane.showMessageDialog(null, "No response from " + initIP);
+                        }
                     }
                     else
                     {
                         // Verify that the device is actually a central station
                         if (!CSDetect.isCentralStation(initIP))
                         {
-                            if (GraphicsEnvironment.isHeadless())
-                            {
-                                System.out.println("Warning: the device at " + initIP + " does not appear to be a Central Station.");
-                            }
-                            else
+                            System.out.println("Warning: the device at " + initIP + " does not appear to be a Central Station.");
+
+                            if (!GraphicsEnvironment.isHeadless())
                             {
                                 JOptionPane.showMessageDialog(null, "Warning: the device at " + initIP + " does not appear to be a Central Station.");
                             }
@@ -2290,8 +2303,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final MarklinControlStation model = 
             new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
 
+        final TrainControlUI theUI = ui;
+        
         // Set model
-        if (showUI)
+        if (showUI && theUI != null)
         {
             model.log("Initializing UI");
 
@@ -2301,7 +2316,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 try
                 {
-                    ui.setViewListener(model, latch);
+                    theUI.setViewListener(model, latch);
                 }
                 catch (IOException ex)
                 {
@@ -2322,7 +2337,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
-                    ui.display();
+                    theUI.display();
                     model.log("UI initialized.");
                 }));
             }
