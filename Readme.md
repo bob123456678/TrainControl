@@ -284,6 +284,7 @@ Requires JDK 1.8+ and the following libraries:
     - API enhancements
         - The Central Station IP will now be prompted for if running the program from a custom script in headless mode, and no IP is passed to `init`
         - Improved standard out logging at startup
+    - The Add Locomotive, Locomotive Database, and 30-day Usage Stats pop-up windows will now snap to the main window by default
 
 * v2.3.0 [11/24/2024]
     - UI enhancements

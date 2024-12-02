@@ -29,6 +29,7 @@ public class UsageHistogram extends javax.swing.JFrame
         initComponents();
         this.tcui = tcui;
         this.createHistogramPanel();
+        this.setLocationRelativeTo(tcui);
         
         setAlwaysOnTop(tcui.isAlwaysOnTop());
         toFront();

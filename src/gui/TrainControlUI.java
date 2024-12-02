@@ -1320,6 +1320,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         selector.init();
         
         adder = new AddLocomotive(this.model, this);
+        adder.setLocationRelativeTo(this);
+        selector.setLocationRelativeTo(this);
         
         // Load autonomy data
         try
