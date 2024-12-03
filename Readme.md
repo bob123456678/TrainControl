@@ -275,7 +275,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.3.1 [Beta]
+* v2.3.1 [12/2/2024]
     - Network enhancements
         - A warning will now be shown if the Central Station IP address manually entered at startup exists but does not appear to be a Central Station
         - Added a button to attempt to auto-detect the Central Station IP at startup
