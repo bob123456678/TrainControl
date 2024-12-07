@@ -248,7 +248,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 **Running the application (build or release JAR):**
 
-Download the latest `TrainControl.jar` [https://github.com/bob123456678/TrainControl/releases](JAR file from the releases page).
+Download the latest `TrainControl.jar` [JAR file from the releases page](https://github.com/bob123456678/TrainControl/releases).
 
 Some operating systems allow you to simply double-click the JAR file to run it.  On others, you may wish to create a `.sh` or `.bat` file to execute the command below.
 
