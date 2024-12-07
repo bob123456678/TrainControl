@@ -1,6 +1,6 @@
 import java.awt.GraphicsEnvironment;
 import javax.swing.JOptionPane;
-import static marklin.MarklinControlStation.init;
+import static org.traincontrol.marklin.MarklinControlStation.init;
 
 public class TrainControl
 {        

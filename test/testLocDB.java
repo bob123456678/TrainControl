@@ -1,11 +1,10 @@
-import base.Locomotive;
+import org.traincontrol.base.Locomotive;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import marklin.MarklinControlStation;
-import static marklin.MarklinControlStation.init;
-import marklin.MarklinLocomotive;
-import marklin.MarklinLocomotive.decoderType;
+import org.traincontrol.marklin.MarklinControlStation;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;

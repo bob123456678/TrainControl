@@ -12,7 +12,7 @@ operating your layout, with the Central Station serving solely as the track inte
 and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
-also be used to programmatically control the entire layout ([see API](src/examples/Readme.md)).  Layout and locomotive information is automatically
+also be used to programmatically control the entire layout ([see API](Automation.md)).  Layout and locomotive information is automatically
 downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
@@ -92,7 +92,7 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 **Full Autonomy**
 
-Defined via a special [JSON configuration file](src/examples/Readme.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
+Defined via a special [JSON configuration file](Automation.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
 ![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
 
@@ -129,11 +129,11 @@ Monitor the usage of different locomotives.
     * Automate bulk tasks such as turning off all functions
     * Set function and speed presets for locomotives
 * Advanced automation
-    * [Graph model](src/examples/Readme.md) w/ JSON configuration for location tracking and fully autonomous train operation
+    * [Graph model](Automation.md) w/ JSON configuration for location tracking and fully autonomous train operation
     * Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
     * Full UI for editing autonomy graph models
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
-* Progammatic layout control via Java API (uses CAN protocol - [see documentation](src/examples/Readme.md)) 
+* Progammatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
 * Monitor locomotive usage stats
 
 ## Keyboard Commands / Key Mappings
@@ -248,6 +248,8 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 **Running the application (build or release JAR):**
 
+Download the latest `TrainControl.jar` [https://github.com/bob123456678/TrainControl/releases](JAR file from the releases page).
+
 Some operating systems allow you to simply double-click the JAR file to run it.  On others, you may wish to create a `.sh` or `.bat` file to execute the command below.
 
 To run TrainControl, open a terminal / command prompt window, and from the directory containing TrainControl.jar, execute the following command.
@@ -274,6 +276,13 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.3.2 [Beta]
+    - Code portability enhancements
+        - Moved all TrainControl code to the `org.traincontrol` package and updated documentation to reflect this (Custom code using TrainControl APIs will need to be updated to use the new package names)
+        - Implemented checks to maintain compability with state files from prior versions (`LocDB.data`, `UIState.data`)
+    - Minor UI tweaks
+    - Fixed bug where locomotives in save files with no operation history would prevent the Stats tab in the UI from rendering
 
 * v2.3.1 [12/2/2024]
     - Network enhancements
@@ -419,7 +428,7 @@ Requires JDK 1.8+ and the following libraries:
         - Paths in the timetable can be replayed sequentally, with progress saved between runs
         - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
         - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
-        - [Java API](src/examples/Readme.md#timetables) for programmatically creating timetables
+        - [Java API](Automation.md#timetables) for programmatically creating timetables
     - Locomotive function icon improvements
         - Expanded support to 296 function icons when connected to a CS3. Icons will now match what is shown in the CS3.
         - Improved icon contrast and resolution
@@ -902,7 +911,7 @@ Requires JDK 1.8+ and the following libraries:
 * v1.5.7 [01/24/22]
     - Added self-contained initialization function
     - Cleaned up examples and documentation
-    - Added [API & automation readme/tutorial](src/examples/Readme.md)
+    - Added [API & automation readme/tutorial](Automation.md)
 
 * v1.5.6 [01/17/22]
     - Function icons will now correctly be shown for F17-F32
