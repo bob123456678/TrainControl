@@ -7,6 +7,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
@@ -21,6 +22,18 @@ public class ProgrammaticControlExample
                         
             Consumer<MarklinControlStation> func = ( (data) ->
             { 
+                //
+                // Central Station
+                //
+                
+                // data.stop(); // Turns off the power
+                // data.stopAllLocs(); // Issues stop command to all locomotives
+                // data.allFunctionsOff(); // Turns off all active functions for all locomotives
+                // data.syncWithCS2(); // Fetches the latest locomotive state from the Central Station
+                
+                data.lightsOn(data.getLocList()); // Turns on lights of all known locomotives
+                data.go(); // Turns on the power
+                
                 //
                 // Locomotives
                 //
@@ -57,8 +70,9 @@ public class ProgrammaticControlExample
                 // Does something after a 1 second delay
                 myLoc.delay(1000).stop();
                 
-                // Get the locomotive's raw address
+                // Get the locomotive's raw address and decoder type
                 int address = ((MarklinLocomotive) myLoc).getAddress();
+                decoderType type = ((MarklinLocomotive) myLoc).getDecoderType();
                 
                 // Define a MM2 locomotive with a specific address, even if it does not yet exist in the CS2/CS3
                 // This approach is generally not needed unless you absolutely don't want to interact with the CS2/CS3 :) 
