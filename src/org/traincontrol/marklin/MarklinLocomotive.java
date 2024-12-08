@@ -51,7 +51,7 @@ public class MarklinLocomotive extends Locomotive
     private static final int NUM_FN_ICONS_CS2 = 112;
     private static final int NUM_FN_ICONS_CS3 = 296;
     
-    // Track if user customizations were made
+    // Track if user customizations were made to function behavior
     private boolean customFunctions = false;
                 
     /**
@@ -149,11 +149,19 @@ public class MarklinLocomotive extends Locomotive
         }
     }
     
+    /**
+     * Flags that the functions have been customized
+     * @param state 
+     */
     public void setCustomFunctions(boolean state)
     {
         this.customFunctions = state;
     }
     
+    /**
+     * Returns whether the functions have been customized
+     * @return 
+     */
     public boolean isCustomFunctions()
     {
         return this.customFunctions || !this.getLocalFunctionImageURLs().isEmpty();
@@ -506,6 +514,7 @@ public class MarklinLocomotive extends Locomotive
      * Simulates instant stop functionality for MM2 locomotives
      * @return 
      */
+    @Override
     synchronized public Locomotive instantStop()
     {
         if (this.type == MarklinLocomotive.decoderType.MM2)

@@ -30,11 +30,7 @@ public class MarklinAccessory extends Accessory
     
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
-    
-    // Number of times this accessory has been actuated
-    private int numActuations;
-    private boolean stateAtLastActuation;
-    
+        
     /**
      * Constructor
      * @param network
@@ -78,16 +74,7 @@ public class MarklinAccessory extends Accessory
     {   
         this.tiles.add(l);
     }
-    
-    /**
-     * Gets the number of time this accessory has been switched
-     * @return 
-     */
-    public int getNumActuations()
-    {
-        return numActuations;
-    }
-        
+            
     /**
      * Refreshes tile images on all tiles in the list
      * Deletes tiles that are no longer visible (e.g., from closed windows)

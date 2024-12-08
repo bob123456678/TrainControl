@@ -819,6 +819,12 @@ public abstract class Locomotive
         return false;
     }
     
+    /**
+     * Instantly stops the locomotive
+     * @return 
+     */
+    abstract public Locomotive instantStop();
+    
     /* Getters and setters */
     
     /**
@@ -1094,6 +1100,10 @@ public abstract class Locomotive
         }
     }   
     
+    /**
+     * Gets operating time by day
+     * @return 
+     */
     public Map<String, Long> getHistoricalOperatingTime()
     {
         return historicalOperatingTime;
@@ -1117,6 +1127,10 @@ public abstract class Locomotive
         }
     }
 
+    /**
+     * Gets the custom icon URLs for every function
+     * @return 
+     */
     public Map<Integer, String> getLocalFunctionImageURLs()
     {
         return localFunctionImageURLs;
@@ -1153,16 +1167,28 @@ public abstract class Locomotive
         this.localFunctionImageURLs.clear();
     }
     
+    /**
+     * Gets the plain text notes
+     * @return 
+     */
     public String getNotes()
     {
         return notes;
     }
 
+    /**
+     * Updates the plain text notes
+     * @param notes 
+     */
     public void setNotes(String notes)
     {
         this.notes = notes;
     }
     
+    /**
+     * Flags autonomy as paused so that no further routes are started
+     * @param state 
+     */
     public void setAutonomyPaused(boolean state)
     {
         synchronized (this)
@@ -1171,6 +1197,10 @@ public abstract class Locomotive
         }
     }
     
+    /**
+     * Returns if autonomy has been paused
+     * @return 
+     */
     public boolean isAutonomyPaused()
     {
         synchronized (this)

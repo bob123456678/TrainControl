@@ -56,7 +56,10 @@ public class ProgrammaticControlExample
 
                 // Does something after a 1 second delay
                 myLoc.delay(1000).stop();
-
+                
+                // Get the locomotive's raw address
+                int address = ((MarklinLocomotive) myLoc).getAddress();
+                
                 // Define a MM2 locomotive with a specific address, even if it does not yet exist in the CS2/CS3
                 // This approach is generally not needed unless you absolutely don't want to interact with the CS2/CS3 :) 
                 Locomotive myMM2Loc = data.newMM2Locomotive("BR 86", 60);
@@ -137,6 +140,7 @@ public class ProgrammaticControlExample
                 if (feedbackStatus)
                 {
                     System.out.println("Feedback 1 shows occupied");
+                    data.log("Write a message to the log in the UI.");
                 } 
 
                 // = Query the status of S88 feedback via the Locomotive API

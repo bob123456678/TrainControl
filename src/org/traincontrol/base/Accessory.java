@@ -19,6 +19,10 @@ abstract public class Accessory
     // Name of this accessory
     private final String name;
     
+    // Number of times this accessory has been actuated
+    protected int numActuations;
+    protected boolean stateAtLastActuation;
+    
     /**
      * Simple constructors
      * @param name
@@ -196,6 +200,15 @@ abstract public class Accessory
     public accessoryType getType()
     {
         return this.type;
+    }
+    
+    /**
+     * Gets the number of times this accessory has been switched
+     * @return 
+     */
+    public int getNumActuations()
+    {
+        return numActuations;
     }
     
     /**
