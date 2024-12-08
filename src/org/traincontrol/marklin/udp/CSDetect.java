@@ -58,7 +58,7 @@ public class CSDetect
                     //System.out.println("Testing " + host);
                     if (isReachable(host, PING_RETRY))
                     {
-                        System.out.println(host + " is reachable");
+                        System.out.println("\n" + host + " is reachable");
                         if (checkWebServer(host, urlPath))
                         {
                             System.out.println("Web server found at: " + host + urlPath);

@@ -1470,7 +1470,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setVisible(true);
              
         // Restore correct preference
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true)); 
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, false)); 
         pack();
         displayMenuBar();
         
@@ -10509,7 +10509,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void windowAlwaysOnTopMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_windowAlwaysOnTopMenuItemActionPerformed
         prefs.putBoolean(ONTOP_SETTING_PREF, this.windowAlwaysOnTopMenuItem.isSelected());
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, true));
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, false));
     }//GEN-LAST:event_windowAlwaysOnTopMenuItemActionPerformed
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
