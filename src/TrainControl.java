@@ -25,7 +25,7 @@ public class TrainControl
             
             if (GraphicsEnvironment.isHeadless())
             {
-                throw new Exception("This program cannot be run in headless mode.  See the readme for programmatic examples.");
+                throw new Exception("This program cannot be run standalone in headless mode.  See the readme for programmatic examples.");
             }
 
             init(initIP, simulate, true, true, debug);

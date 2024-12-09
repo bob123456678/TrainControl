@@ -278,12 +278,13 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.3.2 [Beta]
-    - Code portability enhancements
-        - Moved all TrainControl code to the `org.traincontrol` package and updated documentation to reflect this (Custom code using TrainControl APIs will need to be updated to use the new package names)
+    - Code portability enhancements (custom code using TrainControl APIs will need to be updated to use the new package names)
+        - Moved all TrainControl code to the `org.traincontrol` package and updated documentation to reflect this 
         - Implemented checks to maintain compability with state files from prior versions (`LocDB.data`, `UIState.data`)
         - Expanded [API example code](src/org/traincontrol/examples/ProgrammaticControlExample.java)
     - Minor UI and tooltip tweaks
     - Fixed bug where locomotives in save files with no operation history would prevent the Stats tab in the UI from rendering
+    - Fixed bug at initial startup where the window would always be on top even though the preference was unchecked
     - Note: The saved IP address & window preferences will be reset when switching to this version
 
 * v2.3.1 [12/2/2024]

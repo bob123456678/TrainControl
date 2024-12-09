@@ -103,6 +103,18 @@ import org.traincontrol.util.ImageUtil;
  */
 public class TrainControlUI extends javax.swing.JFrame implements View 
 {    
+    // Data save file name
+    private static final String DATA_FILE_NAME = "UIState.data";
+    public static final String AUTONOMY_FILE_NAME = "autonomy.json";
+    
+    // External resources
+    public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
+    public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
+    public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
+    public static final String GRAPH_CSS_FILE = "graph.css";
+    public static final String RESOURCE_PATH = "resources/";
+    public static final String DEMO_LAYOUT_OUTPUT_PATH = "sample_layout/";
+    
     // Tab icons
     public static final Icon TAB_ICON_CONTROL = getTabIcon(30, "tabs/loc.png");
     public static final Icon TAB_ICON_KEYBOARD = getTabIcon(30, "tabs/signal.png");
@@ -117,7 +129,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
-    public static final String ONTOP_SETTING_PREF = "OnTop";
+    public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
     public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
@@ -128,7 +140,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
     public static final String ACTIVE_LOC_IN_TITLE = "AcitveLocInTitle";
+    
+    // Preference defaults
+    public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
 
+    // Message strings
     public static final String NO_LOC_MESSAGE = "There are no locomotives currently in the database. Add some in the Locomotives menu, or via the Central Station, and then synchronize.";
     
     // Keyboard layout constants
@@ -138,14 +154,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     public static final String[] KEYBOARD_TYPES = {KEYBOARD_QWERTY, KEYBOARD_QWERTZ, KEYBOARD_AZERTY};
     
-    // How often we measure latency.  0 to disable
-    public static final Integer PING_INTERVAL = 5000;
+    // Adjustable constants /////////////
     
-    // Thresholds at which ping is highlighted
-    public static final Integer PING_ORANGE = 100;
-    public static final Integer PING_RED = 300;
-    
-    // Constants
     // Width of locomotive images
     public static final Integer LOC_ICON_WIDTH = 296;
     
@@ -155,9 +165,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
     
-    // Maximum allowed length of locomotive names (in characters)
+    // Maximum allowed length of locomotive names and notes (in characters)
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
-   
     public static final Integer MAX_LOC_NOTES_LENGTH = 2000;
 
     // Maximum page name length
@@ -166,14 +175,37 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
-    // Minimum between possible route repainting in semi-autonmous mode
+    
+    // Minimum time between possible route repainting in semi-autonmous mode
     public static final Integer REPAINT_ROUTE_INTERVAL = 100;
+    
+    // How often we measure latency. 0 to disable
+    public static final Integer PING_INTERVAL = 5000;
+    
+    // Thresholds at which high ping is highlighted
+    public static final Integer PING_ORANGE = 100;
+    public static final Integer PING_RED = 300;
 
-    // Load images
+    // Do we load any images?
     public static final boolean LOAD_IMAGES = true;
     
     // How much to increment speed when the arrow keys are pressed
     public static final int SPEED_STEP = 4;
+    
+    // Number of seconds to wait before checking for CAN activity
+    private static final int CAN_MONITOR_DELAY = 15;
+    
+    // Total number of keyboards >= 1
+    private static final int NUM_KEYBOARDS = 4;
+    
+    // Total number of locomotive mappings >= 1
+    private static final int NUM_LOC_MAPPINGS = 10;
+    
+    // Keyboard colors
+    private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
+    private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
+    
+    // Internal fields /////////////
     
     // View listener (model) reference
     private ViewListener model;
@@ -223,35 +255,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Number of keys per page
     private static final int KEYBOARD_KEYS = 64;
-    private static final Color COLOR_SWITCH_RED = new Color(255,204,204);
-    private static final Color COLOR_SWITCH_GREEN = new Color(204,255,204);
-
-    // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 4;
-    
-    // Total number of locomotive mappings >= 1
-    private static final int NUM_LOC_MAPPINGS = 10;
         
     // Maximum number of functions
     private static final int NUM_FN = 32;
-    
-    // Number of seconds to wait before checking for CAN activity
-    private static final int CAN_MONITOR_DELAY = 15;
-    
-    // Data save file name
-    private static final String DATA_FILE_NAME = "UIState.data";
-    public static final String AUTONOMY_FILE_NAME = "autonomy.json";
+        
+    // Hack to store additional information in the mapping data
     private static final int SAVE_KEY_ACTIVE_MAPPING_NUMBER = -1;
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
-    
-    // External resources
-    public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
-    public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
-    public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
-    public static final String GRAPH_CSS_FILE = "graph.css";
-    public static final String RESOURCE_PATH = "resources/";
-    public static final String DEMO_LAYOUT_OUTPUT_PATH = "sample_layout/";
-                        
+                     
     // Image cache
     private static HashMap<String, Image> imageCache;
     
@@ -270,19 +281,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Page clipboard
     private Integer pageToCopy = null;
     
-    // Locomotive selector
+    // Other UIs
     private LocomotiveSelector selector;
     private AddLocomotive adder;
-    
+    private LocomotiveStats stats;
+    private RouteEditor routeEditor;
+
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
-     
-    // Stats UI
-    private LocomotiveStats stats;
-    
-    // Route editing UI
-    private RouteEditor routeEditor;
-    
+         
     // Quick search cache
     private String lastSearch = "";
     private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
@@ -548,7 +555,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Restore UI component state
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
-        this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, false));
+        this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
         this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
@@ -1470,7 +1477,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         setVisible(true);
              
         // Restore correct preference
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, false)); 
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT)); 
         pack();
         displayMenuBar();
         
@@ -10509,7 +10516,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void windowAlwaysOnTopMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_windowAlwaysOnTopMenuItemActionPerformed
         prefs.putBoolean(ONTOP_SETTING_PREF, this.windowAlwaysOnTopMenuItem.isSelected());
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, false));
+        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
     }//GEN-LAST:event_windowAlwaysOnTopMenuItemActionPerformed
 
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
