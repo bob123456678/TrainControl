@@ -723,7 +723,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Prints a human-readable address (>= 1) based on a raw UID
+     * Prints a human-readable address (greater or equal to 1) based on a raw UID
      * @param UID
      * @return 
      */

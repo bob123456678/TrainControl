@@ -14,6 +14,8 @@ The `MarklinControlStation` class is your gateway to the CS2/CS3's database of l
 
 Note that as of v2.3.2, all TrainControl code has been moved into the org.traincontrol package.  Custom code using older versions would therefore need to be updated.
 
+Refer to the [Java docs](assets/javadoc/index.html) for class and method details.
+
 ## Sample Layout
 
 Let's consider a minimal layout with two stations.

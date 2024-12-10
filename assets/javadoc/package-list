@@ -1,0 +1,10 @@
+
+org.traincontrol.automation
+org.traincontrol.base
+org.traincontrol.examples
+org.traincontrol.gui
+org.traincontrol.marklin
+org.traincontrol.marklin.file
+org.traincontrol.marklin.udp
+org.traincontrol.model
+org.traincontrol.util
