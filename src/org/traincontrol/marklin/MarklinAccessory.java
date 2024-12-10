@@ -61,6 +61,11 @@ public class MarklinAccessory extends Accessory
         this.stateAtLastActuation = this.switched;
     }
     
+    /**
+     * Returns the UID for the specified integer address
+     * @param address
+     * @return 
+     */
     public static int UIDfromAddress(int address)
     {
         return address + 0x3000;

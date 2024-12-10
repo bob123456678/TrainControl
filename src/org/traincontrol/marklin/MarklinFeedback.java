@@ -94,6 +94,10 @@ public class MarklinFeedback extends Feedback
         }
     }
     
+    /**
+     * Sets the feedback state
+     * @param val 
+     */
     public void setState(boolean val)
     {
         this._setState(val);

@@ -1147,14 +1147,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return newAccessory("Switch " + name, address, Accessory.accessoryType.SWITCH, state, numActuations);
     }
-    
-    // Public methods assume 0 actuations
+        
+    /**
+     * Creates a new signal (with 0 actuations)
+     * @param name
+     * @param address
+     * @param state
+     * @return 
+    */
     @Override
     public final MarklinAccessory newSignal(String name, int address, boolean state)
     {
         return newSignal(name, address, state, 0);
     }
     
+    /**
+     * Creates a new switch with 0 actuations
+     * @param name
+     * @param address
+     * @param state
+     * @return 
+     */
     @Override
     public final MarklinAccessory newSwitch(String name, int address, boolean state)
     {
@@ -1597,7 +1610,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Disables all active functions
+     * Disables all active functions of all locomotives
      */
     @Override
     public void allFunctionsOff()
@@ -1608,10 +1621,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
+    /**
+     * Turns off all active functions of the specified locomotive
+     * @param loc 
+     */
     @Override
-    public void locFunctionsOff(MarklinLocomotive l)
+    public void locFunctionsOff(MarklinLocomotive loc)
     {
-        l.functionsOff();
+        loc.functionsOff();
     }
     
     /**
@@ -1873,6 +1890,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return false;
     }
 
+    /**
+     * Sets the state of the passed accessory by address.  
+     * If the accessory does not exist, a new switch with that access is created
+     * @param address
+     * @param state 
+     */
     @Override
     public void setAccessoryState(int address, boolean state)
     {              
@@ -1918,6 +1941,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.routeDB.getByName(name).execRoute();
     }
     
+    /**
+     * Deletes the route with the specified name if it exists
+     * @param name 
+     */
     @Override
     public final void deleteRoute(String name)
     {
@@ -1997,6 +2024,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return l;
     }
     
+    /**
+     * Gets the state of the accessory with the specified address.
+     * If it does not exist, a new switch is created.
+     * @param address
+     * @return 
+     */
     @Override
     public boolean getAccessoryState(int address)
     { 
@@ -2013,6 +2046,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return false;
     }
     
+    /**
+     * Returns an accessory based on its numerical address.
+     * If the address does not exist, a new switch is created.
+     * @param address
+     * @return 
+     */
     @Override
     public MarklinAccessory getAccessoryByAddress(int address)
     { 
@@ -2027,12 +2066,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }        
     }
     
+    /**
+     * Returns if the power is on
+     * @return 
+     */
     @Override
     public boolean getPowerState()
     {
         return this.powerState;
     }
-
+    
+    /**
+     * Gets all the available layout names
+     * @return 
+     */
     @Override
     public List<String> getLayoutList()
     {
@@ -2042,6 +2089,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return l;
     }
 
+    /**
+     * Fetches a single layout by name
+     * @param name
+     */
     @Override
     public MarklinLayout getLayout(String name)
     {
@@ -2058,6 +2109,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.debug;
     }
     
+    /**
+     * Gets the UI reference
+     * @return 
+     */
     public View getGUI()
     {
         return this.view;
