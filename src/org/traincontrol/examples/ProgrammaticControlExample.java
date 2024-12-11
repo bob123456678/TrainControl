@@ -31,13 +31,19 @@ public class ProgrammaticControlExample
                 // data.allFunctionsOff(); // Turns off all active functions for all locomotives
                 // data.syncWithCS2(); // Fetches the latest locomotive state from the Central Station
                 
-                data.lightsOn(data.getLocList()); // Turns on lights of all known locomotives
                 data.go(); // Turns on the power
+                data.lightsOn(data.getLocList()); // Turns on lights of all known locomotives
                 
                 //
                 // Locomotives
                 //
 
+                // Retrieve all available locomotive names
+                List<String> allLocomotiveNames = data.getLocList();
+                
+                // Retieve all available locomotives
+                List<MarklinLocomotive> allLocomotives = data.getLocomotives();
+                
                 // Retrieve a locomotive that already exists in the CS2/CS3
                 Locomotive myLoc = data.getLocByName("BR 64");
 
@@ -159,6 +165,7 @@ public class ProgrammaticControlExample
 
                 // = Query the status of S88 feedback via the Locomotive API
                 feedbackStatus = myLoc.isFeedbackSet("1");
+                feedbackStatus = myLoc.isFeedbackSet(1); // integers are also allowed in the Locomotive API
 
                 if (feedbackStatus)
                 {

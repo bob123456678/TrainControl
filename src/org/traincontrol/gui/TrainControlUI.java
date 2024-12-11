@@ -1391,15 +1391,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.KeyboardTab.setIconAt(1, TAB_ICON_LAYOUT);
         this.KeyboardTab.setToolTipTextAt(1, "Layout");
         this.KeyboardTab.setTitleAt(1, "");
-        this.KeyboardTab.setIconAt(2, TAB_ICON_ROUTES);
-        this.KeyboardTab.setToolTipTextAt(2, "Routes");
-        this.KeyboardTab.setTitleAt(2, "");
+        this.KeyboardTab.setIconAt(4, TAB_ICON_ROUTES);
+        this.KeyboardTab.setToolTipTextAt(4, "Routes");
+        this.KeyboardTab.setTitleAt(4, "");
         this.KeyboardTab.setIconAt(3, TAB_ICON_KEYBOARD);
         this.KeyboardTab.setToolTipTextAt(3, "Signals & Switches");
         this.KeyboardTab.setTitleAt(3, "");
-        this.KeyboardTab.setIconAt(4, TAB_ICON_AUTONOMY);
-        this.KeyboardTab.setToolTipTextAt(4, "Full Automation");
-        this.KeyboardTab.setTitleAt(4, "");
+        this.KeyboardTab.setIconAt(2, TAB_ICON_AUTONOMY);
+        this.KeyboardTab.setToolTipTextAt(2, "Full Automation");
+        this.KeyboardTab.setTitleAt(2, "");
         this.KeyboardTab.setIconAt(5, TAB_ICON_STATS);
         this.KeyboardTab.setToolTipTextAt(5, "Statistics");
         this.KeyboardTab.setTitleAt(5, "");
@@ -2875,17 +2875,53 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         allButton = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JSeparator();
         editLayoutButton = new javax.swing.JButton();
-        RoutePanel = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
-        jScrollPane5 = new javax.swing.JScrollPane();
-        RouteList = new javax.swing.JTable();
-        AddRouteButton = new javax.swing.JButton();
-        sortByName = new javax.swing.JRadioButton();
-        sortByID = new javax.swing.JRadioButton();
-        BulkEnable = new javax.swing.JButton();
-        BulkDisable = new javax.swing.JButton();
-        jSeparator2 = new javax.swing.JSeparator();
-        jLabel1 = new javax.swing.JLabel();
+        autoPanel = new javax.swing.JPanel();
+        locCommandPanels = new javax.swing.JTabbedPane();
+        autonomyPanel = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        autonomyJSON = new javax.swing.JTextArea();
+        jLabel6 = new javax.swing.JLabel();
+        exportJSON = new javax.swing.JButton();
+        loadJSONButton = new javax.swing.JButton();
+        autosave = new javax.swing.JCheckBox();
+        jsonDocumentationButton = new javax.swing.JButton();
+        loadDefaultBlankGraph = new javax.swing.JButton();
+        validateButton = new javax.swing.JButton();
+        jSeparator3 = new javax.swing.JSeparator();
+        jSeparator4 = new javax.swing.JSeparator();
+        locCommandTab = new javax.swing.JPanel();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        autoLocPanel = new javax.swing.JPanel();
+        gracefulStop = new javax.swing.JButton();
+        startAutonomy = new javax.swing.JButton();
+        timetablePanel = new javax.swing.JPanel();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        timetable = new javax.swing.JTable();
+        executeTimetable = new javax.swing.JButton();
+        timetableCapture = new javax.swing.JToggleButton();
+        autoSettingsPanel = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel46 = new javax.swing.JLabel();
+        minDelay = new javax.swing.JSlider();
+        jLabel48 = new javax.swing.JLabel();
+        maxLocInactiveSeconds = new javax.swing.JSlider();
+        jLabel47 = new javax.swing.JLabel();
+        maxDelay = new javax.swing.JSlider();
+        jLabel43 = new javax.swing.JLabel();
+        defaultLocSpeed = new javax.swing.JSlider();
+        jLabel49 = new javax.swing.JLabel();
+        preArrivalSpeedReduction = new javax.swing.JSlider();
+        jLabel50 = new javax.swing.JLabel();
+        atomicRoutes = new javax.swing.JCheckBox();
+        turnOffFunctionsOnArrival = new javax.swing.JCheckBox();
+        simulate = new javax.swing.JCheckBox();
+        turnOnFunctionsOnDeparture = new javax.swing.JCheckBox();
+        jLabel51 = new javax.swing.JLabel();
+        jPanel4 = new javax.swing.JPanel();
+        hideReversing = new javax.swing.JCheckBox();
+        hideInactive = new javax.swing.JCheckBox();
+        showStationLengths = new javax.swing.JCheckBox();
+        jLabel52 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         keyboardButtonPanel = new javax.swing.JPanel();
@@ -2965,53 +3001,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         KeyboardNumberLabel = new javax.swing.JLabel();
         NextKeyboard = new javax.swing.JButton();
         KeyboardLabel1 = new javax.swing.JLabel();
-        autoPanel = new javax.swing.JPanel();
-        locCommandPanels = new javax.swing.JTabbedPane();
-        autonomyPanel = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        autonomyJSON = new javax.swing.JTextArea();
-        jLabel6 = new javax.swing.JLabel();
-        exportJSON = new javax.swing.JButton();
-        loadJSONButton = new javax.swing.JButton();
-        autosave = new javax.swing.JCheckBox();
-        jsonDocumentationButton = new javax.swing.JButton();
-        loadDefaultBlankGraph = new javax.swing.JButton();
-        validateButton = new javax.swing.JButton();
-        jSeparator3 = new javax.swing.JSeparator();
-        jSeparator4 = new javax.swing.JSeparator();
-        locCommandTab = new javax.swing.JPanel();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        autoLocPanel = new javax.swing.JPanel();
-        gracefulStop = new javax.swing.JButton();
-        startAutonomy = new javax.swing.JButton();
-        timetablePanel = new javax.swing.JPanel();
-        jScrollPane6 = new javax.swing.JScrollPane();
-        timetable = new javax.swing.JTable();
-        executeTimetable = new javax.swing.JButton();
-        timetableCapture = new javax.swing.JToggleButton();
-        autoSettingsPanel = new javax.swing.JPanel();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel46 = new javax.swing.JLabel();
-        minDelay = new javax.swing.JSlider();
-        jLabel48 = new javax.swing.JLabel();
-        maxLocInactiveSeconds = new javax.swing.JSlider();
-        jLabel47 = new javax.swing.JLabel();
-        maxDelay = new javax.swing.JSlider();
-        jLabel43 = new javax.swing.JLabel();
-        defaultLocSpeed = new javax.swing.JSlider();
-        jLabel49 = new javax.swing.JLabel();
-        preArrivalSpeedReduction = new javax.swing.JSlider();
-        jLabel50 = new javax.swing.JLabel();
-        atomicRoutes = new javax.swing.JCheckBox();
-        turnOffFunctionsOnArrival = new javax.swing.JCheckBox();
-        simulate = new javax.swing.JCheckBox();
-        turnOnFunctionsOnDeparture = new javax.swing.JCheckBox();
-        jLabel51 = new javax.swing.JLabel();
-        jPanel4 = new javax.swing.JPanel();
-        hideReversing = new javax.swing.JCheckBox();
-        hideInactive = new javax.swing.JCheckBox();
-        showStationLengths = new javax.swing.JCheckBox();
-        jLabel52 = new javax.swing.JLabel();
+        RoutePanel = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        RouteList = new javax.swing.JTable();
+        AddRouteButton = new javax.swing.JButton();
+        sortByName = new javax.swing.JRadioButton();
+        sortByID = new javax.swing.JRadioButton();
+        BulkEnable = new javax.swing.JButton();
+        BulkDisable = new javax.swing.JButton();
+        jSeparator2 = new javax.swing.JSeparator();
+        jLabel1 = new javax.swing.JLabel();
         logPanel = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         debugArea = new javax.swing.JTextArea();
@@ -4927,142 +4927,625 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Diag", layoutPanel);
 
-        RoutePanel.setBackground(new java.awt.Color(238, 238, 238));
-        RoutePanel.setFocusable(false);
-        RoutePanel.setMaximumSize(new java.awt.Dimension(806, 589));
-        RoutePanel.setMinimumSize(new java.awt.Dimension(806, 589));
-        RoutePanel.setPreferredSize(new java.awt.Dimension(806, 589));
+        autoPanel.setBackground(new java.awt.Color(255, 255, 255));
+        autoPanel.setMaximumSize(null);
+        autoPanel.setPreferredSize(new java.awt.Dimension(806, 589));
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
-
-        RouteList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        RouteList.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-
-            },
-            new String [] {
-
-            }
-        ));
-        RouteList.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        RouteList.setFocusable(false);
-        RouteList.setGridColor(new java.awt.Color(0, 0, 0));
-        RouteList.setRowHeight(30);
-        RouteList.setRowSelectionAllowed(false);
-        RouteList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        RouteList.setTableHeader(null);
-        RouteList.addMouseListener(new java.awt.event.MouseAdapter() {
+        locCommandPanels.setBackground(new java.awt.Color(255, 255, 255));
+        locCommandPanels.setFocusable(false);
+        locCommandPanels.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        locCommandPanels.setPreferredSize(new java.awt.Dimension(733, 581));
+        locCommandPanels.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                RouteListMouseClicked(evt);
+                locCommandPanelsMouseClicked(evt);
             }
         });
-        jScrollPane5.setViewportView(RouteList);
 
-        AddRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        AddRouteButton.setText("Add Route");
-        AddRouteButton.setFocusable(false);
-        AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
+        autonomyPanel.setBackground(new java.awt.Color(255, 255, 255));
+
+        autonomyJSON.setColumns(20);
+        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
+        autonomyJSON.setRows(5);
+        jScrollPane2.setViewportView(autonomyJSON);
+
+        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
+
+        exportJSON.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        exportJSON.setText("Export Current Graph");
+        exportJSON.setEnabled(false);
+        exportJSON.setFocusable(false);
+        exportJSON.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddRouteButtonActionPerformed(evt);
+                exportJSONActionPerformed(evt);
             }
         });
 
-        buttonGroup2.add(sortByName);
-        sortByName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByName.setText("Name");
-        sortByName.setFocusable(false);
-        sortByName.addActionListener(new java.awt.event.ActionListener() {
+        loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        loadJSONButton.setText("Load JSON from File");
+        loadJSONButton.setFocusable(false);
+        loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                sortByNameActionPerformed(evt);
+                loadJSONButtonActionPerformed(evt);
             }
         });
 
-        buttonGroup2.add(sortByID);
-        sortByID.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByID.setText("Route ID");
-        sortByID.setFocusable(false);
-        sortByID.addActionListener(new java.awt.event.ActionListener() {
+        autosave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        autosave.setSelected(true);
+        autosave.setText("Save on exit");
+        autosave.setToolTipText("If unchecked, be sure to manually export the graph prior to exiting.");
+        autosave.setFocusable(false);
+        autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        autosave.setMaximumSize(new java.awt.Dimension(139, 20));
+        autosave.setMinimumSize(new java.awt.Dimension(139, 20));
+        autosave.setPreferredSize(new java.awt.Dimension(139, 20));
+        autosave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                sortByIDActionPerformed(evt);
+                autosaveActionPerformed(evt);
             }
         });
 
-        BulkEnable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        BulkEnable.setText("Bulk Enable");
-        BulkEnable.setFocusable(false);
-        BulkEnable.addActionListener(new java.awt.event.ActionListener() {
+        jsonDocumentationButton.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jsonDocumentationButton.setForeground(new java.awt.Color(0, 0, 155));
+        jsonDocumentationButton.setText("Documentation");
+        jsonDocumentationButton.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        jsonDocumentationButton.setBorderPainted(false);
+        jsonDocumentationButton.setContentAreaFilled(false);
+        jsonDocumentationButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jsonDocumentationButton.setFocusable(false);
+        jsonDocumentationButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                BulkEnableActionPerformed(evt);
+                jsonDocumentationButtonActionPerformed(evt);
             }
         });
 
-        BulkDisable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        BulkDisable.setText("Bulk Disable");
-        BulkDisable.setFocusable(false);
-        BulkDisable.addActionListener(new java.awt.event.ActionListener() {
+        loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
+        loadDefaultBlankGraph.setText("Initialize Blank Graph");
+        loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
+        loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        loadDefaultBlankGraph.setContentAreaFilled(false);
+        loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        loadDefaultBlankGraph.setFocusable(false);
+        loadDefaultBlankGraph.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                BulkDisableActionPerformed(evt);
+                loadDefaultBlankGraphActionPerformed(evt);
             }
         });
 
-        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
-        jSeparator2.setMinimumSize(new java.awt.Dimension(10, 10));
-        jSeparator2.setPreferredSize(new java.awt.Dimension(30, 10));
+        validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        validateButton.setText("Validate Configuration & Open Graph UI");
+        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
+        validateButton.setFocusable(false);
+        validateButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                validateButtonActionPerformed(evt);
+            }
+        });
 
-        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel1.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel1.setText("Sort by:");
+        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
-        javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
-        RoutePanel.setLayout(RoutePanelLayout);
-        RoutePanelLayout.setHorizontalGroup(
-            RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(RoutePanelLayout.createSequentialGroup()
+        jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
+        javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
+        autonomyPanel.setLayout(autonomyPanelLayout);
+        autonomyPanelLayout.setHorizontalGroup(
+            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane5)
-                    .addGroup(RoutePanelLayout.createSequentialGroup()
-                        .addComponent(jLabel2)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(RoutePanelLayout.createSequentialGroup()
-                        .addComponent(AddRouteButton)
-                        .addGap(9, 9, 9)
-                        .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(autonomyPanelLayout.createSequentialGroup()
+                        .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(BulkEnable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(BulkDisable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 192, Short.MAX_VALUE)
-                        .addComponent(jLabel1)
+                        .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(sortByName)
+                        .addComponent(loadDefaultBlankGraph)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(sortByID)))
+                        .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jsonDocumentationButton))
+                    .addComponent(jScrollPane2)
+                    .addGroup(autonomyPanelLayout.createSequentialGroup()
+                        .addComponent(validateButton)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel6))
+        );
+        autonomyPanelLayout.setVerticalGroup(
+            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(autonomyPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jsonDocumentationButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(loadDefaultBlankGraph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jSeparator3)
+                    .addComponent(autosave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jSeparator4))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(validateButton)
+                .addContainerGap())
+            .addGroup(autonomyPanelLayout.createSequentialGroup()
+                .addGap(34, 34, 34)
+                .addComponent(jLabel6)
+                .addContainerGap(563, Short.MAX_VALUE))
+        );
+
+        locCommandPanels.addTab("Autonomy Configuration", autonomyPanel);
+
+        locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
+        locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
+
+        jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
+        jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
+
+        autoLocPanel.setBackground(new java.awt.Color(255, 255, 255));
+        autoLocPanel.setEnabled(false);
+        autoLocPanel.setFocusable(false);
+        autoLocPanel.setMaximumSize(new java.awt.Dimension(716, 5000));
+        autoLocPanel.setLayout(new java.awt.GridLayout(100, 3, 5, 5));
+        jScrollPane4.setViewportView(autoLocPanel);
+
+        gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
+        gracefulStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        gracefulStop.setText("Graceful Stop");
+        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
+        gracefulStop.setEnabled(false);
+        gracefulStop.setFocusable(false);
+        gracefulStop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gracefulStopActionPerformed(evt);
+            }
+        });
+
+        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
+        startAutonomy.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        startAutonomy.setText("Start Autonomous Operation");
+        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
+        startAutonomy.setEnabled(false);
+        startAutonomy.setFocusable(false);
+        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startAutonomyActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
+        locCommandTab.setLayout(locCommandTabLayout);
+        locCommandTabLayout.setHorizontalGroup(
+            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(locCommandTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
+                    .addGroup(locCommandTabLayout.createSequentialGroup()
+                        .addComponent(gracefulStop)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(startAutonomy)))
                 .addContainerGap())
         );
-        RoutePanelLayout.setVerticalGroup(
-            RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createSequentialGroup()
+        locCommandTabLayout.setVerticalGroup(
+            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel2)
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(startAutonomy)
+                    .addComponent(gracefulStop))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 569, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(BulkEnable)
-                        .addComponent(BulkDisable)
-                        .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(6, 6, 6))
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
-        KeyboardTab.addTab("Rout", RoutePanel);
+        locCommandPanels.addTab("Locomotive Commands", locCommandTab);
+
+        timetablePanel.setBackground(new java.awt.Color(255, 255, 255));
+
+        timetable.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        timetable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        timetable.setGridColor(new java.awt.Color(242, 242, 242));
+        jScrollPane6.setViewportView(timetable);
+
+        executeTimetable.setBackground(new java.awt.Color(204, 255, 204));
+        executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        executeTimetable.setText("Execute Timetable");
+        executeTimetable.setToolTipText("Sequentially executes the timetable.");
+        executeTimetable.setFocusable(false);
+        executeTimetable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                executeTimetableActionPerformed(evt);
+            }
+        });
+
+        timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        timetableCapture.setText("Capture Locomotive Commands");
+        timetableCapture.setToolTipText("Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!");
+        timetableCapture.setFocusable(false);
+        timetableCapture.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                timetableCaptureActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout timetablePanelLayout = new javax.swing.GroupLayout(timetablePanel);
+        timetablePanel.setLayout(timetablePanelLayout);
+        timetablePanelLayout.setHorizontalGroup(
+            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(timetablePanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
+                    .addGroup(timetablePanelLayout.createSequentialGroup()
+                        .addComponent(timetableCapture)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(executeTimetable)))
+                .addContainerGap())
+        );
+        timetablePanelLayout.setVerticalGroup(
+            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, timetablePanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(executeTimetable)
+                    .addComponent(timetableCapture))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        locCommandPanels.addTab("Timetable", timetablePanel);
+
+        autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
+
+        jPanel3.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        jLabel46.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel46.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel46.setText("Minimum Action Delay (s)");
+        jLabel46.setFocusable(false);
+
+        minDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        minDelay.setMajorTickSpacing(10);
+        minDelay.setMaximum(30);
+        minDelay.setMinorTickSpacing(1);
+        minDelay.setPaintLabels(true);
+        minDelay.setPaintTicks(true);
+        minDelay.setToolTipText("Minimum number of seconds to sleep before a locomotive moves.");
+        minDelay.setFocusable(false);
+        minDelay.setMaximumSize(new java.awt.Dimension(230, 55));
+        minDelay.setPreferredSize(new java.awt.Dimension(230, 55));
+        minDelay.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                minDelayStateChanged(evt);
+            }
+        });
+        minDelay.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                minDelayMouseReleased(evt);
+            }
+        });
+
+        jLabel48.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel48.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel48.setText("Prioritize Locomotives After (min)");
+        jLabel48.setFocusable(false);
+
+        maxLocInactiveSeconds.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        maxLocInactiveSeconds.setMajorTickSpacing(5);
+        maxLocInactiveSeconds.setMaximum(10);
+        maxLocInactiveSeconds.setMinorTickSpacing(1);
+        maxLocInactiveSeconds.setPaintLabels(true);
+        maxLocInactiveSeconds.setPaintTicks(true);
+        maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
+        maxLocInactiveSeconds.setFocusable(false);
+        maxLocInactiveSeconds.setMaximumSize(new java.awt.Dimension(230, 55));
+        maxLocInactiveSeconds.setPreferredSize(new java.awt.Dimension(230, 55));
+        maxLocInactiveSeconds.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                maxLocInactiveSecondsMouseReleased(evt);
+            }
+        });
+
+        jLabel47.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel47.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel47.setText("Maximum Action Delay (s)");
+        jLabel47.setFocusable(false);
+
+        maxDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        maxDelay.setMajorTickSpacing(10);
+        maxDelay.setMaximum(30);
+        maxDelay.setMinorTickSpacing(1);
+        maxDelay.setPaintLabels(true);
+        maxDelay.setPaintTicks(true);
+        maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
+        maxDelay.setFocusable(false);
+        maxDelay.setMaximumSize(new java.awt.Dimension(230, 55));
+        maxDelay.setPreferredSize(new java.awt.Dimension(230, 55));
+        maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                maxDelayMouseReleased(evt);
+            }
+        });
+
+        jLabel43.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel43.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel43.setText("Default Locomotive Speed (%)");
+        jLabel43.setFocusable(false);
+
+        defaultLocSpeed.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        defaultLocSpeed.setMajorTickSpacing(20);
+        defaultLocSpeed.setMinorTickSpacing(5);
+        defaultLocSpeed.setPaintLabels(true);
+        defaultLocSpeed.setPaintTicks(true);
+        defaultLocSpeed.setToolTipText("The speed at which locomotives will run at by defualt.");
+        defaultLocSpeed.setFocusable(false);
+        defaultLocSpeed.setMaximumSize(new java.awt.Dimension(230, 55));
+        defaultLocSpeed.setPreferredSize(new java.awt.Dimension(230, 55));
+        defaultLocSpeed.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                defaultLocSpeedMouseReleased(evt);
+            }
+        });
+
+        jLabel49.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel49.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel49.setText("Pre-arrival Speed Multiplier (%)");
+        jLabel49.setFocusable(false);
+
+        preArrivalSpeedReduction.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        preArrivalSpeedReduction.setMajorTickSpacing(10);
+        preArrivalSpeedReduction.setMinimum(10);
+        preArrivalSpeedReduction.setMinorTickSpacing(5);
+        preArrivalSpeedReduction.setPaintLabels(true);
+        preArrivalSpeedReduction.setPaintTicks(true);
+        preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
+        preArrivalSpeedReduction.setFocusable(false);
+        preArrivalSpeedReduction.setMaximumSize(new java.awt.Dimension(230, 55));
+        preArrivalSpeedReduction.setPreferredSize(new java.awt.Dimension(230, 55));
+        preArrivalSpeedReduction.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                preArrivalSpeedReductionMouseReleased(evt);
+            }
+        });
+
+        jLabel50.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel50.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel50.setText("Other Settings");
+        jLabel50.setFocusable(false);
+
+        atomicRoutes.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        atomicRoutes.setText("Atomic Routes");
+        atomicRoutes.setToolTipText("When unchecked, edges will unlock as trains pass them, for a more dynamic experience.  Edge and train lengths need to be set for best results.");
+        atomicRoutes.setFocusable(false);
+        atomicRoutes.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                atomicRoutesMouseReleased(evt);
+            }
+        });
+
+        turnOffFunctionsOnArrival.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
+        turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
+        turnOffFunctionsOnArrival.setFocusable(false);
+        turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                turnOffFunctionsOnArrivalMouseReleased(evt);
+            }
+        });
+
+        simulate.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        simulate.setText("Simulate");
+        simulate.setToolTipText("Enable simulation of routes in debug mode.");
+        simulate.setFocusable(false);
+        simulate.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                simulateMouseReleased(evt);
+            }
+        });
+
+        turnOnFunctionsOnDeparture.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        turnOnFunctionsOnDeparture.setText("Turn On Functions on Departure");
+        turnOnFunctionsOnDeparture.setToolTipText("Controls whether preset functions are turned on when a locomotive departs its station.");
+        turnOnFunctionsOnDeparture.setFocusable(false);
+        turnOnFunctionsOnDeparture.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                turnOnFunctionsOnDepartureMouseReleased(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(atomicRoutes)
+                    .addComponent(turnOffFunctionsOnArrival)
+                    .addComponent(simulate)
+                    .addComponent(jLabel49)
+                    .addComponent(jLabel46)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(turnOnFunctionsOnDeparture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel50)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(maxDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(minDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jLabel47))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel43)
+                            .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel48)
+                            .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGap(25, 25, 25))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel46)
+                    .addComponent(jLabel48))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel47)
+                    .addComponent(jLabel43))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel49)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jLabel50)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(atomicRoutes)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(turnOffFunctionsOnArrival)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(turnOnFunctionsOnDeparture)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(simulate))
+        );
+
+        jLabel51.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel51.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel51.setText("Train Behavior");
+
+        jPanel4.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        hideReversing.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        hideReversing.setText("Hide Reversing Stations");
+        hideReversing.setToolTipText("Temporarily hides reversing stations from view in the graph.");
+        hideReversing.setFocusable(false);
+        hideReversing.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                hideReversingMouseReleased(evt);
+            }
+        });
+
+        hideInactive.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        hideInactive.setText("Hide Inactive Points");
+        hideInactive.setToolTipText("Temporarily hides manually deactivated points from view in the graph.");
+        hideInactive.setFocusable(false);
+        hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                hideInactiveMouseReleased(evt);
+            }
+        });
+
+        showStationLengths.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        showStationLengths.setText("Show Lengths & Exclusions");
+        showStationLengths.setToolTipText("Displays edge lengths, maximum train lengths next to each station name, and highlights locomotive exclusions.");
+        showStationLengths.setFocusable(false);
+        showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                showStationLengthsMouseReleased(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(hideReversing)
+                    .addComponent(hideInactive)
+                    .addComponent(showStationLengths))
+                .addContainerGap(18, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(hideReversing)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(hideInactive)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(showStationLengths, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel52.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel52.setText("Graph UI Options");
+
+        javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
+        autoSettingsPanel.setLayout(autoSettingsPanelLayout);
+        autoSettingsPanelLayout.setHorizontalGroup(
+            autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(autoSettingsPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 493, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel51))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel52))
+                .addContainerGap(18, Short.MAX_VALUE))
+        );
+        autoSettingsPanelLayout.setVerticalGroup(
+            autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(autoSettingsPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel51, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel52))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
+        );
+
+        locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
+
+        javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
+        autoPanel.setLayout(autoPanelLayout);
+        autoPanelLayout.setHorizontalGroup(
+            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(autoPanelLayout.createSequentialGroup()
+                .addGap(0, 0, 0)
+                .addComponent(locCommandPanels, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(0, 0, 0))
+        );
+        autoPanelLayout.setVerticalGroup(
+            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 636, Short.MAX_VALUE)
+        );
+
+        KeyboardTab.addTab("Auto", autoPanel);
 
         KeyboardPanel.setBackground(new java.awt.Color(255, 255, 255));
         KeyboardPanel.setToolTipText(null);
@@ -6144,625 +6627,142 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         KeyboardTab.addTab("Keyb", KeyboardPanel);
 
-        autoPanel.setBackground(new java.awt.Color(255, 255, 255));
-        autoPanel.setMaximumSize(null);
-        autoPanel.setPreferredSize(new java.awt.Dimension(806, 589));
+        RoutePanel.setBackground(new java.awt.Color(238, 238, 238));
+        RoutePanel.setFocusable(false);
+        RoutePanel.setMaximumSize(new java.awt.Dimension(806, 589));
+        RoutePanel.setMinimumSize(new java.awt.Dimension(806, 589));
+        RoutePanel.setPreferredSize(new java.awt.Dimension(806, 589));
 
-        locCommandPanels.setBackground(new java.awt.Color(255, 255, 255));
-        locCommandPanels.setFocusable(false);
-        locCommandPanels.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        locCommandPanels.setPreferredSize(new java.awt.Dimension(733, 581));
-        locCommandPanels.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                locCommandPanelsMouseClicked(evt);
-            }
-        });
+        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
 
-        autonomyPanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        autonomyJSON.setColumns(20);
-        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
-        autonomyJSON.setRows(5);
-        jScrollPane2.setViewportView(autonomyJSON);
-
-        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
-
-        exportJSON.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        exportJSON.setText("Export Current Graph");
-        exportJSON.setEnabled(false);
-        exportJSON.setFocusable(false);
-        exportJSON.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                exportJSONActionPerformed(evt);
-            }
-        });
-
-        loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        loadJSONButton.setText("Load JSON from File");
-        loadJSONButton.setFocusable(false);
-        loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loadJSONButtonActionPerformed(evt);
-            }
-        });
-
-        autosave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        autosave.setSelected(true);
-        autosave.setText("Save on exit");
-        autosave.setToolTipText("If unchecked, be sure to manually export the graph prior to exiting.");
-        autosave.setFocusable(false);
-        autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        autosave.setMaximumSize(new java.awt.Dimension(139, 20));
-        autosave.setMinimumSize(new java.awt.Dimension(139, 20));
-        autosave.setPreferredSize(new java.awt.Dimension(139, 20));
-        autosave.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autosaveActionPerformed(evt);
-            }
-        });
-
-        jsonDocumentationButton.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jsonDocumentationButton.setForeground(new java.awt.Color(0, 0, 155));
-        jsonDocumentationButton.setText("Documentation");
-        jsonDocumentationButton.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        jsonDocumentationButton.setBorderPainted(false);
-        jsonDocumentationButton.setContentAreaFilled(false);
-        jsonDocumentationButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jsonDocumentationButton.setFocusable(false);
-        jsonDocumentationButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jsonDocumentationButtonActionPerformed(evt);
-            }
-        });
-
-        loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
-        loadDefaultBlankGraph.setText("Initialize Blank Graph");
-        loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
-        loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        loadDefaultBlankGraph.setContentAreaFilled(false);
-        loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        loadDefaultBlankGraph.setFocusable(false);
-        loadDefaultBlankGraph.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loadDefaultBlankGraphActionPerformed(evt);
-            }
-        });
-
-        validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        validateButton.setText("Validate Configuration & Open Graph UI");
-        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
-        validateButton.setFocusable(false);
-        validateButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                validateButtonActionPerformed(evt);
-            }
-        });
-
-        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
-
-        jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
-
-        javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
-        autonomyPanel.setLayout(autonomyPanelLayout);
-        autonomyPanelLayout.setHorizontalGroup(
-            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(loadJSONButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
-                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(loadDefaultBlankGraph)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jsonDocumentationButton))
-                    .addComponent(jScrollPane2)
-                    .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(validateButton)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel6))
-        );
-        autonomyPanelLayout.setVerticalGroup(
-            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jsonDocumentationButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(loadDefaultBlankGraph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator3)
-                    .addComponent(autosave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(validateButton)
-                .addContainerGap())
-            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                .addGap(34, 34, 34)
-                .addComponent(jLabel6)
-                .addContainerGap(563, Short.MAX_VALUE))
-        );
-
-        locCommandPanels.addTab("Autonomy Configuration", autonomyPanel);
-
-        locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
-        locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
-
-        jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
-        jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
-
-        autoLocPanel.setBackground(new java.awt.Color(255, 255, 255));
-        autoLocPanel.setEnabled(false);
-        autoLocPanel.setFocusable(false);
-        autoLocPanel.setMaximumSize(new java.awt.Dimension(716, 5000));
-        autoLocPanel.setLayout(new java.awt.GridLayout(100, 3, 5, 5));
-        jScrollPane4.setViewportView(autoLocPanel);
-
-        gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
-        gracefulStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        gracefulStop.setText("Graceful Stop");
-        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
-        gracefulStop.setEnabled(false);
-        gracefulStop.setFocusable(false);
-        gracefulStop.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gracefulStopActionPerformed(evt);
-            }
-        });
-
-        startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
-        startAutonomy.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        startAutonomy.setText("Start Autonomous Operation");
-        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
-        startAutonomy.setEnabled(false);
-        startAutonomy.setFocusable(false);
-        startAutonomy.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startAutonomyActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
-        locCommandTab.setLayout(locCommandTabLayout);
-        locCommandTabLayout.setHorizontalGroup(
-            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(locCommandTabLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
-                    .addGroup(locCommandTabLayout.createSequentialGroup()
-                        .addComponent(gracefulStop)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(startAutonomy)))
-                .addContainerGap())
-        );
-        locCommandTabLayout.setVerticalGroup(
-            locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, locCommandTabLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(startAutonomy)
-                    .addComponent(gracefulStop))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-
-        locCommandPanels.addTab("Locomotive Commands", locCommandTab);
-
-        timetablePanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        timetable.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        timetable.setModel(new javax.swing.table.DefaultTableModel(
+        RouteList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        RouteList.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+
             }
         ));
-        timetable.setGridColor(new java.awt.Color(242, 242, 242));
-        jScrollPane6.setViewportView(timetable);
+        RouteList.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        RouteList.setFocusable(false);
+        RouteList.setGridColor(new java.awt.Color(0, 0, 0));
+        RouteList.setRowHeight(30);
+        RouteList.setRowSelectionAllowed(false);
+        RouteList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        RouteList.setTableHeader(null);
+        RouteList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                RouteListMouseClicked(evt);
+            }
+        });
+        jScrollPane5.setViewportView(RouteList);
 
-        executeTimetable.setBackground(new java.awt.Color(204, 255, 204));
-        executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        executeTimetable.setText("Execute Timetable");
-        executeTimetable.setToolTipText("Sequentially executes the timetable.");
-        executeTimetable.setFocusable(false);
-        executeTimetable.addActionListener(new java.awt.event.ActionListener() {
+        AddRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        AddRouteButton.setText("Add Route");
+        AddRouteButton.setFocusable(false);
+        AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                executeTimetableActionPerformed(evt);
+                AddRouteButtonActionPerformed(evt);
             }
         });
 
-        timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        timetableCapture.setText("Capture Locomotive Commands");
-        timetableCapture.setToolTipText("Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!");
-        timetableCapture.setFocusable(false);
-        timetableCapture.addActionListener(new java.awt.event.ActionListener() {
+        buttonGroup2.add(sortByName);
+        sortByName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        sortByName.setText("Name");
+        sortByName.setFocusable(false);
+        sortByName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                timetableCaptureActionPerformed(evt);
+                sortByNameActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout timetablePanelLayout = new javax.swing.GroupLayout(timetablePanel);
-        timetablePanel.setLayout(timetablePanelLayout);
-        timetablePanelLayout.setHorizontalGroup(
-            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(timetablePanelLayout.createSequentialGroup()
+        buttonGroup2.add(sortByID);
+        sortByID.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        sortByID.setText("Route ID");
+        sortByID.setFocusable(false);
+        sortByID.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sortByIDActionPerformed(evt);
+            }
+        });
+
+        BulkEnable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        BulkEnable.setText("Bulk Enable");
+        BulkEnable.setFocusable(false);
+        BulkEnable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BulkEnableActionPerformed(evt);
+            }
+        });
+
+        BulkDisable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        BulkDisable.setText("Bulk Disable");
+        BulkDisable.setFocusable(false);
+        BulkDisable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BulkDisableActionPerformed(evt);
+            }
+        });
+
+        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator2.setMinimumSize(new java.awt.Dimension(10, 10));
+        jSeparator2.setPreferredSize(new java.awt.Dimension(30, 10));
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(0, 0, 155));
+        jLabel1.setText("Sort by:");
+
+        javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
+        RoutePanel.setLayout(RoutePanelLayout);
+        RoutePanelLayout.setHorizontalGroup(
+            RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(RoutePanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
-                    .addGroup(timetablePanelLayout.createSequentialGroup()
-                        .addComponent(timetableCapture)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(executeTimetable)))
-                .addContainerGap())
-        );
-        timetablePanelLayout.setVerticalGroup(
-            timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, timetablePanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(timetablePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(executeTimetable)
-                    .addComponent(timetableCapture))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-
-        locCommandPanels.addTab("Timetable", timetablePanel);
-
-        autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        jPanel3.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-
-        jLabel46.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel46.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel46.setText("Minimum Action Delay (s)");
-        jLabel46.setFocusable(false);
-
-        minDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        minDelay.setMajorTickSpacing(10);
-        minDelay.setMaximum(30);
-        minDelay.setMinorTickSpacing(1);
-        minDelay.setPaintLabels(true);
-        minDelay.setPaintTicks(true);
-        minDelay.setToolTipText("Minimum number of seconds to sleep before a locomotive moves.");
-        minDelay.setFocusable(false);
-        minDelay.setMaximumSize(new java.awt.Dimension(230, 55));
-        minDelay.setPreferredSize(new java.awt.Dimension(230, 55));
-        minDelay.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                minDelayStateChanged(evt);
-            }
-        });
-        minDelay.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                minDelayMouseReleased(evt);
-            }
-        });
-
-        jLabel48.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel48.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel48.setText("Prioritize Locomotives After (min)");
-        jLabel48.setFocusable(false);
-
-        maxLocInactiveSeconds.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        maxLocInactiveSeconds.setMajorTickSpacing(5);
-        maxLocInactiveSeconds.setMaximum(10);
-        maxLocInactiveSeconds.setMinorTickSpacing(1);
-        maxLocInactiveSeconds.setPaintLabels(true);
-        maxLocInactiveSeconds.setPaintTicks(true);
-        maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
-        maxLocInactiveSeconds.setFocusable(false);
-        maxLocInactiveSeconds.setMaximumSize(new java.awt.Dimension(230, 55));
-        maxLocInactiveSeconds.setPreferredSize(new java.awt.Dimension(230, 55));
-        maxLocInactiveSeconds.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                maxLocInactiveSecondsMouseReleased(evt);
-            }
-        });
-
-        jLabel47.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel47.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel47.setText("Maximum Action Delay (s)");
-        jLabel47.setFocusable(false);
-
-        maxDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        maxDelay.setMajorTickSpacing(10);
-        maxDelay.setMaximum(30);
-        maxDelay.setMinorTickSpacing(1);
-        maxDelay.setPaintLabels(true);
-        maxDelay.setPaintTicks(true);
-        maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
-        maxDelay.setFocusable(false);
-        maxDelay.setMaximumSize(new java.awt.Dimension(230, 55));
-        maxDelay.setPreferredSize(new java.awt.Dimension(230, 55));
-        maxDelay.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                maxDelayMouseReleased(evt);
-            }
-        });
-
-        jLabel43.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel43.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel43.setText("Default Locomotive Speed (%)");
-        jLabel43.setFocusable(false);
-
-        defaultLocSpeed.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        defaultLocSpeed.setMajorTickSpacing(20);
-        defaultLocSpeed.setMinorTickSpacing(5);
-        defaultLocSpeed.setPaintLabels(true);
-        defaultLocSpeed.setPaintTicks(true);
-        defaultLocSpeed.setToolTipText("The speed at which locomotives will run at by defualt.");
-        defaultLocSpeed.setFocusable(false);
-        defaultLocSpeed.setMaximumSize(new java.awt.Dimension(230, 55));
-        defaultLocSpeed.setPreferredSize(new java.awt.Dimension(230, 55));
-        defaultLocSpeed.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                defaultLocSpeedMouseReleased(evt);
-            }
-        });
-
-        jLabel49.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel49.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel49.setText("Pre-arrival Speed Multiplier (%)");
-        jLabel49.setFocusable(false);
-
-        preArrivalSpeedReduction.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        preArrivalSpeedReduction.setMajorTickSpacing(10);
-        preArrivalSpeedReduction.setMinimum(10);
-        preArrivalSpeedReduction.setMinorTickSpacing(5);
-        preArrivalSpeedReduction.setPaintLabels(true);
-        preArrivalSpeedReduction.setPaintTicks(true);
-        preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
-        preArrivalSpeedReduction.setFocusable(false);
-        preArrivalSpeedReduction.setMaximumSize(new java.awt.Dimension(230, 55));
-        preArrivalSpeedReduction.setPreferredSize(new java.awt.Dimension(230, 55));
-        preArrivalSpeedReduction.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                preArrivalSpeedReductionMouseReleased(evt);
-            }
-        });
-
-        jLabel50.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel50.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel50.setText("Other Settings");
-        jLabel50.setFocusable(false);
-
-        atomicRoutes.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        atomicRoutes.setText("Atomic Routes");
-        atomicRoutes.setToolTipText("When unchecked, edges will unlock as trains pass them, for a more dynamic experience.  Edge and train lengths need to be set for best results.");
-        atomicRoutes.setFocusable(false);
-        atomicRoutes.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                atomicRoutesMouseReleased(evt);
-            }
-        });
-
-        turnOffFunctionsOnArrival.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
-        turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
-        turnOffFunctionsOnArrival.setFocusable(false);
-        turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                turnOffFunctionsOnArrivalMouseReleased(evt);
-            }
-        });
-
-        simulate.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        simulate.setText("Simulate");
-        simulate.setToolTipText("Enable simulation of routes in debug mode.");
-        simulate.setFocusable(false);
-        simulate.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                simulateMouseReleased(evt);
-            }
-        });
-
-        turnOnFunctionsOnDeparture.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        turnOnFunctionsOnDeparture.setText("Turn On Functions on Departure");
-        turnOnFunctionsOnDeparture.setToolTipText("Controls whether preset functions are turned on when a locomotive departs its station.");
-        turnOnFunctionsOnDeparture.setFocusable(false);
-        turnOnFunctionsOnDeparture.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                turnOnFunctionsOnDepartureMouseReleased(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(atomicRoutes)
-                    .addComponent(turnOffFunctionsOnArrival)
-                    .addComponent(simulate)
-                    .addComponent(jLabel49)
-                    .addComponent(jLabel46)
-                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(turnOnFunctionsOnDeparture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jLabel50)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(maxDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(minDelay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(jLabel47))
+                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane5)
+                    .addGroup(RoutePanelLayout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(RoutePanelLayout.createSequentialGroup()
+                        .addComponent(AddRouteButton)
+                        .addGap(9, 9, 9)
+                        .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel43)
-                            .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel48)
-                            .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(25, 25, 25))
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel46)
-                    .addComponent(jLabel48))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(minDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(maxLocInactiveSeconds, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel47)
-                    .addComponent(jLabel43))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(maxDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(defaultLocSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel49)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jLabel50)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(atomicRoutes)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(turnOffFunctionsOnArrival)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(turnOnFunctionsOnDeparture)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(simulate))
-        );
-
-        jLabel51.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
-        jLabel51.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel51.setText("Train Behavior");
-
-        jPanel4.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-
-        hideReversing.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideReversing.setText("Hide Reversing Stations");
-        hideReversing.setToolTipText("Temporarily hides reversing stations from view in the graph.");
-        hideReversing.setFocusable(false);
-        hideReversing.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                hideReversingMouseReleased(evt);
-            }
-        });
-
-        hideInactive.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideInactive.setText("Hide Inactive Points");
-        hideInactive.setToolTipText("Temporarily hides manually deactivated points from view in the graph.");
-        hideInactive.setFocusable(false);
-        hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                hideInactiveMouseReleased(evt);
-            }
-        });
-
-        showStationLengths.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        showStationLengths.setText("Show Lengths & Exclusions");
-        showStationLengths.setToolTipText("Displays edge lengths, maximum train lengths next to each station name, and highlights locomotive exclusions.");
-        showStationLengths.setFocusable(false);
-        showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                showStationLengthsMouseReleased(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(hideReversing)
-                    .addComponent(hideInactive)
-                    .addComponent(showStationLengths))
-                .addContainerGap(18, Short.MAX_VALUE))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(hideReversing)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(hideInactive)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(showStationLengths, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
-        jLabel52.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel52.setText("Graph UI Options");
-
-        javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
-        autoSettingsPanel.setLayout(autoSettingsPanelLayout);
-        autoSettingsPanelLayout.setHorizontalGroup(
-            autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autoSettingsPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 493, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel51))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel52))
-                .addContainerGap(18, Short.MAX_VALUE))
-        );
-        autoSettingsPanelLayout.setVerticalGroup(
-            autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autoSettingsPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel51, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel52))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(BulkEnable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(BulkDisable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 192, Short.MAX_VALUE)
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(sortByName)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(sortByID)))
                 .addContainerGap())
         );
-
-        locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
-
-        javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
-        autoPanel.setLayout(autoPanelLayout);
-        autoPanelLayout.setHorizontalGroup(
-            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autoPanelLayout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addComponent(locCommandPanels, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(0, 0, 0))
+        RoutePanelLayout.setVerticalGroup(
+            RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 569, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(sortByName, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(BulkEnable)
+                        .addComponent(BulkDisable)
+                        .addComponent(sortByID, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(6, 6, 6))
         );
-        autoPanelLayout.setVerticalGroup(
-            autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 636, Short.MAX_VALUE)
-        );
 
-        KeyboardTab.addTab("Auto", autoPanel);
+        KeyboardTab.addTab("Rout", RoutePanel);
 
         logPanel.setBackground(new java.awt.Color(238, 238, 238));
         logPanel.setMaximumSize(new java.awt.Dimension(806, 589));

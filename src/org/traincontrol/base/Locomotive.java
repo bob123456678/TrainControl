@@ -68,17 +68,17 @@ public abstract class Locomotive
     protected Integer departureFunc;
     protected boolean reversible;
     
-    // Length of the train corresponding to ths locomotive
+    // Length of the train corresponding to this locomotive
     protected Integer trainLength;
     
-    // Number of completed paths, and last time
+    // Number of completed paths, and last time run, in autonomous mode
     protected Integer numPaths = 0;
     protected long lastPathTime = System.currentTimeMillis();
     
     // Cumulative time of operation, by date
     protected Map<String, Long> historicalOperatingTime;
     
-    // When this locomotive was last run this session and overall, respectively
+    // When this locomotive was last run.  Used to ensure stats are tracked correctly when power is turned off.
     protected long lastStartTime = 0;
     
     // Track power state to ensure correct timings
@@ -472,7 +472,7 @@ public abstract class Locomotive
      * @return 
      */
     public abstract boolean isFeedbackSet(String name);
-        
+            
     /**
      * Returns the state of a given feedback name (string but most likely a number)
      * @param name
@@ -597,6 +597,7 @@ public abstract class Locomotive
         
         return this;
     }
+    
     /**
      * Blocks until a certain feedback value is not set
      * If feedback is undefined, blocks until it is set
@@ -644,7 +645,7 @@ public abstract class Locomotive
     {
         return waitForOccupiedFeedback(name, FEEDBACK_DURATION_THRESHOLD);
     }
-    
+        
     /**
      * Chains two feedback commands together
      * waitForClearFeedback then waitForOccupiedFeedback
@@ -665,6 +666,33 @@ public abstract class Locomotive
     public Locomotive waitForOccupiedThenClear(String name)
     {
         return this.waitForOccupiedFeedback(name).waitForClearFeedback(name);
+    }
+    
+    // Int versions of the same methods
+    
+    public final Locomotive waitForOccupiedFeedback(int feedbackId)
+    {
+        return waitForOccupiedFeedback(Integer.toString(feedbackId));
+    }
+    
+    public final Locomotive waitForClearFeedback(int feedbackId)
+    {
+        return waitForClearFeedback(Integer.toString(feedbackId));
+    }
+    
+    public final Locomotive waitForClearThenOccupied(int feedbackId)
+    {
+        return this.waitForClearFeedback(Integer.toString(feedbackId)).waitForOccupiedFeedback(Integer.toString(feedbackId));
+    }
+    
+    public final Locomotive waitForOccupiedThenClear(int feedbackId)
+    {
+        return this.waitForOccupiedFeedback(Integer.toString(feedbackId)).waitForClearFeedback(Integer.toString(feedbackId));
+    }
+    
+    public final boolean isFeedbackSet(int feedbackId)
+    {
+        return isFeedbackSet(Integer.toString(feedbackId));
     }
     
     /**
@@ -968,6 +996,10 @@ public abstract class Locomotive
         return arrivalFunc;
     }
 
+    /**
+     * Sets an arrival function that will be called when this locomotive ends a path in autonomous mode
+     * @param arrivalFunc 
+     */
     public void setArrivalFunc(Integer arrivalFunc)
     {
         if (arrivalFunc == null)
@@ -980,11 +1012,19 @@ public abstract class Locomotive
         }
     }
 
+    /**
+     * Returns the function number of the departure function
+     * @return 
+     */
     public Integer getDepartureFunc()
     {
         return departureFunc;
     }
     
+    /**
+     * Sets a departure function that will be called when this locomotive starts a path in autonomous mode
+     * @param departureFunc 
+     */
     public void setDepartureFunc(Integer departureFunc)
     {
         if (departureFunc == null)
@@ -997,47 +1037,82 @@ public abstract class Locomotive
         }
     }
     
+    /**
+     * Returns if an arrival function is set
+     * @return 
+     */
     public boolean hasArrivalFunc()
     {
         return this.arrivalFunc != null;
     }
     
+    /**
+     * Returns if a departure function is set
+     * @return 
+     */
     public boolean hasDepartureFunc()
     {
         return this.departureFunc != null;
     }
     
+    /**
+     * Returns if this locomotive is reversible
+     * @return 
+     */
     public boolean isReversible()
     {
         return reversible;
     }
 
+    /**
+     * Sets this locomotive as a reversible train (used in autonomy)
+     * @param reversible 
+     */
     public void setReversible(boolean reversible)
     {
         this.reversible = reversible;
     }
     
+    /**
+     * Gets the total number of autonomous paths executed
+     * @return 
+     */
     public Integer getNumPaths()
     {
         return this.numPaths;
     }
     
+    /**
+     * Logs that an autonomous path was executed
+     */
     public void incrementNumPaths()
     {
         this.numPaths += 1;
         this.lastPathTime = System.currentTimeMillis();
     }
     
+    /**
+     * Gets the last time that an autonomous path was executed
+     * @return 
+     */
     public long getLastPathTime()
     {
         return this.lastPathTime;
     }
     
+    /**
+     * Gets the train length
+     * @return 
+     */
     public Integer getTrainLength()
     {
         return trainLength;
     }
 
+    /**
+     * Set the train length (used for automation)
+     * @param trainLength 
+     */
     public void setTrainLength(Integer trainLength)
     {
         this.trainLength = trainLength;
