@@ -201,18 +201,26 @@ public class testLocomotive
         l.setAddress(80, MarklinLocomotive.decoderType.MFX);
 
         l2.setFunctionTypes(l.getFunctionTypes(), l.getFunctionTriggerTypes());
+        
+        l2.setFunctionState(l.getPreferredFunctions());
+        l2.savePreferredFunctions();
+        
         l2.setFunctionState(l.getFunctionState());
         
+        // These should all differ because the first loc is MFX and has more functions
         assertNotEquals(l.getFunctionState(), l2.getFunctionState());
         assertNotEquals(l.getFunctionTriggerTypes(), l2.getFunctionTriggerTypes());
         assertNotEquals(l.getFunctionTypes(), l2.getFunctionTypes());
-        
+        assertNotEquals(l.getPreferredFunctions(), l2.getPreferredFunctions());
+
         // This will shrink the array back
         l.setAddress(80, MarklinLocomotive.decoderType.MM2);
 
+        // These now should all be identical
         assertEquals(l.getFunctionState(), l2.getFunctionState());
         assertEquals(l.getFunctionTriggerTypes(), l2.getFunctionTriggerTypes());
         assertEquals(l.getFunctionTypes(), l2.getFunctionTypes());
+        assertEquals(l.getPreferredFunctions(), l2.getPreferredFunctions());
     }
     
     @BeforeClass

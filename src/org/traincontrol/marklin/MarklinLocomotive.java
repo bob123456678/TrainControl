@@ -406,6 +406,7 @@ public class MarklinLocomotive extends Locomotive
         functionTypes = Arrays.copyOf(functionTypes, getMaxNumF(newDecoderType)); 
         functionState = Arrays.copyOf(functionState, getMaxNumF(newDecoderType));
         functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, getMaxNumF(newDecoderType));
+        preferredFunctions = Arrays.copyOf(preferredFunctions, getMaxNumF(newDecoderType));
         this.numF = getMaxNumF(newDecoderType);
     }
        

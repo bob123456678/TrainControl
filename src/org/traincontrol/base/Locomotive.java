@@ -39,7 +39,7 @@ public abstract class Locomotive
     protected boolean[] functionState;
     
     // A preset of preferred function state
-    private boolean[] preferredFunctions;
+    protected boolean[] preferredFunctions;
     private int preferredSpeed;
 
     // Name of this locomotive
@@ -249,20 +249,6 @@ public abstract class Locomotive
     {
         this.functionTypes = Arrays.copyOf(functionTypes, this.numF);
         this.functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, this.numF);
-        
-        /* this.functionTypes = new int[this.numF];
-        this.functionTriggerTypes = new int[this.numF];
-        
-        // Safely copy function types - raw data is often shorter or longer than needed
-        for (int i = 0; i < functionTypes.length && i < this.functionTypes.length; i++)
-        { 
-            this.functionTypes[i] = functionTypes[i];
-        }
-        
-        for (int i = 0; i < functionTriggerTypes.length && i < this.functionTriggerTypes.length; i++)
-        { 
-            this.functionTriggerTypes[i] = functionTriggerTypes[i];
-        }*/
     }
     
     /**
@@ -272,13 +258,6 @@ public abstract class Locomotive
     public final void setFunctionState(boolean[] functionState)
     {
         this.functionState = Arrays.copyOf(functionState, this.numF);
-        /*this.functionState = new boolean[this.numF];
-        
-        // Safely copy function types - raw data is often shorter or longer than needed
-        for (int i = 0; i < functionState.length && i < this.functionState.length; i++)
-        { 
-            this.functionState[i] = functionState[i];
-        }*/
     }
     
     /**
@@ -1278,7 +1257,7 @@ public abstract class Locomotive
     
     /**
      * Returns if autonomy has been paused
-     * @return 
+     * @return
      */
     public boolean isAutonomyPaused()
     {
