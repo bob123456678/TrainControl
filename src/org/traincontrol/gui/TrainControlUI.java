@@ -1937,10 +1937,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void mapLocToCurrentButton(String s)
     {
+        mapLocToCurrentButton(s, false);
+    }
+    
+    public void mapLocToCurrentButton(String s, boolean emptyOnly)
+    {
         Locomotive l = this.model.getLocByName(s);
          
         if (l != null)
         {
+            // Skip if something is already mapped
+            if (emptyOnly && this.currentLocMapping().get(this.currentButton) != null) return;
+            
             // Unset if same as current loc
             if (this.currentLocMapping().get(this.currentButton) != null &&
                     this.currentLocMapping().get(this.currentButton).equals(l))
@@ -2004,7 +2012,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (l != null 
                             && this.model.getLocByName(l.getName()) != null // If this loc no longer exists, don't display it
                     )
-                    {
+                    {                        
                         String name = l.getName();
 
                         if (name.length() > 9)
@@ -2484,6 +2492,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                     this.rFunctionMapping.get(i).setIcon(null);
                                 }
 
+                                // Remember the active tab
+                                int currentFIndex = FunctionTabs.getSelectedIndex();
+                                
                                 // Hide unnecessary function tabs
                                 if (this.activeLoc.getNumF() < 20)
                                 {
@@ -2492,6 +2503,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 else
                                 {
                                     FunctionTabs.add("F20-F31", this.F20AndUpPanel);
+                                    FunctionTabs.setSelectedIndex(currentFIndex);
                                 }
 
                                 this.Backward.setVisible(true);
@@ -8943,7 +8955,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                     {
                         this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
-                        this.repaintLoc(true, null);
                     }
                 }
                 
@@ -8973,9 +8984,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
 
                     this.model.renameLoc(l.getName(), newName);
-
+                }
+                
+                // Refresh everything
+                if (result == JOptionPane.OK_OPTION)
+                {
                     clearCopyTarget();
-                    repaintLoc();
+                    repaintLoc(true, null);
                     repaintMappings();
                     selector.refreshLocSelectorList();
                     

@@ -277,6 +277,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.3.3 [Beta]
+    - When editing function icons, added a button to copy icons from an existing locomotive
+    - When adding a new locomotive, it will automatically be mapped to the current button if the button has no existing mapping
+    - Fixed bug where when changing a locomotive's decoder type, functions outside of the normally allowed range would be accessible
+    - Fixed bug where the selected function tab would reset when editing function icons for F20-F31
+
 * v2.3.2 [12/10/2024]
     - Code portability enhancements (custom code using TrainControl APIs will need to be updated to use the new package names)
         - Moved all TrainControl code to the `org.traincontrol` package and updated documentation to reflect this 

@@ -1,6 +1,7 @@
 package org.traincontrol.marklin;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import org.traincontrol.marklin.udp.CS2Message;
@@ -400,6 +401,12 @@ public class MarklinLocomotive extends Locomotive
         this.type = newDecoderType;
         this.address = newAddress;
         this.UID = calculateUID();
+        
+        // Resize function arrays if needed
+        functionTypes = Arrays.copyOf(functionTypes, getMaxNumF(newDecoderType)); 
+        functionState = Arrays.copyOf(functionState, getMaxNumF(newDecoderType));
+        functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, getMaxNumF(newDecoderType));
+        this.numF = getMaxNumF(newDecoderType);
     }
        
     /**

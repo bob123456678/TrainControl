@@ -334,6 +334,9 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 this.LocAddressInput.setText("");
                 this.LocNameInput.setText("");
+
+                // Map the locomotive if the button is empty
+                this.parent.mapLocToCurrentButton(locName, true);
   
             }).start();
     }//GEN-LAST:event_AddLocButtonActionPerformed

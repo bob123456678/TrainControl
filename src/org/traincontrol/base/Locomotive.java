@@ -33,7 +33,7 @@ public abstract class Locomotive
     private locDirection direction;
     
     // Number of functions
-    private final int numF;
+    protected int numF;
        
     // State of functions
     protected boolean[] functionState;

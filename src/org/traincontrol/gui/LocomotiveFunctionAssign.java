@@ -110,6 +110,18 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         displayCustomizationButtons();
         
         this.customFunctionIcon.setMinimumSize(new Dimension(50, 33));
+        
+        // Button to copy icons
+        if (this.parent.getCopyTarget() == null)
+        {
+            this.copyCustomizations.setEnabled(false);
+            this.copyCustomizations.setText("Copy Icons from Clipboard Locomotive");
+        }
+        else
+        {
+            this.copyCustomizations.setEnabled(true);
+            this.copyCustomizations.setText("Copy Icons from " + this.parent.getCopyTarget().getName());
+        }
     }
     
     /**
@@ -180,6 +192,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         customFunctionIcon = new javax.swing.JLabel();
         useCustomFunctionIcon = new javax.swing.JButton();
         deleteCustomIcon = new javax.swing.JButton();
+        copyCustomizations = new javax.swing.JButton();
 
         setMinimumSize(new java.awt.Dimension(213, 97));
 
@@ -248,6 +261,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             }
         });
 
+        copyCustomizations.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        copyCustomizations.setText("Copy Customizations from ");
+        copyCustomizations.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                copyCustomizationsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -275,7 +296,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                                 .addComponent(fNo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(functionTriggerType, 0, 300, Short.MAX_VALUE))
                             .addComponent(customFunctionIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(copyCustomizations, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -304,7 +326,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 3, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(8, 8, 8)
                 .addComponent(resetButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(copyCustomizations)
+                .addContainerGap(10, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -440,6 +464,19 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         this.displayCustomFunctionIcon(null);
     }//GEN-LAST:event_deleteCustomIconActionPerformed
 
+    private void copyCustomizationsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyCustomizationsActionPerformed
+        
+        Locomotive copyFrom = this.parent.getCopyTarget();
+        
+        if (copyFrom != null)
+        {
+            this.loc.setFunctionTypes(copyFrom.getFunctionTypes(), copyFrom.getFunctionTriggerTypes());
+            parent.repaintLoc(true, null);
+
+            updateFNumber(this.fNo.getSelectedIndex()); 
+        }
+    }//GEN-LAST:event_copyCustomizationsActionPerformed
+
     private void displayCustomFunctionIcon(String path)
     {       
         if (path == null)
@@ -493,6 +530,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton applyButton;
+    private javax.swing.JButton copyCustomizations;
     private javax.swing.JLabel customFunctionIcon;
     private javax.swing.JButton deleteCustomIcon;
     private javax.swing.JComboBox<String> fIcon;
