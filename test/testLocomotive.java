@@ -20,6 +20,7 @@ public class testLocomotive
 {    
     public static MarklinControlStation model;
     public static MarklinLocomotive l;
+    public static MarklinLocomotive l2;
     
     public testLocomotive()
     {
@@ -189,7 +190,31 @@ public class testLocomotive
         l.rename("Test Loc");
         assertEquals("Test Loc", l.getName());
     }
+    
+    /**
+     * Test locomotive changes
+     */
+    @Test
+    public void testCopyFunctions()
+    {       
+        // This will expand the array to ensure the copy correctly ignores the extra values
+        l.setAddress(80, MarklinLocomotive.decoderType.MFX);
 
+        l2.setFunctionTypes(l.getFunctionTypes(), l.getFunctionTriggerTypes());
+        l2.setFunctionState(l.getFunctionState());
+        
+        assertNotEquals(l.getFunctionState(), l2.getFunctionState());
+        assertNotEquals(l.getFunctionTriggerTypes(), l2.getFunctionTriggerTypes());
+        assertNotEquals(l.getFunctionTypes(), l2.getFunctionTypes());
+        
+        // This will shrink the array back
+        l.setAddress(80, MarklinLocomotive.decoderType.MM2);
+
+        assertEquals(l.getFunctionState(), l2.getFunctionState());
+        assertEquals(l.getFunctionTriggerTypes(), l2.getFunctionTriggerTypes());
+        assertEquals(l.getFunctionTypes(), l2.getFunctionTypes());
+    }
+    
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -202,6 +227,20 @@ public class testLocomotive
                 new int[] {128,10,240,241,0}, // function types
                 new int[] {Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_TOGGLE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_PULSE,10},
                 new boolean[] {true,true,false,true,false}, // preferred functions
+                99,// preferred speed
+                2, //departure F
+                3, //arival F
+                true, //reversible
+                4, // length
+                new HashMap<>() // total runtime
+        );
+        
+        l2 = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
+                MarklinLocomotive.locDirection.DIR_FORWARD,
+                new boolean[] {false,true,true,false,true}, // function state
+                new int[] {128,10,240,241,0}, // function types
+                new int[] {Locomotive.FUNCTION_TOGGLE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_TOGGLE,6},
+                new boolean[] {false,true,true,true,true}, // preferred functions
                 99,// preferred speed
                 2, //departure F
                 3, //arival F

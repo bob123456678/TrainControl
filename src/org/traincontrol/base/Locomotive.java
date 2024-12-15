@@ -247,7 +247,10 @@ public abstract class Locomotive
      */
     public final void setFunctionTypes(int[] functionTypes, int[] functionTriggerTypes)
     {
-        this.functionTypes = new int[this.numF];
+        this.functionTypes = Arrays.copyOf(functionTypes, this.numF);
+        this.functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, this.numF);
+        
+        /* this.functionTypes = new int[this.numF];
         this.functionTriggerTypes = new int[this.numF];
         
         // Safely copy function types - raw data is often shorter or longer than needed
@@ -259,7 +262,7 @@ public abstract class Locomotive
         for (int i = 0; i < functionTriggerTypes.length && i < this.functionTriggerTypes.length; i++)
         { 
             this.functionTriggerTypes[i] = functionTriggerTypes[i];
-        }
+        }*/
     }
     
     /**
@@ -268,13 +271,14 @@ public abstract class Locomotive
      */
     public final void setFunctionState(boolean[] functionState)
     {
-        this.functionState = new boolean[this.numF];
+        this.functionState = Arrays.copyOf(functionState, this.numF);
+        /*this.functionState = new boolean[this.numF];
         
         // Safely copy function types - raw data is often shorter or longer than needed
         for (int i = 0; i < functionState.length && i < this.functionState.length; i++)
         { 
             this.functionState[i] = functionState[i];
-        }
+        }*/
     }
     
     /**
