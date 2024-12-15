@@ -11,6 +11,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.traincontrol.marklin.MarklinLocomotive.getMaxNumF;
 
 /**
  *
@@ -30,20 +31,6 @@ public class testLocomotive
     @Test
     public void testLocomotiveConstructor()
     {   
-        l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
-                MarklinLocomotive.locDirection.DIR_FORWARD,
-                new boolean[] {false,false,true,false,false}, // function state
-                new int[] {128,10,240,241,0}, // function types
-                new int[] {Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_TOGGLE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_PULSE,10},
-                new boolean[] {true,true,false,true,false}, // preferred functions
-                99,// preferred speed
-                2, //departure F
-                3, //arival F
-                true, //reversible
-                4, // length
-                new HashMap<>() // total runtime
-        );
-        
         assertEquals(10, l.isFunctionTimed(4));
         assertEquals(128, l.getFunctionType(0));
         assertEquals(true, l.isFunctionPulse(0));
@@ -165,12 +152,63 @@ public class testLocomotive
             assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, i), true);
         } 
     }
+    
+    /**
+     * Test locomotive changes
+     */
+    @Test
+    public void testLocomotiveChanges()
+    {            
+        l.setAddress(11, MarklinLocomotive.decoderType.DCC);
+        assertEquals(l.getFunctionTriggerTypes().length, getMaxNumF(MarklinLocomotive.decoderType.DCC));
+        assertEquals(l.getFunctionState().length, getMaxNumF(MarklinLocomotive.decoderType.DCC));
+        assertEquals(l.getFunctionTypes().length, getMaxNumF(MarklinLocomotive.decoderType.DCC));
+        assertEquals(l.getAddress(), 11);
+        assertEquals(l.getDecoderType(), MarklinLocomotive.decoderType.DCC);
+        
+        l.setAddress(12, MarklinLocomotive.decoderType.MFX);
+        assertEquals(l.getFunctionTriggerTypes().length, getMaxNumF(MarklinLocomotive.decoderType.MFX));
+        assertEquals(l.getFunctionState().length, getMaxNumF(MarklinLocomotive.decoderType.MFX));
+        assertEquals(l.getFunctionTypes().length, getMaxNumF(MarklinLocomotive.decoderType.MFX));
+        assertEquals(l.getAddress(), 12);
+        assertEquals(l.getDecoderType(), MarklinLocomotive.decoderType.MFX);
+
+        l.setAddress(13, MarklinLocomotive.decoderType.MM2);
+        assertEquals(l.getFunctionTriggerTypes().length, getMaxNumF(MarklinLocomotive.decoderType.MM2));
+        assertEquals(l.getFunctionState().length, getMaxNumF(MarklinLocomotive.decoderType.MM2));
+        assertEquals(l.getFunctionTypes().length, getMaxNumF(MarklinLocomotive.decoderType.MM2));
+        assertEquals(l.getAddress(), 13);
+        assertEquals(l.getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        
+        l.setAddress(80, MarklinLocomotive.decoderType.MM2);
+        assertEquals(l.getAddress(), 80);
+        
+        l.rename("New loc");
+        assertEquals("New loc", l.getName());
+
+        l.rename("Test Loc");
+        assertEquals("Test Loc", l.getName());
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         testLocomotive.model = init(null, true, false, false, false); 
         model.stop();
+        
+        l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
+                MarklinLocomotive.locDirection.DIR_FORWARD,
+                new boolean[] {false,false,true,false,false}, // function state
+                new int[] {128,10,240,241,0}, // function types
+                new int[] {Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_TOGGLE,Locomotive.FUNCTION_PULSE,Locomotive.FUNCTION_PULSE,10},
+                new boolean[] {true,true,false,true,false}, // preferred functions
+                99,// preferred speed
+                2, //departure F
+                3, //arival F
+                true, //reversible
+                4, // length
+                new HashMap<>() // total runtime
+        );
     }
 
     @AfterClass
