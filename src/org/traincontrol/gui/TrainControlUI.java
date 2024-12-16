@@ -11011,12 +11011,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
     public void setFunctionIcon(Locomotive l, JButton source)
     {
-        LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
-        // Select the locomotive
-        source.doClick();
-        
-        JOptionPane.showMessageDialog(this, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
-        edit.focusFno();
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {    
+            LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
+            // Select the locomotive
+            source.doClick();
+
+            JOptionPane.showMessageDialog(this, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
+            edit.focusFno();
+        }));
     }
     
     public void clearLocIcon(Locomotive l)
@@ -11037,7 +11040,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void setLocIcon(Locomotive l)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             String currentPath = null;
 

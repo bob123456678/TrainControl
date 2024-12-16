@@ -279,6 +279,7 @@
           <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Copy Customizations from "/>
+        <Property name="toolTipText" type="java.lang.String" value="Copy the locomotive from the main UI"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="copyCustomizationsActionPerformed"/>

@@ -263,6 +263,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         copyCustomizations.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         copyCustomizations.setText("Copy Customizations from ");
+        copyCustomizations.setToolTipText("Copy the locomotive from the main UI");
         copyCustomizations.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 copyCustomizationsActionPerformed(evt);
