@@ -277,7 +277,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.3.3 [Beta]
+* v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive
     - When adding a new locomotive, it will automatically be mapped to the current button if the button has no existing mapping
     - Fixed bug where when changing a locomotive's decoder type, functions outside of the normally allowed range would be accessible
