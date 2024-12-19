@@ -472,6 +472,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         if (copyFrom != null)
         {
             this.loc.setFunctionTypes(copyFrom.getFunctionTypes(), copyFrom.getFunctionTriggerTypes());
+            this.loc.setCustomFunctions(true);
             parent.repaintLoc(true, null);
 
             updateFNumber(this.fNo.getSelectedIndex()); 
