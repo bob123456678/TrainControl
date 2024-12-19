@@ -178,6 +178,8 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+V (assign active locomotive, or clipboard locomotive if non-empty, to currently hovered node)
     * Delete/Backspace (remove locomotive from currently hovered node, clear clipboard if non-empty)
     * Control+X (remove locomotive from currently hovered node and place it in the clipboard)
+    * Control+E (exclude active locomotive from currently hovered node)
+    * Control+U (unexclude active locomotive from currently hovered node)
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
@@ -276,6 +278,9 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.3.4 [Beta]
+    - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive

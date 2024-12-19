@@ -257,18 +257,18 @@ final public class GraphViewer extends javax.swing.JFrame
             
             // Excluded locomotives
             menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
+            menuItem.setToolTipText("Control+E/U to exclude/unexclude active locomotive");
             menuItem.addActionListener(event -> 
             {
                 try
                 {
-
                     GraphLocExclude edit = new GraphLocExclude(parent, p);
 
                     int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
                             "Edit Excluded Locomotives at " + p.getName(), 
                             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-                    if(dialogResult2 == JOptionPane.OK_OPTION)
+                    if (dialogResult2 == JOptionPane.OK_OPTION)
                     {
                         p.setExcludedLocs(edit.getSelectedExcludeLocs());
                     }
@@ -300,7 +300,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 catch (Exception ex) 
                 {
                     JOptionPane.showMessageDialog((Component) swingView,
-                                    ex.getMessage()); 
+                        ex.getMessage()); 
                 }
             });
 
@@ -321,7 +321,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 catch (Exception ex)
                 {
                     JOptionPane.showMessageDialog((Component) swingView,
-                     ex.getMessage()); 
+                        ex.getMessage()); 
                 }
             });
 
@@ -341,7 +341,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 catch (Exception ex) 
                 { 
                     JOptionPane.showMessageDialog((Component) swingView,
-                                ex.getMessage()); 
+                        ex.getMessage()); 
                 }
             });
 
@@ -359,7 +359,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 catch (Exception ex) 
                 {
                     JOptionPane.showMessageDialog((Component) swingView,
-                                    ex.getMessage()); 
+                        ex.getMessage()); 
                 }
             });
 
@@ -768,6 +768,7 @@ final public class GraphViewer extends javax.swing.JFrame
                     try 
                     {
                         lastClickedNode = null;
+                        lastHoveredNode = null;
                         parent.getModel().getAutoLayout().deletePoint(p.getName());
                         mainGraph.removeNode(p.getUniqueId());
                         parent.repaintAutoLocList(false);
@@ -1287,6 +1288,28 @@ final public class GraphViewer extends javax.swing.JFrame
                 
                 parent.getModel().getAutoLayout().moveLocomotive(null, this.lastHoveredNode, true);
                 parent.repaintAutoLocList(false);
+            }
+        }
+        else if (!isRunning && controlPressed && (keyCode == KeyEvent.VK_E || keyCode == KeyEvent.VK_U))
+        {
+            if (parent.getActiveLoc() != null && this.lastHoveredNode != null)
+            {
+                Point p = parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode);
+                
+                if (p != null)
+                {
+                    if (keyCode == KeyEvent.VK_E)
+                    {
+                        p.getExcludedLocs().add(parent.getActiveLoc()); 
+                    }
+                    else if (keyCode == KeyEvent.VK_U)
+                    {
+                        p.getExcludedLocs().remove(parent.getActiveLoc()); 
+                    }
+                    
+                    parent.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(true);
+                }
             }
         }
         // Default key commands
