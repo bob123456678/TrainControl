@@ -281,6 +281,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.3.4 [Beta]
     - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
+    - Fixed minor UI alignment issues
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive
@@ -416,6 +417,9 @@ Requires JDK 1.8+ and the following libraries:
         - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
     - Improved error logging
     - Fixed occasional UI initialization error on startup
+
+<details>
+<summary>View prior versions</summary>
 
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths
@@ -605,9 +609,6 @@ Requires JDK 1.8+ and the following libraries:
     - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection
     - Added a pop-up error message if an invalid layout file path is chosen via the "Choose Local Data Folder" button within Tools
     - Fixed a bug in the layout UI where wide text labels in the last column would sometimes lead to misaligned tracks
-
-<details>
-<summary>View prior versions</summary>
 
 * v1.10.10 [10/9/23]
     - Added a button within the autonomy settings tab to bulk clear all locomotives from the graph

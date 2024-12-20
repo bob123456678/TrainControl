@@ -160,7 +160,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Integer LOC_ICON_WIDTH = 296;
     
     // Max height of locomotive images
-    public static final Integer LOC_ICON_HEIGHT = 116;
+    public static final Integer LOC_ICON_HEIGHT = 114;
     
     // Width of button images
     public static final Integer BUTTON_ICON_WIDTH = 35;
@@ -1482,6 +1482,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         displayMenuBar();
         
         // Dynamically set this to prevent bug where the UI shrinks after computer sleeps
+        setMinimumSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
         setPreferredSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
     }
     
@@ -6850,9 +6851,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         ActiveLocLabel.setText("Locomotive Name");
         ActiveLocLabel.setToolTipText("Click to change mapping");
         ActiveLocLabel.setFocusable(false);
-        ActiveLocLabel.setMaximumSize(new java.awt.Dimension(296, 23));
-        ActiveLocLabel.setMinimumSize(new java.awt.Dimension(296, 23));
-        ActiveLocLabel.setPreferredSize(new java.awt.Dimension(296, 23));
+        ActiveLocLabel.setMaximumSize(new java.awt.Dimension(296, 25));
+        ActiveLocLabel.setMinimumSize(new java.awt.Dimension(296, 25));
+        ActiveLocLabel.setPreferredSize(new java.awt.Dimension(296, 25));
         ActiveLocLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 ActiveLocLabelMouseReleased(evt);
