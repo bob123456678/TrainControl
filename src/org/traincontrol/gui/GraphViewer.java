@@ -525,7 +525,7 @@ final public class GraphViewer extends javax.swing.JFrame
                 
                 menuItem.addActionListener(event -> 
                     {
-                        // This will returning not null if the window is visible
+                        // This will return not null if the window is visible
                         if (getGraphEdgeEditor() != null)
                         {
                             JOptionPane.showMessageDialog((Component) swingView,
@@ -573,7 +573,7 @@ final public class GraphViewer extends javax.swing.JFrame
                                 else
                                 {
                                     graphEdgeEdit = new GraphEdgeEdit(parent, mainGraph, parent.getModel().getAutoLayout().getEdge(dialogResult));
-                                    // Ensure the dimensions are set before setting location
+                                    // Align with main window.  Graph window coordinates are not correct for some reason
                                     graphEdgeEdit.setLocation(
                                         parent.getX() + (parent.getWidth() - graphEdgeEdit.getWidth()) / 2,
                                         parent.getY() + (parent.getHeight() - graphEdgeEdit.getHeight()) / 2
