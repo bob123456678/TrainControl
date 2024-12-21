@@ -232,6 +232,24 @@ abstract public class Accessory
         return null;
     }
     
+    /**
+     * The inverse of stringToAccessorySetting, for this specific Accessory
+     * @return 
+     */
+    public String toAccessorySettingString()
+    {
+        // Signal
+        if (!this.isSwitch())
+        {
+             return this.name + "," + (this.isGreen() ? accessorySetting.GREEN.toString().toLowerCase() : accessorySetting.RED.toString().toLowerCase());
+        }
+        // Switch
+        else
+        {
+             return this.name + "," + (this.isStraight() ? accessorySetting.STRAIGHT.toString().toLowerCase() : accessorySetting.TURN.toString().toLowerCase());
+        }
+    }
+    
     @Override
     public String toString()
     {

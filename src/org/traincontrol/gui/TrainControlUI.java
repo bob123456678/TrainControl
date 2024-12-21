@@ -2104,6 +2104,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 this.routeEditor.appendCommand(address, this.model.getAccessoryState(address));
             }
+            
+            // Pass the event to the lock edge editor
+            if (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null && this.graphViewer.getGraphEdgeEditor().isCaptureCommandsSelected())
+            {
+                this.graphViewer.getGraphEdgeEditor().appendCommand(this.model.getAccessoryByAddress(address).toAccessorySettingString());
+            }
         }));
     }
     

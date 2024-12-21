@@ -44,16 +44,28 @@ final public class GraphViewer extends javax.swing.JFrame
     private final View swingView;
     private final Graph mainGraph;
     
+    private GraphEdgeEdit graphEdgeEdit;
+    
     private String lastHoveredNode;
     private String lastClickedNode;
     
     private Locomotive clipboard;
     
     public static final String WINDOW_TITLE = "Autonomy Graph";
-
+    
     public Graph getMainGraph()
     {
         return mainGraph;
+    }
+    
+    public GraphEdgeEdit getGraphEdgeEditor()
+    {
+        if (this.graphEdgeEdit != null && this.graphEdgeEdit.isVisible())
+        {
+            return graphEdgeEdit;
+        }
+        
+        return null;
     }
     
     final class RightClickMenu extends JPopupMenu
@@ -510,8 +522,19 @@ final public class GraphViewer extends javax.swing.JFrame
             if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
             {
                 menuItem = new JMenuItem("Edit outgoing Edge...");
+                
                 menuItem.addActionListener(event -> 
                     {
+                        // This will returning not null if the window is visible
+                        if (getGraphEdgeEditor() != null)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "Only one edge can be edited at a time.");
+                            getGraphEdgeEditor().toFront();
+                            getGraphEdgeEditor().requestFocus();
+                            return;
+                        }
+                        
                         // Get all point names except this one
                         List<String> edgeNames = new LinkedList<>();
 
@@ -549,19 +572,12 @@ final public class GraphViewer extends javax.swing.JFrame
                                 }
                                 else
                                 {
-                                    GraphEdgeEdit edit = new GraphEdgeEdit(parent, parent.getModel().getAutoLayout().getEdge(dialogResult));
-
-                                    int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
-                                            "Edit Edge " + dialogResult, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                                    if(dialogResult2 == JOptionPane.OK_OPTION)
-                                    {
-                                        edit.validateAndApplyConfigCommands();
-                                        edit.applyLockEdges();
-                                        parent.updateEdgeLength(parent.getModel().getAutoLayout().getEdge(dialogResult), mainGraph);
-                                    }
-       
-                                    parent.repaintAutoLocList(false);
-                                    parent.getModel().getAutoLayout().refreshUI();
+                                    graphEdgeEdit = new GraphEdgeEdit(parent, mainGraph, parent.getModel().getAutoLayout().getEdge(dialogResult));
+                                    // Ensure the dimensions are set before setting location
+                                    graphEdgeEdit.setLocation(
+                                        parent.getX() + (parent.getWidth() - graphEdgeEdit.getWidth()) / 2,
+                                        parent.getY() + (parent.getHeight() - graphEdgeEdit.getHeight()) / 2
+                                    );
                                 }
                             }
                             catch (Exception e)
