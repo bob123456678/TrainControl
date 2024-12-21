@@ -1,0 +1,17 @@
+{
+    "points": [
+
+    ],
+    "edges": [
+
+    ],
+    "minDelay": 3,
+    "maxDelay": 10,
+    "defaultLocSpeed": 35,
+    "preArrivalSpeedReduction": 0.5,
+    "turnOffFunctionsOnArrival": true,
+    "turnOnFunctionsOnDeparture": true,
+    "atomicRoutes": true,
+    "maxLocInactiveSeconds": 120,
+    "timetable": []
+}

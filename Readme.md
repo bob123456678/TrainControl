@@ -281,7 +281,10 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.3.4 [Beta]
     - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
+    - When initializing a new autonomy graph, added an option to load a sample graph corresponding to the sample layout
+    - Updated text labels in track diagrams to match the UI font
     - Fixed minor UI alignment issues
+    - Fixed autonomy graph integrity error where S88 sensors could be removed from stations once created
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive

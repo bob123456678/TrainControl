@@ -214,47 +214,6 @@ final public class GraphViewer extends javax.swing.JFrame
                 add(menuItem);
             }
             
-            // Edit sensor
-            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
-            menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the s88 sensor address for " + nodeName + ":",
-                        p.getS88());
-
-                    if (dialogResult != null)
-                    {
-                        dialogResult = dialogResult.trim();
-
-                        try
-                        {
-                            Integer value;
-                            if (dialogResult.equals(""))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                value = Integer.valueOf(dialogResult);
-                            }
-
-                            p.setS88(value);
-
-                            ui.updatePoint(p, mainGraph);
-
-                            parent.repaintAutoLocList(false);
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Invalid value (must be a non-negative integer, or blank to disable)");
-                        }
-                    }
-                }
-            );     
-
-            add(menuItem);
-            
             // Excluded locomotives
             menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
             menuItem.setToolTipText("Control+E/U to exclude/unexclude active locomotive");
@@ -285,6 +244,107 @@ final public class GraphViewer extends javax.swing.JFrame
 
             add(menuItem);
             
+            // Edit sensor
+            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
+            menuItem.addActionListener(event -> 
+                {
+                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                        "Enter the s88 sensor address for " + nodeName + ":",
+                        p.getS88());
+
+                    if (dialogResult != null)
+                    {
+                        dialogResult = dialogResult.trim();
+
+                        try
+                        {
+                            Integer value;
+                            if (dialogResult.equals(""))
+                            {
+                                value = null;
+                            }
+                            else
+                            {
+                                value = Integer.valueOf(dialogResult);
+                            }
+                            
+                            p.setS88(value);
+
+                            ui.updatePoint(p, mainGraph);
+
+                            parent.repaintAutoLocList(false);
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "Invalid value (must be a non-negative integer, or blank to disable if not a station)");
+                        }
+                    }
+                }
+            );     
+
+            add(menuItem);
+            
+            addSeparator();
+                        
+            // Allow changes because locomotive on non-stations will by design not run
+            //if (!p.isDestination() || !p.isOccupied())
+            menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
+            menuItem.addActionListener(event -> { 
+                try
+                { 
+                    p.setDestination(!p.isDestination());
+                    // parent.getModel().getAutoLayout().refreshUI();
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(false); 
+                } 
+                catch (Exception ex) 
+                { 
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        ex.getMessage()); 
+                }
+            });
+
+            add(menuItem);
+
+            menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
+            menuItem.addActionListener(event -> { 
+                try
+                { 
+                    if (!p.isTerminus()) p.setDestination(true);
+                    
+                    p.setTerminus(!p.isTerminus());
+                    // parent.getModel().getAutoLayout().refreshUI();
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(false); 
+                } 
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        ex.getMessage()); 
+                }
+            });
+
+            add(menuItem);
+            
+            menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " point");
+            menuItem.addActionListener(event -> { 
+                try
+                { 
+                    p.setReversing(!p.isReversing());
+                    // parent.getModel().getAutoLayout().refreshUI();
+                    ui.updatePoint(p, mainGraph);
+                    parent.repaintAutoLocList(false); 
+                } 
+                catch (Exception ex) 
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        ex.getMessage()); 
+                }
+            });
+
+            add(menuItem);
+               
             addSeparator();
             
             // Enable/disable point
@@ -307,64 +367,6 @@ final public class GraphViewer extends javax.swing.JFrame
             add(menuItem);
             addSeparator();
 
-            menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    if (!p.isTerminus()) p.setDestination(true);
-                    
-                    p.setTerminus(!p.isTerminus());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-            
-            // Allow changes because locomotive on non-stations will by design not run
-            //if (!p.isDestination() || !p.isOccupied())
-            menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    p.setDestination(!p.isDestination());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex) 
-                { 
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-               
-            menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " point");
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    p.setReversing(!p.isReversing());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex) 
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-                                    
             // Rename option applicable to all nodes
             menuItem = new JMenuItem("Rename " + nodeName);
             menuItem.addActionListener(event -> 
@@ -401,6 +403,42 @@ final public class GraphViewer extends javax.swing.JFrame
                         
             // Add edge
             addSeparator();
+            
+            if (lastClickedNode != null && !lastClickedNode.equals(p.getName()))
+            {
+                menuItem = new JMenuItem("Connect to " + lastClickedNode);
+                menuItem.setToolTipText("Last node that was left-clicked.");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        if (parent.getModel().getAutoLayout().getPoint(lastClickedNode) == null)
+                        {
+                            JOptionPane.showMessageDialog((Component) swingView,
+                                "This point name does not exist.");
+                        }
+                        else
+                        {
+                            // Add the edge
+                            parent.getModel().getAutoLayout().createEdge(nodeName, lastClickedNode);
+
+                            Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, lastClickedNode);
+
+                            ui.addEdge(e, mainGraph);
+                            parent.repaintAutoLocList(false);
+                            parent.getModel().getAutoLayout().refreshUI();
+                            lastClickedNode = null;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog((Component) swingView,
+                            "Error adding edge.");
+                    }
+                });
+  
+                add(menuItem);
+            }
             
             menuItem = new JMenuItem("Connect to Point...");
             menuItem.addActionListener(event -> 
@@ -468,42 +506,6 @@ final public class GraphViewer extends javax.swing.JFrame
             }); 
             
             add(menuItem);
-            
-            if (lastClickedNode != null && !lastClickedNode.equals(p.getName()))
-            {
-                menuItem = new JMenuItem("Connect to " + lastClickedNode);
-                menuItem.setToolTipText("Last node that was left-clicked.");
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        if (parent.getModel().getAutoLayout().getPoint(lastClickedNode) == null)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "This point name does not exist.");
-                        }
-                        else
-                        {
-                            // Add the edge
-                            parent.getModel().getAutoLayout().createEdge(nodeName, lastClickedNode);
-
-                            Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, lastClickedNode);
-
-                            ui.addEdge(e, mainGraph);
-                            parent.repaintAutoLocList(false);
-                            parent.getModel().getAutoLayout().refreshUI();
-                            lastClickedNode = null;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "Error adding edge.");
-                    }
-                });
-  
-                add(menuItem);
-            }
             
             if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
             {

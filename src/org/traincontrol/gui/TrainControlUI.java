@@ -15,11 +15,13 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -112,6 +114,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
     public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
     public static final String GRAPH_CSS_FILE = "graph.css";
+    public static final String AUTONOMY_BLANK = "sample_autonomy_blank.json";
+    public static final String AUTONOMY_SAMPLE = "sample_autonomy.json";
     public static final String RESOURCE_PATH = "resources/";
     public static final String DEMO_LAYOUT_OUTPUT_PATH = "sample_layout/";
     
@@ -5014,7 +5018,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
-        loadDefaultBlankGraph.setText("Initialize Blank Graph");
+        loadDefaultBlankGraph.setText("Initialize New Graph");
         loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
         loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
         loadDefaultBlankGraph.setContentAreaFilled(false);
@@ -5051,7 +5055,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                         .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE)
                         .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -10732,33 +10736,39 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_startAutonomyActionPerformed
 
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
-        int dialogResult = JOptionPane.showConfirmDialog(this,
-            "Do you want to load an empty graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
-            "Confirm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if(dialogResult == JOptionPane.OK_OPTION)
-        {
-            this.autonomyJSON.setText(
-                "{\n" +
-                "    \"points\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"edges\": [\n" +
-                "\n" +
-                "    ],\n" +
-                "    \"minDelay\": 3,\n" +
-                "    \"maxDelay\": 10,\n" +
-                "    \"defaultLocSpeed\": 35,\n" +
-                "    \"preArrivalSpeedReduction\": 0.5,\n" +
-                "    \"turnOffFunctionsOnArrival\": true,\n" +
-                "    \"turnOnFunctionsOnDeparture\": true,\n" +
-                "    \"atomicRoutes\": true,\n" +
-                "    \"maxLocInactiveSeconds\": 120,\n" +
-                "    \"timetable\": []\n" +
-                "}"
-            );
+        
 
-            if (evt != null) this.validateButtonActionPerformed(null);
+        String[] options = {"Blank Graph", "Sample Graph", "Cancel"};
+        int choice = JOptionPane.showOptionDialog(this, "Do you want to load a new graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
+             "Graph Selection",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+
+        switch (choice)
+        {
+            case 0: // Blank
+            case 1: // Sample
+                
+                try
+                {
+                    this.autonomyJSON.setText(
+                       new BufferedReader(new InputStreamReader(TrainControlUI.class.getResource(RESOURCE_PATH + (choice == 1 ? AUTONOMY_SAMPLE : AUTONOMY_BLANK)).openStream())).lines().collect(Collectors.joining("\n"))
+                    );
+
+                    if (evt != null) this.validateButtonActionPerformed(null);
+                }
+                catch (IOException e)
+                {
+                    JOptionPane.showMessageDialog(this, "Error opening the graph file.");
+                    this.model.log(e);
+                }
+                break;
+            case 2: // Cancel
+                break;
+            default:
+                break;
         }
+    
+
     }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
 
     private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed

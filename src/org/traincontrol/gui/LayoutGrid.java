@@ -141,7 +141,7 @@ public class LayoutGrid
                     text.setText(c.getLabel());
                     text.setForeground(Color.BLACK);
                     text.setBackground(Color.WHITE);
-                    text.setFont(new Font("Sans Serif", Font.PLAIN, size / 2));
+                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
                     
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
