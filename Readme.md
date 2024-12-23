@@ -286,6 +286,7 @@ Requires JDK 1.8+ and the following libraries:
         - Simplified the `newSwitch` and `newSignal` API methods in `MarklinControlStation` to only require the logical address
     - Routes
         - Accessory commands are now easier to read (i.e. "Switch 1,turn" instead of "1,1")
+        - Tiles affected by routes will now be highlighted in the track diagrams
     - Autonomy graph
         - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
         - When editing edges, added a new option to capture switch and signal commands from the track diagram

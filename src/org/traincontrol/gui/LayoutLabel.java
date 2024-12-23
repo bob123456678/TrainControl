@@ -10,9 +10,11 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Map;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.util.ImageUtil;
 
 /**
  *
@@ -26,6 +28,13 @@ public final class LayoutLabel extends JLabel
     private String imageName;
     private final int size;
     private final TrainControlUI tcUI;
+    
+    // Temporarily highlight changed tiles
+    private static final int HIGHLIGHT_DURATION = 1500;
+    private static final int CLICK_TIMEOUT = 2000;
+    private long lastClicked = 0;
+    
+    private Icon lastIcon;
     
     public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI tcUI)
     {
@@ -98,7 +107,7 @@ public final class LayoutLabel extends JLabel
                                     return;
                                 }
                             }
-                            
+                            lastClicked = System.currentTimeMillis();
                             component.execSwitching();
                         }  
                     });    
@@ -131,10 +140,11 @@ public final class LayoutLabel extends JLabel
      * Sets the image based on the component's state
      * @param update are we updating an existing image?
      */
-    private synchronized void setImage(boolean update)
+    private void setImage(boolean update)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
+        javax.swing.SwingUtilities.invokeLater(
+        new Thread(() ->
+        {            
             if (this.component != null)
             {            
                 // Special handling for text labels
@@ -166,9 +176,32 @@ public final class LayoutLabel extends JLabel
                             img = imageCache.get(key);
                         }
                         
-                        this.setIcon(new javax.swing.ImageIcon(
+                        boolean hadIcon = (this.getIcon() != null);
+                        lastIcon = new javax.swing.ImageIcon(
                             img     
-                        )); 
+                        );
+                        
+                        this.setIcon(lastIcon); 
+                        
+                        // Temporarily highlight changes when they happen from a route/CS/keyboard command
+                        if ((this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                        {
+                            new Thread(() -> 
+                            {
+                                this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
+
+                                try
+                                {
+                                    Thread.sleep(HIGHLIGHT_DURATION);
+                                } 
+                                catch (InterruptedException ex) { }
+
+                                if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                                {
+                                    this.setIcon(lastIcon);
+                                }
+                            }).start();
+                        }
                         
                         // Show a tooltip in the UI
                         if (!"".equals(this.component.toSimpleString()))
@@ -212,12 +245,12 @@ public final class LayoutLabel extends JLabel
             {
                 if (!this.component.getImageName(size).equals(this.imageName))
                 {
-                    this.setImage(true);    
+                    this.setImage(true);  
                 }
             }
         }).start();
     }
-    
+        
     /**
      * An empty icon with arbitrary width and height.
      */
