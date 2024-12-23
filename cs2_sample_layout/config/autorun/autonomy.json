@@ -4,8 +4,28 @@
             "name": "BottomCrossover",
             "station": false,
             "s88": 14,
+            "excludedLocs": [
+                "MZ 1425 DSB",
+                "MY 1126 ATCS",
+                "MY 1150 DSB"
+            ],
             "x": 505,
             "y": 255
+        },
+        {
+            "name": "BottomExitVIrt",
+            "station": false,
+            "excludedLocs": [
+                "EU07-314",
+                "MZ 1425 DSB",
+                "MY 1126 ATCS",
+                "MF 5028 DSB",
+                "ER 2035 DSB",
+                "MF+ER DSB",
+                "MY 1150 DSB"
+            ],
+            "x": 455,
+            "y": 110
         },
         {
             "name": "BottomInner",
@@ -13,6 +33,14 @@
             "s88": 1011,
             "maxTrainLength": 0,
             "priority": -3,
+            "excludedLocs": [
+                "MZ 1425 DSB",
+                "MY 1126 ATCS",
+                "MF 5028 DSB",
+                "ER 2035 DSB",
+                "MF+ER DSB",
+                "MY 1150 DSB"
+            ],
             "x": 567,
             "y": 182
         },
@@ -22,6 +50,14 @@
             "s88": 2011,
             "maxTrainLength": 3,
             "priority": -2,
+            "excludedLocs": [
+                "MZ 1425 DSB",
+                "MY 1126 ATCS",
+                "MF 5028 DSB",
+                "ER 2035 DSB",
+                "MF+ER DSB",
+                "MY 1150 DSB"
+            ],
             "x": 612,
             "y": 298
         },
@@ -30,12 +66,8 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
-            "excludedLocs": [
-                "3E/1-045",
-                "EN57-1079"
-            ],
-            "x": 832,
-            "y": 48
+            "x": 836,
+            "y": 51
         },
         {
             "name": "BottomMainAPre",
@@ -49,15 +81,6 @@
             "station": true,
             "s88": 10,
             "maxTrainLength": 4,
-            "loc": {
-                "name": "SU46-035",
-                "reversible": false,
-                "speed": 52,
-                "arrivalFunc": 3,
-                "departureFunc": 20,
-                "trainLength": 3
-            },
-            "excludedLocs": ["EN57-1079"],
             "x": 955,
             "y": 5
         },
@@ -65,11 +88,6 @@
             "name": "BottomMainBCPre",
             "station": false,
             "s88": 1006,
-            "excludedLocs": [
-                "SU45-118",
-                "SP45-090",
-                "ST44-613"
-            ],
             "x": 483,
             "y": -1
         },
@@ -78,7 +96,6 @@
             "station": true,
             "s88": 4,
             "maxTrainLength": 2,
-            "excludedLocs": ["EN57-1079"],
             "x": 1025,
             "y": -11
         },
@@ -102,7 +119,6 @@
             "name": "BottomMainPost",
             "station": false,
             "s88": 2013,
-            "excludedLocs": ["EN57-1079"],
             "x": 1188,
             "y": 122
         },
@@ -111,15 +127,8 @@
             "station": true,
             "s88": 1009,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EU46-520",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 15
-            },
             "x": 561,
-            "y": 125
+            "y": 126
         },
         {
             "name": "BottomSecondaryPre",
@@ -200,11 +209,6 @@
             "station": true,
             "s88": 1001,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "EN57-1079",
-                "reversible": true,
-                "speed": 35
-            },
             "x": 908,
             "y": 353
         },
@@ -268,14 +272,6 @@
             "s88": 2002,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "ET22-951",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 14,
-                "departureFunc": 3,
-                "trainLength": 3
-            },
             "x": 1084,
             "y": 180
         },
@@ -286,14 +282,6 @@
             "s88": 2003,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "ET21-442",
-                "reversible": false,
-                "speed": 62,
-                "arrivalFunc": 2,
-                "departureFunc": 16,
-                "trainLength": 4
-            },
             "x": 1084,
             "y": 224
         },
@@ -304,14 +292,6 @@
             "s88": 2009,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "TKt 63 PKP",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 2,
-                "departureFunc": 11,
-                "trainLength": 3
-            },
             "x": 1083,
             "y": 266
         },
@@ -398,14 +378,6 @@
             "s88": 1010,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "MCK ME",
-                "reversible": false,
-                "speed": 51,
-                "arrivalFunc": 12,
-                "departureFunc": 17,
-                "trainLength": 3
-            },
             "x": 600,
             "y": 425
         },
@@ -447,14 +419,6 @@
             "s88": 1023,
             "maxTrainLength": 0,
             "priority": 1,
-            "loc": {
-                "name": "ST44-613",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 2,
-                "departureFunc": 18,
-                "trainLength": 2
-            },
             "x": 297,
             "y": 418
         },
@@ -484,7 +448,6 @@
         {
             "name": "TopParkReversing",
             "station": false,
-            "active": false,
             "s88": 2012,
             "reversing": true,
             "x": 599,
@@ -497,14 +460,6 @@
             "s88": 1024,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "ICE TD DSB",
-                "reversible": false,
-                "speed": 42,
-                "arrivalFunc": 3,
-                "departureFunc": 4,
-                "trainLength": 5
-            },
             "x": 689,
             "y": 563
         },
@@ -524,11 +479,6 @@
             "s88": 1032,
             "maxTrainLength": 0,
             "priority": -2,
-            "loc": {
-                "name": "SU46-043",
-                "reversible": false,
-                "speed": 35
-            },
             "x": 350,
             "y": 35
         },
@@ -539,12 +489,6 @@
             "s88": 1031,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "SM42-926",
-                "reversible": false,
-                "speed": 20,
-                "trainLength": 2
-            },
             "x": 582,
             "y": -61
         },
@@ -565,6 +509,14 @@
             "s88": 1018,
             "maxTrainLength": 0,
             "reversing": true,
+            "loc": {
+                "name": "SU46-035",
+                "reversible": false,
+                "speed": 52,
+                "arrivalFunc": 3,
+                "departureFunc": 20,
+                "trainLength": 3
+            },
             "x": 818,
             "y": -55
         },
@@ -591,12 +543,6 @@
             "s88": 1030,
             "x": 350,
             "y": 184
-        },
-        {
-            "name": "TunnelPreVirtual",
-            "station": false,
-            "x": 434,
-            "y": 101
         },
         {
             "name": "TunnelReverse",
@@ -641,6 +587,10 @@
                     "state": "straight"
                 },
                 {
+                    "acc": "Switch 41",
+                    "state": "turn"
+                },
+                {
                     "acc": "Switch 104",
                     "state": "straight"
                 }
@@ -677,6 +627,11 @@
             ]
         },
         {
+            "start": "BottomExitVIrt",
+            "end": "Tunnel",
+            "length": 0
+        },
+        {
             "start": "BottomInner",
             "end": "BottomCrossover",
             "length": 2,
@@ -701,6 +656,29 @@
         },
         {
             "start": "BottomInner",
+            "end": "BottomExitVIrt",
+            "length": 6,
+            "commands": [
+                {
+                    "acc": "Switch 10",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 41",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 103",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 104",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "BottomInner",
             "end": "BottomInnerOtherside",
             "length": 0,
             "commands": [
@@ -710,25 +688,6 @@
                 },
                 {
                     "acc": "Switch 59",
-                    "state": "turn"
-                }
-            ]
-        },
-        {
-            "start": "BottomInner",
-            "end": "TunnelPreVirtual",
-            "length": 6,
-            "commands": [
-                {
-                    "acc": "Switch 10",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 103",
-                    "state": "turn"
-                },
-                {
-                    "acc": "Switch 104",
                     "state": "turn"
                 }
             ]
@@ -1031,7 +990,17 @@
         {
             "start": "BottomMainCPre",
             "end": "BottomMainCTerm",
-            "length": 0
+            "length": 0,
+            "lockedges": [
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainB"
+                },
+                {
+                    "start": "BottomMainCPre",
+                    "end": "BottomMainC"
+                }
+            ]
         },
         {
             "start": "BottomMainCTerm",
@@ -1078,6 +1047,10 @@
                 {
                     "acc": "Switch 99",
                     "state": "straight"
+                },
+                {
+                    "acc": "Switch 41",
+                    "state": "turn"
                 },
                 {
                     "acc": "Signal 62",
@@ -2477,30 +2450,31 @@
             }]
         },
         {
-            "start": "TunnelPreVirtual",
-            "end": "Tunnel",
-            "length": 0
-        },
-        {
             "start": "TunnelReverse",
             "end": "BottomInnerOtherside",
             "length": 0,
-            "commands": [{
-                "acc": "Switch 10",
-                "state": "straight"
-            }],
+            "commands": [
+                {
+                    "acc": "Switch 10",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 41",
+                    "state": "turn"
+                }
+            ],
             "lockedges": [
                 {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
+                    "start": "BottomInner",
+                    "end": "BottomCrossover"
                 },
                 {
                     "start": "BottomInner",
                     "end": "BottomInnerOtherside"
                 },
                 {
-                    "start": "BottomInner",
-                    "end": "BottomCrossover"
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
                 }
             ]
         },
@@ -2526,13 +2500,671 @@
         }
     ],
     "minDelay": 4,
-    "maxDelay": 6,
+    "maxDelay": 10,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
     "turnOffFunctionsOnArrival": false,
     "turnOnFunctionsOnDeparture": true,
     "atomicRoutes": false,
     "maxLocInactiveSeconds": 120,
-    "timetable": [],
-    "simulate": false
+    "timetable": [
+        {
+            "executionTime": 1733813992153,
+            "secondsToNext": 1261,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "BottomInnerOtherside",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomExitVIrt"
+                },
+                {
+                    "start": "BottomExitVIrt",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733813996508,
+            "secondsToNext": 1880,
+            "loc": "SU45-098",
+            "path": [
+                {
+                    "start": "TopMainR2Inter",
+                    "end": "TopMainR2Pre"
+                },
+                {
+                    "start": "TopMainR2Pre",
+                    "end": "TopMainR2"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814056582,
+            "secondsToNext": 59912,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "TopMainR1Inter",
+                    "end": "TopMainR1Pre"
+                },
+                {
+                    "start": "TopMainR1Pre",
+                    "end": "TopMainR1"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814107951,
+            "secondsToNext": 45428,
+            "loc": "SM31-108",
+            "path": [
+                {
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR2Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814136947,
+            "secondsToNext": 27560,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "TopMainR1",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomSecondaryPre"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814176382,
+            "secondsToNext": 39153,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814229240,
+            "secondsToNext": 45098,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "BottomMainB",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR1Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814243617,
+            "secondsToNext": 4923,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814296673,
+            "secondsToNext": 56105,
+            "loc": "SU45-098",
+            "path": [
+                {
+                    "start": "TopMainR2",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomInnerOtherside"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814338948,
+            "secondsToNext": 10394,
+            "loc": "SM31-108",
+            "path": [
+                {
+                    "start": "TopMainR2Inter",
+                    "end": "TopMainR2Pre"
+                },
+                {
+                    "start": "TopMainR2Pre",
+                    "end": "TopMainR2"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814344721,
+            "secondsToNext": 27793,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainB"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814404697,
+            "secondsToNext": 29848,
+            "loc": "SU45-098",
+            "path": [{
+                "start": "BottomInnerOtherside",
+                "end": "BottomInner"
+            }]
+        },
+        {
+            "executionTime": 1733814410302,
+            "secondsToNext": 30993,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR2Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814488431,
+            "secondsToNext": 485,
+            "loc": "SM31-108",
+            "path": [
+                {
+                    "start": "TopMainR2",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomSecondaryPre"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814489899,
+            "secondsToNext": 61731,
+            "loc": "SU45-098",
+            "path": [{
+                "start": "BottomInner",
+                "end": "BottomInnerOtherside"
+            }]
+        },
+        {
+            "executionTime": 1733814537129,
+            "secondsToNext": 23793,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "TopMainR2Inter",
+                    "end": "TopMainR2Pre"
+                },
+                {
+                    "start": "TopMainR2Pre",
+                    "end": "TopMainR2"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814576204,
+            "secondsToNext": 26774,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "TopMainR1Inter",
+                    "end": "TopMainR1Pre"
+                },
+                {
+                    "start": "TopMainR1Pre",
+                    "end": "TopMainR1Bypass"
+                },
+                {
+                    "start": "TopMainR1Bypass",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomExitVIrt"
+                },
+                {
+                    "start": "BottomExitVIrt",
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814648724,
+            "secondsToNext": 95214,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "BottomMainB",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR2Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814750093,
+            "secondsToNext": 1034,
+            "loc": "SU45-098",
+            "path": [
+                {
+                    "start": "BottomInnerOtherside",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomExitVIrt"
+                },
+                {
+                    "start": "BottomExitVIrt",
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainCPre"
+                },
+                {
+                    "start": "BottomMainCPre",
+                    "end": "BottomMainC"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814754679,
+            "secondsToNext": 87674,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR1Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814862006,
+            "secondsToNext": 60007,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "TopMainR2",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomExitVIrt"
+                },
+                {
+                    "start": "BottomExitVIrt",
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814922563,
+            "secondsToNext": 79197,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "TopMainR2Inter",
+                    "end": "TopMainR2Pre"
+                },
+                {
+                    "start": "TopMainR2Pre",
+                    "end": "TopMainR2"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814988446,
+            "secondsToNext": 42741,
+            "loc": "SM31-108",
+            "path": [
+                {
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733814990414,
+            "secondsToNext": 39990,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "TopMainR1Inter",
+                    "end": "TopMainR1Pre"
+                },
+                {
+                    "start": "TopMainR1Pre",
+                    "end": "TopMainR1Bypass"
+                },
+                {
+                    "start": "TopMainR1Bypass",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815056998,
+            "secondsToNext": 65198,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "BottomMainA",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR1Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815335893,
+            "secondsToNext": 32019,
+            "loc": "SM31-108",
+            "path": [
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainAPre"
+                },
+                {
+                    "start": "BottomMainAPre",
+                    "end": "BottomMainA"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815344633,
+            "secondsToNext": 12992,
+            "loc": "SU45-098",
+            "path": [
+                {
+                    "start": "BottomMainC",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR2Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815395336,
+            "secondsToNext": 48881,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "TopMainR2",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomSecondaryPre"
+                },
+                {
+                    "start": "BottomSecondaryPre",
+                    "end": "BottomSecondary"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815452125,
+            "secondsToNext": 56777,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "TopMainR1Inter",
+                    "end": "TopMainR1Pre"
+                },
+                {
+                    "start": "TopMainR1Pre",
+                    "end": "TopMainR1"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815571497,
+            "secondsToNext": 114748,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "BottomSecondary",
+                    "end": "TunnelPre"
+                },
+                {
+                    "start": "TunnelPre",
+                    "end": "Tunnel"
+                },
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainB"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815685775,
+            "secondsToNext": 3618,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "BottomInner",
+                    "end": "BottomExitVIrt"
+                },
+                {
+                    "start": "BottomExitVIrt",
+                    "end": "Tunnel"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815691848,
+            "secondsToNext": 75176,
+            "loc": "SU46-012",
+            "path": [
+                {
+                    "start": "BottomMainB",
+                    "end": "BottomMainPost"
+                },
+                {
+                    "start": "BottomMainPost",
+                    "end": "RampUp"
+                },
+                {
+                    "start": "RampUp",
+                    "end": "TopMainR1Inter"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815769292,
+            "secondsToNext": 28879,
+            "loc": "SP45-090",
+            "path": [
+                {
+                    "start": "TopMainR1",
+                    "end": "TopMainPost"
+                },
+                {
+                    "start": "TopMainPost",
+                    "end": "RampDown"
+                },
+                {
+                    "start": "RampDown",
+                    "end": "BottomInner"
+                },
+                {
+                    "start": "BottomInner",
+                    "end": "BottomInnerOtherside"
+                }
+            ]
+        },
+        {
+            "executionTime": 1733815789328,
+            "secondsToNext": 0,
+            "loc": "SP45-204",
+            "path": [
+                {
+                    "start": "Tunnel",
+                    "end": "BottomMainBCPre"
+                },
+                {
+                    "start": "BottomMainBCPre",
+                    "end": "BottomMainB"
+                }
+            ]
+        }
+    ]
 }

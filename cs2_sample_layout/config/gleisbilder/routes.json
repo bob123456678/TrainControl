@@ -1722,13 +1722,29 @@
         "conditionS88": "1012,0\n1022,0",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "true"
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true"
+                }
             }
-        }]
+        ]
     },
     {
         "name": "Auto Top Track 3a",
@@ -1737,13 +1753,29 @@
         "conditionS88": "1012,1",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
             }
-        }]
+        ]
     },
     {
         "name": "Auto Top Track 3b",
@@ -1752,13 +1784,29 @@
         "conditionS88": "1022,1",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false"
+                }
             }
-        }]
+        ]
     },
     {
         "name": "Lower Parking 12",
@@ -2563,7 +2611,7 @@
         "id": 59,
         "s88": 2013,
         "conditionS88": "9,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2578,7 +2626,7 @@
         "id": 60,
         "s88": 2013,
         "conditionS88": "10,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2593,7 +2641,7 @@
         "id": 61,
         "s88": 1022,
         "conditionS88": "2015,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2608,7 +2656,7 @@
         "id": 62,
         "s88": 1023,
         "conditionS88": "2015,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2623,7 +2671,7 @@
         "id": 63,
         "s88": 9,
         "conditionS88": "2013,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2638,7 +2686,7 @@
         "id": 64,
         "s88": 10,
         "conditionS88": "2013,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2653,7 +2701,7 @@
         "id": 65,
         "s88": 2012,
         "conditionS88": "1022,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2668,7 +2716,7 @@
         "id": 66,
         "s88": 2012,
         "conditionS88": "1023,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2683,7 +2731,7 @@
         "id": 67,
         "s88": 1009,
         "conditionS88": "1030,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2698,7 +2746,7 @@
         "id": 68,
         "s88": 2013,
         "conditionS88": "4,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2713,7 +2761,7 @@
         "id": 69,
         "s88": 4,
         "conditionS88": "2013,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
