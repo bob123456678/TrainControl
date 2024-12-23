@@ -302,16 +302,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         
                         if (c.isSwitch() || c.isUncoupler())
                         {
-                            newSwitch(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SWITCH, c.getState() != 1);
 
                             if (c.isThreeWay())
                             {
-                                newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
+                                newAccessory(Integer.toString(c.getAddress() + 1), newAddress + 1, Accessory.accessoryType.SWITCH, c.getState() == 2);                                            
                             }
                         }
                         else if (c.isSignal())
                         {
-                            newSignal(Integer.toString(c.getAddress()), newAddress, c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SIGNAL, c.getState() != 1);
                         }
 
                         this.log("Adding " + this.accDB.getById(targetAddress).getName());
@@ -1131,28 +1131,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
     /**
      * Creates a new signal (with the acuation count from the existing accessory, otherwise with 0 actuations)
-     * @param name
-     * @param address
+     * @param address - the logical address (1 more than mm2 address)
      * @param state
      * @return 
     */
     @Override
-    public final MarklinAccessory newSignal(String name, int address, boolean state)
+    public final MarklinAccessory newSignal(int address, boolean state)
     {        
-        return newAccessory(name, address, Accessory.accessoryType.SIGNAL, state);
+        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SIGNAL, state);
     }
     
     /**
      * Creates a new switch (with the acuation count from the existing accessory, otherwise with 0 actuations)
-     * @param name
-     * @param address
+     * @param address - the logical address (1 more than mm2 address)
      * @param state
      * @return 
      */
     @Override
-    public final MarklinAccessory newSwitch(String name, int address, boolean state)
+    public final MarklinAccessory newSwitch(int address, boolean state)
     {
-        return newAccessory(name, address, Accessory.accessoryType.SWITCH, state);
+        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SWITCH, state);
     }
     
     /**
@@ -1736,7 +1734,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Adds a new accessory to the internal database (with the acuation count from the existing accessory, otherwise with 0 actuations)
      * @param name
-     * @param address
+     * @param address - this should be 1 less than the logical address, i.e. Signal 1 has address 0
      * @param type
      * @param state
      * @return 
@@ -1751,7 +1749,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Adds a new accessory to the internal database
      * @param name
-     * @param address
+     * @param address - this should be 1 less than the logical address, i.e. Signal 1 has address 0
      * @param type
      * @param state
      * @param numActuations
@@ -1898,12 +1896,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Sets the state of the passed accessory by address.  
      * If the accessory does not exist, a new switch with that access is created
-     * @param address
+     * @param address greater than 1
      * @param state 
      */
     @Override
     public void setAccessoryState(int address, boolean state)
-    {              
+    {      
+        // Sanitfy check
+        if (address < 1)
+        {
+            this.log("Warning: Invalid address passed to setAccessoryState: " + address);   
+            
+            return;
+        }
+        
         MarklinAccessory a;
         
         if (this.accDB.hasId(MarklinAccessory.UIDfromAddress(address - 1)))
@@ -1912,7 +1918,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            a = this.newSwitch(Integer.toString(address), address - 1, !state);
+            a = this.newSwitch(address, !state);
         }
         
         if (state)
@@ -2032,12 +2038,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Gets the state of the accessory with the specified address.
      * If it does not exist, a new switch is created.
-     * @param address
+     * @param address greater than 1
      * @return 
      */
     @Override
     public boolean getAccessoryState(int address)
     { 
+        // Sanity check
+        if (address < 1)
+        {
+            this.log("Warning: Invalid address passed to getAccessoryState: " + address);
+            
+            return false;
+        }
+        
         // Get by name because UID in database != address
         if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)) != null)
         {
@@ -2045,7 +2059,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.newSwitch(Integer.toString(address), address - 1, false);
+            this.newSwitch(address, false);
         }
         
         return false;
@@ -2054,12 +2068,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Returns an accessory based on its numerical address.
      * If the address does not exist, a new switch is created.
-     * @param address
+     * @param address greater than 1
      * @return 
      */
     @Override
     public MarklinAccessory getAccessoryByAddress(int address)
     { 
+        // Sanity check
+        if (address < 1)
+        {
+            this.log("Warning: Invalid address passed to getAccessoryByAddress: " + address);
+            
+            return null;
+        }
+        
         // Get by name because UID in database != address
         if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)) != null)
         {
@@ -2067,7 +2089,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            return this.newSwitch(Integer.toString(address), address - 1, false);
+            return this.newSwitch(address, false);
         }        
     }
     

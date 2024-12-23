@@ -100,14 +100,15 @@ public class ProgrammaticControlExample
                 mySwitch3.setSwitched(true);
                 
                 // Manually add a new signal to the database so that it can be referenced by name
-                data.newSignal("4", 4, false);
+                // When creating an accessory, the MM2 address will be 1 less than the logical address
+                data.newSignal(4, false);
                 MarklinAccessory mySignal4 = data.getAccessoryByName("Signal 4");
                 
                 // Send command to ensure the state is consistent
                 mySignal4.green();
 
                 // Manually add a new switch to the database so that it can be referenced by name
-                data.newSwitch("5", 5, false);
+                data.newSwitch(5, false);
                 MarklinAccessory mySwitch5 = data.getAccessoryByName("Switch 5");
                 
                 // Send command to ensure the state is consistent

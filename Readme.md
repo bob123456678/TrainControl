@@ -283,6 +283,7 @@ Requires JDK 1.8+ and the following libraries:
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup
+        - Simplified the `newSwitch` and `newSignal` API methods in `MarklinControlStation` to only require the logical address
     - Routes
         - Accessory commands are now easier to read (i.e. "Switch 1,turn" instead of "1,1")
     - Autonomy graph

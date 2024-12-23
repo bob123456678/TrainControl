@@ -113,7 +113,7 @@ public class Edge
                     throw new Exception("Command " + accessory + " conflicts with switch with the same address.");
                 }
                 
-                control.newSignal(address.toString(), address, false);
+                control.newSignal(address, false);
                 control.log("Auto layout warning: created " + accessory);
             }
             else if (accessory.contains("Switch "))
@@ -125,7 +125,7 @@ public class Edge
                     throw new Exception("Command " + accessory + " conflicts with signal with the same address.");
                 }
 
-                control.newSwitch(address.toString(), address, false);
+                control.newSwitch(address, false);
                 control.log("Auto layout warning: created " + accessory);                       
             }
             else

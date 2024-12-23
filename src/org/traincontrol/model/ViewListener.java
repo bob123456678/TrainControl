@@ -60,8 +60,8 @@ public interface ViewListener
     public void parseAuto(String s);
     public Layout getAutoLayout();
     public boolean isDebug();
-    MarklinAccessory newSignal(String name, int address, boolean state);
-    MarklinAccessory newSwitch(String name, int address, boolean state);
+    MarklinAccessory newSignal(int address, boolean state);
+    MarklinAccessory newSwitch(int address, boolean state);
     public boolean getNetworkCommState();
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);

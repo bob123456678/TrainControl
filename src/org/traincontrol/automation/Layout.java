@@ -2804,7 +2804,7 @@ public class Layout
                                         //layout.invalidate();
                                     }
                                     
-                                    control.newSignal(address.toString(), address, false);
+                                    control.newSignal(address, false);
                                     control.log("Auto layout warning: created " + accessory);
                                 }
                                 else if (accessory.contains("Switch "))
@@ -2817,7 +2817,7 @@ public class Layout
                                         //layout.invalidate();
                                     }
                                     
-                                    control.newSwitch(address.toString(), address, false);
+                                    control.newSwitch(address, false);
                                     control.log("Auto layout warning: created " + accessory);                       
                                 }
                                 else

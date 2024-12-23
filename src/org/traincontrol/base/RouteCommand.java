@@ -372,7 +372,7 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a simple string representation of this command
-     * @param linkedAccessory the accessory object linked to this command's address
+     * @param linkedAccessory the accessory object linked to this command's address - so that we can pretty print the accessory type
      * @return 
      */
     public String toLine(Accessory linkedAccessory)
