@@ -273,4 +273,29 @@ public class ImageUtil
 
         return bufferedImage;
     }
+    
+    /**
+     * Highlights an icon
+     * @param originalIcon
+     * @return 
+     */
+    public static ImageIcon addHighlightOverlay(ImageIcon originalIcon)
+    {
+        int width = originalIcon.getIconWidth();
+        int height = originalIcon.getIconHeight();
+
+        BufferedImage highlightedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = highlightedImage.createGraphics();
+
+        // Draw the original image
+        g2d.drawImage(originalIcon.getImage(), 0, 0, null);
+
+        // Draw the yellow overlay
+        g2d.setColor(new Color(255, 255, 0, 128)); // Semi-transparent yellow
+        g2d.fillRect(0, 0, width, height);
+
+        g2d.dispose();
+
+        return new ImageIcon(highlightedImage);
+    }
 }
