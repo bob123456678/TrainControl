@@ -152,7 +152,7 @@ abstract public class Route
         
         for (RouteCommand r : this.route)
         {
-            out += r.toLine();
+            out += r.toLine(null);
         }
         
         return out.trim();

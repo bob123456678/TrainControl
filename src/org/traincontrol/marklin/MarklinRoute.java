@@ -668,7 +668,33 @@ public class MarklinRoute extends Route
             // TODO others not yet supported
             if (r.isAccessory())
             {
-                out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
+                // out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
+                out += r.toLine(network.getAccessoryByAddress(r.getAddress()));
+            }
+        }
+        
+        return out.trim();
+    }
+    
+    @Override
+    /**
+     * Returns a CSV representation of the route
+     * @return 
+     */
+    public String toCSV()
+    {
+        String out = "";
+        
+        for (RouteCommand r : this.route)
+        {
+            if (r.isAccessory())
+            {
+                // Pass through the accessory so we can pretty print its type
+                out += r.toLine(network.getAccessoryByAddress(r.getAddress()));
+            }
+            else
+            {
+                out += r.toLine(null);
             }
         }
         

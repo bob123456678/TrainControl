@@ -30,6 +30,9 @@ public class MarklinAccessory extends Accessory
     
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
+    
+    // Maximum MM2 address
+    public static final int MAX_ADDRESS = 255;
         
     /**
      * Constructor
@@ -38,6 +41,7 @@ public class MarklinAccessory extends Accessory
      * @param type
      * @param name
      * @param state
+     * @param numActuations
      */
     public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state, int numActuations)
     {
@@ -59,6 +63,15 @@ public class MarklinAccessory extends Accessory
         
         this.numActuations = numActuations;
         this.stateAtLastActuation = this.switched;
+    }
+    
+    /**
+     * Validates the accessory address
+     * @return 
+     */
+    public boolean isValidAddress()
+    {
+        return address >= 0 && address <= MAX_ADDRESS;
     }
     
     /**
@@ -135,12 +148,8 @@ public class MarklinAccessory extends Accessory
                 this.updateTiles();
                                                 
                 this.network.log("Setting " + this.getName() + " " +
-                    (this.isSignal() ? 
-                       (this.isSwitched() ? "red" : "green")
-                       :
-                       (this.isSwitched() ? "turn" : "straight")
-                       )
-                    );
+                    switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase()
+                );
             }
         }
     }
@@ -206,6 +215,40 @@ public class MarklinAccessory extends Accessory
     public int getUID()
     {
         return UID;
+    }
+    
+    /**
+     * Returns an accessory setting string for this accessory
+     * @return 
+     */
+    @Override
+    public String toAccessorySettingString()
+    {
+        // Add 1 because internal addresses start at 0
+        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, this.isSwitched());
+    }
+    
+    /**
+     * Returns an accessory setting string for this accessory and a hypothetical setting
+     * @param setting
+     * @return 
+     */
+    @Override
+    public String toAccessorySettingString(boolean setting)
+    {
+        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, setting);
+    }
+    
+    /**
+     * Returns an accessory setting string for the given accessory type, address, and setting.
+     * @param type
+     * @param address
+     * @param setting
+     * @return 
+     */
+    public static String toAccessorySettingString(accessoryType type, int address, boolean setting)
+    {        
+        return accessoryTypeToPrettyString(type) + " " + address + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
     }
     
     @Override

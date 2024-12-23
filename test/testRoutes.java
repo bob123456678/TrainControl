@@ -17,6 +17,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  *
@@ -175,6 +177,59 @@ public class testRoutes
         assert currentRoutes.equals(finalRoutes);
     }
     
+    @Test
+    public void testConstants() throws Exception
+    {
+        assertEquals(MarklinAccessory.stringToAccessoryType("Switch"), MarklinAccessory.accessoryType.SWITCH);
+        assertEquals(MarklinAccessory.stringToAccessoryType("switch"), MarklinAccessory.accessoryType.SWITCH);
+        assertEquals(MarklinAccessory.stringToAccessoryType("SWITCH"), MarklinAccessory.accessoryType.SWITCH);
+        assertEquals(MarklinAccessory.stringToAccessoryType(" SwITCH "), MarklinAccessory.accessoryType.SWITCH);
+        
+        boolean excepted = false;
+        
+        try
+        {
+            MarklinAccessory.accessoryType t = MarklinAccessory.stringToAccessoryType(" blah ");
+        }
+        catch(Exception e)
+        {
+            excepted = true;
+        }
+        
+        assertEquals(excepted, true);
+        
+        assertEquals(MarklinAccessory.stringToAccessoryType("Signal"), MarklinAccessory.accessoryType.SIGNAL);
+        assertEquals(MarklinAccessory.stringToAccessoryType("signal"), MarklinAccessory.accessoryType.SIGNAL);
+        assertEquals(MarklinAccessory.stringToAccessoryType("SIGNAL"), MarklinAccessory.accessoryType.SIGNAL);
+        assertEquals(MarklinAccessory.stringToAccessoryType(" SiGNAL "), MarklinAccessory.accessoryType.SIGNAL);
+        
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("turn"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("red"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("TURN"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("RED"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting(" Turn"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting(" Red"), true);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("green"), false);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("straight"), false);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("GREEN"), false);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("STRAIGHT"), false);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("Green "), false);
+        assertEquals(MarklinAccessory.stringAccessorySettingToSetting("Straight "), false);
+        
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 1, true), "Switch 1,turn");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 3, false), "Switch 3,straight");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 2, false), "Signal 2,green");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 4, true), "Signal 4,red");
+        
+        assertEquals(MarklinAccessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "Switch");
+        assertEquals(MarklinAccessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL), "Signal");
+        
+        assertEquals(MarklinAccessory.switchedToAccessorySetting(true, Accessory.accessoryType.SWITCH), Accessory.accessorySetting.TURN);
+        assertEquals(MarklinAccessory.switchedToAccessorySetting(false, Accessory.accessoryType.SWITCH), Accessory.accessorySetting.STRAIGHT);
+        assertEquals(MarklinAccessory.switchedToAccessorySetting(true, Accessory.accessoryType.SIGNAL), Accessory.accessorySetting.RED);
+        assertEquals(MarklinAccessory.switchedToAccessorySetting(false, Accessory.accessoryType.SIGNAL), Accessory.accessorySetting.GREEN);
+    }
+    
     /**
      * Exporting route to JSON
      * @throws IllegalArgumentException
@@ -182,7 +237,7 @@ public class testRoutes
      * @throws NoSuchFieldException 
      */
     @Test
-    public void testJSONExportImport() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    public void testJSONExportImport() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception
     {   
         List<MarklinRoute> currentRoutes = new ArrayList<>(model.getRoutes());
         List<Integer> currentIds = new ArrayList<>();
@@ -233,7 +288,7 @@ public class testRoutes
         {
             for (RouteCommand rc : r.getRoute())
             {
-                assertEquals(rc, RouteCommand.fromLine(rc.toLine()));
+                assertEquals(rc, RouteCommand.fromLine(rc.toLine(null)));
             }
         }
         

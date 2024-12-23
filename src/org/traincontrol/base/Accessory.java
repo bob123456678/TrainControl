@@ -211,6 +211,8 @@ abstract public class Accessory
         return numActuations;
     }
     
+    // Helper methods to convert accessory state to human-readable strings
+    
     /**
      * Converts a string (if valid) to an accessorySetting
      * @param setting
@@ -222,7 +224,7 @@ abstract public class Accessory
         {
             for (Accessory.accessorySetting a : Accessory.accessorySetting.values())
             {
-                if (setting.toLowerCase().equals(a.toString().toLowerCase()))
+                if (setting.trim().toLowerCase().equals(a.toString().toLowerCase()))
                 {
                     return a;
                 }
@@ -233,40 +235,118 @@ abstract public class Accessory
     }
     
     /**
-     * The inverse of stringToAccessorySetting, for this specific Accessory
+     * Converts turn/red to true, straight/green to false
+     * @param setting
      * @return 
+     * @throws java.lang.Exception 
      */
-    public String toAccessorySettingString()
+    public static boolean stringAccessorySettingToSetting(String setting) throws Exception
     {
-        // Signal
-        if (!this.isSwitch())
+        if (setting != null)
         {
-             return this.name + "," + (this.isGreen() ? accessorySetting.GREEN.toString().toLowerCase() : accessorySetting.RED.toString().toLowerCase());
+            setting = setting.trim().toLowerCase();
+            
+            if (accessorySetting.RED.toString().toLowerCase().equals(setting) || accessorySetting.TURN.toString().toLowerCase().equals(setting))
+            {
+                return true;
+            }
+            else if (accessorySetting.GREEN.toString().toLowerCase().equals(setting) || accessorySetting.STRAIGHT.toString().toLowerCase().equals(setting))
+
+            {
+                return false;
+            }  
         }
-        // Switch
-        else
-        {
-             return this.name + "," + (this.isStraight() ? accessorySetting.STRAIGHT.toString().toLowerCase() : accessorySetting.TURN.toString().toLowerCase());
-        }
+        
+        throw new Exception("Invalid accessory setting " + setting);  
     }
     
+    /**
+     * Converts a string (such as "switch") to the corresponding accessoryType
+     * @param type
+     * @return 
+     * @throws java.lang.Exception 
+     */
+    public static accessoryType stringToAccessoryType(String type) throws Exception
+    {
+        /*if (type != null)
+        {
+            type = type.trim().toLowerCase();
+
+            if (accessoryType.SWITCH.toString().toLowerCase().equals(type))
+            {
+                return accessoryType.SWITCH;
+            }
+            else if (accessoryType.SIGNAL.toString().toLowerCase().equals(type))
+            {
+                return accessoryType.SIGNAL;
+            }
+        }
+        return null;
+        */
+        
+        if (type != null)
+        {
+            for (Accessory.accessoryType a : Accessory.accessoryType.values())
+            {
+                if (type.trim().toLowerCase().equals(a.toString().toLowerCase()))
+                {
+                    return a;
+                }
+            }
+        }
+        
+        throw new Exception("Invalid accessory type " + type);  
+    }
+    
+    /**
+     * Converts a setting (true or false) plus an accessory type to the corresponding accessory setting (red, turn, etc.)
+     * @param setting
+     * @param type
+     * @return 
+     */
+    public static accessorySetting switchedToAccessorySetting(boolean setting, accessoryType type)
+    {
+        if (type == accessoryType.SIGNAL)
+        {
+            return setting ? accessorySetting.RED : accessorySetting.GREEN;
+        }
+        else if (type == accessoryType.SWITCH)
+        {
+            return setting ? accessorySetting.TURN : accessorySetting.STRAIGHT;
+        }
+        
+        return null;   
+    }
+    
+    /**
+     * Pretty printing for the accessory type (Signal, Switch)
+     * @param type
+     * @return 
+     */
+    public static String accessoryTypeToPrettyString(accessoryType type)
+    {
+        String str = type.toString();
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    } 
+        
+    /**
+     * Prints the accessory name and state in a standardized string, for this specific Accessory
+     * @return 
+     */
+    public abstract String toAccessorySettingString();
+    
+    /**
+     * Prints the accessory name and state in a standardized string, for this specific Accessory but with a hypothetical setting
+     * @param state
+     * @return 
+     */
+    public abstract String toAccessorySettingString(boolean state);
+
     @Override
     public String toString()
     {
-        if (this.isSignal())
-        {
-             return "Signal " + this.name + "\n" +
-            "State: " + (this.isGreen() ? "Green" : "Red");
-        }
-        else if (this.isSwitch())
-        {
-             return "Switch " + this.name + "\n" +
-            "State: " + (this.isStraight() ? "Straight" : "Turned");
-        }
-        else
-        {
-            return "Accessory " + this.name + "\n" +
-            "State: " + (this.isGreen()? "Off" : "On");
-        }
+        return 
+            "Accessory \"" + this.name + "\" (" + accessoryTypeToPrettyString(this.getType()) + ")\n" + 
+            "State: " + switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase();
     }
 }

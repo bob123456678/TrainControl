@@ -86,7 +86,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Do we parse mock packets when not connected to the central station and in debug mode?
     // This will update the UI when locomotive/function/switch commands get sent
-    public static boolean DEBUG_SIMULATE_PACKETS = false;
+    public static boolean DEBUG_SIMULATE_PACKETS = true;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -203,13 +203,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 newLocomotive(c);
             }
-            else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL)
+            else if (c.getType() == MarklinSimpleComponent.Type.SIGNAL || c.getType() == MarklinSimpleComponent.Type.SWITCH)
             {
-                newSignal(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState(), c.getNumActuations());                
-            }
-            else if (c.getType() == MarklinSimpleComponent.Type.SWITCH)
-            {
-                newSwitch(Integer.toString(c.getAddress() + 1), c.getAddress(), c.getState(), c.getNumActuations());                
+                MarklinAccessory newAccessory = newAccessory(Integer.toString(c.getAddress() + 1), c.getAddress(), 
+                        c.getType() == MarklinSimpleComponent.Type.SIGNAL ? MarklinAccessory.accessoryType.SIGNAL : MarklinAccessory.accessoryType.SWITCH,
+                        c.getState(), c.getNumActuations());                
+            
+                if (!newAccessory.isValidAddress())
+                {
+                    this.accDB.delete(newAccessory.getName());
+                    this.log("Deleted invalid accessory from database: " + newAccessory.getName());
+                }
             }
             else if (c.getType() == MarklinSimpleComponent.Type.FEEDBACK)
             {   
@@ -279,8 +283,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
-                       // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                       (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal())
+                        // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
+                       (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
+                            
+                        // Create / convert the second accessory to switch if needed
+                        c.isThreeWay() && (
+                            !this.accDB.hasId(targetAddress + 1) ||
+                            (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
+                        )
                     )
                     {
                         // Skip components without a digital address
@@ -296,10 +306,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                             if (c.isThreeWay())
                             {
-                                if (!this.accDB.hasId(c.getAddress() + 1))
-                                {
-                                    newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
-                                }
+                                newSwitch(Integer.toString(c.getAddress() + 1), newAddress + 1, c.getState() == 2);                                            
                             }
                         }
                         else if (c.isSignal())
@@ -1121,35 +1128,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.accDB.getByName(name);
     }
-    
+            
     /**
-     * Adds a new signal
-     * @param name
-     * @param address
-     * @param state
-     * @param numActuations
-     * @return 
-     */
-    private MarklinAccessory newSignal(String name, int address, boolean state, int numActuations)
-    {
-        return newAccessory("Signal " + name, address, Accessory.accessoryType.SIGNAL, state, numActuations);
-    }
-    
-    /**
-     * Adds a new switch
-     * @param name
-     * @param address
-     * @param state
-     * @param numActuations
-     * @return 
-     */
-    private MarklinAccessory newSwitch(String name, int address, boolean state, int numActuations)
-    {
-        return newAccessory("Switch " + name, address, Accessory.accessoryType.SWITCH, state, numActuations);
-    }
-        
-    /**
-     * Creates a new signal (with 0 actuations)
+     * Creates a new signal (with the acuation count from the existing accessory, otherwise with 0 actuations)
      * @param name
      * @param address
      * @param state
@@ -1157,12 +1138,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     */
     @Override
     public final MarklinAccessory newSignal(String name, int address, boolean state)
-    {
-        return newSignal(name, address, state, 0);
+    {        
+        return newAccessory(name, address, Accessory.accessoryType.SIGNAL, state);
     }
     
     /**
-     * Creates a new switch with 0 actuations
+     * Creates a new switch (with the acuation count from the existing accessory, otherwise with 0 actuations)
      * @param name
      * @param address
      * @param state
@@ -1171,7 +1152,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final MarklinAccessory newSwitch(String name, int address, boolean state)
     {
-        return newSwitch(name, address, state, 0);
+        return newAccessory(name, address, Accessory.accessoryType.SWITCH, state);
     }
     
     /**
@@ -1753,17 +1734,41 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Adds a new accessory to the internal database (with the acuation count from the existing accessory, otherwise with 0 actuations)
+     * @param name
+     * @param address
+     * @param type
+     * @param state
+     * @return 
+     */
+    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state)
+    {
+        MarklinAccessory current = this.getAccessoryByAddress(address);
+        
+        return newAccessory(name, address, type, state, current != null ? current.getNumActuations() : 0);
+    }
+    
+    /**
      * Adds a new accessory to the internal database
      * @param name
      * @param address
      * @param type
+     * @param state
+     * @param numActuations
      * @return 
      */
     private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state, int numActuations)
     {
+        name = Accessory.accessoryTypeToPrettyString(type) + " " + name;
+        
         MarklinAccessory newAccessory = new MarklinAccessory(this, address, type, name, state, numActuations);
         
         this.accDB.add(newAccessory, name, newAccessory.getUID());
+        
+        if (!newAccessory.isValidAddress())
+        {
+            this.log("Warning: accessory " + name + " has invalid address " + address);
+        }
         
         return newAccessory;
     }
@@ -2222,7 +2227,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             catch (Exception ex)
             {
                 System.out.println("Error accessing preferences.");
-                ex.printStackTrace();
+                
+                if (debug)
+                {
+                    ex.printStackTrace();
+                }
             }   
         }
 
@@ -2316,10 +2325,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            Scanner scanner = new Scanner(System.in); 
-                            System.out.print("Enter Central Station IP Address: "); 
-                            initIP = scanner.next(); 
-                            scanner.close();
+                            try (Scanner scanner = new Scanner(System.in))
+                            {
+                                System.out.print("Enter Central Station IP Address: ");
+                                initIP = scanner.next();
+                            }
                         }
                         
                         if (initIP == null || "".equals(initIP))
@@ -2364,7 +2374,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         catch (Exception ex)
                         {
                             System.out.println("Error updating preferences.");
-                            ex.printStackTrace();
+                            
+                            if (debug)
+                            {
+                                ex.printStackTrace();
+                            }
                         } 
                         
                         break;

@@ -2102,7 +2102,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             // Pass the event to the route editor if we are capturing commands
             if (this.routeEditor != null && routeEditor.isVisible() && this.routeEditor.isCaptureCommandsSelected())
             {
-                this.routeEditor.appendCommand(address, this.model.getAccessoryState(address));
+                this.routeEditor.appendCommand(this.model.getAccessoryByAddress(address).toAccessorySettingString());
             }
             
             // Pass the event to the lock edge editor

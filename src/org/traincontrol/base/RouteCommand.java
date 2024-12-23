@@ -372,13 +372,23 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a simple string representation of this command
+     * @param linkedAccessory the accessory object linked to this command's address
      * @return 
      */
-    public String toLine()
+    public String toLine(Accessory linkedAccessory)
     {
         if (this.isAccessory())
         {
-            return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+            String delayString = (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+            
+            if (linkedAccessory != null)
+            {
+                return linkedAccessory.toAccessorySettingString(this.getSetting()) + delayString;
+            }
+            else
+            {
+                return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + delayString;
+            }
         }
         else if (this.isStop() || this.isFunctionsOff() || this.isLightsOn() || this.isAutonomyLightsOn())
         {
@@ -396,30 +406,43 @@ public class RouteCommand implements java.io.Serializable
         return "invalid command";
     }
     
+    private static boolean intToAccessorySwitched(int setting) throws Exception
+    {
+        if (setting != 1 && setting != 0)
+        {
+            throw new Exception("Invalid accessory setting value: " + setting);
+        }
+        
+        return setting == 1;
+    }
+    
     /**
      * Parses a simple string representation of the route (equivalent to Route.toCSV)
      * @param line
      * @return 
+     * @throws java.lang.Exception 
      */
-    public static RouteCommand fromLine(String line)
+    public static RouteCommand fromLine(String line) throws Exception
     {
-        if ("Emergency Stop".equals(line.trim()))
+        line = line.trim();
+        
+        if ("Emergency Stop".equals(line))
         {
             return RouteCommand.RouteCommandStop();
         }
-        else if ("All Lights On".equals(line.trim()))
+        else if ("All Lights On".equals(line))
         {
             return RouteCommand.RouteCommandLightsOn();
         }
-        else if ("All Lights On (Autonomy Locomotives Only)".equals(line.trim()))
+        else if ("All Lights On (Autonomy Locomotives Only)".equals(line))
         {
             return RouteCommand.RouteCommandAutonomyLightsOn();
         }
-        else if ("All Functions Off".equals(line.trim()))
+        else if ("All Functions Off".equals(line))
         {
             return RouteCommand.RouteCommandFunctionsOff();
         }
-        else if (line.trim().startsWith(LOC_SPEED_PREFIX + ","))
+        else if (line.startsWith(LOC_SPEED_PREFIX + ","))
         {
             String name = line.split(",")[1].trim();
             int speed = Integer.parseInt(line.split(",")[2].trim());
@@ -437,7 +460,7 @@ public class RouteCommand implements java.io.Serializable
 
             return rc;
         }
-        else if (line.trim().startsWith(LOC_FUNC_PREFIX + ","))
+        else if (line.startsWith(LOC_FUNC_PREFIX + ","))
         {
             String name = line.split(",")[1].trim();
             int fno = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
@@ -452,11 +475,36 @@ public class RouteCommand implements java.io.Serializable
 
             return rc;
         }
-        else if (line.trim().length() > 0)
+        else if (line.length() > 0)
         {
-            int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-            boolean state = line.split(",")[1].trim().equals("1");
+            // Filter text - pretend it's just numbers
+            String originalLine = line;
+            
+            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "");
+            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL), "");
+            line = line.trim();
 
+            int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+            
+            boolean state;
+            
+            // If parsing the string fails, treat it as a number
+            try
+            {
+                state = intToAccessorySwitched(Integer.parseInt(line.split(",")[1].trim()));
+            }
+            catch (NumberFormatException e)
+            {
+                try
+                {
+                    state = Accessory.stringAccessorySettingToSetting(line.split(",")[1].trim());
+                }
+                catch (Exception e2)
+                {
+                    throw new Exception("Invalid line: " + originalLine);
+                }
+            }
+            
             RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
 
             if (line.split(",").length > 2)

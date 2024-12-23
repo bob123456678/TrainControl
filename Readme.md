@@ -280,12 +280,18 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.3.4 [Beta]
+    - Accessory database
+        - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
+        - Accessories with invalid addresses will now be automatically removed from the internal database at startup
+    - Routes
+        - Accessory commands are now easier to read (i.e. "Switch 1,turn" instead of "1,1")
     - Autonomy graph
         - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
     - Updated text labels in track diagrams to match the UI font
+    - Fixed bug where the second address of a 3-way switche could be erroneously be named a signal
     - Fixed minor UI alignment issues
 
 * v2.3.3 [12/17/2024]

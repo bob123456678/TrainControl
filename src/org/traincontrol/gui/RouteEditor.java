@@ -16,7 +16,9 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
@@ -24,22 +26,25 @@ import org.traincontrol.marklin.MarklinRoute;
  */
 public class RouteEditor extends javax.swing.JFrame
 {    
-    private final String helpMessage = "In the Route Commands field, one per line, enter the accessory address (integer) and state (0 or 1), separated by a comma."
-                    + "\nFor example, 20,1 would set switch 20 to turnout, or signal 20 to red."
+    private final String helpMessage = "In the Route Commands field, one per line, enter the accessory name and state, separated by a comma."
+                    + "\nFor example, Switch 20,turn or Signal 21,green."
+                    + "\nYou can also skip the accessory type, such as 20,straight or 21,red."
+                    + "\nFor even more brevity, replace turn/red with 1 or straight/green with 0."
                     + "\nAn optional third number specifies a delay before execution, in milliseconds."
                     + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
                     + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
-                    + "\n(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
+                    + "(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
-                    + "\nthe route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
+                    + "the route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
                     + "Conditional Accessories behave just like S88 conditions: if specified, all accessory state must also match\n"
                     + "the specified values in order for the route to fire.\n\n" 
-                    + "In addition to accessories, you can set commands for locomotives and functions. Examples:" + "\n"
+                    + "In addition to accessories, you can set commands for locomotives and functions:" + "\n"
                     + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
                     + "locspeed,Locomotive name,-1 (instant stop)\n" 
-                    + "locfunc,Locomotive name,20,1 (toggles F20)";
+                    + "locfunc,Locomotive name,20,1 (toggles F20).\n\n"
+                    + "Use the wizard until you are comfortable typing commands.";
     
-    public static final String TURNOUT = "Switched (1)";
+    public static final String TURNOUT = "Turn (1)";
     public static final String STRAIGHT = "Straight (0)";
     public static final String RED = "Red (1)";
     public static final String GREEN = "Green (0)";
@@ -193,10 +198,10 @@ public class RouteEditor extends javax.swing.JFrame
         return triggerClearThenOccupied;
     }
     
-    public void appendCommand(int accessory, boolean state)
+    public void appendCommand(String command)
     {
-        String newVal = this.routeContents.getText() + "\n" + Integer.toString(accessory) + "," + (state ? "1" : "0") + "\n";
-        this.routeContents.setText(newVal.trim());
+        //String newVal = this.routeContents.getText() + "\n" + Integer.toString(accessory) + "," + (state ? "1" : "0") + "\n";
+        this.routeContents.setText(this.routeContents.getText().trim() + "\n" + command + "\n");
     }
     
     public boolean isCaptureCommandsSelected()
@@ -544,7 +549,7 @@ public class RouteEditor extends javax.swing.JFrame
         buttonGroup4.add(accTypeTurnout);
         accTypeTurnout.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accTypeTurnout.setSelected(true);
-        accTypeTurnout.setText("Turnout");
+        accTypeTurnout.setText("Switch");
         accTypeTurnout.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 accTypeTurnoutActionPerformed(evt);
@@ -553,7 +558,7 @@ public class RouteEditor extends javax.swing.JFrame
 
         buttonGroup4.add(accType3Way);
         accType3Way.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        accType3Way.setText("3-way Turnout");
+        accType3Way.setText("3-way Switch");
         accType3Way.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 accType3WayActionPerformed(evt);
@@ -680,7 +685,7 @@ public class RouteEditor extends javax.swing.JFrame
         s88CondAddr.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         s88CondAddr.setMaximumSize(new java.awt.Dimension(90, 26));
         s88CondAddr.setMinimumSize(new java.awt.Dimension(90, 26));
-        s88CondAddr.setPreferredSize(new java.awt.Dimension(90, 26));
+        s88CondAddr.setPreferredSize(new java.awt.Dimension(113, 26));
         s88CondAddr.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 s88CondAddrKeyReleased(evt);
@@ -719,10 +724,10 @@ public class RouteEditor extends javax.swing.JFrame
             s88PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(s88PanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(s88PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(s88CondAddr, javax.swing.GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(s88PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(s88CondAddr, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(s88PanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(s88PanelLayout.createSequentialGroup()
                         .addComponent(jLabel16)
@@ -1008,41 +1013,46 @@ public class RouteEditor extends javax.swing.JFrame
                 {
                     if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
-                        newEntry += address + "," + "0" + delayString + "\n";
-                        newEntry += (address + 1) + "," + "0";
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address, false
+                        ) + delayString + "\n";
+                        
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address + 1, false
+                        );
                     }
                     else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
-                        newEntry += address + "," + "1" + delayString + "\n";
-                        newEntry += (address + 1) + "," + "0";                    
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address, true
+                        ) + delayString + "\n";
+                        
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address + 1, false
+                        );               
                     }
                     else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
-                        newEntry += address + "," + "0" + delayString + "\n";
-                        newEntry += (address + 1) + "," + "1";
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address, false
+                        ) + delayString + "\n";
+                        
+                        newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address + 1, true
+                        );
                     }
                 }
                 else if (this.accTypeTurnout.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(TURNOUT))
-                    {
-                        newEntry += address + "," + "1" + delayString;
-                    }
-                    else
-                    {
-                        newEntry += address + "," + "0" + delayString;
-                    }      
+                    newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SWITCH, address, this.accState.getSelectedItem().toString().equals(TURNOUT)
+                    ) + delayString;   
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(RED))
-                    {
-                        newEntry += address + "," + "1" + delayString;
-                    }
-                    else
-                    {
-                        newEntry += address + "," + "0" + delayString;
-                    }
+                    newEntry += MarklinAccessory.toAccessorySettingString(
+                            Accessory.accessoryType.SIGNAL, address, this.accState.getSelectedItem().toString().equals(RED)
+                    ) + delayString;
                 }
                 
                 if (!isConditional)
@@ -1210,7 +1220,7 @@ public class RouteEditor extends javax.swing.JFrame
                     rc.setDelay(Math.abs(Integer.parseInt(locDelay.getText())));
                 }
                 
-                this.routeContents.setText((this.routeContents.getText() + "\n" + rc.toLine()).trim());
+                this.routeContents.setText((this.routeContents.getText() + "\n" + rc.toLine(null)).trim());
             }
             catch (NumberFormatException e)
             {
@@ -1350,10 +1360,17 @@ public class RouteEditor extends javax.swing.JFrame
             {
                 if (line.trim().length() > 0)
                 {
-                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    boolean state = line.split(",")[1].trim().equals("1");
+                    RouteCommand rc = RouteCommand.fromLine(line);
                     
-                    RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
+                    if (!rc.isAccessory())
+                    {
+                        throw new Exception("Accessory Conditions must be accessory commands.");
+                    }
+                    
+                    //int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+                    //boolean state = line.split(",")[1].trim().equals("1");
+                  
+                    //RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
 
                     newAccConditions.add(rc);
                 }
@@ -1405,7 +1422,7 @@ public class RouteEditor extends javax.swing.JFrame
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "Error parsing route.  Be sure to enter comma-separated numbers only, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
+            JOptionPane.showMessageDialog(this, "Error parsing route (" + e.getMessage() + ").\n\nBe sure to enter comma-separated values, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
         
             parent.log(e.toString());
             return false;
