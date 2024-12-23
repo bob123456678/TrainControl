@@ -267,23 +267,7 @@ abstract public class Accessory
      * @throws java.lang.Exception 
      */
     public static accessoryType stringToAccessoryType(String type) throws Exception
-    {
-        /*if (type != null)
-        {
-            type = type.trim().toLowerCase();
-
-            if (accessoryType.SWITCH.toString().toLowerCase().equals(type))
-            {
-                return accessoryType.SWITCH;
-            }
-            else if (accessoryType.SIGNAL.toString().toLowerCase().equals(type))
-            {
-                return accessoryType.SIGNAL;
-            }
-        }
-        return null;
-        */
-        
+    {   
         if (type != null)
         {
             for (Accessory.accessoryType a : Accessory.accessoryType.values())

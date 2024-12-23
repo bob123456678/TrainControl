@@ -86,7 +86,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Do we parse mock packets when not connected to the central station and in debug mode?
     // This will update the UI when locomotive/function/switch commands get sent
-    public static boolean DEBUG_SIMULATE_PACKETS = true;
+    public static boolean DEBUG_SIMULATE_PACKETS = false;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
