@@ -300,6 +300,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Cache timetable state to minimize repaining
     private int lastTimetableState = 0;
+    
+    // Help ensure that duplicate accessory commands are not captured
+    private String lastCapturedAccessoryCommand;
+    private long lastCapturedAccessoryCommandTime;
+    private static final int CAPTURE_COMMAND_THROTTLE = 5000;
         
     /**
      * Creates new form MarklinUI
@@ -2065,7 +2070,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             this.OnButton.setEnabled(true);
         }
     }
-    
+        
     /**
      * Repaints a single switch on the keyboard
      * @param address 
@@ -2099,16 +2104,30 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 key.setFont(font.deriveFont(attributes));
             }
             
-            // Pass the event to the route editor if we are capturing commands
-            if (this.routeEditor != null && routeEditor.isVisible() && this.routeEditor.isCaptureCommandsSelected())
+            if (this.routeEditor!= null || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
             {
-                this.routeEditor.appendCommand(this.model.getAccessoryByAddress(address).toAccessorySettingString());
-            }
-            
-            // Pass the event to the lock edge editor
-            if (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null && this.graphViewer.getGraphEdgeEditor().isCaptureCommandsSelected())
-            {
-                this.graphViewer.getGraphEdgeEditor().appendCommand(this.model.getAccessoryByAddress(address).toAccessorySettingString());
+                // Throttle to ensure commands are not duplicated
+                long currentTime = System.currentTimeMillis(); 
+                String command = this.model.getAccessoryByAddress(address).toAccessorySettingString();
+
+                if (!command.isEmpty() && 
+                        (!command.equals(lastCapturedAccessoryCommand) || (currentTime - lastCapturedAccessoryCommandTime) > CAPTURE_COMMAND_THROTTLE))
+                { 
+                    lastCapturedAccessoryCommand = command; 
+                    lastCapturedAccessoryCommandTime = currentTime; 
+
+                    // Pass the event to the route editor if we are capturing commands
+                    if (this.routeEditor != null && routeEditor.isVisible() && this.routeEditor.isCaptureCommandsSelected())
+                    {
+                        this.routeEditor.appendCommand(command);
+                    }
+
+                    // Pass the event to the lock edge editor
+                    if (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null && this.graphViewer.getGraphEdgeEditor().isCaptureCommandsSelected())
+                    {
+                        this.graphViewer.getGraphEdgeEditor().appendCommand(command);
+                    }
+                }
             }
         }));
     }
@@ -9443,48 +9462,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         //Open the file
         try (ZipFile zip = new ZipFile(filePathToUnzip.toFile()))
         {
-          FileSystem fileSystem = FileSystems.getDefault();
-          Enumeration<? extends ZipEntry> entries = zip.entries();
+            FileSystem fileSystem = FileSystems.getDefault();
+            Enumeration<? extends ZipEntry> entries = zip.entries();
 
-          //We will unzip files in this folder
-          if (!targetDir.toFile().isDirectory()
-              && !targetDir.toFile().mkdirs()) {
-            throw new IOException("failed to create directory " + targetDir);
-          }
-
-          //Iterate over entries
-          while (entries.hasMoreElements()) {
-            ZipEntry entry = entries.nextElement();
-
-            File f = new File(targetDir.resolve(Paths.get(entry.getName())).toString());
-
-            //If directory then create a new directory in uncompressed folder
-            if (entry.isDirectory())
+            //We will unzip files in this folder
+            if (!targetDir.toFile().isDirectory() && !targetDir.toFile().mkdirs()) 
             {
-              if (!f.isDirectory() && !f.mkdirs())
-              {
-                throw new IOException("failed to create directory " + f);
-              }
+              throw new IOException("failed to create directory " + targetDir);
             }
 
-            //Else create the file
-            else
+            //Iterate over entries
+            while (entries.hasMoreElements())
             {
-              File parent = f.getParentFile();
-              if (!parent.isDirectory() && !parent.mkdirs()) {
-                throw new IOException("failed to create directory " + parent);
-              }
+                ZipEntry entry = entries.nextElement();
 
-              try(InputStream in = zip.getInputStream(entry))
-              {
-                Files.copy(in, f.toPath());
-              }
-              catch (Exception e)
-              {
-                this.model.log(e);
-              }
+                File f = new File(targetDir.resolve(Paths.get(entry.getName())).toString());
+
+                // If directory then create a new directory in uncompressed folder
+                if (entry.isDirectory())
+                {
+                    if (!f.isDirectory() && !f.mkdirs())
+                    {
+                      throw new IOException("failed to create directory " + f);
+                    }
+                }
+
+                // Else create the file
+                else
+                {
+                    File parent = f.getParentFile();
+                    if (!parent.isDirectory() && !parent.mkdirs()) {
+                      throw new IOException("failed to create directory " + parent);
+                    }
+
+                    try(InputStream in = zip.getInputStream(entry))
+                    {
+                      Files.copy(in, f.toPath());
+                    }
+                    catch (Exception e)
+                    {
+                      this.model.log(e);
+                    }
+                }
             }
-          }
         } 
         catch (IOException e)
         {

@@ -292,6 +292,7 @@ Requires JDK 1.8+ and the following libraries:
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
     - Updated text labels in track diagrams to match the UI font
     - Fixed bug where the second address of a 3-way switche could be erroneously be named a signal
+    - Fixed bug whree captured route commands might be duplicated
     - Fixed minor UI alignment issues
 
 * v2.3.3 [12/17/2024]
