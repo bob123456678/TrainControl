@@ -9072,9 +9072,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
         
-        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives())
+        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            JOptionPane.showMessageDialog(this, "Warning: if this multi-unit address exists in the Central Station, using TrainControl's multi-unit feature may cause unpredictable behavior.\n\nIt is recommend to first change the address (Control+R) to something that does not exist in the Central Station.");
+            JOptionPane.showMessageDialog(this, "Multi-units from the Central Station cannot be customized in TrainControl.");
+            return;
         }
         
         List<MarklinLocomotive> allLocomotives = this.model.getLocomotives(); // Fetches all locomotives available
@@ -9135,8 +9136,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 multiplierSlider.setPaintTicks(true);
                 multiplierSlider.setPaintLabels(true);
                 multiplierSlider.setSnapToTicks(false);
-                multiplierSlider.setPreferredSize(new Dimension(200, 50));
+                multiplierSlider.setPreferredSize(new Dimension(250, 50));
                 multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                multiplierSlider.setFocusable(true);
 
                 // Custom label table for specific tick labels
                 java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
@@ -9180,8 +9182,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     }
                 });
 
-                multiplierSlider.setFocusable(false);
-
                 JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
                 reverseCheckBox.setFocusable(false);
 
@@ -9194,7 +9194,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
 
         JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setPreferredSize(new Dimension(500, 500)); 
+        scrollPane.setPreferredSize(new Dimension(600, 500)); 
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         // Make scrolling faster

@@ -191,12 +191,19 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem.setToolTipText("Control+N");
                 add(menuItem);
                 
+                // Multi-unit
                 menuItem = new JMenuItem(
                         !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives() ?
                         "Set as Multi-unit..." : "Edit Multi-unit Locomotives"
                 );
                 menuItem.addActionListener(event -> {ui.changeLinkedLocomotives((MarklinLocomotive) ui.getButtonLocomotive(source));});
                 menuItem.setToolTipText("Control+L");
+                
+                if (((MarklinLocomotive) ui.getButtonLocomotive(source)).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+                {
+                    menuItem.setEnabled(false);
+                }
+                
                 add(menuItem);
                 
                 addSeparator();

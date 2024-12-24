@@ -1810,6 +1810,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
             throw new Exception("Address " + newAddress + " is outside of the allowed range.");
         }
         
+        if (newDecoderType == MarklinLocomotive.decoderType.MULTI_UNIT && l.hasLinkedLocomotives())
+        {
+            /* l.preSetLinkedLocomotives(null);
+            l.setLinkedLocomotives();
+            this.log("Multi-unit locomotives have been unlinked from " + locName);*/
+            
+            throw new Exception("Cannot change decoder type to Central Station multi-unit when multi-unit locomotives have been linked in TrainControl.  Unlink them first.");
+        }
+        
         // Execute the change
         this.deleteLoc(l.getName());
         
