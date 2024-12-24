@@ -288,6 +288,8 @@ Requires JDK 1.8+ and the following libraries:
     - Locomotives can now be converted to multi-units (linked to others) via right-click or Control+L
         - Linked locomotives can have a speed multiplier
         - Linked locomotives can be reversed
+        - Displayed multi-unit addresses now start at 1
+        - Corrected multi-unit address validation
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup

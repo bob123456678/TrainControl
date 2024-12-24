@@ -9072,10 +9072,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         }
         
-        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives())
         {
-            JOptionPane.showMessageDialog(this, "Multi-units from the Central Station cannot be customized in TrainControl.");
-            return;
+            JOptionPane.showMessageDialog(this, "Warning: if this multi-unit address exists in the Central Station, using TrainControl's multi-unit feature may cause unpredictable behavior.\n\nIt is recommend to first change the address (Control+R) to something that does not exist in the Central Station.");
         }
         
         List<MarklinLocomotive> allLocomotives = this.model.getLocomotives(); // Fetches all locomotives available
@@ -10962,7 +10961,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
         
-
         String[] options = {"Blank Graph", "Sample Graph", "Cancel"};
         int choice = JOptionPane.showOptionDialog(this, "Do you want to load a new graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
              "Graph Selection",
@@ -10992,8 +10990,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             default:
                 break;
         }
-    
-
     }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
 
     private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed

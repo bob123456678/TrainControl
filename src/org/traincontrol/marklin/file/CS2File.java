@@ -864,11 +864,13 @@ public final class CS2File
                 if (loc.has("traktion"))
                 {
                     decoderType = MarklinLocomotive.decoderType.MULTI_UNIT;
-
+                    
                     if (this.control != null && this.control.isDebug())
                     {
                         this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + uid);
                     }
+                    
+                    uid = uid - MarklinLocomotive.MULTI_UNIT_BASE;
                 }
                 // Others
                 else
@@ -996,6 +998,11 @@ public final class CS2File
                     address = Integer.decode(m.get("uid"));
                     
                     this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
+                    
+                    if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
+                    {
+                        address -= MarklinLocomotive.MULTI_UNIT_BASE;
+                    }
                 }
                 // Others
                 else

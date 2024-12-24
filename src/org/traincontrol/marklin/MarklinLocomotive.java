@@ -28,8 +28,10 @@ public class MarklinLocomotive extends Locomotive
     public static final int MM2_MAX_ADDR = 80;
     public static final int MFX_MAX_ADDR = 0x3FFF;
     public static final int DCC_MAX_ADDR = 2048;
+    public static final int MULTI_UNIT_MAX_ADDR = 5120;
     public static final int MFX_BASE = 0x4000;
     public static final int DCC_BASE = 0xc000;
+    public static final int MULTI_UNIT_BASE = 0x2c00; // The first MU created by the Central Station is 0x2c01
     
     public static int PULSE_FUNCTION_DURATION = 300;
     
@@ -192,7 +194,7 @@ public class MarklinLocomotive extends Locomotive
             case DCC:
                 return newAddress > 0 && newAddress <= DCC_MAX_ADDR;
             case MULTI_UNIT:
-                return newAddress <= MFX_BASE && newAddress > MM2_MAX_ADDR;
+                return newAddress > 0 && newAddress <= MULTI_UNIT_MAX_ADDR;
             default:
                 return false;
         }
@@ -219,7 +221,7 @@ public class MarklinLocomotive extends Locomotive
         }
         else if (this.type == decoderType.MULTI_UNIT)
         {
-            return this.address;
+            return this.address + MULTI_UNIT_BASE;
         }    
             
         return 0;
@@ -792,6 +794,10 @@ public class MarklinLocomotive extends Locomotive
         if (UID > MFX_BASE)
         {
             return Conversion.intToHex(UID - MFX_BASE);
+        }
+        else if (UID > MULTI_UNIT_BASE)
+        {
+            return Conversion.intToHex(UID - MULTI_UNIT_BASE);
         }
         else if (UID > DCC_BASE)
         {
