@@ -86,7 +86,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Do we parse mock packets when not connected to the central station and in debug mode?
     // This will update the UI when locomotive/function/switch commands get sent
-    public static boolean DEBUG_SIMULATE_PACKETS = false;
+    public static boolean DEBUG_SIMULATE_PACKETS = true;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -229,7 +229,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditionS88s(), c.getConditionAccessories());
             }
         }
-        
+                
         this.log("State restored.");
         
         if (syncWithCS2() >= 0)
@@ -246,7 +246,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         else
         {
             this.log("Central Station network connection not established.");
-        }   
+        } 
+        
+        // Resolve linked locomotives now that we have loaded everything
+        for (MarklinLocomotive l : this.getLocomotives())
+        {
+            l.setLinkedLocomotives();
+        }
     }
         
     /**
@@ -1718,6 +1724,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setCustomFunctions(c.getCustomFunctions());
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
+            newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
 
             this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
             
@@ -1820,7 +1827,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public List<MarklinLocomotive> getLocomotives()
+    public final List<MarklinLocomotive> getLocomotives()
     {
         return this.locDB.getItems();
     }

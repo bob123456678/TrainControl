@@ -4,13 +4,16 @@ import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.font.TextAttribute;
@@ -57,13 +60,17 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -2400,6 +2407,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                             if (name.length() > MAX_LOC_NAME)
                             {
                                 name = name.substring(0, MAX_LOC_NAME);
+                            }
+                            
+                            // Designate multi units
+                            if (this.activeLoc.hasLinkedLocomotives())
+                            {
+                                name = "[MU] " + name;
                             }
 
                             // Pre-compute this so we can check if it has changed
@@ -8326,6 +8339,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
         }
+        else if (controlPressed && keyCode == KeyEvent.VK_L)
+        {
+            this.changeLinkedLocomotives((MarklinLocomotive) this.getButtonLocomotive(this.currentButton));
+        }
         else if (controlPressed && keyCode == KeyEvent.VK_M)
         {
             this.toggleMenuBar.setSelected(!this.toggleMenuBar.isSelected());
@@ -9039,7 +9056,189 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
     }
-    
+      
+    /**
+     * Prompts the user to choose locomotives to link to this one
+     * @param l 
+     */
+    public void changeLinkedLocomotives(MarklinLocomotive l)
+    {
+        for (MarklinLocomotive other : this.model.getLocomotives())
+        {
+            if (other.hasLinkedLocomotive(l))
+            {
+                JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + other.getName() + " and cannot be made a multi-unit.");
+                return;
+            }
+        }
+        
+        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            JOptionPane.showMessageDialog(this, "Multi-units from the Central Station cannot be customized in TrainControl.");
+            return;
+        }
+        
+        List<MarklinLocomotive> allLocomotives = this.model.getLocomotives(); // Fetches all locomotives available
+        Map<String, Double> currentLinkedLocos = l.getLinkedLocomotiveNames(); // Get current linked locomotives
+        Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
+
+        // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
+        Collections.sort(allLocomotives, (a, b) ->
+        {
+            boolean aLinked = currentLinkedLocos.containsKey(a.getName());
+            boolean bLinked = currentLinkedLocos.containsKey(b.getName());
+            if (aLinked && !bLinked)
+            {
+                return -1;
+            }
+            else if (!aLinked && bLinked)
+            {
+                return 1;
+            }
+            else
+            {
+                return a.getName().compareToIgnoreCase(b.getName());
+            }
+        });
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        // Add heading
+        JPanel headingPanel = new JPanel(new GridLayout(1, 3));
+        JLabel nameLabel = new JLabel("Locomotive Name");
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        JLabel multiplierLabel = new JLabel("Speed Multiplier (%)");
+        multiplierLabel.setToolTipText("Adjust the relative speed of the linked locomotive?");
+        multiplierLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        JLabel reverseLabel = new JLabel("Reverse");
+        reverseLabel.setToolTipText("Swap the direction of the linked locomotive?");
+        reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        headingPanel.add(nameLabel);
+        headingPanel.add(multiplierLabel);
+        headingPanel.add(reverseLabel);
+        panel.add(headingPanel);
+        panel.add(Box.createVerticalStrut(10)); // Add padding below the heading
+
+        for (MarklinLocomotive loco : allLocomotives)
+        {
+            if (!loco.hasLinkedLocomotives() && !loco.equals(l) && loco.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT)
+            {
+                JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5)); // Added horizontal and vertical gaps
+                JCheckBox checkBox = new JCheckBox(loco.getName(), currentLinkedLocos.containsKey(loco.getName()));
+                checkBox.setFocusable(false);
+                double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
+                boolean isReversed = multiplierValue < 0;
+                JSlider multiplierSlider = new JSlider(0, 200, (int) (Math.abs(multiplierValue) * 100));
+                multiplierSlider.setMajorTickSpacing(50);
+                multiplierSlider.setMinorTickSpacing(50);
+                multiplierSlider.setPaintTicks(true);
+                multiplierSlider.setPaintLabels(true);
+                multiplierSlider.setSnapToTicks(false);
+                multiplierSlider.setPreferredSize(new Dimension(200, 50));
+                multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+                // Custom label table for specific tick labels
+                java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
+                labelTable.put(0, new JLabel("0"));
+                labelTable.put(50, new JLabel("50"));
+                labelTable.put(100, new JLabel("100"));
+                labelTable.put(150, new JLabel("150"));
+                labelTable.put(200, new JLabel("200"));
+                multiplierSlider.setLabelTable(labelTable);
+
+                // Update tooltip to show selected value on hover
+                multiplierSlider.addMouseMotionListener(new MouseMotionAdapter()
+                {
+                    @Override
+                    public void mouseMoved(MouseEvent e)
+                    {
+                        JSlider source = (JSlider) e.getSource();
+                        source.setToolTipText(String.valueOf(source.getValue()) + "%");
+                    }
+                });
+
+                // Add change listener to jump to 1 if the value is 0
+                multiplierSlider.addChangeListener(e ->
+                {
+                    if (multiplierSlider.getValue() == 0)
+                    {
+                        multiplierSlider.setValue(1);
+                    }
+                });
+
+                // Add mouse listener to reset to 100 on double-click
+                multiplierSlider.addMouseListener(new MouseAdapter()
+                {
+                    @Override
+                    public void mouseClicked(MouseEvent e)
+                    {
+                        if (e.getClickCount() == 2)
+                        {
+                            multiplierSlider.setValue(100);
+                        }
+                    }
+                });
+
+                multiplierSlider.setFocusable(false);
+
+                JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
+                reverseCheckBox.setFocusable(false);
+
+                rowPanel.add(checkBox);
+                rowPanel.add(multiplierSlider);
+                rowPanel.add(reverseCheckBox);
+                panel.add(rowPanel);
+                panel.add(Box.createVerticalStrut(10)); // Add padding below each row
+            }
+        }
+
+        JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.setPreferredSize(new Dimension(500, 500)); 
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // Make scrolling faster
+        scrollPane.getVerticalScrollBar().setUnitIncrement(scrollPane.getVerticalScrollBar().getUnitIncrement() * 16);
+
+        int result = JOptionPane.showConfirmDialog(null, scrollPane, "Multi-unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION)
+        {
+            newLinkedLocos.clear();
+            Component[] components = panel.getComponents();
+
+            for (Component component : components)
+            {
+                if (component instanceof JPanel && !(component.equals(headingPanel)))
+                {
+                    JPanel rowPanel = (JPanel) component;
+                    JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
+                    JSlider multiplierSlider = (JSlider) rowPanel.getComponent(1);
+                    JCheckBox reverseCheckBox = (JCheckBox) rowPanel.getComponent(2);
+
+                    if (checkBox.isSelected())
+                    {
+                        double multiplier = multiplierSlider.getValue() / 100.0;
+                        if (reverseCheckBox.isSelected())
+                        {
+                            multiplier = -multiplier;
+                        }
+                        
+                        if (multiplier != 0 && multiplier >= -2 && multiplier <= 2)
+                        {
+                            newLinkedLocos.put(checkBox.getText(), multiplier);
+                        }
+                    }
+                }
+            }
+
+            l.preSetLinkedLocomotives(newLinkedLocos);
+            l.setLinkedLocomotives();
+            this.repaintLoc(true, null);
+        }
+    }
+
     /**
      * Allows the user to specify notes for the given locomotive
      * @param l

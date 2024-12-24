@@ -34,6 +34,10 @@ Right-click a locomotive or function icon to change it or set additional options
 
 ![UI screenshot: locomotive control](assets/ui_sel_loc.png?raw=true)
 
+Multi-units can be configured in TrainControl, which can be simpler than using the Central Station.
+
+![UI screenshot: multi-units](assets/multiunit.png?raw=true)
+
 **Layout View**
 
 Track diagrams for your layout are downloaded automatically from the CS2, or configurable manually via local layout files if using the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
@@ -112,7 +116,7 @@ Monitor the usage of different locomotives.
 
 ## Features
 
-* Easily control locomotives (MM2, MFX, DCC), signals, switches, and routes
+* Easily control locomotives (MM2, MFX, DCC), multi-units, signals, switches, and routes
 * Download locomotive, layout, and route information from the CS2/CS3
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Powerful keyboard interface
@@ -173,6 +177,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+A (assign a new locomotive to the currently active button)
     * Control+N (edit locomotive notes)
     * Control+R (edit locomotive name or address)
+    * Control+L (edit multi-unit)
     * Control+Delete (permanentely delete locomotive from database)
 * Autonomy Graph UI
     * Control+V (assign active locomotive, or clipboard locomotive if non-empty, to currently hovered node)
@@ -280,6 +285,9 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.3.4 [Beta]
+    - Locomotives can now be converted to multi-units (linked to others) via right-click or Control+L
+        - Linked locomotives can have a speed multiplier
+        - Linked locomotives can be reversed
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup
@@ -292,7 +300,9 @@ Requires JDK 1.8+ and the following libraries:
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
-    - Updated text labels in track diagrams to match the UI font
+    - UI
+        - Moved the "quick find locomotive" option to the pagination right-click menu
+        - Updated text labels in track diagrams to match the UI font
     - Fixed bug where the second address of a 3-way switch could be erroneously be named a signal
     - Fixed bug where captured route commands might be duplicated
     - Fixed minor UI alignment issues

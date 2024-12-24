@@ -2,6 +2,8 @@ package org.traincontrol.marklin;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.traincontrol.marklin.udp.CS2Message;
@@ -54,7 +56,12 @@ public class MarklinLocomotive extends Locomotive
     
     // Track if user customizations were made to function behavior
     private boolean customFunctions = false;
-                
+    
+    // Locomotives linked to this locomotive that will operate as a multi-unit
+    // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
+    private final Map <MarklinLocomotive, Double> linkedLocomotives = new LinkedHashMap<>();     
+    private Map <String, Double> preLinkedLocomotives;
+     
     /**
      * Constructor with name, type, and address
      * @param network
@@ -538,6 +545,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive stop()
     {        
+        // Pass through commands
+        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        {
+            l.stop();
+        }
+        
         // Send stop command
         this.network.exec(new CS2Message(
             CS2Message.CMD_SYSTEM,
@@ -563,6 +576,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive syncFromNetwork()
     {
+        // Pass through commands
+        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        {
+            l.syncFromNetwork();
+        }
+        
         // Query speed
         this.network.exec(new CS2Message(
             CS2Message.CMD_LOCO_VELOCITY,
@@ -609,6 +628,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive syncFromState()
     {
+        // Pass through commands
+        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        {
+            l.syncFromState();
+        }
+        
         // Send out speed command
         this.setSpeed(this.getSpeed());
         
@@ -627,12 +652,20 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {
+        // Pass through commands
+        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        {
+            double scaledSpeed = speed * Math.abs(entry.getValue()); 
+            int roundedSpeed = (int) Math.ceil(scaledSpeed); 
+            entry.getKey().setSpeed(roundedSpeed);;
+        }
+        
         // Force last known direction if this is the first command to move
         if (this.lastStartTime == 0)
         {
             this.setDirection(this.getDirection());
         }
-        
+                
         super._setSpeed(speed);
         
         int newSpeed = this.getSpeed() * 10;
@@ -656,12 +689,25 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setDirection(locDirection direction)
     {
+        // Pass through commands
+        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        {
+            if (entry.getValue() < 0)
+            {
+                entry.getKey().setDirection(direction == locDirection.DIR_FORWARD ? locDirection.DIR_BACKWARD : locDirection.DIR_FORWARD);
+            }
+            else
+            {
+                entry.getKey().setDirection(direction);
+            }
+        }
+        
         // Mark that we have alreay corrected the locomotive direction 
         if (this.lastStartTime == 0)
         {
             this.lastStartTime = -1;
         }
-        
+          
         super._setDirection(direction);
         
         int newDirection = (direction == locDirection.DIR_FORWARD ? 1 : 2);
@@ -684,6 +730,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
+        // Pass through commands
+        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        {
+            l.setF(fNumber, state);
+        }
+        
         if (this.validF(fNumber))
         {
             // Force last known direction if this is the first command to move
@@ -807,5 +859,126 @@ public class MarklinLocomotive extends Locomotive
     public MarklinControlStation getModel()
     {
         return network;
+    }
+    
+    /**
+     * Check if this locomotive is linked to another
+     * @param l
+     * @return 
+     */
+    public boolean hasLinkedLocomotive(MarklinLocomotive l)
+    {
+        return this.linkedLocomotives.containsKey(l);
+    }
+    
+    /**
+     * Sets a list of locomotives to link to this one. Must call setLinkedLocomotives after this, i.e. once the model has loaded all locs
+     * @param locList
+     */
+    public void preSetLinkedLocomotives(Map<String, Double> locList)
+    {
+        this.preLinkedLocomotives = locList;
+    }
+    
+    /**
+     * Processes the preset list and maps locomotives to be linked to this one
+     * @return 
+     */
+    public int setLinkedLocomotives()
+    {       
+        linkedLocomotives.clear();
+     
+        if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map)) return -1;
+        
+        for (Map.Entry<String, Double> entry : preLinkedLocomotives.entrySet())
+        {
+            String locoName = entry.getKey();
+            Double value = entry.getValue();
+            
+            MarklinLocomotive loco = network.getLocByName(locoName);
+            
+            // Validate
+            if (loco == null)
+            {
+                network.log("Error setting linked locomotive: " + locoName + " does not exist");
+            }
+            else if (!loco.getLinkedLocomotives().isEmpty())
+            {
+                network.log("Error setting linked locomotive: " + locoName + " is already linked to other locomotives");
+            }
+            
+            else if (value < -2 || value > 2 || value == 0)
+            {
+                network.log("Error setting linked locomotive: speed adjustment must be nonzero between -2 and 2");
+            }
+            else if (this.equals(loco))
+            {
+                network.log("Error setting linked locomotive: cannot assign " + locoName + " to itself");
+            }
+            else if (loco.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+            {
+                network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is a Central Station multi-unit");
+            }
+            // Configure
+            else 
+            {
+                linkedLocomotives.put(loco, value);
+                
+                // Ensure the correct direction
+                if (value < 0)
+                {
+                    if (this.getDirection() == locDirection.DIR_BACKWARD)
+                    {
+                        loco.setDirection(locDirection.DIR_FORWARD);
+                    }
+                    else
+                    {
+                        loco.setDirection(locDirection.DIR_BACKWARD);
+                    }
+                }
+                else
+                {
+                    loco.setDirection(this.getDirection());
+                }
+            }
+        }
+        
+        return linkedLocomotives.size();
+    }
+    
+    /**
+     * Gets the list of linked locomotives (names only - suitable for export)
+     * @return 
+     */
+    public Map<String, Double> getLinkedLocomotiveNames()
+    {
+        HashMap<String, Double> locomotiveNames = new HashMap<>();
+        
+        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        {
+            String locoName = entry.getKey().getName();
+            Double value = entry.getValue();
+            locomotiveNames.put(locoName, value);
+        }
+        
+        return locomotiveNames;
+    }
+    
+    /**
+     * Gets the list of linked locomotives
+     * @return 
+     */
+    public Map<MarklinLocomotive, Double> getLinkedLocomotives()
+    {
+        return this.linkedLocomotives;
+    }
+    
+    /**
+     * Returns true if this locomotive is linked to others as part of a multi-unit
+     * @return 
+     */
+    public boolean hasLinkedLocomotives()
+    {
+        return !this.linkedLocomotives.isEmpty();
     }
 }

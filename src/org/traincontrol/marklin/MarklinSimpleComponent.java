@@ -1,7 +1,5 @@
 package org.traincontrol.marklin;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import org.traincontrol.base.RouteCommand;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -40,6 +38,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean customFunctions;
     private Map<Integer, String> localFunctionImageURLs;
     private String notes;
+    private Map<String, Double> linkedLocomotives;
         
     // Route state
     private int s88;
@@ -157,6 +156,12 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.customFunctions = l.isCustomFunctions();
         this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
         this.notes = l.getNotes();
+        this.linkedLocomotives = l.getLinkedLocomotiveNames();
+    }
+    
+    public Map<String, Double> getLinkedLocomotives()
+    {
+        return this.linkedLocomotives;
     }
     
     public List<RouteCommand> getRoute()

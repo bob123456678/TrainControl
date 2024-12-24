@@ -43,11 +43,13 @@ public class testLocDB
         assert model.getLocList().contains(locName);
         assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, address), true);
         
+        assertFalse(model.getLocByName(locName).hasLinkedLocomotives());
+        
         model.deleteLoc(locName);
      
         assert model.getLocByName(locName) == null;
         assert model.getLocList().size() == numLocs;
-        assert !model.getLocList().contains(locName);
+        assert !model.getLocList().contains(locName); 
     }
     
     /**

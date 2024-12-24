@@ -52,21 +52,7 @@ public class RightClickMenuListener extends MouseAdapter
             menuItem.setToolTipText("Control+A");
 
             add(menuItem);
-            
-            menuItem = new JMenuItem("Quick Find Locomotive");
-            
-            if (ui.getModel().getLocomotives().isEmpty())
-            {
-                menuItem.setEnabled(false);
-            }
-            else
-            {
-                menuItem.addActionListener(event -> ui.quickLocSearch()); 
-                menuItem.setToolTipText("Control+F");
-            }
-            
-            add(menuItem);
-            
+                        
             addSeparator();
             
             // Option to copy
@@ -203,6 +189,14 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem = new JMenuItem("Edit Notes");
                 menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
                 menuItem.setToolTipText("Control+N");
+                add(menuItem);
+                
+                menuItem = new JMenuItem(
+                        !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives() ?
+                        "Set as Multi-unit..." : "Edit Multi-unit Locomotives"
+                );
+                menuItem.addActionListener(event -> {ui.changeLinkedLocomotives((MarklinLocomotive) ui.getButtonLocomotive(source));});
+                menuItem.setToolTipText("Control+L");
                 add(menuItem);
                 
                 addSeparator();
