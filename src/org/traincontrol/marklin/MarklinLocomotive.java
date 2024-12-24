@@ -919,6 +919,10 @@ public class MarklinLocomotive extends Locomotive
             {
                 network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is a Central Station multi-unit");
             }
+            else if (loco.hasLinkedLocomotives())
+            {
+                network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is itself a multi-unit");
+            }
             // Configure
             else 
             {
