@@ -482,6 +482,8 @@ public class RouteCommand implements java.io.Serializable
             
             line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "");
             line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL), "");
+            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH).toLowerCase(), "");
+            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL).toLowerCase(), "");
             line = line.trim();
 
             int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
