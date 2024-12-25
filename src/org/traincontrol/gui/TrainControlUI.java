@@ -182,7 +182,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Maximum page name length
     public static final Integer MAX_PAGE_NAME_LENGTH = 40;
-    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 9;
+    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 10;
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
@@ -2409,19 +2409,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                                 name = name.substring(0, MAX_LOC_NAME);
                             }
                             
-                            // Designate multi units
-                            if (this.activeLoc.hasLinkedLocomotives())
-                            {
-                                name = "[MU] " + name;
-                            }
-
                             // Pre-compute this so we can check if it has changed
                             // "Page " + this.currentButtonlocMappingNumber + " Button "
-                            String locLabel = this.getPageName(currentButtonlocMappingNumber, false, false) + " Button " 
-                                + this.currentButton.getText()
-                                + " (" + this.activeLoc.getDecoderTypeLabel() + " " + this.model.getLocAddress(this.activeLoc.getName())
-                                + ")";
-                            
+                            String locLabel = "<html><nobr>" + this.currentButton.getText() + " &#8226; " 
+                                    + this.getPageName(currentButtonlocMappingNumber, false, false) + " &#8226; "
+                                    + this.activeLoc.getDecoderTypeLabel() 
+                                    + " " + this.model.getLocAddress(this.activeLoc.getName())
+                                    + "</nobr></html>";
+                                                        
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
                             
@@ -2587,8 +2582,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                         this.ActiveLocLabel.setText("No Locomotive (Click here)");
 
-                        this.CurrentKeyLabel.setText("Page " + this.locMappingNumber + " Button " 
-                            + this.currentButton.getText()    
+                        this.CurrentKeyLabel.setText("<html><nobr>" + this.currentButton.getText() + " &#8226; " 
+                                + this.getPageName(currentButtonlocMappingNumber, false, false) + "</nobr></html>"    
                         );
 
                         this.Backward.setVisible(false);
@@ -4823,7 +4818,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(114, Short.MAX_VALUE))
+                .addContainerGap(70, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -4963,7 +4958,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layoutPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 594, Short.MAX_VALUE)
+                .addComponent(LayoutArea, javax.swing.GroupLayout.DEFAULT_SIZE, 550, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(SizeList, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -5130,7 +5125,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jLabel6)
-                .addContainerGap(563, Short.MAX_VALUE))
+                .addContainerGap(519, Short.MAX_VALUE))
         );
 
         locCommandPanels.addTab("Autonomy Configuration", autonomyPanel);
@@ -5194,7 +5189,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(startAutonomy)
                     .addComponent(gracefulStop))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -5260,7 +5255,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     .addComponent(executeTimetable)
                     .addComponent(timetableCapture))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 555, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -5597,7 +5592,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         );
         autoPanelLayout.setVerticalGroup(
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 636, Short.MAX_VALUE)
+            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
         );
 
         KeyboardTab.addTab("Auto", autoPanel);
@@ -6803,7 +6798,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 569, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 525, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -6842,7 +6837,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             logPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(logPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 624, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 580, Short.MAX_VALUE)
                 .addGap(6, 6, 6))
         );
 
@@ -6948,6 +6943,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         CurrentKeyLabel.setToolTipText(null);
         CurrentKeyLabel.setFocusable(false);
         CurrentKeyLabel.setMaximumSize(new java.awt.Dimension(296, 18));
+        CurrentKeyLabel.setMinimumSize(new java.awt.Dimension(296, 18));
+        CurrentKeyLabel.setPreferredSize(new java.awt.Dimension(296, 18));
 
         locIcon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         locIcon.setToolTipText("Right-click to change icon");
@@ -7939,7 +7936,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             .addGroup(LocFunctionsPanelLayout.createSequentialGroup()
                 .addGap(6, 6, 6)
                 .addGroup(LocFunctionsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(CurrentKeyLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocFunctionsPanelLayout.createSequentialGroup()
                         .addComponent(PowerOff, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -9067,14 +9064,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             if (other.hasLinkedLocomotive(l))
             {
-                JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + other.getName() + " and cannot be made a multi-unit.");
+                JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + other.getName() + " and cannot be made a Multi Unit.");
                 return;
             }
         }
         
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            JOptionPane.showMessageDialog(this, "Multi-units from the Central Station cannot be customized in TrainControl.");
+            JOptionPane.showMessageDialog(this, "Multi Units from the Central Station cannot be customized in TrainControl.");
             return;
         }
         
@@ -9200,7 +9197,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Make scrolling faster
         scrollPane.getVerticalScrollBar().setUnitIncrement(scrollPane.getVerticalScrollBar().getUnitIncrement() * 16);
 
-        int result = JOptionPane.showConfirmDialog(null, scrollPane, "Multi-unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, scrollPane, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION)
         {

@@ -404,19 +404,28 @@ public class MarklinLocomotive extends Locomotive
      * Should only be called when updating state from CS2/CS3
      * @param newAddress
      * @param newDecoderType
+     * @return validity status
      */
-    public void setAddress(int newAddress, decoderType newDecoderType)
+    public boolean setAddress(int newAddress, decoderType newDecoderType)
     {
-        this.type = newDecoderType;
-        this.address = newAddress;
-        this.UID = calculateUID();
+        if (MarklinLocomotive.validateNewAddress(newDecoderType, newAddress))
+        {
+            this.type = newDecoderType;
+            this.address = newAddress;
+            this.UID = calculateUID();
+
+            // Resize function arrays if needed
+            functionTypes = Arrays.copyOf(functionTypes, getMaxNumF(newDecoderType)); 
+            functionState = Arrays.copyOf(functionState, getMaxNumF(newDecoderType));
+            functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, getMaxNumF(newDecoderType));
+            preferredFunctions = Arrays.copyOf(preferredFunctions, getMaxNumF(newDecoderType));
+            this.numF = getMaxNumF(newDecoderType);
+
+            return true;
+        }
         
-        // Resize function arrays if needed
-        functionTypes = Arrays.copyOf(functionTypes, getMaxNumF(newDecoderType)); 
-        functionState = Arrays.copyOf(functionState, getMaxNumF(newDecoderType));
-        functionTriggerTypes = Arrays.copyOf(functionTriggerTypes, getMaxNumF(newDecoderType));
-        preferredFunctions = Arrays.copyOf(preferredFunctions, getMaxNumF(newDecoderType));
-        this.numF = getMaxNumF(newDecoderType);
+        this.network.log("Warning: invalid address passed to " + this.getName() + " setAddress: " + newDecoderType + " " + newAddress);
+        return false;
     }
        
     /**
@@ -811,6 +820,7 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * User-friendly string representation of the decoder type
+     * Should only be used in the UI/log messages, not as authoritative data
      * @return 
      */
     public String getDecoderTypeLabel()
@@ -820,7 +830,15 @@ public class MarklinLocomotive extends Locomotive
             case MULTI_UNIT:
                 return "Multi Unit";
             default:
-                return type.name();    
+                
+                if (this.hasLinkedLocomotives())
+                {
+                    return "MU " + type.name();
+                }
+                else
+                {
+                    return type.name();    
+                }
         }
     }
         
@@ -894,7 +912,9 @@ public class MarklinLocomotive extends Locomotive
     {       
         linkedLocomotives.clear();
      
-        if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map)) return -1;
+        // Multi-units defined in the Central Station cannot be linked to other locomotives
+        if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map) 
+                || this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT) return -1;
         
         for (Map.Entry<String, Double> entry : preLinkedLocomotives.entrySet())
         {

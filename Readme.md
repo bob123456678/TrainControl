@@ -284,16 +284,16 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.3.4 [Beta]
-    - Locomotives can now be converted to multi-units (linked to others) via right-click or Control+L
-        - Linked locomotives can have a speed multiplier
-        - Linked locomotives can be reversed
+* v2.4.0 [Beta]
+    - Locomotives
+        - Any MM2/DCC/MFX locomotive can now be converted to a multi-unit (linked to other locomotives) via right-click or Control+L
+            - When active, locomotives customized as multi-units in TrainControl will be designated with a "MU" prefix
+            - All commands will be replicated to linked locomotives
+            - Linked locomotives can have a speed multiplier
+            - Linked locomotives can be forced to run in the opposite direction of the main locomotive
         - Displayed multi-unit addresses now start at 1
         - Corrected multi-unit address validation
-    - Accessory database
-        - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
-        - Accessories with invalid addresses will now be automatically removed from the internal database at startup
-        - Simplified the `newSwitch` and `newSignal` API methods in `MarklinControlStation` to only require the logical address
+        - `MarklinLocomotive.setAddress` will now always require valid addresses
     - Routes
         - Accessory commands are now easier to read (i.e. "Switch 1,turn" instead of "1,1")
         - Tiles affected by routes will now be temporarily highlighted in track diagrams
@@ -302,10 +302,15 @@ Requires JDK 1.8+ and the following libraries:
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
+    - Accessory database
+        - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
+        - Accessories with invalid addresses will now be automatically removed from the internal database at startup
+        - Simplified the `newSwitch` and `newSignal` API methods in `MarklinControlStation` to only require the logical address
     - UI
         - Moved the "quick find locomotive" option to the pagination right-click menu
         - Updated text labels in track diagrams to match the UI font
-    - Fixed bug where the second address of a 3-way switch could be erroneously be named a signal
+        - Improved the formatting of the active locomotive button/page indicator
+    - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
     - Fixed bug where captured route commands might be duplicated
     - Fixed minor UI alignment issues
 

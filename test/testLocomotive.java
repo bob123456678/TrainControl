@@ -2,6 +2,7 @@ import org.traincontrol.base.Locomotive;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -21,6 +22,7 @@ public class testLocomotive
     public static MarklinControlStation model;
     public static MarklinLocomotive l;
     public static MarklinLocomotive l2;
+    public static MarklinLocomotive l3;
     
     public testLocomotive()
     {
@@ -152,6 +154,19 @@ public class testLocomotive
         {
             assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, i), true);
         } 
+        
+        List<Integer> invalidMUAddresses = Arrays.asList(0, -1, 100000, 5121, 5122);
+        List<Integer> validMUAddresses = Arrays.asList(1, 2, 10, 100, 1000, 5119, 5120);
+        
+        for (int i : invalidMUAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MULTI_UNIT, i), false);
+        }
+        
+        for (int i : validMUAddresses)
+        {
+            assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MULTI_UNIT, i), true);
+        } 
     }
     
     /**
@@ -182,6 +197,9 @@ public class testLocomotive
         assertEquals(l.getDecoderType(), MarklinLocomotive.decoderType.MM2);
         
         l.setAddress(80, MarklinLocomotive.decoderType.MM2);
+        assertEquals(l.getAddress(), 80);
+        
+        l.setAddress(81, MarklinLocomotive.decoderType.MM2);
         assertEquals(l.getAddress(), 80);
         
         l.rename("New loc");
@@ -223,6 +241,76 @@ public class testLocomotive
         assertEquals(l.getPreferredFunctions(), l2.getPreferredFunctions());
     }
     
+    /**
+     * Test multi unit creation
+     */
+    @Test
+    public void testMultiUnit()
+    { 
+        MarklinLocomotive l3 = model.getLocByName("Test loc 3");
+        MarklinLocomotive l4 = model.getLocByName("Test loc 4");
+        MarklinLocomotive l5 = model.getLocByName("Test loc 5");
+        MarklinLocomotive l6 = model.getLocByName("Test loc 6");
+        MarklinLocomotive l7 = model.getLocByName("Test loc 7");
+
+        Map<String, Double> locList = new HashMap<String, Double>() {{ put(l4.getName(), 1.0); put(l6.getName(), -1.1); }};
+        Map<String, Double> locListB = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); }};
+
+        Map<String, Double> locList2 = new HashMap<String, Double>() {{ put(l3.getName(), 1.0); put(l5.getName(), 1.0); }};
+        Map<String, Double> locList3 = new HashMap<String, Double>() {{ put(l7.getName(), -1.0); }};
+
+        // Normal process of assigning a multi unit
+        assertTrue(l3.getLinkedLocomotiveNames().isEmpty());
+        l3.preSetLinkedLocomotives(locList);
+        assertTrue(l3.getLinkedLocomotiveNames().isEmpty());
+        l3.setLinkedLocomotives();
+        assertFalse(l3.getLinkedLocomotiveNames().isEmpty());
+        assertTrue(l3.getLinkedLocomotiveNames().containsKey(l4.getName()));
+        assertTrue(l3.getLinkedLocomotiveNames().containsKey(l6.getName()));
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 2);
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.0);
+        assertEquals(l3.getLinkedLocomotiveNames().get(l6.getName()), -1.1);
+        
+        // Trim the list
+        l3.preSetLinkedLocomotives(locListB);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.2);
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+
+        // Expand the list
+        l3.preSetLinkedLocomotives(locList);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 2);
+
+        // Cannot add an existing multi-unit or itself
+        assertTrue(l5.getLinkedLocomotiveNames().isEmpty());
+        l5.preSetLinkedLocomotives(locList2);
+        assertTrue(l5.getLinkedLocomotiveNames().isEmpty());
+        l5.setLinkedLocomotives();
+        assertTrue(l5.getLinkedLocomotiveNames().isEmpty());
+
+        // Cannot add multi-unit as part of the chain
+        assertTrue(l4.getLinkedLocomotiveNames().isEmpty());
+        l4.preSetLinkedLocomotives(locList3);
+        assertTrue(l4.getLinkedLocomotiveNames().isEmpty());
+        
+        // Cannot add to a multi-unit defined in the Central station
+        l7.preSetLinkedLocomotives(locList2);
+        l7.setLinkedLocomotives();
+        assertTrue(l7.getLinkedLocomotiveNames().isEmpty());
+
+        // Cannot change the decoder type to MU if there are linked locomotives
+        assertEquals(l3.getDecoderType(), MarklinLocomotive.decoderType.MM2);
+
+        try
+        {
+            model.changeLocAddress(l3.getName(), 0, MarklinLocomotive.decoderType.MULTI_UNIT);
+        }
+        catch (Exception e) {}
+        
+        assertEquals(l3.getDecoderType(), MarklinLocomotive.decoderType.MM2);
+    }
+    
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -256,11 +344,24 @@ public class testLocomotive
                 4, // length
                 new HashMap<>() // total runtime
         );
+        
+        model.newMM2Locomotive("Test loc 3", 80);
+        model.newMM2Locomotive("Test loc 4", 79);
+        model.newMFXLocomotive("Test loc 5", 78);
+        model.newDCCLocomotive("Test loc 6", 77);
+        
+        model.newDCCLocomotive("Test loc 7", 76);
+        model.getLocByName("Test loc 7").setAddress(76, MarklinLocomotive.decoderType.MULTI_UNIT);
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception
     {
+        model.deleteLoc("Test loc 3");
+        model.deleteLoc("Test loc 4");
+        model.deleteLoc("Test loc 5");
+        model.deleteLoc("Test loc 6");
+        model.deleteLoc("Test loc 7");
     }
 
     @BeforeMethod
