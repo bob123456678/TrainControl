@@ -1829,6 +1829,35 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.rebuildLocIdCache();
         
         this.log("Changed address of " + l.getName() + " to " + newAddress + " (" + newDecoderType.name() + ")");
+        
+        // Ensure linked locomotives have valid addresses
+        for (MarklinLocomotive other : getLocomotives())
+        {
+            if (other.hasLinkedLocomotives())
+            {
+                other.preSetLinkedLocomotives(other.getLinkedLocomotiveNames());
+                other.setLinkedLocomotives();
+            }
+        }
+    }
+    
+    /**
+     * Checks if this locomotive is linked to any other multi units
+     * @param l
+     * @return 
+     */
+    @Override
+    public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l)
+    {
+        for (MarklinLocomotive other : getLocomotives())
+        {
+            if (other.hasLinkedLocomotive(l))
+            {
+                return other;
+            }
+        }
+        
+        return null;
     }
     
     /**

@@ -252,13 +252,18 @@ public class testLocomotive
         MarklinLocomotive l5 = model.getLocByName("Test loc 5");
         MarklinLocomotive l6 = model.getLocByName("Test loc 6");
         MarklinLocomotive l7 = model.getLocByName("Test loc 7");
+        MarklinLocomotive l8 = model.getLocByName("Test loc 8");
+        MarklinLocomotive l88 = model.getLocByName("Test loc 88");
 
+        
         Map<String, Double> locList = new HashMap<String, Double>() {{ put(l4.getName(), 1.0); put(l6.getName(), -1.1); }};
         Map<String, Double> locListB = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); }};
 
         Map<String, Double> locList2 = new HashMap<String, Double>() {{ put(l3.getName(), 1.0); put(l5.getName(), 1.0); }};
         Map<String, Double> locList3 = new HashMap<String, Double>() {{ put(l7.getName(), -1.0); }};
 
+        Map<String, Double> locList88 = new HashMap<String, Double>() {{ put(l88.getName(), -1.0); }};
+        
         // Normal process of assigning a multi unit
         assertTrue(l3.getLinkedLocomotiveNames().isEmpty());
         l3.preSetLinkedLocomotives(locList);
@@ -281,7 +286,25 @@ public class testLocomotive
         l3.preSetLinkedLocomotives(locList);
         l3.setLinkedLocomotives();
         assertEquals(l3.getLinkedLocomotiveNames().size(), 2);
-
+        
+        // Changing the address should re-validate the state
+        
+        // No change - address does not conflict
+        try
+        {
+            model.changeLocAddress(l4.getName(), l3.getAddress() - 10, l3.getDecoderType());
+        }
+        catch (Exception e) {}
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 2);
+        
+        // Should be removed - address does conflict
+        try
+        {
+            model.changeLocAddress(l4.getName(), l3.getAddress(), l3.getDecoderType());
+        }
+        catch (Exception e) {}
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+                
         // Cannot add an existing multi-unit or itself
         assertTrue(l5.getLinkedLocomotiveNames().isEmpty());
         l5.preSetLinkedLocomotives(locList2);
@@ -309,6 +332,13 @@ public class testLocomotive
         catch (Exception e) {}
         
         assertEquals(l3.getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        
+        // Cannot add loc with same address
+        l8.preSetLinkedLocomotives(locList88);
+        assertTrue(l8.getLinkedLocomotiveNames().isEmpty());
+
+        l8.setLinkedLocomotives();
+        assertTrue(l8.getLinkedLocomotiveNames().isEmpty());
     }
     
     @BeforeClass
@@ -349,9 +379,12 @@ public class testLocomotive
         model.newMM2Locomotive("Test loc 4", 79);
         model.newMFXLocomotive("Test loc 5", 78);
         model.newDCCLocomotive("Test loc 6", 77);
-        
+
         model.newDCCLocomotive("Test loc 7", 76);
         model.getLocByName("Test loc 7").setAddress(76, MarklinLocomotive.decoderType.MULTI_UNIT);
+        
+        model.newDCCLocomotive("Test loc 8", 75);
+        model.newDCCLocomotive("Test loc 88", 75);
     }
 
     @AfterClass
@@ -362,6 +395,8 @@ public class testLocomotive
         model.deleteLoc("Test loc 5");
         model.deleteLoc("Test loc 6");
         model.deleteLoc("Test loc 7");
+        model.deleteLoc("Test loc 8");
+        model.deleteLoc("Test loc 88");
     }
 
     @BeforeMethod

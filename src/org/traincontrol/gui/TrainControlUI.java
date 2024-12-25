@@ -9074,15 +9074,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void changeLinkedLocomotives(MarklinLocomotive l)
     {
-        for (MarklinLocomotive other : this.model.getLocomotives())
+        if (this.model.isLocLinkedToOthers(l) != null)
         {
-            if (other.hasLinkedLocomotive(l))
-            {
-                JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + other.getName() + " and cannot be made a Multi Unit.");
-                return;
-            }
+            JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + this.model.isLocLinkedToOthers(l).getName() + " and cannot be made a Multi Unit.");
+            return;
         }
-        
+         
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
             JOptionPane.showMessageDialog(this, "Multi Units from the Central Station cannot be customized in TrainControl.");
@@ -9134,7 +9131,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         for (MarklinLocomotive loco : allLocomotives)
         {
-            if (!loco.hasLinkedLocomotives() && !loco.equals(l) && loco.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT)
+            if (!loco.hasLinkedLocomotives() && !loco.equals(l) 
+                    && loco.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT
+                    && !loco.hasEquivalentAddress(l))
             {
                 JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5)); // Added horizontal and vertical gaps
                 JCheckBox checkBox = new JCheckBox(loco.getName(), currentLinkedLocos.containsKey(loco.getName()));

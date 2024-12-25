@@ -429,6 +429,18 @@ public class MarklinLocomotive extends Locomotive
     }
        
     /**
+     * Checks if the passed locomotive has the same effective address as this one
+     * @param l
+     * @return 
+     */
+    public boolean hasEquivalentAddress(MarklinLocomotive l)
+    {
+        if (l == null || !(l instanceof MarklinLocomotive)) return false;
+        
+        return l.getAddress() == this.getAddress() && l.getDecoderType() == this.getDecoderType();
+    }
+    
+    /**
      * Gets the decoder type
      * @return 
      */
@@ -948,6 +960,10 @@ public class MarklinLocomotive extends Locomotive
             else if (loco.hasLinkedLocomotives())
             {
                 network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is itself a multi-unit");
+            }
+            else if (this.hasEquivalentAddress(loco))
+            {
+                network.log("Error setting linked locomotive for " + this.getName() + ": digital address of " + loco.getName() + " must not be the same.");
             }
             // Configure
             else 
