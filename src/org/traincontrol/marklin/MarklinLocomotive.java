@@ -898,13 +898,28 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Check if this locomotive is linked to another
+     * Checks if this locomotive is linked to another as a multi-unit
      * @param l
      * @return 
      */
-    public boolean hasLinkedLocomotive(MarklinLocomotive l)
+    @Override
+    public boolean isLinkedTo(Locomotive l)
     {
-        return this.linkedLocomotives.containsKey(l);
+        // This check would normally be enough, but for completeness we should also check for shared addresses...
+        if (this.linkedLocomotives.containsKey((MarklinLocomotive) l))
+        {
+            return true;
+        }
+        
+        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        {
+            if (other.hasEquivalentAddress((MarklinLocomotive) l))
+            {
+                return true;
+            }
+        }
+        
+        return this.hasEquivalentAddress((MarklinLocomotive) l);
     }
     
     /**
@@ -935,38 +950,13 @@ public class MarklinLocomotive extends Locomotive
             
             MarklinLocomotive loco = network.getLocByName(locoName);
             
-            // Validate
-            if (loco == null)
-            {
-                network.log("Error setting linked locomotive: " + locoName + " does not exist");
-            }
-            else if (!loco.getLinkedLocomotives().isEmpty())
-            {
-                network.log("Error setting linked locomotive: " + locoName + " is already linked to other locomotives");
-            }
-            
-            else if (value < -2 || value > 2 || value == 0)
+            // Validate speed adjustment
+            if (value < -2 || value > 2 || value == 0)
             {
                 network.log("Error setting linked locomotive: speed adjustment must be nonzero between -2 and 2");
             }
-            else if (this.equals(loco))
-            {
-                network.log("Error setting linked locomotive: cannot assign " + locoName + " to itself");
-            }
-            else if (loco.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
-            {
-                network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is a Central Station multi-unit");
-            }
-            else if (loco.hasLinkedLocomotives())
-            {
-                network.log("Error setting linked locomotive: cannot assign " + locoName + " because it is itself a multi-unit");
-            }
-            else if (this.hasEquivalentAddress(loco))
-            {
-                network.log("Error setting linked locomotive for " + this.getName() + ": digital address of " + loco.getName() + " must not be the same.");
-            }
-            // Configure
-            else 
+            // Validate locomotive & configure
+            else if (this.canBeLinkedTo(loco, true))
             {
                 linkedLocomotives.put(loco, value);
                 
@@ -1008,6 +998,45 @@ public class MarklinLocomotive extends Locomotive
         }
         
         return locomotiveNames;
+    }
+        
+    /**
+     * Checks if the passed locomotive can be linked as a multi-unit to the current one
+     * @param other
+     * @param logError
+     * @return 
+     */
+    public boolean canBeLinkedTo(MarklinLocomotive other, boolean logError)
+    {
+        String error = null;
+        
+        if (other == null || !(other instanceof MarklinLocomotive))
+        {
+            error = "Error linking locomotive to " + this.getName() + ": object is not a valid locomotive";
+        }
+        else if (this.equals(other))
+        {
+            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " to itself";
+        }
+        else if (other.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " because it is a Central Station multi-unit";
+        }
+        else if (other.hasLinkedLocomotives())
+        {
+            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " because it is itself a multi-unit";
+        }
+        else if (this.hasEquivalentAddress(other))
+        {
+            error = "Error linking locomotive to " + this.getName() + ": digital address of " + other.getName() + " must not be the same.";
+        }
+        
+        if (logError && error != null)
+        {
+            this.network.log(error);
+        }
+        
+        return error == null;
     }
     
     /**

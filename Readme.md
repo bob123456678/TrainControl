@@ -301,6 +301,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
+        - Locomotives can no longer be edited in the UI while autonomy is running
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)

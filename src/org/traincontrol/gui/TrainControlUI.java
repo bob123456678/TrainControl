@@ -8985,6 +8985,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void changeLocAddress(MarklinLocomotive l)
     {
+        if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isRunning())
+        {
+            JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
+            return;
+        }
+        
         try
         {
             if (l != null)
@@ -9055,6 +9061,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     // Update locomotive on graph
                     if (this.model.getAutoLayout() != null)
                     {
+                        this.model.getAutoLayout().sanitizeMultiUnits(l);
                         this.model.getAutoLayout().refreshUI();
                     }
                 }
@@ -9077,6 +9084,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (this.model.isLocLinkedToOthers(l) != null)
         {
             JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + this.model.isLocLinkedToOthers(l).getName() + " and cannot be made a Multi Unit.");
+            return;
+        }
+        
+        if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isRunning())
+        {
+            JOptionPane.showMessageDialog(this, "Cannot edit Multi Units while autonomy is running.");
             return;
         }
          
@@ -9131,9 +9144,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         for (MarklinLocomotive loco : allLocomotives)
         {
-            if (!loco.hasLinkedLocomotives() && !loco.equals(l) 
-                    && loco.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT
-                    && !loco.hasEquivalentAddress(l))
+            if (l.canBeLinkedTo(loco, false))
             {
                 JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5)); // Added horizontal and vertical gaps
                 JCheckBox checkBox = new JCheckBox(loco.getName(), currentLinkedLocos.containsKey(loco.getName()));
@@ -9245,6 +9256,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             l.preSetLinkedLocomotives(newLinkedLocos);
             l.setLinkedLocomotives();
             this.repaintLoc(true, null);
+            
+            // Ensure there are no conflicts on the graph
+            if (this.model.getAutoLayout() != null)
+            {
+                this.model.getAutoLayout().sanitizeMultiUnits(l);
+                this.repaintAutoLocListFull();
+                this.model.getAutoLayout().refreshUI();
+            }
         }
     }
 

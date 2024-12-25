@@ -255,9 +255,12 @@ public class testLocomotive
         MarklinLocomotive l8 = model.getLocByName("Test loc 8");
         MarklinLocomotive l88 = model.getLocByName("Test loc 88");
 
-        
         Map<String, Double> locList = new HashMap<String, Double>() {{ put(l4.getName(), 1.0); put(l6.getName(), -1.1); }};
-        Map<String, Double> locListB = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); }};
+        Map<String, Double> locListShorter = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); }};
+        Map<String, Double> locListDupe = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); put(l4.getName(), 1.3); }};
+        Map<String, Double> locListInvalidRange = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); put(l6.getName(), 2.1); }};
+        Map<String, Double> locListInvalidRange2 = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); put(l6.getName(), 0.0); }};
+        Map<String, Double> locListInvalidRange3 = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); put(l6.getName(), -2.1); }};
 
         Map<String, Double> locList2 = new HashMap<String, Double>() {{ put(l3.getName(), 1.0); put(l5.getName(), 1.0); }};
         Map<String, Double> locList3 = new HashMap<String, Double>() {{ put(l7.getName(), -1.0); }};
@@ -277,7 +280,28 @@ public class testLocomotive
         assertEquals(l3.getLinkedLocomotiveNames().get(l6.getName()), -1.1);
         
         // Trim the list
-        l3.preSetLinkedLocomotives(locListB);
+        l3.preSetLinkedLocomotives(locListShorter);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.2);
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+        
+        // Attempt to add a duplicate
+        l3.preSetLinkedLocomotives(locListDupe);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+        
+        // Attempt to add invalid addresses
+        l3.preSetLinkedLocomotives(locListInvalidRange);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.2);
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+        
+        l3.preSetLinkedLocomotives(locListInvalidRange2);
+        l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.2);
+        assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
+        
+        l3.preSetLinkedLocomotives(locListInvalidRange3);
         l3.setLinkedLocomotives();
         assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.2);
         assertEquals(l3.getLinkedLocomotiveNames().size(), 1);
@@ -285,6 +309,8 @@ public class testLocomotive
         // Expand the list
         l3.preSetLinkedLocomotives(locList);
         l3.setLinkedLocomotives();
+        assertEquals(l3.getLinkedLocomotiveNames().get(l4.getName()), 1.0);
+        assertEquals(l3.getLinkedLocomotiveNames().get(l6.getName()), -1.1);
         assertEquals(l3.getLinkedLocomotiveNames().size(), 2);
         
         // Changing the address should re-validate the state

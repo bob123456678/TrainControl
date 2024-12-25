@@ -1897,6 +1897,30 @@ public class Layout
         
         return true;
     }
+        
+    /**
+     * Ensures that the passed locomotive does not conflict with any other multi-units by removing it from the graph
+     * @param l 
+     */
+    public void sanitizeMultiUnits(Locomotive l)
+    {
+        if (l != null)
+        {
+            for (Point p : this.getPoints())
+            {
+                if (
+                    // Is the locomotive present in any active multi-unit?
+                    p.getCurrentLocomotive() != null && p.getCurrentLocomotive().isLinkedTo(l)
+                    // Or are we linked to the current locomotive?
+                    || l.isLinkedTo(p.getCurrentLocomotive())
+                )
+                {
+                    this.control.log("Auto layout warning: removed locomotive " + p.getCurrentLocomotive().getName() + " from " + p.getName() + " because it confliced with " + l.getName());
+                    p.setLocomotive(null);
+                }          
+            }
+        }
+    }
     
     /**
      * Requests to move a locomotive to a new station.  Called from the UI.
@@ -1949,6 +1973,9 @@ public class Layout
                 }
             }
             
+            // Ensure no multi-unit conflicts
+            this.sanitizeMultiUnits(l);
+                        
             // Set new location
             this.getPoint(targetPoint).setLocomotive(l);
             
@@ -2682,9 +2709,12 @@ public class Layout
                                 control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
                             }
 
+                            // De-conflict with other multi-units
+                            layout.sanitizeMultiUnits(l);
+                            
                             // Place the locomotive
                             layout.getPoint(point.getString("name")).setLocomotive(l);
-
+                            
                             // Reset if none present
                             l.setDepartureFunc(null);
 
@@ -2968,5 +2998,3 @@ public class Layout
         return Layout.lastError;
     }
 }
-
-

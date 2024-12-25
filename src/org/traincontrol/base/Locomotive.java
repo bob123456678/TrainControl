@@ -478,6 +478,13 @@ public abstract class Locomotive
      */
     public abstract Locomotive execRoute(String name);
     
+    /**
+     * Checks if this locomotive is linked to another as a multi-unit
+     * @param l
+     * @return 
+     */
+    public abstract boolean isLinkedTo(Locomotive l);
+    
     /* Public functionality */
     
     @Override

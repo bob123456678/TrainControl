@@ -1851,7 +1851,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         for (MarklinLocomotive other : getLocomotives())
         {
-            if (other.hasLinkedLocomotive(l))
+            if (other.isLinkedTo(l))
             {
                 return other;
             }
