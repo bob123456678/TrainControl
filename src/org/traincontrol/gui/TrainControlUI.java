@@ -1840,6 +1840,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             new Thread(() -> {
                 this.model.getLocByName(l.getName()).applyPreferredFunctions();
+                
+                // Ensure correct cascading
+                for (MarklinLocomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
+                {
+                    other.applyPreferredFunctions();
+                }
+                
             }).start();
         }
     }
@@ -1884,6 +1891,13 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             new Thread(() -> {
                 this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
+                
+                // Ensure correct cascading
+                for (MarklinLocomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
+                {
+                    this.model.locFunctionsOff(other);
+                }
+                
             }).start();
         }
     }
