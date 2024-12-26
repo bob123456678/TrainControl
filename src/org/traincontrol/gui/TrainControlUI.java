@@ -9318,6 +9318,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         // Call filter() once to render initial list
         filterField.setText("");
+        
+        // Ensure the field is focused
+        filterField.addAncestorListener(new AncestorListener()
+        {
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {}
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                event.getComponent().requestFocusInWindow();
+            }
+        });
 
         int result = JOptionPane.showConfirmDialog(null, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 

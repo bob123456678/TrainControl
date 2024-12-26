@@ -679,7 +679,17 @@ public class MarklinLocomotive extends Locomotive
         for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
         {
             double scaledSpeed = speed * Math.abs(entry.getValue()); 
-            int roundedSpeed = (int) Math.ceil(scaledSpeed); 
+            int roundedSpeed;
+            
+            if (Math.abs(entry.getValue()) > 1)
+            {
+                roundedSpeed = (int) Math.ceil(scaledSpeed); 
+            }
+            else
+            {
+                roundedSpeed = (int) Math.floor(scaledSpeed); 
+            }
+            
             entry.getKey().setSpeed(roundedSpeed);;
         }
         
@@ -985,24 +995,13 @@ public class MarklinLocomotive extends Locomotive
             else if (this.canBeLinkedTo(loco, true))
             {
                 linkedLocomotives.put(loco, value);
-                
-                // Ensure the correct direction
-                if (value < 0)
-                {
-                    if (this.getDirection() == locDirection.DIR_BACKWARD)
-                    {
-                        loco.setDirection(locDirection.DIR_FORWARD);
-                    }
-                    else
-                    {
-                        loco.setDirection(locDirection.DIR_BACKWARD);
-                    }
-                }
-                else
-                {
-                    loco.setDirection(this.getDirection());
-                }
             }
+        }
+        
+        // Ensure the correct direction - commands should automatically cascade
+        if (!this.linkedLocomotives.isEmpty())
+        {
+            this.setDirection(this.getDirection());
         }
         
         return linkedLocomotives.size();
