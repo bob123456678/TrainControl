@@ -132,11 +132,23 @@ public class LocomotiveStats extends javax.swing.JPanel
                     tableModel.addRow(data);
 
                     // Populate stats
-                    todaysTotalRuntime += l.getRuntimeToday();
-                    if (l.getRuntimeToday() > 0) todaysLocsRun +=1;
-
-                    totalRuntime += l.getTotalRuntime();
-                    if (l.getTotalRuntime() > 0) totalLocsRun +=1;
+                    
+                    // Skip multi-units because they will always pass through to another locomotive
+                    if (((MarklinLocomotive) l).getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT &&
+                            !(((MarklinLocomotive) l).hasLinkedLocomotives())
+                    )
+                    {
+                        todaysTotalRuntime += l.getRuntimeToday();
+                        if (l.getRuntimeToday() > 0) todaysLocsRun +=1;
+                    }
+                    
+                    if (((MarklinLocomotive) l).getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT &&
+                            !(((MarklinLocomotive) l).hasLinkedLocomotives())
+                    )
+                    {
+                        totalRuntime += l.getTotalRuntime();
+                        if (l.getTotalRuntime() > 0) totalLocsRun +=1;
+                    }
                 }
 
                 this.todaysRuntimeVal.setText(Conversion.convertSecondsToHMmSs(todaysTotalRuntime));
