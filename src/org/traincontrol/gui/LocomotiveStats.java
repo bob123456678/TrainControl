@@ -14,6 +14,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.RowFilter;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import org.traincontrol.base.Locomotive;
@@ -125,8 +126,12 @@ public class LocomotiveStats extends javax.swing.JPanel
                 }
 
                 for (Locomotive l : sortedLocs)
-                {            
-                    Object[] data = {l.getName(), new TimestampString(l.getTotalRuntime()), new TimestampString(l.getRuntimeToday()), 
+                {        
+                    boolean isMultiUnit = ((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT ||
+                            ((MarklinLocomotive) l).hasLinkedLocomotives();
+                    
+                    Object[] data = {l.getName() + (isMultiUnit ? " (Multi Unit)" : ""),
+                        new TimestampString(l.getTotalRuntime()), new TimestampString(l.getRuntimeToday()), 
                         l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
                     tableModel.addRow(data);
@@ -134,17 +139,13 @@ public class LocomotiveStats extends javax.swing.JPanel
                     // Populate stats
                     
                     // Skip multi-units because they will always pass through to another locomotive
-                    if (((MarklinLocomotive) l).getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT &&
-                            !(((MarklinLocomotive) l).hasLinkedLocomotives())
-                    )
+                    if (!isMultiUnit)
                     {
                         todaysTotalRuntime += l.getRuntimeToday();
                         if (l.getRuntimeToday() > 0) todaysLocsRun +=1;
                     }
                     
-                    if (((MarklinLocomotive) l).getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT &&
-                            !(((MarklinLocomotive) l).hasLinkedLocomotives())
-                    )
+                    if (!isMultiUnit)
                     {
                         totalRuntime += l.getTotalRuntime();
                         if (l.getTotalRuntime() > 0) totalLocsRun +=1;
@@ -161,6 +162,10 @@ public class LocomotiveStats extends javax.swing.JPanel
 
                 this.statsTable.setModel(tableModel);
                 this.statsTable.setAutoCreateRowSorter(true);
+                
+                // Widen locomotive name column
+                TableColumn locCol = statsTable.getColumnModel().getColumn(0);
+                locCol.setPreferredWidth(145);
             }
             catch (Exception e)
             {
