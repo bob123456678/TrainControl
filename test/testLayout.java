@@ -163,12 +163,14 @@ public class testLayout
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLayout.model = init(null, true, false, false, false); 
+        testLayout.model = init(null, true, false, false, true); 
         model.stop();
         
         String s = 
-            new BufferedReader(new InputStreamReader(TrainControlUI.class.getResource(RESOURCE_PATH + AUTONOMY_SAMPLE).openStream())).lines().collect(Collectors.joining("\n"))
-        ;
+            new BufferedReader(
+                    new InputStreamReader(
+                            TrainControlUI.class.getResource(RESOURCE_PATH + AUTONOMY_SAMPLE).openStream())
+                    ).lines().collect(Collectors.joining("\n"));
         
         model.parseAuto(s);
         

@@ -76,5 +76,5 @@ public interface ViewListener
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset);
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset);
     public int getTotalLocStats(int days, long offset);
-    public MarklinLocomotive isLocDirectlyLinkedToOthers(MarklinLocomotive l);
+    public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l);
 }

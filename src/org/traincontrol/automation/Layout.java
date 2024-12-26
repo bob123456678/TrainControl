@@ -1910,9 +1910,9 @@ public class Layout
             {
                 if (
                     // Is the locomotive present in any active multi-unit?
-                    p.getCurrentLocomotive() != null && p.getCurrentLocomotive().isLinkedTo(l)
+                    p.getCurrentLocomotive() != null && !p.getCurrentLocomotive().isMultiUnitCompatible(l)
                     // Or are we linked to the current locomotive?
-                    || l.isLinkedTo(p.getCurrentLocomotive())
+                    || p.getCurrentLocomotive() != null && !l.isMultiUnitCompatible(p.getCurrentLocomotive())
                 )
                 {
                     this.control.log("Auto layout warning: removed locomotive " + p.getCurrentLocomotive().getName() + " from " + p.getName() + " because it confliced with " + l.getName());

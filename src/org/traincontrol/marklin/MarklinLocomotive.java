@@ -902,9 +902,17 @@ public class MarklinLocomotive extends Locomotive
      * @param l
      * @return 
      */
-    public boolean isDirectlyLinkedTo(Locomotive l)
+    public boolean isLinkedTo(Locomotive l)
     {
-        // This check would normally be enough, but for completeness we should also check for shared addresses...
+        // Our linked locomotives have the same address as the other locomotive
+        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        {
+            if (other.hasEquivalentAddress((MarklinLocomotive) l))
+            {
+                return true;
+            }
+        }
+        
         return this.linkedLocomotives.containsKey((MarklinLocomotive) l);
     }
     
@@ -914,31 +922,16 @@ public class MarklinLocomotive extends Locomotive
      * @return 
      */
     @Override
-    public boolean isLinkedTo(Locomotive l)
+    public boolean isMultiUnitCompatible(Locomotive l)
     {
         if (l == null || !(l instanceof Locomotive)) return false;
         
         // This check would normally be enough, but for completeness we should also check for shared addresses...
-        if (this.isDirectlyLinkedTo(l))
+        if (this.isLinkedTo(l))
         {
-            return true;
+            return false;
         }
-        
-        // We have the same address as the other locomotive
-        if (this.hasEquivalentAddress((MarklinLocomotive) l))
-        {
-            return true;
-        }
-        
-        // Our linked locomotives have the same address as the other locomotive
-        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
-        {
-            if (other.hasEquivalentAddress((MarklinLocomotive) l) || other.equals(l))
-            {
-                return true;
-            }
-        }
-        
+                        
         // Locomotives linked to the other locomotive have the same as one of our linked locomotives
         for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
         {
@@ -946,12 +939,13 @@ public class MarklinLocomotive extends Locomotive
             {
                 if (other.hasEquivalentAddress(other2) || other.equals(other2))
                 {
-                    return true;
+                    return false;
                 }
             }
         }
         
-        return this.hasEquivalentAddress((MarklinLocomotive) l);
+        // We can't have the same address as the other locomotive
+        return !this.hasEquivalentAddress((MarklinLocomotive) l);
     }
     
     /**
@@ -1061,6 +1055,17 @@ public class MarklinLocomotive extends Locomotive
         else if (this.hasEquivalentAddress(other))
         {
             error = "Error linking locomotive to " + this.getName() + ": digital address of " + other.getName() + " must not be the same.";
+        }
+        else
+        {
+            for(MarklinLocomotive l : this.getLinkedLocomotives().keySet())
+            {
+                if (l.hasEquivalentAddress(other))
+                {
+                    error = "Error linking locomotive to " + this.getName() + ": " + other.getName() + " matches the address of existing linked locomotive " + l.getName() + ".";
+                    break;
+                }
+            }
         }
         
         if (logError && error != null)

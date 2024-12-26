@@ -242,10 +242,91 @@ public class testLocomotive
     }
     
     /**
+     * Test command propagation
+     * @throws java.lang.InterruptedException
+     */
+    @Test
+    public void testMultiUnitCommands() throws InterruptedException
+    {
+        // This allows us to test without a central station
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+        
+        MarklinLocomotive l_mu = model.getLocByName("Test loc MU");
+        MarklinLocomotive l1 = model.getLocByName("Test loc child 1");
+        MarklinLocomotive l2 = model.getLocByName("Test loc child 2");
+        MarklinLocomotive l3 = model.getLocByName("Test loc child 3");
+
+        Map<String, Double> locList = new HashMap<String, Double>() {{ put(l1.getName(), 1.0); put(l2.getName(), -2.0); put(l3.getName(), 0.8); }};
+        l_mu.preSetLinkedLocomotives(locList);
+        l_mu.setLinkedLocomotives();
+         
+        assertEquals(l_mu.getLinkedLocomotiveNames().size(), 3);
+        
+        // Sanity check
+        l_mu.setDirection(Locomotive.locDirection.DIR_FORWARD);
+        l_mu.setSpeed(10);
+        l_mu.setF(0, false);
+        l_mu.setF(1, true);
+        
+        Thread.sleep(1000);
+        
+        // Speeds should be adjusted
+        assertEquals(l_mu.getSpeed(), 10);
+        assertEquals(l1.getSpeed(), 10);
+        assertEquals(l2.getSpeed(), 20);
+        assertEquals(l3.getSpeed(), 8);
+        
+        // MU parameters unchanged
+        assertEquals(Locomotive.locDirection.DIR_FORWARD, l_mu.getDirection());
+        assertEquals(false, l_mu.getF(0));
+        assertEquals(true, l_mu.getF(1));
+
+        // Linked locomotive parameters matching
+        assertEquals(l1.getDirection(), l_mu.getDirection());
+        assertNotEquals(l2.getDirection(), l_mu.getDirection());
+        assertEquals(l3.getDirection(), l_mu.getDirection());
+        assertEquals(false, l1.getF(0));
+        assertEquals(true, l1.getF(1));
+        assertEquals(false, l2.getF(0));
+        assertEquals(true, l2.getF(1));       
+        assertEquals(false, l3.getF(0));
+        assertEquals(true, l3.getF(1));       
+        
+        l_mu.stop();
+        Thread.sleep(1000);
+
+        assertEquals(l_mu.getSpeed(), 0);
+        assertEquals(l1.getSpeed(), 0);
+        assertEquals(l2.getSpeed(), 0);
+        assertEquals(l3.getSpeed(), 0);
+        
+        l_mu.functionsOff();
+        Thread.sleep(1000);
+
+        assertEquals(false, l_mu.getF(0));
+        assertEquals(false, l_mu.getF(1));
+        assertEquals(false, l1.getF(0));
+        assertEquals(false, l1.getF(1));
+        assertEquals(false, l2.getF(0));
+        assertEquals(false, l2.getF(1));       
+        assertEquals(false, l3.getF(0));
+        assertEquals(false, l3.getF(1));    
+        
+        l_mu.switchDirection();
+        Thread.sleep(1000);
+
+        assertEquals(Locomotive.locDirection.DIR_BACKWARD, l_mu.getDirection());
+
+        assertEquals(l1.getDirection(), l_mu.getDirection());
+        assertNotEquals(l2.getDirection(), l_mu.getDirection());
+        assertEquals(l3.getDirection(), l_mu.getDirection());        
+    }
+    
+    /**
      * Test multi unit creation
      */
     @Test
-    public void testMultiUnit()
+    public void testMultiUnitCreation()
     { 
         MarklinLocomotive l3 = model.getLocByName("Test loc 3");
         MarklinLocomotive l4 = model.getLocByName("Test loc 4");
@@ -254,6 +335,8 @@ public class testLocomotive
         MarklinLocomotive l7 = model.getLocByName("Test loc 7");
         MarklinLocomotive l8 = model.getLocByName("Test loc 8");
         MarklinLocomotive l88 = model.getLocByName("Test loc 88");
+        MarklinLocomotive l888 = model.getLocByName("Test loc 888");
+        MarklinLocomotive l9 = model.getLocByName("Test loc 9");
 
         Map<String, Double> locList = new HashMap<String, Double>() {{ put(l4.getName(), 1.0); put(l6.getName(), -1.1); }};
         Map<String, Double> locListShorter = new HashMap<String, Double>() {{ put(l4.getName(), 1.2); }};
@@ -266,7 +349,8 @@ public class testLocomotive
         Map<String, Double> locList3 = new HashMap<String, Double>() {{ put(l7.getName(), -1.0); }};
 
         Map<String, Double> locList88 = new HashMap<String, Double>() {{ put(l88.getName(), -1.0); }};
-        
+        Map<String, Double> locList888 = new HashMap<String, Double>() {{ put(l88.getName(), -1.0); put(l888.getName(), -1.0); }};
+
         // Normal process of assigning a multi unit
         assertTrue(l3.getLinkedLocomotiveNames().isEmpty());
         l3.preSetLinkedLocomotives(locList);
@@ -365,12 +449,36 @@ public class testLocomotive
 
         l8.setLinkedLocomotives();
         assertTrue(l8.getLinkedLocomotiveNames().isEmpty());
+        
+        // Cannot have two children with the same address
+        l9.preSetLinkedLocomotives(locList888);
+        l9.setLinkedLocomotives();
+        assertEquals(l9.getLinkedLocomotiveNames().size(), 1);
+        
+        // Change address to match one of the child locomotives
+        try
+        {
+            model.changeLocAddress("Test loc 88", 73, MarklinLocomotive.decoderType.DCC);
+        }
+        catch (Exception e) {}
+        
+        l9.preSetLinkedLocomotives(locList888);
+        l9.setLinkedLocomotives();
+        assertEquals(l9.getLinkedLocomotiveNames().size(), 2);
+        
+        try
+        {
+            model.changeLocAddress("Test loc 88", 75, MarklinLocomotive.decoderType.DCC);
+        }
+        catch (Exception e) {}
+        
+        assertEquals(l9.getLinkedLocomotiveNames().size(), 1);
     }
     
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLocomotive.model = init(null, true, false, false, false); 
+        testLocomotive.model = init(null, true, false, false, true); 
         model.stop();
         
         l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
@@ -411,6 +519,13 @@ public class testLocomotive
         
         model.newDCCLocomotive("Test loc 8", 75);
         model.newDCCLocomotive("Test loc 88", 75);
+        model.newDCCLocomotive("Test loc 888", 75);
+        model.newDCCLocomotive("Test loc 9", 74);
+        
+        model.newMFXLocomotive("Test loc MU", 4);
+        model.newMFXLocomotive("Test loc child 1", 1);
+        model.newMM2Locomotive("Test loc child 2", 2);
+        model.newMFXLocomotive("Test loc child 3", 3);
     }
 
     @AfterClass
@@ -418,11 +533,18 @@ public class testLocomotive
     {
         model.deleteLoc("Test loc 3");
         model.deleteLoc("Test loc 4");
+        model.deleteLoc("Test loc 4a");
         model.deleteLoc("Test loc 5");
         model.deleteLoc("Test loc 6");
         model.deleteLoc("Test loc 7");
         model.deleteLoc("Test loc 8");
         model.deleteLoc("Test loc 88");
+        model.deleteLoc("Test loc 888");
+        model.deleteLoc("Test loc 9");
+
+        model.deleteLoc("Test loc MU");
+        model.deleteLoc("Test loc child 1");
+        model.deleteLoc("Test loc child 2");
     }
 
     @BeforeMethod

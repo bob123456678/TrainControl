@@ -1852,16 +1852,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Checks if this locomotive is linked to any other multi units
+     * Checks if this locomotive is directly linked to any others as a multi-units
      * @param l
      * @return 
      */
     @Override
-    public MarklinLocomotive isLocDirectlyLinkedToOthers(MarklinLocomotive l)
+    public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l)
     {
         for (MarklinLocomotive other : getLocomotives())
         {
-            if (other.isDirectlyLinkedTo(l))
+            if (other.isLinkedTo(l))
             {
                 return other;
             }
