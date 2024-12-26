@@ -59,6 +59,7 @@ public interface ViewListener
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
     public void parseAuto(String s);
     public Layout getAutoLayout();
+    public boolean isAutonomyRunning();
     public boolean isDebug();
     MarklinAccessory newSignal(int address, boolean state);
     MarklinAccessory newSwitch(int address, boolean state);

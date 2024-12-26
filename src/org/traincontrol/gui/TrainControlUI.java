@@ -8989,7 +8989,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void changeLocAddress(MarklinLocomotive l)
     {
-        if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isRunning())
+        if (this.model.isAutonomyRunning())
         {
             JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
             return;
@@ -9091,7 +9091,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return;
         }
 
-        if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isRunning())
+        if (this.model.isAutonomyRunning())
         {
             JOptionPane.showMessageDialog(this, "Cannot edit Multi Units while autonomy is running.");
             return;
@@ -9407,6 +9407,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     public void deleteLoc(String value)
     {
+        if (this.model.isAutonomyRunning())
+        {
+            JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
+            return;
+        }
+        
         if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + value + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
         {
             Locomotive l = this.model.getLocByName(value);

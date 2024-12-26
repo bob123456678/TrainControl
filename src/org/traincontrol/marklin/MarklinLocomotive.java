@@ -916,17 +916,38 @@ public class MarklinLocomotive extends Locomotive
     @Override
     public boolean isLinkedTo(Locomotive l)
     {
+        if (l == null || !(l instanceof Locomotive)) return false;
+        
         // This check would normally be enough, but for completeness we should also check for shared addresses...
         if (this.isDirectlyLinkedTo(l))
         {
             return true;
         }
         
+        // We have the same address as the other locomotive
+        if (this.hasEquivalentAddress((MarklinLocomotive) l))
+        {
+            return true;
+        }
+        
+        // Our linked locomotives have the same address as the other locomotive
         for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
         {
-            if (other.hasEquivalentAddress((MarklinLocomotive) l))
+            if (other.hasEquivalentAddress((MarklinLocomotive) l) || other.equals(l))
             {
                 return true;
+            }
+        }
+        
+        // Locomotives linked to the other locomotive have the same as one of our linked locomotives
+        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        {
+            for (MarklinLocomotive other2 : ((MarklinLocomotive) l).getLinkedLocomotives().keySet())
+            {
+                if (other.hasEquivalentAddress(other2) || other.equals(other2))
+                {
+                    return true;
+                }
             }
         }
         

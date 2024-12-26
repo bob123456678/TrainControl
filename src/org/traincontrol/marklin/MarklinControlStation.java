@@ -1842,6 +1842,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Checks if autonomous operation is currently engaged
+     * @return 
+     */
+    @Override
+    public boolean isAutonomyRunning()
+    {
+        return this.getAutoLayout() != null && this.getAutoLayout().isRunning();
+    }
+    
+    /**
      * Checks if this locomotive is linked to any other multi units
      * @param l
      * @return 
