@@ -902,11 +902,22 @@ public class MarklinLocomotive extends Locomotive
      * @param l
      * @return 
      */
+    public boolean isDirectlyLinkedTo(Locomotive l)
+    {
+        // This check would normally be enough, but for completeness we should also check for shared addresses...
+        return this.linkedLocomotives.containsKey((MarklinLocomotive) l);
+    }
+    
+    /**
+     * Checks if this locomotive is linked to another as a multi-unit or by address
+     * @param l
+     * @return 
+     */
     @Override
     public boolean isLinkedTo(Locomotive l)
     {
         // This check would normally be enough, but for completeness we should also check for shared addresses...
-        if (this.linkedLocomotives.containsKey((MarklinLocomotive) l))
+        if (this.isDirectlyLinkedTo(l))
         {
             return true;
         }

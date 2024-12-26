@@ -1847,11 +1847,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l)
+    public MarklinLocomotive isLocDirectlyLinkedToOthers(MarklinLocomotive l)
     {
         for (MarklinLocomotive other : getLocomotives())
         {
-            if (other.isLinkedTo(l))
+            if (other.isDirectlyLinkedTo(l))
             {
                 return other;
             }
