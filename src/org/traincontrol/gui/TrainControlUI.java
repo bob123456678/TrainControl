@@ -6,6 +6,8 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.HeadlessException;
 import java.awt.Image;
@@ -61,7 +63,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -188,6 +189,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
+    public static final Integer MAX_MU_SELECTOR_LOC_NAME_LENGTH = 16;
     
     // Minimum time between possible route repainting in semi-autonmous mode
     public static final Integer REPAINT_ROUTE_INTERVAL = 100;
@@ -9101,8 +9103,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return;
         }
 
-        List<MarklinLocomotive> allLocomotives = this.model.getLocomotives(); // Fetches all locomotives available
-        Map<String, Double> currentLinkedLocos = l.getLinkedLocomotiveNames(); // Get current linked locomotives
+        List<MarklinLocomotive> allLocomotives = this.model.getLocomotives();
+        Map<String, Double> currentLinkedLocos = l.getLinkedLocomotiveNames();
         Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
 
         // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
@@ -9125,13 +9127,26 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
 
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         JTextField filterField = new JTextField();
-        filterField.setMaximumSize(new Dimension(Integer.MAX_VALUE, filterField.getPreferredSize().height));
-        panel.add(filterField);
-        panel.add(Box.createVerticalStrut(10)); // Add padding below the filter field
+        filterField.setToolTipText("Filter by locomotive name");
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        panel.add(filterField, gbc);
+
+        JPanel scrollPanel = new JPanel();
+        scrollPanel.setLayout(new GridBagLayout());
+        GridBagConstraints scrollGbc = new GridBagConstraints();
+        scrollGbc.insets = new Insets(5, 5, 5, 5);
+        scrollGbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Add heading
         JPanel headingPanel = new JPanel(new GridLayout(1, 3));
@@ -9146,8 +9161,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         headingPanel.add(nameLabel);
         headingPanel.add(multiplierLabel);
         headingPanel.add(reverseLabel);
-        panel.add(headingPanel);
-        panel.add(Box.createVerticalStrut(10)); // Add padding below the heading
+        scrollGbc.gridy = 0;
+        scrollPanel.add(headingPanel, scrollGbc);
+        scrollGbc.gridy++;
+        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
 
         List<JPanel> rowPanels = new ArrayList<>();
         for (MarklinLocomotive loco : allLocomotives)
@@ -9155,7 +9172,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (l.canBeLinkedTo(loco, false))
             {
                 JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5)); // Added horizontal and vertical gaps
-                JCheckBox checkBox = new JCheckBox(loco.getName(), currentLinkedLocos.containsKey(loco.getName()));
+                JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ? loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : loco.getName(), currentLinkedLocos.containsKey(loco.getName())); 
+                checkBox.setToolTipText(loco.getName());
                 checkBox.setFocusable(false);
                 double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
                 boolean isReversed = multiplierValue < 0;
@@ -9218,8 +9236,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 rowPanel.add(multiplierSlider);
                 rowPanel.add(reverseCheckBox);
                 rowPanels.add(rowPanel);
-                panel.add(rowPanel);
-                panel.add(Box.createVerticalStrut(10)); // Add padding below each row
+
+                scrollGbc.gridy++;
+                scrollPanel.add(rowPanel, scrollGbc);
+                scrollGbc.gridy++;
+                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
             }
         }
 
@@ -9246,41 +9267,64 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             private void filter()
             {
                 String text = filterField.getText().toLowerCase();
-                panel.removeAll();
-                panel.add(filterField);
-                panel.add(Box.createVerticalStrut(10));
-                panel.add(headingPanel);
-                panel.add(Box.createVerticalStrut(10));
+                scrollPanel.removeAll();
+                scrollGbc.gridy = 0;
+                scrollGbc.gridwidth = 3;
+                scrollPanel.add(headingPanel, scrollGbc);
+                scrollGbc.gridy++;
+                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
 
-                for (JPanel rowPanel : rowPanels)
-                {
+                boolean hasRows = false;
+
+                for (JPanel rowPanel : rowPanels) {
                     JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
-                    if (checkBox.getText().toLowerCase().contains(text))
-                    {
-                        panel.add(rowPanel);
-                        panel.add(Box.createVerticalStrut(10)); // Add padding below each row
+                    if (checkBox.getText().toLowerCase().contains(text)) {
+                        scrollGbc.gridy++;
+                        scrollPanel.add(rowPanel, scrollGbc);
+                        scrollGbc.gridy++;
+                        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
+                        hasRows = true;
                     }
                 }
 
-                panel.revalidate();
-                panel.repaint();
-                            filterField.requestFocus();
+                if (!hasRows)
+                {
+                    headingPanel.setVisible(false);
+                    scrollGbc.gridwidth = 3;
+                    scrollPanel.add(new JLabel("No locomotives found."), scrollGbc);
+                }
+                else
+                {
+                    headingPanel.setVisible(true);
+                }
+
+                scrollPanel.revalidate();
+                scrollPanel.repaint();
+                filterField.requestFocus();
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setPreferredSize(new Dimension(600, 500)); 
+        JScrollPane scrollPane = new JScrollPane(scrollPanel);
+        scrollPane.setPreferredSize(new Dimension(600, 500));
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         // Make scrolling faster
         scrollPane.getVerticalScrollBar().setUnitIncrement(scrollPane.getVerticalScrollBar().getUnitIncrement() * 16);
 
-        int result = JOptionPane.showConfirmDialog(null, scrollPane, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridwidth = 3;
+        panel.add(scrollPane, gbc);
+
+        // Call filter() once to render initial list
+        filterField.setText("");
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION)
         {
             newLinkedLocos.clear();
-            Component[] components = panel.getComponents();
+            Component[] components = scrollPanel.getComponents();
 
             for (Component component : components)
             {
@@ -9301,7 +9345,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                         if (multiplier != 0 && multiplier >= -2 && multiplier <= 2)
                         {
-                            newLinkedLocos.put(checkBox.getText(), multiplier);
+                            newLinkedLocos.put(checkBox.getToolTipText(), multiplier);
                         }
                     }
                 }
@@ -9319,7 +9363,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.getAutoLayout().refreshUI();
             }
         }
-    }
+   }
 
     /**
      * Allows the user to specify notes for the given locomotive
