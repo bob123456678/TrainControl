@@ -201,7 +201,7 @@ public class RightClickMenuListener extends MouseAdapter
                 
                 if (((MarklinLocomotive) ui.getButtonLocomotive(source)).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
                 {
-                    menuItem.setEnabled(false);
+                    menuItem.setText("View Multi Unit Locomotives");
                 }
                 
                 add(menuItem);

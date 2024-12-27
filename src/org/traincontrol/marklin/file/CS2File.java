@@ -4,9 +4,11 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLayout;
@@ -839,6 +841,31 @@ public final class CS2File
     {
         List<MarklinLocomotive> out = new ArrayList<>();
         
+        Map<String, String> internalNames = new HashMap<>();
+        
+        // For multi-units, we need to parse the internal CS3 locomotive names
+        for (int i = 0 ; i < locomotiveList.length(); i++)
+        {
+            try
+            {
+                JSONObject loc = locomotiveList.getJSONObject(i);
+                internalNames.put(loc.getString("internname"), loc.getString("name"));
+            }
+            catch (JSONException e)
+            {
+                if (this.control != null)
+                {
+                    this.control.log("Error pre-parsing locomotives.");
+                    this.control.log(e.toString());
+                }
+                else
+                {
+                    System.out.println("Error pre-parsing locomotives.");
+                    e.printStackTrace();
+                }
+            }
+        }
+        
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             try
@@ -858,12 +885,30 @@ public final class CS2File
 
                 String type = loc.getString("dectyp");
                 MarklinLocomotive.decoderType decoderType;
-
+                List<String> multiUnitLocNames = new ArrayList<>();
 
                 // Multi-units
                 if (loc.has("traktion"))
                 {
                     decoderType = MarklinLocomotive.decoderType.MULTI_UNIT;
+                    
+                    // Parse multi unit locomotive names
+                    for (int j = 0; j < loc.getJSONArray("traktion").length(); j++)
+                    {
+                        String identifier = loc.getJSONArray("traktion").getString(j).split(";")[0]; 
+
+                        if (internalNames.containsKey(identifier))
+                        { 
+                            multiUnitLocNames.add(internalNames.get(identifier)); 
+                        }
+                        else
+                        {
+                            if (this.control != null && this.control.isDebug())
+                            {
+                                this.control.log("Warning: unmatched multi-unit identifier " + identifier);
+                            }
+                        }
+                    }
                     
                     if (this.control != null && this.control.isDebug())
                     {
@@ -929,6 +974,11 @@ public final class CS2File
                 {
                     newLoc.setImageURL(this.getImageURLCS3(icon));
                 }
+                
+                if (!multiUnitLocNames.isEmpty())
+                {
+                    newLoc.setCentralStationMultiUnitLocomotives(multiUnitLocNames);
+                }
 
                 out.add(newLoc);
             }
@@ -989,6 +1039,7 @@ public final class CS2File
                 }
                                 
                 MarklinLocomotive.decoderType type;
+                List<String> multiUnitLocNames = new ArrayList<>();
                 
                 // Multi-units
                 if (m.get("traktion") != null)
@@ -997,6 +1048,10 @@ public final class CS2File
                     
                     address = Integer.decode(m.get("uid"));
                     
+                    // String looks like this
+                    // "{lokname=Re4/4II 11229SBB,lok=0x4023|lokname=SBBC 421 378-1,lok=0x4024}"
+                    multiUnitLocNames = Arrays.stream(m.get("traktion").replace("{", "").replace("}", "").split("\\|")).map(s -> s.split(",lok=")[0].replace("lokname=", "")) .collect(Collectors.toList());
+                                        
                     if (this.control != null && this.control.isDebug())
                     {
                         this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
@@ -1043,6 +1098,11 @@ public final class CS2File
                 if (m.get("icon") != null)
                 {
                     loc.setImageURL(this.getImageURL(m.get("icon")));
+                }
+                
+                if (!multiUnitLocNames.isEmpty())
+                {
+                    loc.setCentralStationMultiUnitLocomotives(multiUnitLocNames);
                 }
                                 
                 out.add(loc);

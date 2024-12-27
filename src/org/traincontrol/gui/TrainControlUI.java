@@ -9097,13 +9097,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return;
         }
 
+        List<MarklinLocomotive> allLocomotives;
+
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            JOptionPane.showMessageDialog(this, "Multi Units from the Central Station cannot be customized in TrainControl.");
-            return;
+            allLocomotives = l.getCentralStationMultiUnitLocomotives();
+        }
+        else
+        {
+            allLocomotives = this.model.getLocomotives();
         }
 
-        List<MarklinLocomotive> allLocomotives = this.model.getLocomotives();
         Map<String, Double> currentLinkedLocos = l.getLinkedLocomotiveNames();
         Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
 
@@ -9135,7 +9139,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         JTextField filterField = new JTextField();
         filterField.setToolTipText("Filter by locomotive name");
-
+        
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 3;
@@ -9169,13 +9173,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         List<JPanel> rowPanels = new ArrayList<>();
         for (MarklinLocomotive loco : allLocomotives)
         {
-            if (l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco))
+            if (
+                    l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT || // show all the CS MU's locomotives for informational purposes
+                    l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco)) 
             {
                 JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
                 JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ?
                         loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : 
                         loco.getName(), currentLinkedLocos.containsKey(loco.getName())
-                ); 
+                );                 
                 checkBox.setToolTipText(loco.getName());
                 checkBox.setFocusable(false);
                 double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
@@ -9235,6 +9241,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
                 reverseCheckBox.setFocusable(false);
 
+                // Central station multi units are read-only
+                if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+                {
+                    checkBox.setSelected(true);
+                    checkBox.setEnabled(false);
+                    reverseCheckBox.setEnabled(false);
+                    multiplierSlider.setEnabled(false);
+                    filterField.setVisible(false);
+                }
+                
                 rowPanel.add(checkBox);
                 rowPanel.add(multiplierSlider);
                 rowPanel.add(reverseCheckBox);
@@ -9336,10 +9352,19 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 event.getComponent().requestFocusInWindow();
             }
         });
+        
+        // sanity check - should never happen unless CS data is corrupt
+        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && allLocomotives.isEmpty())
+        {
+            headingPanel.setVisible(false);
+            scrollGbc.gridwidth = 3;
+            scrollPanel.add(new JLabel("No locomotives found."), scrollGbc);
+            filterField.setVisible(false);
+        }   
 
         int result = JOptionPane.showConfirmDialog(null, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (result == JOptionPane.OK_OPTION)
+        if (result == JOptionPane.OK_OPTION && l.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT)
         {
             newLinkedLocos.clear();
             Component[] components = scrollPanel.getComponents();
@@ -9381,7 +9406,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.model.getAutoLayout().refreshUI();
             }
         }
-   }
+    }
 
     /**
      * Allows the user to specify notes for the given locomotive

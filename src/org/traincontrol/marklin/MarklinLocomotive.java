@@ -1,9 +1,11 @@
 package org.traincontrol.marklin;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.traincontrol.marklin.udp.CS2Message;
@@ -63,7 +65,10 @@ public class MarklinLocomotive extends Locomotive
     // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
     private final Map <MarklinLocomotive, Double> linkedLocomotives = new LinkedHashMap<>();     
     private Map <String, Double> preLinkedLocomotives;
-     
+    
+    // For informational purposes, this is the list of locomotives in a central station (not a TrainControl) multi unit
+    private List<String> centralStationMultiUnitLocomotiveNames;
+    
     /**
      * Constructor with name, type, and address
      * @param network
@@ -1096,5 +1101,48 @@ public class MarklinLocomotive extends Locomotive
     public boolean hasLinkedLocomotives()
     {
         return !this.linkedLocomotives.isEmpty();
+    }
+    
+    /**
+     * For informational purposes, sets the locomotives linked to this multi unit in the central station
+     * @param l 
+     */
+    public void setCentralStationMultiUnitLocomotives(List<String> l)
+    {
+        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            this.centralStationMultiUnitLocomotiveNames = l;
+        }
+    }
+    
+    /**
+     * Fetches the raw list of central station multi unit locomotives
+     * @return 
+     */
+    public List<String> getCentralStationMultiUnitLocomotiveNames()
+    {
+        return centralStationMultiUnitLocomotiveNames;
+    }
+    
+    /**
+     * Returns the locomotives linked to this multi unit in the central station
+     * @return 
+     */
+    public List<MarklinLocomotive> getCentralStationMultiUnitLocomotives()
+    {  
+        List<MarklinLocomotive> output = new ArrayList<>();
+        
+        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && this.centralStationMultiUnitLocomotiveNames != null)
+        {
+            for (String s : this.centralStationMultiUnitLocomotiveNames)
+            {
+                if (this.network.getLocByName(s) != null)
+                {
+                    output.add(this.network.getLocByName(s));
+                }
+            }
+        }
+        
+        return output;
     }
 }

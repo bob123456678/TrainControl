@@ -241,7 +241,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.sendPing(false);
             
-            if (autoPowerOn) this.go(); 
+            //if (autoPowerOn) this.go(); 
         }
         else
         {
@@ -746,6 +746,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null && this.locDB.getById(l.getUID()).getLocalImageURL() == null)
                 {
                     this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
+                }
+                
+                // Set multi unit info
+                if (this.locDB.getById(l.getUID()) != null)
+                {
+                    this.locDB.getById(l.getUID()).setCentralStationMultiUnitLocomotives(l.getCentralStationMultiUnitLocomotiveNames());
                 }
             }
         }
@@ -1725,7 +1731,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
-
+            newLoc.setCentralStationMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
+            
             this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
             
             return newLoc; 
