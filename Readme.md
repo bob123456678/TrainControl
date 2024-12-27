@@ -291,6 +291,7 @@ Requires JDK 1.8+ and the following libraries:
             - All commands will be replicated to linked locomotives
             - Linked locomotives can have a speed multiplier
             - Linked locomotives can be forced to run in the opposite direction of the main locomotive
+        - Locomotives beloning to multi-units defined in the Central Station are now downloaded and available to view
         - Displayed multi-unit addresses now start at 1
         - Corrected multi-unit address validation
         - `MarklinLocomotive.setAddress` will now always require valid addresses

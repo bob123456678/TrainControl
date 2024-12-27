@@ -39,7 +39,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private Map<Integer, String> localFunctionImageURLs;
     private String notes;
     private Map<String, Double> linkedLocomotives;
-    private List<String> centralStationLinkedLocomotives;
+    private Map<String, Double> centralStationLinkedLocomotives;
  
     // Route state
     private int s88;
@@ -161,7 +161,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.centralStationLinkedLocomotives = l.getCentralStationMultiUnitLocomotiveNames();
     }
     
-    public List<String> getCentralStationLinkedLocomotives()
+    public Map<String, Double> getCentralStationLinkedLocomotives()
     {
         return this.centralStationLinkedLocomotives;
     }

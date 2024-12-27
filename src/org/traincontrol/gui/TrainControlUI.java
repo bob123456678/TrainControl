@@ -9085,6 +9085,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
      */
     public void changeLinkedLocomotives(MarklinLocomotive l)
     {
+        // If the multi unit is defined in the central station, enter a read-only mode
+        boolean isCSMultiUnit = (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT);
+        
         if (this.model.isLocLinkedToOthers(l) != null)
         {
             JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + this.model.isLocLinkedToOthers(l).getName() + " and cannot be made a Multi Unit.");
@@ -9097,18 +9100,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             return;
         }
 
-        List<MarklinLocomotive> allLocomotives;
-
-        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
-        {
-            allLocomotives = l.getCentralStationMultiUnitLocomotives();
-        }
-        else
-        {
-            allLocomotives = this.model.getLocomotives();
-        }
-
-        Map<String, Double> currentLinkedLocos = l.getLinkedLocomotiveNames();
+        List<MarklinLocomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getCentralStationMultiUnitLocomotives();
+        Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getCentralStationMultiUnitLocomotiveNames();        
         Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
 
         // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
@@ -9174,7 +9167,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         for (MarklinLocomotive loco : allLocomotives)
         {
             if (
-                    l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT || // show all the CS MU's locomotives for informational purposes
+                    isCSMultiUnit || // show all the CS MU's locomotives for informational purposes
                     l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco)) 
             {
                 JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
@@ -9242,7 +9235,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 reverseCheckBox.setFocusable(false);
 
                 // Central station multi units are read-only
-                if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+                if (isCSMultiUnit)
                 {
                     checkBox.setSelected(true);
                     checkBox.setEnabled(false);
@@ -9354,7 +9347,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         });
         
         // sanity check - should never happen unless CS data is corrupt
-        if (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && allLocomotives.isEmpty())
+        if (isCSMultiUnit && allLocomotives.isEmpty())
         {
             headingPanel.setVisible(false);
             scrollGbc.gridwidth = 3;
@@ -9364,7 +9357,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         int result = JOptionPane.showConfirmDialog(null, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (result == JOptionPane.OK_OPTION && l.getDecoderType() != MarklinLocomotive.decoderType.MULTI_UNIT)
+        if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
         {
             newLinkedLocos.clear();
             Component[] components = scrollPanel.getComponents();

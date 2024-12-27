@@ -67,7 +67,7 @@ public class MarklinLocomotive extends Locomotive
     private Map <String, Double> preLinkedLocomotives;
     
     // For informational purposes, this is the list of locomotives in a central station (not a TrainControl) multi unit
-    private List<String> centralStationMultiUnitLocomotiveNames;
+    private Map <String, Double> centralStationMultiUnitLocomotiveNames;
     
     /**
      * Constructor with name, type, and address
@@ -1107,7 +1107,7 @@ public class MarklinLocomotive extends Locomotive
      * For informational purposes, sets the locomotives linked to this multi unit in the central station
      * @param l 
      */
-    public void setCentralStationMultiUnitLocomotives(List<String> l)
+    public void setCentralStationMultiUnitLocomotives(Map<String, Double> l)
     {
         if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
@@ -1119,7 +1119,7 @@ public class MarklinLocomotive extends Locomotive
      * Fetches the raw list of central station multi unit locomotives
      * @return 
      */
-    public List<String> getCentralStationMultiUnitLocomotiveNames()
+    public Map<String, Double> getCentralStationMultiUnitLocomotiveNames()
     {
         return centralStationMultiUnitLocomotiveNames;
     }
@@ -1134,7 +1134,7 @@ public class MarklinLocomotive extends Locomotive
         
         if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && this.centralStationMultiUnitLocomotiveNames != null)
         {
-            for (String s : this.centralStationMultiUnitLocomotiveNames)
+            for (String s : this.centralStationMultiUnitLocomotiveNames.keySet())
             {
                 if (this.network.getLocByName(s) != null)
                 {

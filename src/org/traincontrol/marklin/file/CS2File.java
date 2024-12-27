@@ -885,7 +885,7 @@ public final class CS2File
 
                 String type = loc.getString("dectyp");
                 MarklinLocomotive.decoderType decoderType;
-                List<String> multiUnitLocNames = new ArrayList<>();
+                Map<String, Double> multiUnitLocMap = new HashMap<>();
 
                 // Multi-units
                 if (loc.has("traktion"))
@@ -899,7 +899,7 @@ public final class CS2File
 
                         if (internalNames.containsKey(identifier))
                         { 
-                            multiUnitLocNames.add(internalNames.get(identifier)); 
+                            multiUnitLocMap.put(internalNames.get(identifier), loc.getJSONArray("traktion").getString(j).split(";").length > 1 ? -1.0 : 1.0); 
                         }
                         else
                         {
@@ -975,9 +975,9 @@ public final class CS2File
                     newLoc.setImageURL(this.getImageURLCS3(icon));
                 }
                 
-                if (!multiUnitLocNames.isEmpty())
+                if (!multiUnitLocMap.isEmpty())
                 {
-                    newLoc.setCentralStationMultiUnitLocomotives(multiUnitLocNames);
+                    newLoc.setCentralStationMultiUnitLocomotives(multiUnitLocMap);
                 }
 
                 out.add(newLoc);
@@ -1039,7 +1039,7 @@ public final class CS2File
                 }
                                 
                 MarklinLocomotive.decoderType type;
-                List<String> multiUnitLocNames = new ArrayList<>();
+                Map<String, Double> multiUnitLocMap = new HashMap<>();
                 
                 // Multi-units
                 if (m.get("traktion") != null)
@@ -1050,8 +1050,13 @@ public final class CS2File
                     
                     // String looks like this
                     // "{lokname=Re4/4II 11229SBB,lok=0x4023|lokname=SBBC 421 378-1,lok=0x4024}"
-                    multiUnitLocNames = Arrays.stream(m.get("traktion").replace("{", "").replace("}", "").split("\\|")).map(s -> s.split(",lok=")[0].replace("lokname=", "")) .collect(Collectors.toList());
-                                        
+                    List<String> multiUnitLocNames = Arrays.stream(m.get("traktion").replace("{", "").replace("}", "").split("\\|")).map(s -> s.split(",lok=")[0].replace("lokname=", "")) .collect(Collectors.toList());
+                                 
+                    for (String locName : multiUnitLocNames)
+                    { 
+                        multiUnitLocMap.put(locName, 1.0);
+                    } 
+                    
                     if (this.control != null && this.control.isDebug())
                     {
                         this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
@@ -1100,9 +1105,9 @@ public final class CS2File
                     loc.setImageURL(this.getImageURL(m.get("icon")));
                 }
                 
-                if (!multiUnitLocNames.isEmpty())
+                if (!multiUnitLocMap.isEmpty())
                 {
-                    loc.setCentralStationMultiUnitLocomotives(multiUnitLocNames);
+                    loc.setCentralStationMultiUnitLocomotives(multiUnitLocMap);
                 }
                                 
                 out.add(loc);
