@@ -9171,8 +9171,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             if (l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco))
             {
-                JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5)); // Added horizontal and vertical gaps
-                JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ? loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : loco.getName(), currentLinkedLocos.containsKey(loco.getName())); 
+                JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
+                JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ?
+                        loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : 
+                        loco.getName(), currentLinkedLocos.containsKey(loco.getName())
+                ); 
                 checkBox.setToolTipText(loco.getName());
                 checkBox.setFocusable(false);
                 double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);

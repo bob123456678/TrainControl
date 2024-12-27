@@ -914,25 +914,21 @@ public class MarklinLocomotive extends Locomotive
      */
     public boolean isLinkedTo(Locomotive l)
     {
-        // Our linked locomotives have the same address as the other locomotive
-        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
-        {
-            if (other.hasEquivalentAddress((MarklinLocomotive) l))
-            {
-                return true;
-            }
-        }
+        // For strict enforcement, "Our linked locomotives have the same address as the other locomotive" can be placed here
+        // This would disallow MU1 and MU2 from being linked to locomotives that share the same address, even if they have a different name
         
         return this.linkedLocomotives.containsKey((MarklinLocomotive) l);
     }
     
     /**
-     * Checks if this locomotive is linked to another as a multi-unit or by address
+     * Checks if this locomotive can be in a multi-unit with another, at the same time, based
+     * on whether it is already linked to another as a multi-unit, or has the same address
+     * Stricter check than isLinkedTo and is used by the autonomy layout to minimize errors
      * @param l
      * @return 
      */
     @Override
-    public boolean isMultiUnitCompatible(Locomotive l)
+    public boolean isSimultaneousMultiUnitCompatible(Locomotive l)
     {
         if (l == null || !(l instanceof Locomotive)) return false;
         
@@ -941,8 +937,17 @@ public class MarklinLocomotive extends Locomotive
         {
             return false;
         }
-                        
-        // Locomotives linked to the other locomotive have the same as one of our linked locomotives
+        
+        // Our linked locomotives have the same address as the other locomotive
+        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        {
+            if (other.hasEquivalentAddress((MarklinLocomotive) l))
+            {
+                return false;
+            }
+        }
+              
+        // Locomotives linked to the other locomotive have the same address as one of our linked locomotives
         for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
         {
             for (MarklinLocomotive other2 : ((MarklinLocomotive) l).getLinkedLocomotives().keySet())

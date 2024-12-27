@@ -997,7 +997,10 @@ public final class CS2File
                     
                     address = Integer.decode(m.get("uid"));
                     
-                    this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
+                    if (this.control != null && this.control.isDebug())
+                    {
+                        this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
+                    }
                     
                     if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
                     {
