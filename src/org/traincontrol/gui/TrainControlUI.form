@@ -85,9 +85,21 @@
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="locomotiveMenuKeyPressed"/>
           </Events>
           <SubComponents>
+            <MenuItem class="javax.swing.JMenuItem" name="quickFindMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Quick Find Locomotive"/>
+                <Property name="toolTipText" type="java.lang.String" value="Control+F"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="quickFindMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator7">
+            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="viewDatabaseMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Browse Database"/>
+                <Property name="toolTipText" type="java.lang.String" value="Control+A"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewDatabaseMenuItemActionPerformed"/>
@@ -96,6 +108,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="addLocomotiveMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Add Locomotive"/>
+                <Property name="toolTipText" type="java.lang.String" value="Control+D"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addLocomotiveMenuItemActionPerformed"/>

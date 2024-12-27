@@ -175,6 +175,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+V (paste copied locomotive at currently active button)
     * Control+S (swap copied locomotive with currently active button)
     * Control+A (assign a new locomotive to the currently active button)
+    * Control+D (add a new locomotive to the database)
     * Control+N (edit locomotive notes)
     * Control+R (edit locomotive name or address)
     * Control+L (edit multi-unit)
@@ -309,7 +310,8 @@ Requires JDK 1.8+ and the following libraries:
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup
         - Simplified the `newSwitch` and `newSignal` API methods in `MarklinControlStation` to only require the logical address
     - UI
-        - Moved the "quick find locomotive" option to the pagination right-click menu
+        - Moved the "quick find locomotive" option to the toolbar Locomotives menu
+        - Control+D is now a shortcut to add new locomotives
         - Updated text labels in track diagrams to match the UI font
         - Improved the formatting of the active locomotive button/page indicator
     - Fixed bug where the second address of a 3-way switch could erroneously be named a signal

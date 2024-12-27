@@ -3166,6 +3166,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         jSeparator17 = new javax.swing.JPopupMenu.Separator();
         exitMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
+        quickFindMenuItem = new javax.swing.JMenuItem();
+        jSeparator7 = new javax.swing.JPopupMenu.Separator();
         viewDatabaseMenuItem = new javax.swing.JMenuItem();
         addLocomotiveMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
@@ -8045,7 +8047,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
 
+        quickFindMenuItem.setText("Quick Find Locomotive");
+        quickFindMenuItem.setToolTipText("Control+F");
+        quickFindMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                quickFindMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(quickFindMenuItem);
+        locomotiveMenu.add(jSeparator7);
+
         viewDatabaseMenuItem.setText("Browse Database");
+        viewDatabaseMenuItem.setToolTipText("Control+A");
         viewDatabaseMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 viewDatabaseMenuItemActionPerformed(evt);
@@ -8054,6 +8067,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locomotiveMenu.add(viewDatabaseMenuItem);
 
         addLocomotiveMenuItem.setText("Add Locomotive");
+        addLocomotiveMenuItem.setToolTipText("Control+D");
         addLocomotiveMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addLocomotiveMenuItemActionPerformed(evt);
@@ -8349,6 +8363,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         else if (controlPressed && keyCode == KeyEvent.VK_C)
         {
             this.setCopyTarget(this.currentButton, false);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_D)
+        {
+            this.getLocAdder().setVisible(true);
         }
         else if (controlPressed && keyCode == KeyEvent.VK_N)
         {
@@ -11306,6 +11324,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
     }//GEN-LAST:event_changeIPMenuItemActionPerformed
 
+    private void quickFindMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quickFindMenuItemActionPerformed
+        if (!this.model.getLocomotives().isEmpty())
+        {
+            quickLocSearch(); 
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(this, "There are no locomotives in the database.");
+        }
+    }//GEN-LAST:event_quickFindMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12522,6 +12551,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
     private javax.swing.JPopupMenu.Separator jSeparator6;
+    private javax.swing.JPopupMenu.Separator jSeparator7;
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JButton jsonDocumentationButton;
@@ -12549,6 +12579,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenuItem openCS3AppMenuItem;
     private javax.swing.JSlider preArrivalSpeedReduction;
+    private javax.swing.JMenuItem quickFindMenuItem;
     private javax.swing.JMenu routesMenu;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;

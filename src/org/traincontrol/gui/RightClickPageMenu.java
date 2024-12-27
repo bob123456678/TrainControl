@@ -41,22 +41,7 @@ public class RightClickPageMenu extends MouseAdapter
         JMenuItem menuItem;
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
-        {          
-            menuItem = new JMenuItem("Quick Find Locomotive");
-            
-            if (ui.getModel().getLocomotives().isEmpty())
-            {
-                menuItem.setEnabled(false);
-            }
-            else
-            {
-                menuItem.addActionListener(event -> ui.quickLocSearch()); 
-                menuItem.setToolTipText("Control+F");
-            }
-            
-            add(menuItem);
-            addSeparator();
-
+        {
             menuItem = new JMenuItem("Rename Page");
             menuItem.addActionListener(event -> ui.renameCurrentPage());    
             add(menuItem);
