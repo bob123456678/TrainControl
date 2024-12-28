@@ -286,8 +286,8 @@ public class RouteEditor extends javax.swing.JFrame
         locSpeedSlider = new javax.swing.JSlider();
         jSeparator2 = new javax.swing.JSeparator();
         jLabel19 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        saveButton = new javax.swing.JButton();
+        cancelButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Route Editor");
@@ -894,19 +894,19 @@ public class RouteEditor extends javax.swing.JFrame
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton1.setText("Save Changes");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        saveButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        saveButton.setText("Save Changes");
+        saveButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                saveButtonActionPerformed(evt);
             }
         });
 
-        jButton2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton2.setText("Cancel");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        cancelButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        cancelButton.setText("Cancel");
+        cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                cancelButtonActionPerformed(evt);
             }
         });
 
@@ -935,9 +935,9 @@ public class RouteEditor extends javax.swing.JFrame
                     .addComponent(s88Panel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton1)
+                        .addComponent(saveButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton2))
+                        .addComponent(cancelButton))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel14)
@@ -977,8 +977,8 @@ public class RouteEditor extends javax.swing.JFrame
                 .addComponent(s88Panel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2))
+                    .addComponent(saveButton)
+                    .addComponent(cancelButton))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -1097,7 +1097,7 @@ public class RouteEditor extends javax.swing.JFrame
 
     private void s88KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_s88KeyReleased
         TrainControlUI.validateInt(evt, false);
-        TrainControlUI.limitLength(evt, 5);
+        TrainControlUI.limitLength(evt, 5);       
     }//GEN-LAST:event_s88KeyReleased
 
     private void delayKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_delayKeyReleased
@@ -1274,14 +1274,20 @@ public class RouteEditor extends javax.swing.JFrame
         commandTypeListItemStateChanged(null);
     }//GEN-LAST:event_locNameListItemStateChanged
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed
         this.setVisible(false);
         this.dispose();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_cancelButtonActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         
         boolean status;
+        
+        // Better UX
+        if ("".equals(s88.getText()))
+        {
+            s88.setText("0");
+        }
         
         if (isEdit())
         {
@@ -1306,7 +1312,7 @@ public class RouteEditor extends javax.swing.JFrame
             this.setVisible(false);
             this.dispose();
         }
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_saveButtonActionPerformed
 
     /**
      * Callback to edit or add a route
@@ -1338,7 +1344,7 @@ public class RouteEditor extends javax.swing.JFrame
 
             return false;
         }
-                      
+                              
         // Add route
         try
         {
@@ -1474,6 +1480,7 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.ButtonGroup buttonGroup5;
+    private javax.swing.JButton cancelButton;
     private javax.swing.JCheckBox captureCommands;
     private javax.swing.JComboBox<String> commandTypeList;
     private javax.swing.JTextArea conditionAccs;
@@ -1481,8 +1488,6 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JTextField delay;
     private javax.swing.JRadioButton executionAuto;
     private javax.swing.JRadioButton executionManual;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1526,6 +1531,7 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JRadioButton s88Occupied;
     private javax.swing.JPanel s88Panel;
     private javax.swing.JPanel s88Panel1;
+    private javax.swing.JButton saveButton;
     private javax.swing.JRadioButton triggerClearThenOccupied;
     private javax.swing.JRadioButton triggerOccupiedThenClear;
     // End of variables declaration//GEN-END:variables
