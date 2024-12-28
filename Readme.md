@@ -316,6 +316,7 @@ Requires JDK 1.8+ and the following libraries:
         - Updated text labels in track diagrams to match the UI font
         - Improved the formatting of the active locomotive button/page indicator
         - Control+Up/Down will now adjust the active locomotive speed by 1
+        - Added an automatic new version check, with a download link added to the help menu
     - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
     - Fixed bug where captured route commands might be duplicated
     - Fixed minor UI alignment issues

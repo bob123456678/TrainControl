@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -30,7 +29,6 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -109,6 +107,7 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.ImageUtil;
+import org.traincontrol.util.Util;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -137,6 +136,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final Icon TAB_ICON_ROUTES = getTabIcon(30, "tabs/route.png");
     public static final Icon TAB_ICON_AUTONOMY = getTabIcon(30, "tabs/autonomy.png");
     public static final Icon TAB_ICON_LOG = getTabIcon(30, "tabs/log.png");
+    
+    // Repo info
+    public static final String GITHUB_REPO = "bob123456678/TrainControl";
+    public static final String README_URL = "https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md";
+    public static final String UPDATE_URL = "https://github.com/bob123456678/TrainControl/releases";
     
     // Preferences fields
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
@@ -1449,6 +1453,37 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
             }
         }).start();
+        
+        // Check for updates
+        this.updateAvailableMenuItem.setVisible(false);
+        
+        if (this.model != null && this.model.getNetworkCommState())
+        {
+            new Thread(() ->
+            { 
+                try
+                {
+                    String latestVersion = Util.getLatestReleaseVersion(GITHUB_REPO, this.model);
+                
+                    if (latestVersion != null)
+                    {            
+                        latestVersion = latestVersion.split("v")[1];
+
+                        this.model.log("Latest available version is: " + latestVersion);
+
+                        if (Conversion.compareVersions(latestVersion, MarklinControlStation.RAW_VERSION) > 0)
+                        {
+                            this.updateAvailableMenuItem.setVisible(true);
+                            this.helpMenu.setText(this.helpMenu.getText() + "*");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    this.model.log("Failed to parse latest release version.");
+                }
+            }).start();   
+        }
                 
         // Monitor latency
         if (this.model != null && model.getNetworkCommState() && PING_INTERVAL > 0)
@@ -3200,6 +3235,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardAzertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
+        updateAvailableMenuItem = new javax.swing.JMenuItem();
         aboutMenuItem = new javax.swing.JMenuItem();
 
         jList1.setModel(new javax.swing.AbstractListModel() {
@@ -8285,6 +8321,14 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         helpMenu.setText("Help");
 
+        updateAvailableMenuItem.setText("Download Update");
+        updateAvailableMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                updateAvailableMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(updateAvailableMenuItem);
+
         aboutMenuItem.setText("About / Readme");
         aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -10090,28 +10134,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void openCS3AppMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openCS3AppMenuItemActionPerformed
         new Thread(()->
         { 
-            String url = this.model.getCS3AppUrl();
-
-            if(Desktop.isDesktopSupported())
-            {
-                Desktop desktop = Desktop.getDesktop();
-
-                try
-                {
-                    desktop.browse(new URI(url));
-                }
-                catch (IOException | URISyntaxException e) {}
-            }
-            else
-            {
-                Runtime runtime = Runtime.getRuntime();
-
-                try
-                {
-                    runtime.exec("xdg-open " + url);
-                }
-                catch (IOException e) {}
-            }
+            String url = this.model.getCS3AppUrl();         
+            Util.openUrl(url);
         }).start();
     }//GEN-LAST:event_openCS3AppMenuItemActionPerformed
 
@@ -11182,11 +11206,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
 
     private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
-        try
-        {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md"));
-        }
-        catch (IOException | URISyntaxException e1) { }
+        Util.openUrl(README_URL);
     }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
 
     private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
@@ -11336,6 +11356,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             JOptionPane.showMessageDialog(this, "There are no locomotives in the database.");
         }
     }//GEN-LAST:event_quickFindMenuItemActionPerformed
+
+    private void updateAvailableMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updateAvailableMenuItemActionPerformed
+        Util.openUrl(UPDATE_URL);
+    }//GEN-LAST:event_updateAvailableMenuItemActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -12604,6 +12628,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
     private javax.swing.JMenuItem turnOnLightsMenuItem;
+    private javax.swing.JMenuItem updateAvailableMenuItem;
     private javax.swing.JButton validateButton;
     private javax.swing.JMenuItem viewDatabaseMenuItem;
     private javax.swing.JCheckBoxMenuItem windowAlwaysOnTopMenuItem;
