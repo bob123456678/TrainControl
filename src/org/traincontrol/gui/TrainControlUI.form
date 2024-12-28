@@ -260,6 +260,15 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="windowAlwaysOnTopMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="checkForUpdates">
+              <Properties>
+                <Property name="selected" type="boolean" value="true"/>
+                <Property name="text" type="java.lang.String" value="Auto Check for Updates"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForUpdatesActionPerformed"/>
+              </Events>
+            </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator19">
             </MenuItem>
             <Menu class="javax.swing.JMenu" name="locomotiveControlMenu">
@@ -352,7 +361,8 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="updateAvailableMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Download Update"/>
+                <Property name="text" type="java.lang.String" value="Update Available"/>
+                <Property name="toolTipText" type="java.lang.String" value="Download a newer version of TrainControl."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="updateAvailableMenuItemActionPerformed"/>

@@ -157,7 +157,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
-    public static final String ACTIVE_LOC_IN_TITLE = "AcitveLocInTitle";
+    public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
+    public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
     
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
@@ -586,6 +587,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
         this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, true));
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
+        this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -1457,7 +1459,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Check for updates
         this.updateAvailableMenuItem.setVisible(false);
         
-        if (this.model != null && this.model.getNetworkCommState())
+        if (this.model != null && this.checkForUpdates.isSelected())
         {
             new Thread(() ->
             { 
@@ -3225,6 +3227,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         importRoutesMenuItem = new javax.swing.JMenuItem();
         interfaceMenu = new javax.swing.JMenu();
         windowAlwaysOnTopMenuItem = new javax.swing.JCheckBoxMenuItem();
+        checkForUpdates = new javax.swing.JCheckBoxMenuItem();
         jSeparator19 = new javax.swing.JPopupMenu.Separator();
         locomotiveControlMenu = new javax.swing.JMenu();
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -8244,6 +8247,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         interfaceMenu.add(windowAlwaysOnTopMenuItem);
+
+        checkForUpdates.setSelected(true);
+        checkForUpdates.setText("Auto Check for Updates");
+        checkForUpdates.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkForUpdatesActionPerformed(evt);
+            }
+        });
+        interfaceMenu.add(checkForUpdates);
         interfaceMenu.add(jSeparator19);
 
         locomotiveControlMenu.setText("Locomotive Control");
@@ -8321,7 +8333,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
         helpMenu.setText("Help");
 
-        updateAvailableMenuItem.setText("Download Update");
+        updateAvailableMenuItem.setText("Update Available");
+        updateAvailableMenuItem.setToolTipText("Download a newer version of TrainControl.");
         updateAvailableMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 updateAvailableMenuItemActionPerformed(evt);
@@ -11361,6 +11374,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         Util.openUrl(UPDATE_URL);
     }//GEN-LAST:event_updateAvailableMenuItemActionPerformed
 
+    private void checkForUpdatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForUpdatesActionPerformed
+        prefs.putBoolean(CHECK_FOR_UPDATES, this.checkForUpdates.isSelected());
+    }//GEN-LAST:event_checkForUpdatesActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12486,6 +12503,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.JMenuItem changeIPMenuItem;
+    private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JPanel controlsPanel;
     private javax.swing.JTextArea debugArea;
