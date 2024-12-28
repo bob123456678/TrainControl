@@ -146,7 +146,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 * Primary controls
     * A-Z letter keys (select a locomotive)
-    * Up/down arrow (speed up/slow down) (hold Alt to double the increment)
+    * Up/down arrow (speed up/slow down) (hold Alt to double the increment or Control to reduce)
     * Left/right arrow (change direction)
     * Control+Left/right arrow (set direction as reverse / set direction as forward)
     * Escape (power off/emergency stop)
@@ -292,7 +292,7 @@ Requires JDK 1.8+ and the following libraries:
             - All commands will be replicated to linked locomotives
             - Linked locomotives can have a speed multiplier
             - Linked locomotives can be forced to run in the opposite direction of the main locomotive
-        - Locomotives beloning to multi-units defined in the Central Station are now downloaded and available to view
+        - The locomotives belonging to multi-units defined in the Central Station can now be viewed
         - Displayed multi-unit addresses now start at 1
         - Corrected multi-unit address validation
         - `MarklinLocomotive.setAddress` will now always require valid addresses
@@ -315,6 +315,7 @@ Requires JDK 1.8+ and the following libraries:
         - Control+D is now a shortcut to add new locomotives
         - Updated text labels in track diagrams to match the UI font
         - Improved the formatting of the active locomotive button/page indicator
+        - Control+Up/Down will now adjust the active locomotive speed by 1
     - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
     - Fixed bug where captured route commands might be duplicated
     - Fixed minor UI alignment issues

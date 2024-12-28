@@ -8418,7 +8418,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {            
             if (altPressed)
             {
-                this.UpArrowLetterButtonPressedAlt(null);
+                incrementLocSpeed(SPEED_STEP * 2);
+            }
+            else if (controlPressed)
+            {
+                incrementLocSpeed(1);
             }
             else
             {
@@ -8429,11 +8433,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {            
             if (altPressed)
             {
-                this.DownArrowLetterButtonPressedAlt(null);          
+                decrementLocSpeed(SPEED_STEP * 2);
+            }
+            else if (controlPressed)
+            {
+                decrementLocSpeed(1);
             }
             else
             {
-               this.DownArrowLetterButtonPressed(null);
+                this.DownArrowLetterButtonPressed(null);
             }
         }
         else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
@@ -9511,22 +9519,22 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
 
-    private void DownArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt)
+    private void decrementLocSpeed(int step)
     {                                                  
         if (this.activeLoc != null)
         {
-            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP * 2, 0));
+            setLocSpeed(Math.max(this.activeLoc.getSpeed() - step, 0));
         }
     } 
     
-    private void UpArrowLetterButtonPressedAlt(java.awt.event.ActionEvent evt)
-    {                                            
+    private void incrementLocSpeed(int step)
+    {
         if (this.activeLoc != null)
         {
-            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP * 2, 100));
+            setLocSpeed(Math.min(this.activeLoc.getSpeed() + step , 100));
         }
     }
-    
+        
     private synchronized void sliderClickedSynced(java.awt.event.MouseEvent evt)
     {
         if (evt.getClickCount() == 2 && SwingUtilities.isRightMouseButton(evt))
@@ -10863,17 +10871,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_RightArrowLetterButtonPressed
 
     private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.max(this.activeLoc.getSpeed() - SPEED_STEP, 0));
-        }
+        decrementLocSpeed(SPEED_STEP);
     }//GEN-LAST:event_DownArrowLetterButtonPressed
 
     private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
-        if (this.activeLoc != null)
-        {
-            setLocSpeed(Math.min(this.activeLoc.getSpeed() + SPEED_STEP, 100));
-        }
+        incrementLocSpeed(SPEED_STEP);
     }//GEN-LAST:event_UpArrowLetterButtonPressed
 
     private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed
