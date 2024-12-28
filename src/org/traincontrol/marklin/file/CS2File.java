@@ -69,6 +69,38 @@ public final class CS2File
     }
     
     /**
+     * Safely logs a message
+     * @param message 
+     */
+    private void logMessage(String message)
+    {
+        logMessage(message, null, false);
+    }
+    
+    /**
+     * Safely logs a message
+     * @param message 
+     * @param e
+     */
+    private void logMessage(String message, Exception e, boolean debugOnly)
+    {
+        if (this.control != null)
+        {
+            if (!debugOnly || this.control.isDebug())
+            {
+                this.control.log(message);
+            }
+            
+            if (this.control.isDebug() && e != null) this.control.log(e);
+        }
+        else 
+        {
+            System.out.println(message);
+            if (e != null) e.printStackTrace();
+        }
+    }
+    
+    /**
      * IP to ping at startup
      * @param host
      * @return 
@@ -91,9 +123,7 @@ public final class CS2File
         }
         catch (UnsupportedEncodingException ex)
         {
-            this.control.log("URL encoding error: " + ex.getMessage());
-            
-            this.control.log(ex);
+            this.logMessage("URL encoding error: " + ex.getMessage());
  
             return URL.replace(" ", "%20");
         }
@@ -794,14 +824,7 @@ public final class CS2File
                         }
                         else
                         {
-                            if (this.control != null)
-                            {
-                                this.control.log("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName()); 
-                            }
-                            else
-                            {
-                                System.out.println("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName());
-                            }
+                            logMessage("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName());
                         }
                     }
                     
@@ -816,16 +839,7 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException e)
             {
-                if (this.control != null)
-                {
-                    this.control.log("Failed to add route at index " + i + " due to parsing error.");
-                    this.control.log(e.toString());
-                }
-                else
-                {
-                    System.out.println("Failed to add route at index " + i + " due to parsing error.");
-                    e.printStackTrace();
-                }
+                logMessage("Failed to add route at index " + i + " due to parsing error.", e, false);
             }
         }
         
@@ -853,16 +867,7 @@ public final class CS2File
             }
             catch (JSONException e)
             {
-                if (this.control != null)
-                {
-                    this.control.log("Error pre-parsing locomotives.");
-                    this.control.log(e.toString());
-                }
-                else
-                {
-                    System.out.println("Error pre-parsing locomotives.");
-                    e.printStackTrace();
-                }
+                logMessage("Error pre-parsing locomotives.", e, false);
             }
         }
         
@@ -903,17 +908,11 @@ public final class CS2File
                         }
                         else
                         {
-                            if (this.control != null && this.control.isDebug())
-                            {
-                                this.control.log("Warning: unmatched multi-unit identifier " + identifier);
-                            }
+                            logMessage("Warning: unmatched multi-unit identifier " + identifier);
                         }
                     }
-                    
-                    if (this.control != null && this.control.isDebug())
-                    {
-                        this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + uid);
-                    }
+                                    
+                    logMessage("Locomotive " + name + " is a multi-unit, using UID of " + uid, null, true);
                     
                     uid = uid - MarklinLocomotive.MULTI_UNIT_BASE;
                 }
@@ -984,16 +983,7 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException e)
             {
-                if (this.control != null)
-                {
-                    this.control.log("Failed to add locomotive at index " + i + " due to parsing error.");
-                    this.control.log(e.toString());
-                }
-                else
-                {
-                    System.out.println("Failed to add locomotive at index " + i + " due to parsing error.");
-                    e.printStackTrace();
-                }
+                logMessage("Failed to add locomotive at index " + i + " due to parsing error.", e, false);
             }
         }
         
@@ -1029,12 +1019,12 @@ public final class CS2File
                 else if (m.get("uid") != null)
                 {
                     address = Integer.decode(m.get("uid"));
-
-                    this.control.log("Locomotive " + name + " has no address field in config file, using UID of " + Integer.toString(address));
+                    
+                    logMessage("Locomotive " + name + " has no address field in config file, using UID of " + Integer.toString(address));
                 }
                 else
                 {
-                    this.control.log("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
+                    logMessage("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
                     continue;
                 }
                                 
@@ -1057,10 +1047,7 @@ public final class CS2File
                         multiUnitLocMap.put(locName, 1.0);
                     } 
                     
-                    if (this.control != null && this.control.isDebug())
-                    {
-                        this.control.log("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address));
-                    }
+                    logMessage("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address), null, true);
                     
                     if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
                     {
@@ -1284,7 +1271,7 @@ public final class CS2File
                 
             // Custom (non-CS2) components
             default:
-                this.control.log("Layout: warning - component " + name + 
+                logMessage("Layout: warning - component " + name + 
                                  " is not supported and will not be displayed");
                 return null;
         }
@@ -1329,10 +1316,7 @@ public final class CS2File
                     }
                     else
                     {
-                        if (this.control.isDebug())
-                        {
-                            this.control.log("Layout: element has no coordinate info, assuming 0,0 (" + m + ")");
-                        }
+                        logMessage("Layout: element has no coordinate info, assuming 0,0 (" + m + ")", null, true);
                     }
                     
                     Integer x = coord % 256;
@@ -1391,7 +1375,7 @@ public final class CS2File
                     }
                     catch (NumberFormatException e)
                     {
-                        this.control.log(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
+                        logMessage(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
                     }
                     
                     Integer address = rawAddress;
