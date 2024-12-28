@@ -299,6 +299,7 @@ Requires JDK 1.8+ and the following libraries:
     - Routes
         - Accessory commands are now easier to read (i.e. "Switch 1,turn" instead of "1,1")
         - Tiles affected by routes will now be temporarily highlighted in track diagrams
+        - Decluttered the route editor window
     - Autonomy graph
         - Added keyboard shortcuts (Control+E/U) to exclude/unexclude the active locomotive when hovering over a node in the autonomy graph
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
