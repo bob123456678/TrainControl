@@ -10173,14 +10173,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }//GEN-LAST:event_syncFullLocStateMenuItemActionPerformed
 
     private void syncMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-        {
-            doSync(this);
-        }));
+        doSync(this);
     }//GEN-LAST:event_syncMenuItemActionPerformed
 
     private void viewDatabaseMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewDatabaseMenuItemActionPerformed
-         ActiveLocLabelMouseReleased(null);
+        ActiveLocLabelMouseReleased(null);
     }//GEN-LAST:event_viewDatabaseMenuItemActionPerformed
 
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
@@ -10555,18 +10552,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            if (this.getModel().getAutoLayout().isRunning())
             {
-                if (this.getModel().getAutoLayout().isRunning())
-                {
-                    JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
-                }
-                else
-                {
-                    this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
-                }
+                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+            }
+            else
+            {
+                this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
+            }
 
-                this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-            }));
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+        }));
     }//GEN-LAST:event_timetableCaptureActionPerformed
 
     private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
@@ -10574,91 +10571,91 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            if (!this.getModel().getPowerState())
             {
-                if (!this.getModel().getPowerState())
-                {
-                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
-                    this.executeTimetable.setEnabled(true);
-                    return;
-                }
+                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
 
-                if (this.getModel().getAutoLayout().isRunning())
-                {
-                    JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
-                    this.executeTimetable.setEnabled(true);
-                    return;
-                }
+            if (this.getModel().getAutoLayout().isRunning())
+            {
+                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
 
-                if (this.model.getAutoLayout().getTimetable().isEmpty())
-                {
-                    JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
-                    this.executeTimetable.setEnabled(true);
-                    return;
-                }
+            if (this.model.getAutoLayout().getTimetable().isEmpty())
+            {
+                JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
 
-                // Conditional route warning
-                for (String routeName : this.model.getRouteList())
-                {
-                    MarklinRoute r = this.model.getRoute(routeName);
+            // Conditional route warning
+            for (String routeName : this.model.getRouteList())
+            {
+                MarklinRoute r = this.model.getRoute(routeName);
 
-                    if (r.isEnabled())
+                if (r.isEnabled())
+                {
+                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+
+                    if (!conditionalRouteWarningShown)
                     {
-                        this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+                        int dialogResult = JOptionPane.showConfirmDialog(this,
+                            "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
 
-                        if (!conditionalRouteWarningShown)
+                        if (dialogResult == JOptionPane.NO_OPTION)
                         {
-                            int dialogResult = JOptionPane.showConfirmDialog(this,
-                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
-
-                            if (dialogResult == JOptionPane.NO_OPTION)
-                            {
-                                return;
-                            }
-                            else
-                            {
-                                conditionalRouteWarningShown = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // Validate starting locations
-                List<Locomotive> seen = new ArrayList<>();
-
-                for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
-                {
-                    TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
-
-                    if (!seen.contains(ttp.getLoc()))
-                    {
-                        Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
-                        if (locLocation == null || !locLocation.equals(ttp.getStart()))
-                        {
-                            JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
-                            this.executeTimetable.setEnabled(true);
                             return;
                         }
-
-                        seen.add(ttp.getLoc());
+                        else
+                        {
+                            conditionalRouteWarningShown = true;
+                            break;
+                        }
                     }
                 }
+            }
 
-                // Disable capture if it was enabled
-                this.model.getAutoLayout().setTimetableCapture(false);
-                this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            // Validate starting locations
+            List<Locomotive> seen = new ArrayList<>();
 
-                new Thread(() ->
+            for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
+            {
+                TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
+
+                if (!seen.contains(ttp.getLoc()))
+                {
+                    Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
+                    if (locLocation == null || !locLocation.equals(ttp.getStart()))
                     {
-                        this.startAutonomy.setEnabled(false);
-                        this.model.getAutoLayout().executeTimetable();
+                        JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
                         this.executeTimetable.setEnabled(true);
-                        this.startAutonomy.setEnabled(true);
-                        this.exportJSON.setEnabled(true);
-                    }).start();
+                        return;
+                    }
 
-                    this.gracefulStop.setEnabled(true);
-                }));
+                    seen.add(ttp.getLoc());
+                }
+            }
+
+            // Disable capture if it was enabled
+            this.model.getAutoLayout().setTimetableCapture(false);
+            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+
+            new Thread(() ->
+            {
+                this.startAutonomy.setEnabled(false);
+                this.model.getAutoLayout().executeTimetable();
+                this.executeTimetable.setEnabled(true);
+                this.startAutonomy.setEnabled(true);
+                this.exportJSON.setEnabled(true);
+            }).start();
+
+            this.gracefulStop.setEnabled(true);
+        }));
     }//GEN-LAST:event_executeTimetableActionPerformed
 
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
@@ -11090,81 +11087,81 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            // If valid, confirm before we overwrite
+            if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid()
+                && !this.model.getAutoLayout().getPoints().isEmpty())
             {
-                // If valid, confirm before we overwrite
-                if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid()
-                    && !this.model.getAutoLayout().getPoints().isEmpty())
+                try
                 {
-                    try
+                    if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
-                        if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
-                        {
-                            int dialogResult = JOptionPane.showConfirmDialog(
-                                this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
-                                , "Confirm Reset", JOptionPane.YES_NO_OPTION);
+                        int dialogResult = JOptionPane.showConfirmDialog(
+                            this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
+                            , "Confirm Reset", JOptionPane.YES_NO_OPTION);
 
-                            if(dialogResult == JOptionPane.NO_OPTION) return;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        this.model.log(e);
+                        if(dialogResult == JOptionPane.NO_OPTION) return;
                     }
                 }
-
-                // Offer to load a blank graph if there is no JSON
-                if (this.autonomyJSON.getText().trim().equals(""))
+                catch (Exception e)
                 {
-                    this.loadDefaultBlankGraphActionPerformed(null);
+                    this.model.log(e);
                 }
+            }
 
-                this.model.parseAuto(this.autonomyJSON.getText());
+            // Offer to load a blank graph if there is no JSON
+            if (this.autonomyJSON.getText().trim().equals(""))
+            {
+                this.loadDefaultBlankGraphActionPerformed(null);
+            }
 
-                if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
-                {
-                    locCommandPanels.remove(this.locCommandTab);
-                    locCommandPanels.remove(this.timetablePanel);
-                    locCommandPanels.remove(this.autoSettingsPanel);
+            this.model.parseAuto(this.autonomyJSON.getText());
 
-                    this.startAutonomy.setEnabled(false);
-                                        
-                    JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.\n\n" + Layout.getLastError());
+            if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
+            {
+                locCommandPanels.remove(this.locCommandTab);
+                locCommandPanels.remove(this.timetablePanel);
+                locCommandPanels.remove(this.autoSettingsPanel);
 
-                    this.KeyboardTab.requestFocus();
+                this.startAutonomy.setEnabled(false);
 
-                    this.exportJSON.setEnabled(false);
-                }
-                else
-                {
-                    locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
-                    locCommandPanels.addTab("Timetable", this.timetablePanel);
-                    locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
-                    loadAutoLayoutSettings();
+                JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.\n\n" + Layout.getLastError());
 
-                    this.startAutonomy.setEnabled(true);
-                    this.executeTimetable.setEnabled(true);
+                this.KeyboardTab.requestFocus();
 
-                    // Advance to locomotive tab
-                    this.locCommandPanels.setSelectedIndex(
-                        1
-                        //(this.locCommandPanels.getSelectedIndex() + 1)
-                        //% this.locCommandPanels.getComponentCount()
-                    );
+                this.exportJSON.setEnabled(false);
+            }
+            else
+            {
+                locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
+                locCommandPanels.addTab("Timetable", this.timetablePanel);
+                locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
+                loadAutoLayoutSettings();
 
-                    this.KeyboardTab.requestFocus();
+                this.startAutonomy.setEnabled(true);
+                this.executeTimetable.setEnabled(true);
 
-                    this.renderAutoLayoutGraph();
+                // Advance to locomotive tab
+                this.locCommandPanels.setSelectedIndex(
+                    1
+                    //(this.locCommandPanels.getSelectedIndex() + 1)
+                    //% this.locCommandPanels.getComponentCount()
+                );
 
-                    this.graphViewer.requestFocus();
+                this.KeyboardTab.requestFocus();
 
-                    this.exportJSON.setEnabled(true);
-                    this.gracefulStop.setEnabled(false);
-                }
+                this.renderAutoLayoutGraph();
 
-                // Stop all locomotives
-                AltEmergencyStopActionPerformed(null);
+                this.graphViewer.requestFocus();
 
-            }));
+                this.exportJSON.setEnabled(true);
+                this.gracefulStop.setEnabled(false);
+            }
+
+            // Stop all locomotives
+            AltEmergencyStopActionPerformed(null);
+
+        }));
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
