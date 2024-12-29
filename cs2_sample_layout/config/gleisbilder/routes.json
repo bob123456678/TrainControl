@@ -1716,10 +1716,10 @@
         ]
     },
     {
-        "name": "Auto Top Track 2",
+        "name": "Auto Top R1",
         "id": 31,
         "s88": 2013,
-        "conditionS88": "1012,0\n1022,0",
+        "conditionS88": "1012,0\n1015,0\n1022,0",
         "auto": true,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -1747,41 +1747,10 @@
         ]
     },
     {
-        "name": "Auto Top Track 3a",
+        "name": "Auto Top R2",
         "id": 32,
         "s88": 2013,
-        "conditionS88": "1012,1",
-        "auto": true,
-        "triggerType": "OCCUPIED_THEN_CLEAR",
-        "commands": [
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "9",
-                    "SETTING": "false"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "107",
-                    "SETTING": "true"
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "108",
-                    "SETTING": "false"
-                }
-            }
-        ]
-    },
-    {
-        "name": "Auto Top Track 3b",
-        "id": 33,
-        "s88": 2013,
-        "conditionS88": "1022,1",
+        "conditionS88": "1013,0\n1016,0\n1022,1\n1023,0",
         "auto": true,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -2906,5 +2875,67 @@
                 "SETTING": "true"
             }
         }]
+    },
+    {
+        "name": "Auto Top R1 pre",
+        "id": 75,
+        "s88": 2013,
+        "conditionS88": "1015,0\n1022,1\n1023,1",
+        "auto": true,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Auto Top R2 pre",
+        "id": 77,
+        "s88": 2013,
+        "conditionS88": "1015,1\n1016,0\n1022,1\n1023,1",
+        "auto": true,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true"
+                }
+            }
+        ]
     }
 ]}
