@@ -105,6 +105,8 @@ public class MarklinFeedback extends Feedback
         if (this.network.isDebug())
         {
             this.network.log("Feedback " + name + " manually to " + (val ? "Set" : "Not set"));
+            
+            // If we want to capture route commands in the future, we could call a method in the model here
         }
         
         this.updateTiles();

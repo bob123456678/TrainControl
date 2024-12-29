@@ -1643,6 +1643,13 @@
                     "ADDRESS": "60",
                     "SETTING": "true"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true"
+                }
             }
         ]
     },
@@ -2877,7 +2884,7 @@
         }]
     },
     {
-        "name": "Auto Top R1 pre",
+        "name": "Auto Top R1 Pre",
         "id": 75,
         "s88": 2013,
         "conditionS88": "1015,0\n1022,1\n1023,1",
@@ -2908,7 +2915,7 @@
         ]
     },
     {
-        "name": "Auto Top R2 pre",
+        "name": "Auto Top R2 Pre",
         "id": 77,
         "s88": 2013,
         "conditionS88": "1015,1\n1016,0\n1022,1\n1023,1",
@@ -2937,5 +2944,178 @@
                 }
             }
         ]
+    },
+    {
+        "name": "Auto Emergency Red Light Top R1 pre",
+        "id": 78,
+        "s88": 1027,
+        "conditionS88": "1012,1\n1022,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "107",
+                "SETTING": "true"
+            }
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Red Light Top R2 pre",
+        "id": 79,
+        "s88": 1027,
+        "conditionS88": "1013,1\n1023,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "108",
+                "SETTING": "true"
+            }
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Stop Top R1 2",
+        "id": 80,
+        "s88": 1027,
+        "conditionS88": "1026,1",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Stop Top R2 2",
+        "id": 81,
+        "s88": 1027,
+        "conditionS88": "1025,1",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "Auto Top R1 Pre partial",
+        "id": 82,
+        "s88": 2014,
+        "conditionS88": "1015,1\n1016,0",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "false"
+            }
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "Auto Top R2 Pre partial",
+        "id": 83,
+        "s88": 2014,
+        "conditionS88": "1015,0\n1016,1",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "true"
+            }
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Inner",
+        "id": 84,
+        "s88": 2012,
+        "conditionS88": "1011,1",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "12",
+                "SETTING": "true"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Secondary",
+        "id": 85,
+        "s88": 2012,
+        "conditionS88": "1009,1",
+        "auto": true,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "true"
+                }
+            },
+            {
+                "type": "TYPE_STOP",
+                "state": {}
+            }
+        ],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "12",
+                "SETTING": "false"
+            }
+        }]
     }
 ]}
