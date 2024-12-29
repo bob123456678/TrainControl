@@ -325,6 +325,7 @@ Requires JDK 1.8+ and the following libraries:
         - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
         - Fixed bug where captured route commands might be duplicated
         - Fixed minor UI alignment issues
+        - Fixed bug where emergency stop commands would not work in routes
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive

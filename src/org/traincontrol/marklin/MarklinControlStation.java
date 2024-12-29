@@ -124,7 +124,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private boolean on;
     
     // Is the power turned on?
-    private boolean powerState;
+    private boolean powerState = true; // default to true unless power is turned off
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;

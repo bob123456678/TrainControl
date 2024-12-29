@@ -272,7 +272,7 @@ public class MarklinRoute extends Route
                         else if (rc.isStop())
                         {                        
                             // Only send stop command once
-                            if (!this.network.getPowerState())
+                            if (this.network.getPowerState())
                             {
                                 this.network.log("Power turned off due to route condition");
                                 this.network.stop();
