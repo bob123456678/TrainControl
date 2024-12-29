@@ -612,7 +612,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     this.log(e);
                            
-                    this.log("Error, reverting to default layout load." + (!debug ? " Enable debug mode for details." : ""));
+                    this.log("Error, reverting to default layout source." + (!debug ? " Enable debug mode for details." : ""));
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();

@@ -264,6 +264,7 @@
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>
                 <Property name="text" type="java.lang.String" value="Auto Check for Updates"/>
+                <Property name="toolTipText" type="java.lang.String" value="At startup, should we check for a new release of TrainControl?"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForUpdatesActionPerformed"/>
@@ -359,13 +360,22 @@
             <Property name="text" type="java.lang.String" value="Help"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="updateAvailableMenuItem">
+            <MenuItem class="javax.swing.JMenuItem" name="viewReleasesMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Update Available"/>
-                <Property name="toolTipText" type="java.lang.String" value="Download a newer version of TrainControl."/>
+                <Property name="text" type="java.lang.String" value="View Releases"/>
+                <Property name="toolTipText" type="java.lang.String" value="Read about the latest version of TrainControl."/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="updateAvailableMenuItemActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewReleasesMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="downloadUpdateMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Download Update"/>
+                <Property name="toolTipText" type="java.lang.String" value="Download the update file to your computer."/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="downloadUpdateMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="aboutMenuItem">
