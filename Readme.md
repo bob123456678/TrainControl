@@ -305,7 +305,6 @@ Requires JDK 1.8+ and the following libraries:
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
         - Locomotives can no longer be edited in the UI while autonomy is running
-        - Fixed graph integrity error where S88 sensors could be removed from stations once created
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup
@@ -318,9 +317,12 @@ Requires JDK 1.8+ and the following libraries:
         - Control+Up/Down will now adjust the active locomotive speed by 1
         - Added an automatic new version check, with a download button and info link added to the help menu
         - Added preference to enable/disable automatically checking for updates
-    - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
-    - Fixed bug where captured route commands might be duplicated
-    - Fixed minor UI alignment issues
+    - Bug fixes
+        - Updated to Flatlaf v3.5.4
+        - Fixed graph integrity error where S88 sensors could be removed from stations once created
+        - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
+        - Fixed bug where captured route commands might be duplicated
+        - Fixed minor UI alignment issues
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive
