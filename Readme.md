@@ -277,7 +277,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json (json-20220924.jar) (from v1.6.0)
+* org.json (json-20240303.jar) (from v1.6.0)
 * org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
 * com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.4.jar) (from v2.3.0)
 
@@ -318,7 +318,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added an automatic new version check, with a download button and info link added to the help menu
         - Added preference to enable/disable automatically checking for updates
     - Bug fixes
-        - Updated to Flatlaf v3.5.4
+        - Updated libraries (Flatlaf v3.5.4, JSON 2024-03-03)
         - Fixed graph integrity error where S88 sensors could be removed from stations once created
         - Fixed bug where the second address of a 3-way switch could erroneously be named a signal
         - Fixed bug where captured route commands might be duplicated
