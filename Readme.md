@@ -317,6 +317,7 @@ Requires JDK 1.8+ and the following libraries:
         - Control+Up/Down will now adjust the active locomotive speed by 1
         - Added an automatic new version check, with a download button and info link added to the help menu
         - Added preference to enable/disable automatically checking for updates
+        - The locomotive add window will now close when Escape is pressed
     - Bug fixes
         - Updated libraries (Flatlaf v3.5.4, JSON 2024-03-03)
         - Fixed graph integrity error where S88 sensors could be removed from stations once created

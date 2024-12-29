@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -344,10 +345,20 @@ public class AddLocomotive extends javax.swing.JFrame
     private void LocAddressInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocAddressInputKeyReleased
         TrainControlUI.validateInt(evt, true);
         TrainControlUI.limitLength(evt, 6);
+        
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
     }//GEN-LAST:event_LocAddressInputKeyReleased
 
     private void LocNameInputKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocNameInputKeyReleased
         TrainControlUI.limitLength(evt, TrainControlUI.MAX_LOC_NAME_DATABASE);
+        
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            this.setVisible(false);
+        }
     }//GEN-LAST:event_LocNameInputKeyReleased
 
     private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
