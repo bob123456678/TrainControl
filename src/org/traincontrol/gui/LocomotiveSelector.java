@@ -300,9 +300,17 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_MainLocListKeyPressed
 
     private void LocFilterBoxKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyReleased
+        
+        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
+
         if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
         {
             this.setVisible(false);
+        }
+        // Show add locomotive window, or quick find window
+        else if (controlPressed && (evt.getKeyCode() == KeyEvent.VK_D || evt.getKeyCode() == KeyEvent.VK_F))
+        {
+            parent.childWindowKeyEvent(evt);
         }
         else
         {
