@@ -30,6 +30,8 @@
     </Component>
     <Component class="javax.swing.ButtonGroup" name="buttonGroup3">
     </Component>
+    <Component class="javax.swing.ButtonGroup" name="buttonGroup4">
+    </Component>
     <Menu class="javax.swing.JMenuBar" name="mainMenuBar">
       <Properties>
         <Property name="focusable" type="boolean" value="false"/>
@@ -260,16 +262,6 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="windowAlwaysOnTopMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="checkForUpdates">
-              <Properties>
-                <Property name="selected" type="boolean" value="true"/>
-                <Property name="text" type="java.lang.String" value="Auto Check for Updates"/>
-                <Property name="toolTipText" type="java.lang.String" value="At startup, should we check for a new release of TrainControl?"/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForUpdatesActionPerformed"/>
-              </Events>
-            </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator19">
             </MenuItem>
             <Menu class="javax.swing.JMenu" name="locomotiveControlMenu">
@@ -349,6 +341,59 @@
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="keyboardQwertyMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+              </SubComponents>
+            </Menu>
+            <Menu class="javax.swing.JMenu" name="jMenu1">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Startup"/>
+              </Properties>
+              <SubComponents>
+                <MenuItem class="javax.swing.JRadioButtonMenuItem" name="powerOnStartup">
+                  <Properties>
+                    <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                      <ComponentRef name="buttonGroup4"/>
+                    </Property>
+                    <Property name="selected" type="boolean" value="true"/>
+                    <Property name="text" type="java.lang.String" value="Power On"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerOnStartupActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JRadioButtonMenuItem" name="powerOffStartup">
+                  <Properties>
+                    <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                      <ComponentRef name="buttonGroup4"/>
+                    </Property>
+                    <Property name="text" type="java.lang.String" value="Power Off"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerOffStartupActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JRadioButtonMenuItem" name="powerNoChangeStartup">
+                  <Properties>
+                    <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                      <ComponentRef name="buttonGroup4"/>
+                    </Property>
+                    <Property name="text" type="java.lang.String" value="Do Nothing"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerNoChangeStartupActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator18">
+                </MenuItem>
+                <MenuItem class="javax.swing.JCheckBoxMenuItem" name="checkForUpdates">
+                  <Properties>
+                    <Property name="selected" type="boolean" value="true"/>
+                    <Property name="text" type="java.lang.String" value="Auto Check for Updates"/>
+                    <Property name="toolTipText" type="java.lang.String" value="At startup, should we check for a new release of TrainControl?"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForUpdatesActionPerformed"/>
                   </Events>
                 </MenuItem>
               </SubComponents>

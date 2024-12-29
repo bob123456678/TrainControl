@@ -28,7 +28,7 @@ public class TrainControl
                 throw new Exception("This program cannot be run standalone in headless mode.  See the readme for programmatic examples.");
             }
 
-            init(initIP, simulate, true, true, debug);
+            init(initIP, simulate, true, false, debug);
         } 
         catch (Exception e)
         {

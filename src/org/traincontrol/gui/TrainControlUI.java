@@ -74,6 +74,7 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
@@ -163,6 +164,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
     public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
     public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
+    public static final String AUTO_POWER_ON = "AutoPowerOn";
     
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
@@ -603,6 +605,20 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Right-clicks on the timetable
         this.timetable.addMouseListener(new RightClickTimetableMenu(this));   
 
+        // Power at startup preference
+        switch (prefs.getInt(TrainControlUI.AUTO_POWER_ON, 0))
+        {
+            case 0:
+                this.powerOnStartup.setSelected(true);
+                break;
+            case 1:
+                this.powerOffStartup.setSelected(true);
+                break;
+            case 2:
+                this.powerNoChangeStartup.setSelected(true);
+                break;
+        }
+        
         // Keyboard layout preference
         switch (prefs.getInt(TrainControlUI.KEYBOARD_LAYOUT, 0))
         {
@@ -1560,6 +1576,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         // Dynamically set this to prevent bug where the UI shrinks after computer sleeps
         setMinimumSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
         setPreferredSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
+        
+        if (this.powerOnStartup.isSelected())
+        {
+            go();
+        }
+        else if (this.powerOffStartup.isSelected())
+        {
+            stop();
+        }
     }
     
     /**
@@ -2877,6 +2902,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
         buttonGroup3 = new javax.swing.ButtonGroup();
+        buttonGroup4 = new javax.swing.ButtonGroup();
         KeyboardTab = new javax.swing.JTabbedPane();
         LocControlPanel = new javax.swing.JPanel();
         locMappingLabel = new javax.swing.JLabel();
@@ -3250,7 +3276,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         importRoutesMenuItem = new javax.swing.JMenuItem();
         interfaceMenu = new javax.swing.JMenu();
         windowAlwaysOnTopMenuItem = new javax.swing.JCheckBoxMenuItem();
-        checkForUpdates = new javax.swing.JCheckBoxMenuItem();
         jSeparator19 = new javax.swing.JPopupMenu.Separator();
         locomotiveControlMenu = new javax.swing.JMenu();
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -3260,6 +3285,12 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardAzertyMenuItem = new javax.swing.JRadioButtonMenuItem();
+        jMenu1 = new javax.swing.JMenu();
+        powerOnStartup = new javax.swing.JRadioButtonMenuItem();
+        powerOffStartup = new javax.swing.JRadioButtonMenuItem();
+        powerNoChangeStartup = new javax.swing.JRadioButtonMenuItem();
+        jSeparator18 = new javax.swing.JPopupMenu.Separator();
+        checkForUpdates = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         viewReleasesMenuItem = new javax.swing.JMenuItem();
         downloadUpdateMenuItem = new javax.swing.JMenuItem();
@@ -8271,16 +8302,6 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         interfaceMenu.add(windowAlwaysOnTopMenuItem);
-
-        checkForUpdates.setSelected(true);
-        checkForUpdates.setText("Auto Check for Updates");
-        checkForUpdates.setToolTipText("At startup, should we check for a new release of TrainControl?");
-        checkForUpdates.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkForUpdatesActionPerformed(evt);
-            }
-        });
-        interfaceMenu.add(checkForUpdates);
         interfaceMenu.add(jSeparator19);
 
         locomotiveControlMenu.setText("Locomotive Control");
@@ -8353,6 +8374,49 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         locomotiveControlMenu.add(keyboardAzertyMenuItem);
 
         interfaceMenu.add(locomotiveControlMenu);
+
+        jMenu1.setText("Startup");
+
+        buttonGroup4.add(powerOnStartup);
+        powerOnStartup.setSelected(true);
+        powerOnStartup.setText("Power On");
+        powerOnStartup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                powerOnStartupActionPerformed(evt);
+            }
+        });
+        jMenu1.add(powerOnStartup);
+
+        buttonGroup4.add(powerOffStartup);
+        powerOffStartup.setText("Power Off");
+        powerOffStartup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                powerOffStartupActionPerformed(evt);
+            }
+        });
+        jMenu1.add(powerOffStartup);
+
+        buttonGroup4.add(powerNoChangeStartup);
+        powerNoChangeStartup.setText("Do Nothing");
+        powerNoChangeStartup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                powerNoChangeStartupActionPerformed(evt);
+            }
+        });
+        jMenu1.add(powerNoChangeStartup);
+        jMenu1.add(jSeparator18);
+
+        checkForUpdates.setSelected(true);
+        checkForUpdates.setText("Auto Check for Updates");
+        checkForUpdates.setToolTipText("At startup, should we check for a new release of TrainControl?");
+        checkForUpdates.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkForUpdatesActionPerformed(evt);
+            }
+        });
+        jMenu1.add(checkForUpdates);
+
+        interfaceMenu.add(jMenu1);
 
         mainMenuBar.add(interfaceMenu);
 
@@ -11461,6 +11525,27 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }).start();
     }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
 
+    private void powerOffStartupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_powerOffStartupActionPerformed
+        if (((JRadioButtonMenuItem) evt.getSource()).isSelected())  
+        {
+            prefs.putInt(AUTO_POWER_ON, 1);
+        }
+    }//GEN-LAST:event_powerOffStartupActionPerformed
+
+    private void powerOnStartupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_powerOnStartupActionPerformed
+        if (((JRadioButtonMenuItem) evt.getSource()).isSelected())  
+        {
+            prefs.putInt(AUTO_POWER_ON, 0);
+        }
+    }//GEN-LAST:event_powerOnStartupActionPerformed
+
+    private void powerNoChangeStartupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_powerNoChangeStartupActionPerformed
+        if (((JRadioButtonMenuItem) evt.getSource()).isSelected())  
+        {
+            prefs.putInt(AUTO_POWER_ON, 2);
+        }
+    }//GEN-LAST:event_powerNoChangeStartupActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12585,6 +12670,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
+    private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.JMenuItem changeIPMenuItem;
     private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
@@ -12654,6 +12740,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
+    private javax.swing.JMenu jMenu1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -12672,6 +12759,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSeparator jSeparator15;
     private javax.swing.JPopupMenu.Separator jSeparator16;
     private javax.swing.JPopupMenu.Separator jSeparator17;
+    private javax.swing.JPopupMenu.Separator jSeparator18;
     private javax.swing.JPopupMenu.Separator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
@@ -12706,6 +12794,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenuItem openCS3AppMenuItem;
+    private javax.swing.JRadioButtonMenuItem powerNoChangeStartup;
+    private javax.swing.JRadioButtonMenuItem powerOffStartup;
+    private javax.swing.JRadioButtonMenuItem powerOnStartup;
     private javax.swing.JSlider preArrivalSpeedReduction;
     private javax.swing.JMenuItem quickFindMenuItem;
     private javax.swing.JMenu routesMenu;
