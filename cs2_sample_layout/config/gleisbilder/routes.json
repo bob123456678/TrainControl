@@ -2992,7 +2992,7 @@
     {
         "name": "Auto Emergency Stop Top R1 2",
         "id": 80,
-        "s88": 1027,
+        "s88": 2014,
         "conditionS88": "1026,1",
         "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
@@ -3011,7 +3011,7 @@
     {
         "name": "Auto Emergency Stop Top R2 2",
         "id": 81,
-        "s88": 1027,
+        "s88": 2014,
         "conditionS88": "1025,1",
         "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
