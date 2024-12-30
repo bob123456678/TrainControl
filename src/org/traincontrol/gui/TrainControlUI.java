@@ -164,7 +164,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
     public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
     public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
-    public static final String AUTO_POWER_ON = "AutoPowerOn";
+    public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
     
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
