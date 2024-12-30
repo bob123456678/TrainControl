@@ -285,7 +285,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.0 [Beta]
+* v2.4.0 [12/30/2024]
     - Locomotives
         - Any MM2/DCC/MFX locomotive can now be converted to a multi-unit (linked to other locomotives) via right-click or Control+L
             - When active, locomotives customized as multi-units in TrainControl will be designated with a "MU" prefix
