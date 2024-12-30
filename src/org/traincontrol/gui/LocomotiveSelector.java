@@ -125,7 +125,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         setForeground(new java.awt.Color(238, 238, 238));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(4000, 4000));
-        setMinimumSize(new java.awt.Dimension(730, 620));
+        setMinimumSize(new java.awt.Dimension(730, 630));
         addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 formFocusGained(evt);
