@@ -142,7 +142,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     
     // Repo info
     public static final String GITHUB_REPO = "bob123456678/TrainControl";
-    public static final String README_URL = "https://github.com/bob123456678/TrainControl/blob/master/src/examples/Readme.md";
+    public static final String README_URL = "https://github.com/bob123456678/TrainControl/blob/master/Automation.md";
     public static String UPDATE_URL = "https://github.com/bob123456678/TrainControl/releases";
     public static String LATEST_VERSION = "";
     public static String LATEST_DOWNLOAD_URL = "";
