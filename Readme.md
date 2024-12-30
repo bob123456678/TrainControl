@@ -305,6 +305,7 @@ Requires JDK 1.8+ and the following libraries:
         - When editing edges, added a new option to capture switch and signal commands from the track diagram
         - When initializing a new graph, added an option to load a sample graph corresponding to the sample layout
         - Locomotives can no longer be edited in the UI while autonomy is running
+        - When adding a new locomotive, a warning will now be shown if all locomotives in the database are already on the graph
     - Accessory database
         - Warnings will now be shown in the log if an accessory address is out of range (>= 256)
         - Accessories with invalid addresses will now be automatically removed from the internal database at startup
@@ -318,6 +319,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added an automatic new version check, with a download button and info link added to the help menu
         - Added preference to enable/disable automatically checking for updates
         - Added preference to enable/disable auto power on at startup (was previously always forced on)
+        - Improved the appearance of labels in the semi-autonomous operation UI
         - The locomotive add window will now close when Escape is pressed
     - Bug fixes
         - Updated libraries (Flatlaf v3.5.4, JSON 2024-03-03)
@@ -326,6 +328,7 @@ Requires JDK 1.8+ and the following libraries:
         - Fixed bug where captured route commands might be duplicated
         - Fixed minor UI alignment issues
         - Fixed bug where emergency stop commands would not work in routes
+        - Fixed alignment issue in semi-autonomy UI when locomotives were inactive (from v2.3.0)
 
 * v2.3.3 [12/17/2024]
     - When editing function icons, added a button to copy icons from an existing locomotive

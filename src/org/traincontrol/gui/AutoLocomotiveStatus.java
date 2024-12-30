@@ -1,11 +1,13 @@
 package org.traincontrol.gui;
 
+import com.formdev.flatlaf.ui.FlatLineBorder;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Insets;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
@@ -36,6 +38,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         
         this.locName.setText(locomotive.getName());
         
+        // Style labels
+        locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), new Color(0,0,115), 1, 999));
+        locStation.setBackground(new Color(0,0,115));
+        locStation.setForeground(new Color(255,255,255));
+        
         updateState(loc);
         
         Font font = new Font("Arial Unicode MS", Font.PLAIN, 12); 
@@ -44,7 +51,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             pauseButton.setFont(font); 
             pauseButton.setText("\u23F8");
         }
-        
+                
         this.setVisible(true);
     }
 
@@ -71,11 +78,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 this.locName.setForeground(Color.LIGHT_GRAY);
                 this.pauseButton.setVisible(false);
+                
+                // Grey out label
+                locStation.setBackground(Color.LIGHT_GRAY);
+                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
             }
             else
             {
                 this.locName.setForeground(Color.BLACK);
                 this.pauseButton.setVisible(true);
+                
+                // Restore label color
+                locStation.setBackground(new Color(0,0,115));
+                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), new Color(0,0,115), 1, 999 ));
             }
             
             this.locStation.setToolTipText("");
@@ -230,19 +245,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(locStation)
-                            .addComponent(locDest))
-                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(locName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(pauseButton)))
-                .addContainerGap())
+                        .addComponent(pauseButton))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(locStation)
+                            .addComponent(locDest))
+                        .addGap(0, 143, Short.MAX_VALUE)))
+                .addGap(6, 6, 6))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -255,9 +270,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 .addComponent(locStation)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(6, 6, 6)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGap(6, 6, 6))
         );
     }// </editor-fold>//GEN-END:initComponents
 

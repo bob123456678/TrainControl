@@ -109,11 +109,20 @@ final public class GraphViewer extends javax.swing.JFrame
                         else
                         {
                             GraphLocAssign edit = new GraphLocAssign(parent, p, true);
-
-                            int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                            if(dialogResult == JOptionPane.OK_OPTION)
+                            
+                            if (edit.getNumLocs() == 0)
                             {
-                                edit.commitChanges();
+                                JOptionPane.showMessageDialog((Component) swingView,
+                                    "All locomotives in the database have already been placed on the graph."
+                                );
+                            }
+                            else
+                            {
+                                int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                                if(dialogResult == JOptionPane.OK_OPTION)
+                                {
+                                    edit.commitChanges();
+                                }
                             }
                         }
                     }
@@ -1158,7 +1167,7 @@ final public class GraphViewer extends javax.swing.JFrame
                                         JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
                                     );
 
-                                    if(dialogResult == JOptionPane.OK_OPTION)
+                                    if (dialogResult == JOptionPane.OK_OPTION)
                                     {
                                         edit.commitChanges();
                                     }

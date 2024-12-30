@@ -26,7 +26,8 @@ public class GraphLocAssign extends javax.swing.JPanel
      * @param p
      * @param newOnly - do we allow the selection of locomotives not currently on the graph?
      */
-    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly) {
+    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly)
+    {
         initComponents();
         
         List<String> locs;
@@ -96,6 +97,15 @@ public class GraphLocAssign extends javax.swing.JPanel
                 event.getComponent().requestFocusInWindow();
             }
         });
+    }
+    
+    /**
+     * Gets the number of locomotives selectable
+     * @return 
+     */
+    public int getNumLocs()
+    {
+        return this.locAssign.getModel().getSize();
     }
     
     public final void updateValues()
