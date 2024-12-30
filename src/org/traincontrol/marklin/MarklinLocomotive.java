@@ -3,6 +3,7 @@ package org.traincontrol.marklin;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -944,7 +945,18 @@ public class MarklinLocomotive extends Locomotive
         }
         
         // Our linked locomotives have the same address as the other locomotive
-        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        Collection<MarklinLocomotive> otherLocs;
+
+        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            otherLocs = this.getCentralStationMultiUnitLocomotives();
+        }
+        else
+        {
+            otherLocs = this.getLinkedLocomotives().keySet();
+        }
+        
+        for (MarklinLocomotive other : otherLocs)
         {
             if (other.hasEquivalentAddress((MarklinLocomotive) l))
             {
@@ -955,7 +967,19 @@ public class MarklinLocomotive extends Locomotive
         // Locomotives linked to the other locomotive have the same address as one of our linked locomotives
         for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
         {
-            for (MarklinLocomotive other2 : ((MarklinLocomotive) l).getLinkedLocomotives().keySet())
+            Collection<MarklinLocomotive> other2Locs;
+            
+            // Also check central stations MUs
+            if (((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+            {
+                other2Locs = ((MarklinLocomotive) l).getCentralStationMultiUnitLocomotives();
+            }
+            else
+            {
+                other2Locs = ((MarklinLocomotive) l).getLinkedLocomotives().keySet();
+            }
+            
+            for (MarklinLocomotive other2 : other2Locs)
             {
                 if (other.hasEquivalentAddress(other2) || other.equals(other2))
                 {

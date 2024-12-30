@@ -56,10 +56,14 @@ public class testLayout
 
         MarklinLocomotive l1_dcc = model.getLocByName("Test loc 1 DCC");
         
+        MarklinLocomotive mu_1_2_cs = model.getLocByName("Test loc MU CS");
+        
+        Map<String, Double> locList12 = new HashMap<String, Double>() {{ put(l1.getName(), 1.0); put(l2.getName(), -1.0); }};        
         Map<String, Double> locList2 = new HashMap<String, Double>() {{ put(l2.getName(), -1.0); }};
         Map<String, Double> locList1copy = new HashMap<String, Double>() {{ put(l1copy.getName(), 1.0); }};
 
         // Initialize multi-units
+        mu_1_2_cs.setCentralStationMultiUnitLocomotives(locList12);
         mu_1_2.preSetLinkedLocomotives(locList2);
         mu_3_2.preSetLinkedLocomotives(locList2);
         l5.preSetLinkedLocomotives(locList1copy);
@@ -137,6 +141,39 @@ public class testLayout
         layout.moveLocomotive(mu_1_2.getName(), "Station 1", true);
         assertEquals(layout.getLocomotiveLocation(mu_1_2), layout.getPoint("Station 1"));
         assertEquals(layout.getLocomotiveLocation(l5), layout.getPoint(null));
+        
+        // Place CS MU, should overwrite the TC one
+        layout.moveLocomotive(mu_1_2_cs.getName(), "Station 2", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2), layout.getPoint(null));
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint("Station 2"));
+
+        // Vice versa
+        layout.moveLocomotive(mu_1_2.getName(), "Station 1", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint(null));
+        assertEquals(layout.getLocomotiveLocation(mu_1_2), layout.getPoint("Station 1"));
+        
+        // Same with 3_2
+        layout.moveLocomotive(mu_1_2_cs.getName(), "Station 2", true);
+        layout.moveLocomotive(mu_3_2.getName(), "Station 1", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint(null));
+        assertEquals(layout.getLocomotiveLocation(mu_3_2), layout.getPoint("Station 1"));
+
+        // Placing l1 should delete cs MU
+        layout.moveLocomotive(mu_1_2_cs.getName(), "Station 2", true);
+        layout.moveLocomotive(l1.getName(), "Station 1", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint(null));
+        assertEquals(layout.getLocomotiveLocation(l1), layout.getPoint("Station 1"));
+
+        // Same for l2
+        layout.moveLocomotive(mu_1_2_cs.getName(), "Station 2", true);
+        layout.moveLocomotive(l2.getName(), "Station 1", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint(null));
+        assertEquals(layout.getLocomotiveLocation(l2), layout.getPoint("Station 1")); 
+        
+        // Should remove l2
+        layout.moveLocomotive(mu_1_2_cs.getName(), "Station 2", true);
+        assertEquals(layout.getLocomotiveLocation(mu_1_2_cs), layout.getPoint("Station 2"));
+        assertEquals(layout.getLocomotiveLocation(l2), null);         
     }
     
     /**
@@ -186,6 +223,9 @@ public class testLayout
         model.newMM2Locomotive("Test loc 5", 5);
 
         model.newDCCLocomotive("Test loc 1 DCC", 1);
+        
+        model.newDCCLocomotive("Test loc MU CS", 2);
+        model.changeLocAddress("Test loc MU CS", 100, MarklinLocomotive.decoderType.MULTI_UNIT);
     }
 
     @AfterClass
@@ -203,6 +243,8 @@ public class testLayout
         model.deleteLoc("Test loc 5");
 
         model.deleteLoc("Test loc 1 DCC");
+        
+        model.deleteLoc("Test loc MU CS");
     }
 
     @BeforeMethod
