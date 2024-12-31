@@ -4,6 +4,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import org.traincontrol.marklin.MarklinRoute;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
@@ -45,40 +46,45 @@ public class RightClickRouteMenu extends MouseAdapter
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {       
-            String routeName = ui.getRouteAtCursor(e).toString();
+            MarklinRoute route = ui.getRouteAtCursor(e);
+
+            if (route != null)   
+            {
+                String routeName = route.getName();
             
-            menuItem = new JMenuItem("Execute " + ui.getRouteTooltip(routeName));
-            menuItem.addActionListener(event -> ui.executeRoute(routeName));    
-            add(menuItem);
-            addSeparator();
-            
-            menuItem = new JMenuItem("Edit Route");
-            menuItem.addActionListener(event -> ui.editRoute(e));    
-            add(menuItem);
-                        
-            menuItem = new JMenuItem("Duplicate Route");
-            menuItem.addActionListener(event -> ui.duplicateRoute(e));    
-            add(menuItem);
-            
-            addSeparator();
-            
-            menuItem = new JMenuItem("Enable Auto Execution");
-            menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
-            add(menuItem);
-            
-            menuItem = new JMenuItem("Disable Auto Execution");
-            menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));    
-            add(menuItem);
-            
-            addSeparator();
-            
-            menuItem = new JMenuItem("Change Route ID");
-            menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
-            add(menuItem);
-            
-            menuItem = new JMenuItem("Delete Route");
-            menuItem.addActionListener(event -> ui.deleteRoute(e));    
-            add(menuItem);
+                menuItem = new JMenuItem("Execute " + ui.getRouteTooltip(routeName));
+                menuItem.addActionListener(event -> ui.executeRoute(routeName));    
+                add(menuItem);
+                addSeparator();
+
+                menuItem = new JMenuItem("Edit Route");
+                menuItem.addActionListener(event -> ui.editRoute(routeName));    
+                add(menuItem);
+
+                menuItem = new JMenuItem("Duplicate Route");
+                menuItem.addActionListener(event -> ui.duplicateRoute(routeName));    
+                add(menuItem);
+
+                addSeparator();
+
+                menuItem = new JMenuItem("Enable Auto Execution");
+                menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
+                add(menuItem);
+
+                menuItem = new JMenuItem("Disable Auto Execution");
+                menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));    
+                add(menuItem);
+
+                addSeparator();
+
+                menuItem = new JMenuItem("Change Route ID");
+                menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
+                add(menuItem);
+
+                menuItem = new JMenuItem("Delete Route");
+                menuItem.addActionListener(event -> ui.deleteRoute(routeName));    
+                add(menuItem);
+            }
         }
     }
 }

@@ -285,6 +285,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.1 [Beta]
+    - Routes
+        - The route ID will now be displayed when sorting by ID
+        - Changed the number of columns in the UI from 4 to 3 to make it easier to view long route names
+
 * v2.4.0 [12/30/2024]
     - Locomotives
         - Any MM2/DCC/MFX locomotive can now be converted to a multi-unit (linked to other locomotives) via right-click or Control+L

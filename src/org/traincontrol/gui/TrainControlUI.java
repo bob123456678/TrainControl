@@ -227,6 +227,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     // Total number of locomotive mappings >= 1
     private static final int NUM_LOC_MAPPINGS = 10;
     
+    // How many columns to show in the route UI
+    private static final int ROUTE_UI_COLS = 3;
+    
     // Keyboard colors
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -8922,16 +8925,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
     
-    public void deleteRoute(MouseEvent evt)
+    public void deleteRoute(String routeName)
     {
-        Object route = getRouteAtCursor(evt);
-
+        MarklinRoute route = this.model.getRoute(routeName);
+        
         if (route != null)
         {            
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Delete route " + route.toString() + "?", "Route Deletion", JOptionPane.YES_NO_OPTION);
-            if(dialogResult == JOptionPane.YES_OPTION)
+            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Delete route " + route.getName() + "?", "Route Deletion", JOptionPane.YES_NO_OPTION);
+            if (dialogResult == JOptionPane.YES_OPTION)
             {
-                this.model.deleteRoute(route.toString());
+                this.model.deleteRoute(route.getName());
                 refreshRouteList();
 
                 // Ensure route changes are synced
@@ -9771,13 +9774,11 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }
     }
      
-    public void editRoute(MouseEvent evt)
+    public void editRoute(String routeName)
     {
         new Thread(()->
         {  
-            Object route = getRouteAtCursor(evt);
-
-            if (route != null)
+            if (routeName != null)
             {          
                 if (routeEditor != null && routeEditor.isVisible())
                 {
@@ -9785,21 +9786,21 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
                 else
                 {
-                    MarklinRoute currentRoute = this.model.getRoute(route.toString());
+                    MarklinRoute currentRoute = this.model.getRoute(routeName);
 
-                    routeEditor = new RouteEditor("Edit Route: " + route.toString() + " (ID: " + currentRoute.getId() + ")",
-                            this, route.toString(), currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
+                    routeEditor = new RouteEditor("Edit Route: " + routeName + " (ID: " + currentRoute.getId() + ")",
+                            this, routeName, currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
                         currentRoute.getConditionS88String(), currentRoute.getConditionAccessoryCSV());
                 }
             }
         }).start();
     }
     
-    public Object getRouteAtCursor(MouseEvent evt)
+    public MarklinRoute getRouteAtCursor(MouseEvent evt)
     {
         try
         {
-            return this.RouteList.getValueAt(this.RouteList.rowAtPoint(evt.getPoint()), this.RouteList.columnAtPoint(evt.getPoint()));
+            return (MarklinRoute) this.RouteList.getValueAt(this.RouteList.rowAtPoint(evt.getPoint()), this.RouteList.columnAtPoint(evt.getPoint()));
         }
         catch (Exception e)
         {
@@ -9833,17 +9834,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         }  
     }
     
-    public void duplicateRoute(MouseEvent evt)
+    public void duplicateRoute(String routeName)
     {
         new Thread(()->
         {  
-            Object route = getRouteAtCursor(evt);
-
-            if (route != null)
+            if (routeName != null)
             {
-                MarklinRoute currentRoute = this.model.getRoute(route.toString());
+                MarklinRoute currentRoute = this.model.getRoute(routeName);
 
-                if (currentRoute != null)
+                if (currentRoute != null && currentRoute instanceof MarklinRoute)
                 {
                     String proposedName = currentRoute.getName() + " (Copy %s)";
 
@@ -9862,9 +9861,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
                     // Ensure route changes are synced
                     this.model.syncWithCS2();
-                    this.repaintLayout();
-                }
-            }  
+                    this.repaintLayout();   
+                }  
+            }
         }).start();
     }
         
@@ -10738,6 +10737,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             if (routeEditor != null && routeEditor.isVisible())
             {
                 JOptionPane.showMessageDialog(this, "You can only edit one route at a time.");
+                routeEditor.requestFocus();
+                routeEditor.toFront();
             }
             else
             {
@@ -10750,15 +10751,15 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         if (SwingUtilities.isLeftMouseButton(evt))
         {
             //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
-            Object route = this.getRouteAtCursor(evt);
+            MarklinRoute route = this.getRouteAtCursor(evt);
 
-            if (route != null)
+            if (route != null && route instanceof MarklinRoute)
             {
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);
                 
-                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.toString() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
-                if(dialogResult == JOptionPane.YES_OPTION)
+                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                if (dialogResult == JOptionPane.YES_OPTION)
                 {
                     new Thread(() ->
                     {
@@ -12351,7 +12352,17 @@ public class TrainControlUI extends javax.swing.JFrame implements View
 
             if (value != null)
             {
-                String name = (String) value;
+                String name = ((MarklinRoute) value).getName();
+                
+                // Show route ID if sorting by ID
+                if (prefs.getBoolean(ROUTE_SORT_PREF, false))
+                {
+                    setText(name);
+                }
+                else
+                {
+                    setText(getRouteId(name) + ". " + name);
+                }
                 
                 if (model.getRoute(name).isEnabled() && model.getRoute(name).hasS88())
                 {
@@ -12384,9 +12395,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 }
             };
 
-            tableModel.setColumnCount(4);
+            tableModel.setColumnCount(ROUTE_UI_COLS);
 
-            String[] items = new String[4];
+            Object[] items = new Object[ROUTE_UI_COLS];
 
             List<String> names = this.model.getRouteList();
 
@@ -12394,30 +12405,34 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             {
                 Collections.sort(names);
             }
+            
+            
+            // Collect the objects to store in the grid - no more strings
+            List<MarklinRoute> routes = names.stream().map(this.model::getRoute).collect(Collectors.toList());
 
             int i = 0;
-            while (!names.isEmpty())
+            while (!routes.isEmpty())
             {
-                items[i++] = names.get(0);
-                names.remove(0);
+                items[i++] = routes.get(0);
+                routes.remove(0);
 
-                if (i == 4 || names.isEmpty())
+                if (i == ROUTE_UI_COLS || routes.isEmpty())
                 {
                     i = 0;
 
                     tableModel.addRow(items);
 
-                    items = new String[4];
+                    items = new Object[ROUTE_UI_COLS];
                 }
             }
 
             this.RouteList.setModel(tableModel);
-            this.RouteList.setShowGrid(true);     
-
-            this.RouteList.getColumnModel().getColumn(0).setCellRenderer(new CustomTableRenderer());
-            this.RouteList.getColumnModel().getColumn(1).setCellRenderer(new CustomTableRenderer());
-            this.RouteList.getColumnModel().getColumn(2).setCellRenderer(new CustomTableRenderer());
-            this.RouteList.getColumnModel().getColumn(3).setCellRenderer(new CustomTableRenderer());
+            this.RouteList.setShowGrid(true);  
+            
+            for (int j = 0; j < ROUTE_UI_COLS; j++)
+            {
+                this.RouteList.getColumnModel().getColumn(j).setCellRenderer(new CustomTableRenderer());
+            }
 
             // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
         }));
