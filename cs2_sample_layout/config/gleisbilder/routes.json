@@ -1544,7 +1544,7 @@
         "id": 26,
         "s88": 1032,
         "conditionS88": "9,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -1575,7 +1575,7 @@
         "id": 27,
         "s88": 1032,
         "conditionS88": "9,1\n10,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -1613,7 +1613,7 @@
         "id": 28,
         "s88": 1032,
         "conditionS88": "9,1\n10,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -1658,7 +1658,7 @@
         "id": 29,
         "s88": 2015,
         "conditionS88": "1009,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -1696,7 +1696,7 @@
         "id": 30,
         "s88": 2015,
         "conditionS88": "1009,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -1727,7 +1727,7 @@
         "id": 31,
         "s88": 2013,
         "conditionS88": "1012,0\n1015,0\n1022,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -1758,7 +1758,7 @@
         "id": 32,
         "s88": 2013,
         "conditionS88": "1013,0\n1016,0\n1022,1\n1023,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -1934,7 +1934,7 @@
         "id": 39,
         "s88": 1011,
         "conditionS88": "9,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -1949,7 +1949,7 @@
         "id": 40,
         "s88": 1011,
         "conditionS88": "10,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -1964,7 +1964,7 @@
         "id": 41,
         "s88": 1011,
         "conditionS88": "4,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -1979,7 +1979,7 @@
         "id": 42,
         "s88": 1011,
         "conditionS88": "4,1\n9,1\n10,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -2184,7 +2184,7 @@
         "id": 49,
         "s88": 1007,
         "conditionS88": "9,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2203,7 +2203,7 @@
         "id": 50,
         "s88": 1006,
         "conditionS88": "10,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2831,7 +2831,7 @@
         "id": 72,
         "s88": 1027,
         "conditionS88": "1015,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2850,7 +2850,7 @@
         "id": 73,
         "s88": 1027,
         "conditionS88": "1016,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2869,7 +2869,7 @@
         "id": 74,
         "s88": 1006,
         "conditionS88": "4,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2888,7 +2888,7 @@
         "id": 75,
         "s88": 2013,
         "conditionS88": "1015,0\n1022,1\n1023,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -2919,7 +2919,7 @@
         "id": 77,
         "s88": 2013,
         "conditionS88": "1015,1\n1016,0\n1022,1\n1023,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
             {
@@ -2950,7 +2950,7 @@
         "id": 78,
         "s88": 1027,
         "conditionS88": "1012,1\n1022,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2972,7 +2972,7 @@
         "id": 79,
         "s88": 1027,
         "conditionS88": "1013,1\n1023,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2994,7 +2994,7 @@
         "id": 80,
         "s88": 2014,
         "conditionS88": "1026,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3013,7 +3013,7 @@
         "id": 81,
         "s88": 2014,
         "conditionS88": "1025,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3032,7 +3032,7 @@
         "id": 82,
         "s88": 2014,
         "conditionS88": "1015,1\n1016,0",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -3054,7 +3054,7 @@
         "id": 83,
         "s88": 2014,
         "conditionS88": "1015,0\n1016,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -3076,7 +3076,7 @@
         "id": 84,
         "s88": 2012,
         "conditionS88": "1011,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3095,7 +3095,7 @@
         "id": 85,
         "s88": 2012,
         "conditionS88": "1009,1",
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -3115,6 +3115,25 @@
             "state": {
                 "ADDRESS": "12",
                 "SETTING": "false"
+            }
+        }]
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Inner 2",
+        "id": 86,
+        "s88": 1008,
+        "conditionS88": "1030,1",
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditionAcc": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true"
             }
         }]
     }
