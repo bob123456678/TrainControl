@@ -10758,7 +10758,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);
                 
-                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + getRouteId(route) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + getRouteId(route.getName()) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
                 if (dialogResult == JOptionPane.YES_OPTION)
                 {
                     new Thread(() ->
