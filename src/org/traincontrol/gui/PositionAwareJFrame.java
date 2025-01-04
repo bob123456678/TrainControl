@@ -14,7 +14,7 @@ import org.traincontrol.util.Conversion;
 /**
  * Frame that remembers where it was located using Preferences
  */
-public abstract class PositionAwareJFrame extends JFrame
+public class PositionAwareJFrame extends JFrame
 {
     // The preference key
     public static final String REMEMBER_WINDOW_LOCATION = "WindowLocation" + Conversion.getFolderHash(10);
