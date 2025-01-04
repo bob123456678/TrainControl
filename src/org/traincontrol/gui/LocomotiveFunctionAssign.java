@@ -54,6 +54,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             try
             {
+                // Use "active" icons for the CS3 for a better look
                 String targetURL = loc.getFunctionIconUrl(i, parent.getModel().isCS3(), true);
                 Image icon = parent.getLocImage(targetURL, TrainControlUI.BUTTON_ICON_WIDTH);
                 iconModel.add(new ImageIcon(icon));
