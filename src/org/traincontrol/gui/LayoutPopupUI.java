@@ -9,10 +9,10 @@ import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLayout;
 
 /**
- *
+ * Popup representing a track diagram
  * @author Adam
  */
-public class LayoutPopupUI extends javax.swing.JFrame
+public class LayoutPopupUI extends PositionAwareJFrame
 {
     private final TrainControlUI parent;
     private final int size;
@@ -51,6 +51,11 @@ public class LayoutPopupUI extends javax.swing.JFrame
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
         pack();
+        
+        // Remember window location
+        thisWindowIndex = this.layout.getName()+ "_" + this.getLayoutSize();
+        loadWindowBounds(true);
+        saveWindowBounds(false);
     }
     
     public String getLayoutTitle()
@@ -117,6 +122,11 @@ public class LayoutPopupUI extends javax.swing.JFrame
     public JPanel getPanel()
     {
         return this.ExtLayoutPanel;
+    }
+    
+    public int getLayoutSize()
+    {
+        return this.size;
     }
 
     /**

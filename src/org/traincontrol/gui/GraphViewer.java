@@ -37,7 +37,7 @@ import org.graphstream.ui.view.util.InteractiveElement;
 /**
  * Autonomy graph UI
  */
-final public class GraphViewer extends javax.swing.JFrame
+final public class GraphViewer extends PositionAwareJFrame
 {    
     private TrainControlUI parent;
     private SwingViewer swingViewer;
@@ -1254,6 +1254,9 @@ final public class GraphViewer extends javax.swing.JFrame
         setAlwaysOnTop(parent.isAlwaysOnTop());
         requestFocus();
         toFront();
+        
+        // Remember window location
+        this.loadWindowBounds(true);
     }
 
     /**

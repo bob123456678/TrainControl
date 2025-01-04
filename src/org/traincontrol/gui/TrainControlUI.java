@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -115,7 +116,7 @@ import org.traincontrol.util.Util;
 /**
  * UI for controlling trains and switches using the keyboard
  */
-public class TrainControlUI extends javax.swing.JFrame implements View 
+public class TrainControlUI extends PositionAwareJFrame implements View 
 {    
     // Data save file name
     private static final String DATA_FILE_NAME = "UIState.data";
@@ -165,7 +166,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
     public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
     public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
-    
+    public static final String REMEMBER_WINDOW_LOCATION = "AutoPowerOn" + Conversion.getFolderHash(10);
+    public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
+
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
 
@@ -606,8 +609,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         this.RouteList.addMouseListener(new RightClickRouteMenu(this)); 
         
         // Right-clicks on the timetable
-        this.timetable.addMouseListener(new RightClickTimetableMenu(this));   
-
+        this.timetable.addMouseListener(new RightClickTimetableMenu(this));  
+        
         // Power at startup preference
         switch (prefs.getInt(TrainControlUI.AUTO_POWER_ON, 0))
         {
@@ -635,6 +638,9 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                 this.keyboardAzertyMenuItem.setSelected(true);
                 break;
         }
+        
+        // Window location preference
+        this.rememberLocationMenuItem.setSelected(prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false));
         
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
 
@@ -888,6 +894,8 @@ public class TrainControlUI extends javax.swing.JFrame implements View
                     + iOException.getMessage());
             }
         }
+        
+        saveLayoutTitles();
     }
     
     /**
@@ -1049,7 +1057,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             this.model.log("Bad data file for UI");            
         }
-
+        
         return instance;
     }
     
@@ -1588,6 +1596,10 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             stop();
         }
+        
+        // Remember window location
+        this.loadWindowBounds(false);
+        restoreLayoutTitles();
     }
     
     /**
@@ -3279,6 +3291,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         importRoutesMenuItem = new javax.swing.JMenuItem();
         interfaceMenu = new javax.swing.JMenu();
         windowAlwaysOnTopMenuItem = new javax.swing.JCheckBoxMenuItem();
+        rememberLocationMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator19 = new javax.swing.JPopupMenu.Separator();
         locomotiveControlMenu = new javax.swing.JMenu();
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -8305,6 +8318,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }
         });
         interfaceMenu.add(windowAlwaysOnTopMenuItem);
+
+        rememberLocationMenuItem.setSelected(true);
+        rememberLocationMenuItem.setText("Remember Window Locations");
+        rememberLocationMenuItem.setToolTipText("Restore program windows in the same place on startup?");
+        rememberLocationMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rememberLocationMenuItemActionPerformed(evt);
+            }
+        });
+        interfaceMenu.add(rememberLocationMenuItem);
         interfaceMenu.add(jSeparator19);
 
         locomotiveControlMenu.setText("Locomotive Control");
@@ -10060,6 +10083,104 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     }
     
     /**
+     * Restores layout popups
+     */
+    public void restoreLayoutTitles()
+    {
+        try
+        {
+            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            {
+                // Handle different layout sizes
+                for (Integer size : layoutSizes.values())
+                {
+                    String preferenceKey = LAYOUT_TITLES_PREF + "_" + size;
+                    String titles = prefs.get(preferenceKey, "");
+
+                    if (!titles.isEmpty())
+                    {
+                        List<String> layoutTitles = Arrays.asList(titles.split(","));
+
+                        for (String layoutTitle : layoutTitles)
+                        {
+                            if (this.model.getLayoutList().contains(layoutTitle))
+                            {
+                                this.showLayoutPopup(layoutTitle, size);                      
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            this.model.log("Error loading window locations.");
+            
+            if (this.model.isDebug())
+            {
+                this.model.log(e);
+            }
+        }
+    }
+
+    /**
+     * Saves location of layout popups
+     */
+    private void saveLayoutTitles()
+    {
+        try
+        {
+            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            {
+                Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
+                ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
+
+                while (iter.hasNext())
+                {
+                    LayoutPopupUI currentPopup = iter.next();
+                    if (currentPopup.isVisible())
+                    {
+                        String layoutTitle = currentPopup.getLayoutTitle();
+                        String layoutSize = Integer.toString(currentPopup.getLayoutSize()); 
+
+                        if (!layoutTitlesMap.containsKey(layoutSize))
+                        {
+                            layoutTitlesMap.put(layoutSize, new HashSet<>());
+                        }
+
+                        layoutTitlesMap.get(layoutSize).add(layoutTitle);
+                    }
+                }
+
+                // Reset by default
+                for (Integer size : layoutSizes.values())
+                {
+                    String preferenceKey = LAYOUT_TITLES_PREF + "_" + size;
+                    prefs.put(preferenceKey, "");
+                }
+                  
+                for (Map.Entry<String, Set<String>> entry : layoutTitlesMap.entrySet())
+                {
+                    String layoutSize = entry.getKey();
+                    String titles = String.join(",", entry.getValue());
+
+                    String preferenceKey = LAYOUT_TITLES_PREF + "_" + layoutSize;
+                    prefs.put(preferenceKey, titles);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            this.model.log("Error saving window locations.");
+            
+            if (this.model.isDebug())
+            {
+                this.model.log(e);
+            }
+        }
+    }
+    
+    /**
      * Updates the list of popups, and optionally refreshes the diagrams
      */
     private void updatePopups(boolean doRefresh)
@@ -10872,6 +10993,24 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
+    private void showLayoutPopup(String layoutName, int size)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            LayoutPopupUI popup = new LayoutPopupUI(
+                this.model.getLayout(layoutName),
+                size,
+                this,
+                this.LayoutList.getSelectedIndex()
+            );
+
+            popup.render();
+            popups.add(popup);
+            updatePopups(false);
+            repaintLoc();
+        }));
+    }
+    
     private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
 
         int size = this.LayoutList.getItemCount();
@@ -10879,57 +11018,18 @@ public class TrainControlUI extends javax.swing.JFrame implements View
         {
             String layoutName = LayoutList.getItemAt(i).toString();
 
-            new Thread(() ->
-                {
-                    LayoutPopupUI popup = new LayoutPopupUI(
-                        this.model.getLayout(layoutName),
-                        this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                        this,
-                        this.LayoutList.getSelectedIndex()
-                    );
-
-                    popup.render();
-                    popups.add(popup);
-                    updatePopups(false);
-                    repaintLoc();
-                }).start();
-            }
+            showLayoutPopup(layoutName, this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
+        }
     }//GEN-LAST:event_allButtonActionPerformed
 
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
 
-        new Thread(() ->
-            {
-                LayoutPopupUI popup = new LayoutPopupUI(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get("Small"),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                popup.render();
-                popups.add(popup);
-                updatePopups(false);
-                repaintLoc();
-            }).start();
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get("Small"));
     }//GEN-LAST:event_smallButtonActionPerformed
 
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                LayoutPopupUI popup = new LayoutPopupUI(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get("Large"),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                popup.render();
-                popups.add(popup);
-                updatePopups(false);
-                repaintLoc();
-            }));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get("Large"));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeListActionPerformed
@@ -11543,6 +11643,16 @@ public class TrainControlUI extends javax.swing.JFrame implements View
             prefs.putInt(AUTO_POWER_ON, 2);
         }
     }//GEN-LAST:event_powerNoChangeStartupActionPerformed
+
+    private void rememberLocationMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rememberLocationMenuItemActionPerformed
+        prefs.putBoolean(REMEMBER_WINDOW_LOCATION, this.rememberLocationMenuItem.isSelected());
+        
+        // If we don't do this, the preference will get deleted
+        if (this.popups.isEmpty() && this.rememberLocationMenuItem.isSelected())
+        {
+            this.restoreLayoutTitles();
+        }
+    }//GEN-LAST:event_rememberLocationMenuItemActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -12811,6 +12921,7 @@ public class TrainControlUI extends javax.swing.JFrame implements View
     private javax.swing.JRadioButtonMenuItem powerOnStartup;
     private javax.swing.JSlider preArrivalSpeedReduction;
     private javax.swing.JMenuItem quickFindMenuItem;
+    private javax.swing.JCheckBoxMenuItem rememberLocationMenuItem;
     private javax.swing.JMenu routesMenu;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;
