@@ -1256,7 +1256,7 @@ final public class GraphViewer extends PositionAwareJFrame
         toFront();
         
         // Remember window location
-        this.loadWindowBounds(true);
+        this.loadWindowBounds();
     }
 
     /**

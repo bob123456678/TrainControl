@@ -3,8 +3,6 @@ package org.traincontrol.gui;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
@@ -20,7 +18,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
     private final int size;
     private MarklinLayout layout;
     private int pageIndex;
-    private boolean loaded = false;
     
     /**
      * Popup window showing train layouts
@@ -55,16 +52,16 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
         pack();
         
-        // Remember window location
-        thisWindowIndex = this.layout.getName()+ "_" + this.getLayoutSize();
+        // Remember window location for different layouts and sizes
+        this.setWindowIndex(this.layout.getName()+ "_" + this.getLayoutSize());
         
-        if (!loaded)
+        // Only load location once
+        if (!this.isLoaded())
         {
-            loadWindowBounds(true);
-            loaded = true;
+            loadWindowBounds();
         }
         
-        saveWindowBounds(false);
+        saveWindowBounds();
     }
     
     public String getLayoutTitle()

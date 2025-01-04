@@ -166,7 +166,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
     public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
     public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
-    public static final String REMEMBER_WINDOW_LOCATION = "AutoPowerOn" + Conversion.getFolderHash(10);
     public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
 
     // Preference defaults
@@ -1597,8 +1596,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             stop();
         }
         
-        // Remember window location
-        this.loadWindowBounds(false);
+        // Remember window location.  Inform class that this window is not resizable
+        this.setPositionAwareResizable(false);
+        this.loadWindowBounds();
+        
         restoreLayoutTitles();
     }
     
