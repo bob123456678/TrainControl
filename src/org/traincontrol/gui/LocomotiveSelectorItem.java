@@ -52,7 +52,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
                     locIcon.setIcon(ic);      
                     locIcon.setText("");
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
                     tcui.getModel().log("Failed to load image: " + loc.getImageURL());
                     locIcon.setIcon(null);

@@ -54,11 +54,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         {
             try
             {
-                String targetURL = loc.getFunctionIconUrl(i, false, true);
-                Image icon = parent.getLocImage(targetURL, 35);
+                String targetURL = loc.getFunctionIconUrl(i, parent.getModel().isCS3(), true);
+                Image icon = parent.getLocImage(targetURL, TrainControlUI.BUTTON_ICON_WIDTH);
                 iconModel.add(new ImageIcon(icon));
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 iconModel.add(Integer.toString(i));
                 this.parent.getModel().log("Error loading function icon " + i);
@@ -103,6 +103,13 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         BasicComboPopup popup = (BasicComboPopup) fIcon.getAccessibleContext().getAccessibleChild(0);
         JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
         JList list = (JList) scrollPane.getViewport().getView();
+        
+        // Fix missing column bug
+        list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+        list.setVisibleRowCount(0);
+        list.setFixedCellWidth(TrainControlUI.BUTTON_ICON_WIDTH + 12); 
+        list.setFixedCellHeight(TrainControlUI.BUTTON_ICON_WIDTH + 12);
+        
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
         list.setVisibleRowCount(fIcon.getModel().getSize() / 5);   
         
@@ -499,11 +506,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
                 this.useCustomFunctionIcon.setVisible(false);
                 
                 this.customFunctionIcon.setIcon(
-                    new ImageIcon(parent.getLocImage(path, 33))
+                    new ImageIcon(parent.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH))
                 );                
                 
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 this.parent.getModel().log("Error: invalid icon path: " + path);
             }      

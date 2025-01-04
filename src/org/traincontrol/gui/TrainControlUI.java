@@ -191,7 +191,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final Integer LOC_ICON_HEIGHT = 114;
     
     // Width of button images
-    public static final Integer BUTTON_ICON_WIDTH = 35;
+    public static final Integer BUTTON_ICON_WIDTH = 34;
     
     // Maximum allowed length of locomotive names and notes (in characters)
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
@@ -2340,7 +2340,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      * @throws IOException 
      */
-    public Image getLocImage(String url, int size) throws IOException
+    public Image getLocImage(String url, int size) throws IOException, Exception
     {
         String key = url + Integer.toString(size);
         
@@ -2447,7 +2447,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         b.setForeground(Color.WHITE);
                         b.setContentAreaFilled(false);
                     } 
-                    catch (IOException | NullPointerException e)
+                    catch (Exception e)
                     {
                         noImageButton(b);
 
@@ -2593,7 +2593,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     bt.setVisible(true);
                                     bt.setEnabled(true);
 
-                                    String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, false, true);
+                                    // Use "active" icons on the CS3, which look better
+                                    String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, this.model.isCS3(), true);
 
                                     final boolean hasCustom = this.activeLoc.getLocalFunctionImageURL(i) != null;
 
@@ -2630,7 +2631,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                 //bt.setText("F" + Integer.toString(fNo));
                                             }
                                         }
-                                        catch (IOException e)
+                                        catch (Exception e)
                                         {
                                             this.model.log("Icon not found: " + targetURL);
                                             //bt.setText("F" + Integer.toString(fNo));

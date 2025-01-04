@@ -11,17 +11,21 @@ cs3_ip = '192.168.50.25'
 # color = b'#010101' # CS3 black
 color = b'#222222'  # TC gray
 
+active = False
+
 # There are currently 296 icons
 for i in range(1, 297):
 
     icon_index = str(i).zfill(3)
     icon_index_out = str(i).zfill(2)
 
-    dest = "FktIcon_i_gr_" + icon_index_out + ".png"
+    letter = 'a' if active else 'i'
+
+    dest = "FktIcon_" + letter + "_gr_" + icon_index_out + ".png"
 
     try:
 
-        svg_url = 'http://' + cs3_ip + '/app/assets/fct/fkticon_i_' + icon_index + '.svg'
+        svg_url = 'http://' + cs3_ip + '/app/assets/fct/fkticon_' + letter + '_' + icon_index + '.svg'
         response = requests.get(svg_url)
 
         data = response.content.replace(b'#010101', color)
@@ -35,7 +39,7 @@ for i in range(1, 297):
 
         os.rename("output.png", dest)
 
-        print("Processed FktIcon_i_gr_" + icon_index_out + ".png")
+        print("Processed FktIcon_" + letter + "_gr_" + icon_index_out + ".png")
 
 
     except Exception as e:
