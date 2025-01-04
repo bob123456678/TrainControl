@@ -289,6 +289,8 @@ Requires JDK 1.8+ and the following libraries:
     - Routes
         - The route ID will now be displayed when sorting by ID
         - Changed the number of columns in the UI from 4 to 3 to make it easier to view long route names
+    - UI
+        - Added an option to remember window positions between runs.  This will also re-open track diagrams.
 
 * v2.4.0 [12/30/2024]
     - Locomotives
