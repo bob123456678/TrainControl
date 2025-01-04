@@ -20,6 +20,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
     private final int size;
     private MarklinLayout layout;
     private int pageIndex;
+    private boolean loaded = false;
     
     /**
      * Popup window showing train layouts
@@ -56,7 +57,13 @@ public class LayoutPopupUI extends PositionAwareJFrame
         
         // Remember window location
         thisWindowIndex = this.layout.getName()+ "_" + this.getLayoutSize();
-        loadWindowBounds(true);
+        
+        if (!loaded)
+        {
+            loadWindowBounds(true);
+            loaded = true;
+        }
+        
         saveWindowBounds(false);
     }
     

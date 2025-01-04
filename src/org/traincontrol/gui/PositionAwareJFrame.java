@@ -9,6 +9,9 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import static org.traincontrol.gui.TrainControlUI.REMEMBER_WINDOW_LOCATION;
 
 /**
@@ -19,7 +22,7 @@ public class PositionAwareJFrame extends JFrame
     private final Preferences prefs;
     private final String thisWindowName;
     protected String thisWindowIndex = "";
-    public static final String MAIN_WINDOW_NAME = "TrainControlUI_";
+    public static final List<String> NON_RESIZABLE_WINDOWS = new ArrayList<>(Arrays.asList("TrainControlUI_"));
     
     private String getWindowName()
     {
@@ -65,6 +68,11 @@ public class PositionAwareJFrame extends JFrame
         this.addWindowStateListener(e -> saveWindowBounds(false));
     }
 
+    /**
+     * Called automatically when the window is adjusted by the user,
+     * but should be called manually if the window is programmatically changed
+     * @param isResized - is this originating from a resize event?  the main window isn't resizable 
+     */
     protected void saveWindowBounds(boolean isResized)
     {
         try
@@ -72,7 +80,7 @@ public class PositionAwareJFrame extends JFrame
             String windowName = this.getWindowName();
             if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
             {
-                if (!windowName.equals(MAIN_WINDOW_NAME) || !isResized)
+                if (!NON_RESIZABLE_WINDOWS.contains(windowName) || !isResized)
                 {
                     prefs.putInt(windowName + "_x", this.getX());
                     prefs.putInt(windowName + "_y", this.getY());
@@ -89,6 +97,10 @@ public class PositionAwareJFrame extends JFrame
         }
     }
 
+    /**
+     * Call this just before the window is shown
+     * @param rememberSize 
+     */
     protected void loadWindowBounds(boolean rememberSize)
     {
         try
