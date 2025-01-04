@@ -1575,7 +1575,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Renders the UI once everything is initialized - to be called externally
      */
     public void display()
-    {        
+    {     
+        // Remember window location.  Because isResizable is already false, this will not restore the size
+        this.loadWindowBounds();
+        
         setVisible(true);
              
         // Restore correct preference
@@ -1595,11 +1598,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             stop();
         }
-        
-        // Remember window location.  Inform class that this window is not resizable
-        this.setPositionAwareResizable(false);
-        this.loadWindowBounds();
-        
+                
         restoreLayoutTitles();
     }
     

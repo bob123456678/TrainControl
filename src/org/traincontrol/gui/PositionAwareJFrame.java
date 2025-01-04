@@ -19,7 +19,8 @@ public class PositionAwareJFrame extends JFrame
     // The preference key
     public static final String REMEMBER_WINDOW_LOCATION = "WindowLocation" + Conversion.getFolderHash(10);
 
-    // Preferences store - can be change
+    // Preferences store - can be changed
+    // TODO - could be replaced and de-coupled by an abstract method call
     private final Preferences prefs = TrainControlUI.getPrefs();
     
     // By default, this is our class name
@@ -27,10 +28,7 @@ public class PositionAwareJFrame extends JFrame
     
     // Custom index for the window if there are multiple windows with the same class name
     private String thisWindowIndex = "";
-    
-    // Is this window resizable?
-    private boolean resizable = true;
-    
+        
     // Have we loaded the window?
     private boolean loaded = false;
     
@@ -41,7 +39,7 @@ public class PositionAwareJFrame extends JFrame
 
         // Load the saved position, size, and state
         // Call this manually because we don't know when the window is ready
-        // loadWindowBounds(true);
+        // loadWindowBounds();
 
         // Add a listener to save the position, size, and state when the window is moved, resized, or state changes
         this.addComponentListener(new ComponentAdapter()
@@ -139,7 +137,11 @@ public class PositionAwareJFrame extends JFrame
                     this.setLocation(x, y);
 
                     // Only restore size and state if window is resiazable
-                    if (resizable)
+                    if (this.isResizable() &&
+                            prefs.get(windowName + "_width", null) != null &&
+                            prefs.get(windowName + "_height", null) != null &&
+                            prefs.get(windowName + "_state", null) != null
+                    )
                     {
                         int width = prefs.getInt(windowName + "_width", this.getWidth());
                         int height = prefs.getInt(windowName + "_height", this.getHeight());
@@ -164,15 +166,6 @@ public class PositionAwareJFrame extends JFrame
     public void setWindowIndex(String thisWindowIndex)
     {
         this.thisWindowIndex = thisWindowIndex;
-    }
-    
-    /**
-     * Designates whether this window is resiable
-     * @param val 
-     */
-    protected void setPositionAwareResizable(boolean val)
-    {
-        this.resizable = val;
     }
 
     /**
