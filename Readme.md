@@ -285,7 +285,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.1 [Beta]
+* v2.4.1 [1/4/2025]
     - Routes
         - The route ID will now be displayed when sorting by ID
         - Changed the number of columns in the UI from 4 to 3 to make it easier to view long route names

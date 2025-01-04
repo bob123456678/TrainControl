@@ -10100,7 +10100,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (!titles.isEmpty())
                     {
-                        List<String> layoutTitles = Arrays.asList(titles.split(","));
+                        List<String> layoutTitles = Arrays.asList(titles.split("<<delimiter>>"));
 
                         for (String layoutTitle : layoutTitles)
                         {
@@ -10163,7 +10163,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 for (Map.Entry<String, Set<String>> entry : layoutTitlesMap.entrySet())
                 {
                     String layoutSize = entry.getKey();
-                    String titles = String.join(",", entry.getValue());
+                    String titles = String.join("<<delimiter>>", entry.getValue());
 
                     String preferenceKey = LAYOUT_TITLES_PREF + "_" + layoutSize;
                     prefs.put(preferenceKey, titles);
