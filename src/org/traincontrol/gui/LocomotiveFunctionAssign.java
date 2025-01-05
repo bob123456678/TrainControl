@@ -55,7 +55,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
             try
             {
                 // Use "active" icons for the CS3 for a better look
-                String targetURL = loc.getFunctionIconUrl(i, parent.getModel().isCS3(), true);
+                String targetURL = loc.getFunctionIconUrl(i, parent.getModel().isCS3() || !parent.getModel().getNetworkCommState(), true);
                 Image icon = parent.getLocImage(targetURL, TrainControlUI.BUTTON_ICON_WIDTH);
                 iconModel.add(new ImageIcon(icon));
             }
@@ -112,7 +112,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         list.setFixedCellHeight(TrainControlUI.BUTTON_ICON_WIDTH + 12);
         
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        list.setVisibleRowCount(fIcon.getModel().getSize() / 5);   
+        list.setVisibleRowCount(fIcon.getModel().getSize() / 6);   
         
         // Show custom icon and controls
         displayCustomizationButtons();

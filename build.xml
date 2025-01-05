@@ -68,7 +68,9 @@
     the compile target as the regular run target does. Again, for a list of available 
     properties which you can use, check the target you are overriding in the
     nbproject/build-impl.xml file. 
-
+        
+    To exclude certain icons:
+    , **/*_i_gr*.png
     -->
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
@@ -86,7 +88,7 @@
         </jar>
         <zip destfile="${store.jar}">
             <zipfileset src="${store.dir}/temp_final.jar"
-            excludes="META-INF/*.SF, META-INF/*.DSA, META-INF/*.RSA, **/*_i_gr*.png"/>
+            excludes="META-INF/*.SF, META-INF/*.DSA, META-INF/*.RSA"/>
         </zip>
         <delete file="${store.dir}/temp_final.jar"/>
     </target>

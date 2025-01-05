@@ -2594,7 +2594,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     bt.setEnabled(true);
 
                                     // Use "active" icons on the CS3, which look better
-                                    String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, this.model.isCS3(), true);
+                                    String targetURL = this.activeLoc.getFunctionIconUrl(i, functionType, this.model.isCS3() || !this.model.getNetworkCommState(), true);
 
                                     final boolean hasCustom = this.activeLoc.getLocalFunctionImageURL(i) != null;
 
