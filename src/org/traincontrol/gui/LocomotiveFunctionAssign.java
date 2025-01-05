@@ -104,7 +104,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         BasicComboPopup popup = (BasicComboPopup) fIcon.getAccessibleContext().getAccessibleChild(0);
         JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
         JList list = (JList) scrollPane.getViewport().getView();
-        
+       
         // Fix missing column bug
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
         list.setVisibleRowCount(0);
@@ -112,11 +112,12 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         list.setFixedCellHeight(TrainControlUI.BUTTON_ICON_WIDTH + 12);
         
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        list.setVisibleRowCount(fIcon.getModel().getSize() / 6);   
-        
+        list.setVisibleRowCount(-1); // Auto-calculate
+        popup.setMinimumSize(new Dimension(300, 400));
+
         // Show custom icon and controls
         displayCustomizationButtons();
-        
+               
         this.customFunctionIcon.setMinimumSize(new Dimension(50, 33));
         
         // Button to copy icons
@@ -202,7 +203,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
         deleteCustomIcon = new javax.swing.JButton();
         copyCustomizations = new javax.swing.JButton();
 
-        setMinimumSize(new java.awt.Dimension(213, 97));
+        setMinimumSize(new java.awt.Dimension(312, 359));
 
         fNoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fNoLabel.setForeground(new java.awt.Color(0, 0, 115));
@@ -220,6 +221,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel {
 
         fIcon.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIcon.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        fIcon.setMaximumSize(new java.awt.Dimension(300, 600));
         fIcon.setMinimumSize(new java.awt.Dimension(300, 27));
         fIcon.setPreferredSize(new java.awt.Dimension(300, 27));
 

@@ -239,7 +239,7 @@ public class MarklinLocomotive extends Locomotive
      */
     public int getNumFnIcons()
     {
-        if (this.network.isCS3())
+        if (this.network.isCS3() || !this.network.getNetworkCommState())
         {
             return NUM_FN_ICONS_CS3;
         }
@@ -254,7 +254,7 @@ public class MarklinLocomotive extends Locomotive
      */
     public int sanitizeFIconIndex(int fType)
     {
-        if (this.network.isCS3())
+        if (this.network.isCS3() || !this.network.getNetworkCommState())
         {
             return fType % (NUM_FN_ICONS_CS3 + 1);
         }

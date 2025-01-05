@@ -285,13 +285,14 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.1 [1/4/2025]
+* v2.4.1 [1/5/2025]
     - Routes
         - The route ID will now be displayed when sorting by ID
         - Changed the number of columns in the UI from 4 to 3 to make it easier to view long route names
     - UI
         - Added an option to remember window positions between runs.  This will also re-open track diagrams.
         - Replaced function icons with "active" icons on the CS3, for a more intuitive look
+        - All possible icons (ones from CS3) will now be shown when in debug mode
     - Fixed bug where a column of function icons was not always visible in the icon customization UI
 
 * v2.4.0 [12/30/2024]
