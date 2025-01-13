@@ -28,11 +28,11 @@ public class CS2Message
     public static final int MESSAGE_LENGTH = 13;
 
     /* Command constants */
-    
+
     // System constants
     public static final int CMD_SYSTEM = 0x00;
     public static final int ID_SYSTEM = 0x00;
-    
+
     // System sub-commands
     public static final int CMD_SYSSUB_STOP = 0x00;
     public static final int CMD_SYSSUB_GO = 0x01;
@@ -43,7 +43,7 @@ public class CS2Message
     public static final int CMD_SYSSUB_NEWREGNR = 0x09;
     public static final int CMD_SYSSUB_OVERLOAD = 0x0A;
     public static final int CMD_SYSSUB_STATUS = 0x0B;
-    
+
     // Locomotive commands
     public static final int CMD_LOCO_DISCOVERY = 0x01;
     public static final int ID_LOCO_DISCOVERY = 0x02;
@@ -61,30 +61,30 @@ public class CS2Message
     public static final int ID_LOCO_READ_CONFIG = 0x0E;
     public static final int CMD_LOCO_WRITE_CONFIG = 0x08;
     public static final int ID_LOCO_WRITE_CONFIG = 0x10;
-    
+
     // Accessory commands
     public static final int CMD_ACC_SWITCH = 0x0B;
     public static final int ID_ACC_SWITCH = 0x16;
     public static final int ID_ACC_SWITCH_RSP = 0x17;
     public static final int CMD_ACC_SENSOR = 0x11;
-    
+
     // Software commands
     public static final int CAN_CMD_PING = 0x18;
     public static final int CAN_ID_PING = 0x30;
-    
+
     // Other commands
     public static final int CAN_S88_REPORT = 0x21;
     public static final int CAN_SENSOR_EVENT = 0x23;
 
     /* Other Constants */
-    
+
     // These magic numbers most likely refer to the protocol version
     // but this is poorly documented
     public static final int CS2_PROTOCOL_V1 = 0x0300;
     public static final int CS2_PROTOCOL_V2 = 0x4711;
 
     /* Constructors */
-    
+
     /**
      * Constructor from byte array
      *
@@ -206,7 +206,7 @@ public class CS2Message
     }
 
     /* Private methods */
-    
+
     /**
      * Sets class fields based on data values
      *
@@ -303,10 +303,10 @@ public class CS2Message
     {
         return this.command == CMD_SYSTEM;
     }
-    
+
     /**
      * Is the message a ping command?
-     * @return 
+     * @return
      */
     public boolean isPingCommand()
     {
@@ -377,7 +377,7 @@ public class CS2Message
      *
      * @return
      */
-    public boolean isOtherComannd()
+    public boolean isOtherCommand()
     {
         return !(this.isFeedbackCommand() || this.isAccessoryCommand()
             || this.isLocCommand() || this.isSysCommand() || this.isPingCommand());
@@ -393,7 +393,7 @@ public class CS2Message
         return CS2Message.mergeBytes(
             new byte[]
             {
-                this.getData()[0], this.getData()[1], 
+                this.getData()[0], this.getData()[1],
                 this.getData()[2], this.getData()[3]
             });
     }
@@ -411,10 +411,10 @@ public class CS2Message
                 this.getData()[2], this.getData()[3]
             });
     }
-    
+
     /**
      * Gets the sub command
-     * @return 
+     * @return
      */
     public int getSubCommand()
     {
@@ -422,24 +422,24 @@ public class CS2Message
         {
             return -1;
         }
-        
+
         return CS2Message.mergeBytes(
             new byte[]
             {
                 this.getData()[4]
             });
     }
-    
+
     /**
      * Pretty printing
-     * @return 
+     * @return
      */
     @Override
     public String toString()
     {
         String s = "";
         String type = "Other";
-        
+
         if (this.isAccessoryCommand())
         {
             type = "Accessory";
@@ -466,7 +466,7 @@ public class CS2Message
         s += "Type: " + type + "\n";
         s += "Response: " + (this.response == true ? "Yes" : "No") + "\n";
         s += "Hash: " + this.hash + "\n";
-        s += "Length: " + this.length + "\n";     
+        s += "Length: " + this.length + "\n";
         s += "Data:   " + Conversion.bytesToHex(this.data) + "\n";
         s += "Header: " + Conversion.bytesToHex(new byte[]{
             this.rawMessage[0],
@@ -477,7 +477,7 @@ public class CS2Message
 
         }) + "\n";
         s += "Bin: " + Conversion.bytesToBin(rawMessage);
-        
+
         return s;
     }
 
