@@ -377,7 +377,7 @@ public class CS2Message
      *
      * @return
      */
-    public boolean isOtherComannd()
+    public boolean isOtherCommand()
     {
         return !(this.isFeedbackCommand() || this.isAccessoryCommand()
             || this.isLocCommand() || this.isSysCommand() || this.isPingCommand());

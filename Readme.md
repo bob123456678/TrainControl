@@ -285,6 +285,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.2 [Beta]
+    - Fixed typo in `CSMessage.isOtherCommand` (was isOtherComannd)
+
 * v2.4.1 [1/5/2025]
     - Routes
         - The route ID will now be displayed when sorting by ID
