@@ -1579,6 +1579,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Remember window location.  Because isResizable is already false, this will not restore the size
         this.loadWindowBounds();
         
+        // Ensure the locomotive pane is updated
+        this.repaintLoc(true, null);
+        
         setVisible(true);
              
         // Restore correct preference
