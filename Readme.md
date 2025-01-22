@@ -285,7 +285,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.2 [Beta]
+* v2.4.2 [1/22/2025]
+    - Fixed bug where conditional accessories in routes would be ignored if there was no conditional S88
+    - Fixed occasional active locomotive rendering issue at startup
     - Fixed typo in `CSMessage.isOtherCommand` (was isOtherComannd)
 
 * v2.4.1 [1/5/2025]

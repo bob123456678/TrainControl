@@ -150,7 +150,7 @@ public class MarklinRoute extends Route
                     if (!this.enabled) return;
                     
                     // Check the condition
-                    if (this.hasConditionS88())
+                    if (this.hasConditionS88() || this.hasConditionAccessories())
                     {
                         boolean skip = false;
                         
