@@ -46,8 +46,6 @@ public class MarklinRoute extends Route
     private boolean enabled;
     private s88Triggers triggerType;
     private int s88;
-    //private final Map<Integer, Boolean> conditionS88s;
-    //private final List<RouteCommand> conditionAccessories;
     private final List<RouteCommand> conditions;
     
     /**
@@ -67,8 +65,6 @@ public class MarklinRoute extends Route
         
         this.s88 = 0;
         
-        //this.conditionS88s = new HashMap<>();
-        //this.conditionAccessories = new ArrayList<>();
         this.conditions = new ArrayList<>();
         
         this.enabled = false;
