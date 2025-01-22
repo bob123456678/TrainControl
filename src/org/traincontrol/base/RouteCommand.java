@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
 import org.json.JSONObject;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 
 /**
  * Individual route command
@@ -20,11 +21,13 @@ import org.json.JSONObject;
  */
 public class RouteCommand implements java.io.Serializable
 {    
-    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON};
+    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, 
+    TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK};
 
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
-    
+    public static final String FEEDBACK_PREFIX = "Feedback";
+
     public static String KEY_NAME = "NAME";
     public static String KEY_ADDRESS = "ADDRESS";
     public static String KEY_FUNCTION = "FUNCTION";
@@ -62,6 +65,22 @@ public class RouteCommand implements java.io.Serializable
     public static RouteCommand RouteCommandAccessory(int address, boolean setting)
     {
         RouteCommand r = new RouteCommand(TYPE_ACCESSORY);
+        
+        r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
+        r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
+        
+        return r;
+    }
+    
+    /**
+     * Returns a full feedback command
+     * @param address
+     * @param setting
+     * @return
+     */
+    public static RouteCommand RouteCommandFeedback(int address, boolean setting)
+    {
+        RouteCommand r = new RouteCommand(TYPE_FEEDBACK);
         
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
@@ -170,6 +189,11 @@ public class RouteCommand implements java.io.Serializable
         return this.type == TYPE_FUNCTION;
     }
     
+    public boolean isFeedback()
+    {
+        return this.type == TYPE_FEEDBACK;
+    }
+    
     public commandType getType()
     {
         return type;
@@ -266,6 +290,10 @@ public class RouteCommand implements java.io.Serializable
         {
             typeString = "Locomotive";
         }
+        else if (this.isFeedback())
+        {
+            typeString = "Feedback";
+        }
         else if (this.isStop())
         {
             return "Emergency Stop";
@@ -325,6 +353,12 @@ public class RouteCommand implements java.io.Serializable
                 boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
                 routeCommand = RouteCommand.RouteCommandAccessory(address, setting);
                 break;
+                
+            case TYPE_FEEDBACK:
+                int fAddress = Integer.parseInt(jsonObject.getJSONObject("state").getString("ADDRESS"));
+                boolean fSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                routeCommand = RouteCommand.RouteCommandFeedback(fAddress, fSetting);
+                break;
 
             case TYPE_FUNCTION:
                 String name = jsonObject.getJSONObject("state").getString("NAME");
@@ -377,7 +411,11 @@ public class RouteCommand implements java.io.Serializable
      */
     public String toLine(Accessory linkedAccessory)
     {
-        if (this.isAccessory())
+        if (this.isFeedback())
+        {
+            return RouteCommand.FEEDBACK_PREFIX + " " + Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0");
+        }
+        else if (this.isAccessory())
         {
             String delayString = (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
             
@@ -474,6 +512,24 @@ public class RouteCommand implements java.io.Serializable
             }
 
             return rc;
+        }
+        else if (line.toLowerCase().startsWith(FEEDBACK_PREFIX.toLowerCase()))
+        {
+            String originalLine = line;
+            
+            line = line.toLowerCase().replace(FEEDBACK_PREFIX.toLowerCase(), "").trim();
+            
+            try
+            {
+                int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+                boolean state = "1".equals(line.split(",")[1]);
+                
+                return RouteCommand.RouteCommandFeedback(address, state);
+            }
+            catch (Exception e2)
+            {
+                throw new Exception("Invalid line: " + originalLine);
+            }
         }
         else if (line.length() > 0)
         {
