@@ -151,7 +151,7 @@ public class MarklinRoute extends Route
                         
                         for (RouteCommand rc : this.conditions)
                         {
-                            if (!MarklinRoute.evaluate(rc, network))
+                            if (!Route.evaluate(rc, network))
                             {
                                 skip = true;
                                 break;
@@ -176,27 +176,7 @@ public class MarklinRoute extends Route
         
         return false;
     }
-    
-    /**
-     * Checks if a RouteCommand condition is satisfied
-     * @param rc
-     * @param control
-     * @return 
-     */
-    public static boolean evaluate(RouteCommand rc, MarklinControlStation control)
-    {
-        if (rc.isAccessory())
-        {
-            return control.getAccessoryState(rc.getAddress()) == rc.getSetting();
-        }
-        else if (rc.isFeedback())
-        {
-            return control.getFeedbackState(Integer.toString(rc.getAddress())) == rc.getSetting();
-        }
         
-        return false;
-    }
-    
     /**
      * Returns the CS2 route ID
      * @return 

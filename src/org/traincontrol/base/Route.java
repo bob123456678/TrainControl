@@ -2,6 +2,7 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.traincontrol.model.ViewListener;
 
 /**
  * Abstract route class
@@ -156,5 +157,25 @@ abstract public class Route
         }
         
         return out.trim();
+    }
+    
+    /**
+     * Checks if a RouteCommand condition is satisfied
+     * @param rc
+     * @param control
+     * @return 
+     */
+    public static boolean evaluate(RouteCommand rc, ViewListener control)
+    {
+        if (rc.isAccessory())
+        {
+            return control.getAccessoryState(rc.getAddress()) == rc.getSetting();
+        }
+        else if (rc.isFeedback())
+        {
+            return control.getFeedbackState(Integer.toString(rc.getAddress())) == rc.getSetting();
+        }
+        
+        return false;
     }
 }
