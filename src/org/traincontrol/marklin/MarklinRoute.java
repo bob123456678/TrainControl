@@ -6,14 +6,12 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -153,21 +151,10 @@ public class MarklinRoute extends Route
                         
                         for (RouteCommand rc : this.conditions)
                         {
-                            if (rc.isAccessory())
+                            if (!MarklinRoute.evaluate(rc, network))
                             {
-                                if (this.network.getAccessoryState(rc.getAddress()) != rc.getSetting())
-                                {
-                                    skip = true;
-                                    break;
-                                }
-                            }
-                            else if (rc.isFeedback())
-                            {
-                                if (this.network.getFeedbackState(Integer.toString(rc.getAddress())) != rc.getSetting())
-                                {
-                                    skip = true;
-                                    break;
-                                }
+                                skip = true;
+                                break;
                             }
                         }
                         
@@ -185,6 +172,26 @@ public class MarklinRoute extends Route
             }).start();
             
             return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Checks if a RouteCommand condition is satisfied
+     * @param rc
+     * @param control
+     * @return 
+     */
+    public static boolean evaluate(RouteCommand rc, MarklinControlStation control)
+    {
+        if (rc.isAccessory())
+        {
+            return control.getAccessoryState(rc.getAddress()) == rc.getSetting();
+        }
+        else if (rc.isFeedback())
+        {
+            return control.getFeedbackState(Integer.toString(rc.getAddress())) == rc.getSetting();
         }
         
         return false;
