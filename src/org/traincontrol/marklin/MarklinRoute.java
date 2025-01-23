@@ -441,46 +441,6 @@ public class MarklinRoute extends Route
      * Gets the s88 sensor as a string
      * @return 
      */
-    public String getConditionS88String()
-    {
-        String out = "";
-     
-        /*
-        Map<Integer, Boolean> conditionS88s = this.getConditionS88s();
-        
-        List<Integer> keys = new ArrayList(conditionS88s.keySet());
-        Collections.sort(keys);
-        
-        for (int idx : keys)
-        {
-            out += Integer.toString(idx) + "," + (conditionS88s.get(idx) ? "1" : "0") + "\n";
-        }
-        */
-        
-        for (RouteCommand rc : this.getConditions())
-        {
-            if (rc.isFeedback())
-            {
-                try
-                {
-                    out += rc.toLine(null) + "\n";
-                }
-                catch (Exception e)
-                {
-                    this.network.log("Error converting condition S88s to JSON");
-                    this.network.log(e);
-                }
-            }
-            
-        }
-        
-        return out.trim();
-    }
-    
-    /**
-     * Gets the s88 sensor as a string
-     * @return 
-     */
     public String getS88String()
     {
         return Integer.toString(this.s88);
@@ -584,8 +544,7 @@ public class MarklinRoute extends Route
                 " | S88: " + this.s88 + 
                 " | Trigger Type: " + (this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED ? "CLEAR_THEN_OCCUPIED" : "OCCUPIED_THEN_CLEAR") +
                 " | Auto: " + (this.enabled ? "Yes": "No") +
-                " | Condition S88: " + this.getConditionS88s() +
-                " | Condition Accessories: " + this.getConditionAccessoryCSV() + 
+                " | Conditions: " + this.getConditionCSV() + 
                 ")";
     }
     
@@ -711,7 +670,7 @@ public class MarklinRoute extends Route
      * Returns a CSV representation of the route's condition accessories
      * @return 
      */
-    public String getConditionAccessoryCSV()
+    public String getConditionCSV()
     {
         String out = "";
         
@@ -722,6 +681,10 @@ public class MarklinRoute extends Route
             {
                 // out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
                 out += r.toLine(network.getAccessoryByAddress(r.getAddress()));
+            }
+            else if (r.isFeedback())
+            {
+                out += r.toLine(null) + "\n";
             }
         }
         

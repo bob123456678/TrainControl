@@ -70,7 +70,7 @@ public class RouteEditor extends javax.swing.JFrame
      * @param conditionS88s
      * @param conditionAccString
      */
-    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionS88s, String conditionAccString)
+    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionString)
     {        
         initComponents();
         this.parent = parent;
@@ -93,8 +93,7 @@ public class RouteEditor extends javax.swing.JFrame
         }
         
         this.s88.setText(Integer.toString(s88));
-        this.conditionS88.setText(conditionS88s);
-        this.conditionAccs.setText(conditionAccString);
+        this.conditionAccs.setText(conditionString);
 
         if (triggerType == MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED)
         {
@@ -189,11 +188,6 @@ public class RouteEditor extends javax.swing.JFrame
         return s88;
     }
     
-    private JTextArea getConditionS88s()
-    {
-        return conditionS88;
-    }
-    
     private JRadioButton getTriggerClearThenOccupied()
     {
         return triggerClearThenOccupied;
@@ -237,12 +231,9 @@ public class RouteEditor extends javax.swing.JFrame
         executionManual = new javax.swing.JRadioButton();
         executionAuto = new javax.swing.JRadioButton();
         jLabel9 = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        conditionS88 = new javax.swing.JTextArea();
         jSeparator1 = new javax.swing.JSeparator();
         jScrollPane3 = new javax.swing.JScrollPane();
         conditionAccs = new javax.swing.JTextArea();
-        jLabel13 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         jPanel5 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -364,13 +355,7 @@ public class RouteEditor extends javax.swing.JFrame
 
         jLabel9.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel9.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel9.setText("Optional S88 Conditions");
-
-        conditionS88.setColumns(11);
-        conditionS88.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        conditionS88.setRows(3);
-        conditionS88.setWrapStyleWord(true);
-        jScrollPane2.setViewportView(conditionS88);
+        jLabel9.setText("Optional Conditions");
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
@@ -379,10 +364,6 @@ public class RouteEditor extends javax.swing.JFrame
         conditionAccs.setRows(3);
         conditionAccs.setWrapStyleWord(true);
         jScrollPane3.setViewportView(conditionAccs);
-
-        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel13.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel13.setText("Optional Accessory Conditions");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -409,11 +390,9 @@ public class RouteEditor extends javax.swing.JFrame
                 .addGap(18, 18, 18)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel9)
-                    .addComponent(jLabel13, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2)
-                    .addComponent(jScrollPane3))
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 187, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -423,32 +402,26 @@ public class RouteEditor extends javax.swing.JFrame
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jSeparator1)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jLabel4)
-                                .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel9))
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel4)
+                            .addComponent(s88, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 0, 0)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(jLabel3)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(triggerClearThenOccupied)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(triggerOccupiedThenClear)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel5)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(executionManual)
-                                    .addComponent(executionAuto))
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel13)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(triggerClearThenOccupied)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(triggerOccupiedThenClear)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(executionManual)
+                            .addComponent(executionAuto))
+                        .addGap(0, 60, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane3)))
                 .addContainerGap())
         );
 
@@ -1210,14 +1183,14 @@ public class RouteEditor extends javax.swing.JFrame
                 //newEntry += address + "," + (this.s88Occupied.isSelected() ? "1" : "0");
                 newEntry += RouteCommand.RouteCommandFeedback(address, this.s88Occupied.isSelected()).toLine(null);
                 
-                this.conditionS88.setText((this.conditionS88.getText() + newEntry).trim());
+                this.conditionAccs.setText((this.conditionAccs.getText() + newEntry).trim());
 
                 this.s88CondAddr.setText("");
             }
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this, "Invalid address specified - must be an integer");
-                this.accAddr.setText("");
+                this.s88CondAddr.setText("");
             }
         }
         
@@ -1329,7 +1302,7 @@ public class RouteEditor extends javax.swing.JFrame
             status = RouteCallback(this.getOriginalRouteName(), getRouteName().getText(), getRouteContents().getText(), getS88().getText(),
                 getExecutionAuto().isSelected(),
                 getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                getConditionS88s().getText(), getConditionAccs().getText()
+                getConditionAccs().getText()
             );
         }
         else
@@ -1337,7 +1310,7 @@ public class RouteEditor extends javax.swing.JFrame
             status = RouteCallback("", getRouteName().getText(), getRouteContents().getText(), getS88().getText(),
                 getExecutionAuto().isSelected(),
                 getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
-                getConditionS88s().getText(), getConditionAccs().getText()
+                getConditionAccs().getText()
             );
         }
         
@@ -1357,12 +1330,11 @@ public class RouteEditor extends javax.swing.JFrame
      * @param s88
      * @param isEnabled
      * @param triggerType
-     * @param conditionS88s
-     * @param conditionAccs
+     * @param conditions
      * @return 
      */
     public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
-            String conditionS88s, String conditionAccs)
+            String conditions)
     {
         if (routeName == null)
         {
@@ -1397,15 +1369,15 @@ public class RouteEditor extends javax.swing.JFrame
             
             List<RouteCommand> newConditions = new LinkedList<>();
             
-            for (String line : conditionAccs.split("\n"))
+            for (String line : conditions.split("\n"))
             {
                 if (line.trim().length() > 0)
                 {
                     RouteCommand rc = RouteCommand.fromLine(line);
                     
-                    if (!rc.isAccessory())
+                    if (!rc.isAccessory() && !rc.isFeedback())
                     {
-                        throw new Exception("Accessory Conditions must be accessory commands.");
+                        throw new Exception("Accessory Conditions must be accessory or feedback commands.");
                     }
                     
                     //int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
@@ -1417,35 +1389,6 @@ public class RouteEditor extends javax.swing.JFrame
                 }
             }
   
-            //Map<Integer, Boolean> newConditions = new HashMap<>();
-            
-            for (String line : conditionS88s.split("\n"))
-            {
-                if (line.trim().length() > 0)
-                {
-                    //int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    //boolean state = line.split(",")[1].trim().equals("1");
-
-                    //newConditions.put(address, state);
-                    
-                    // Make it easier for the user
-                    String newLine = line;
-                    if (!line.startsWith(RouteCommand.FEEDBACK_PREFIX))
-                    {
-                        newLine = RouteCommand.FEEDBACK_PREFIX + " " + line;
-                    }
-                    
-                    RouteCommand rc = RouteCommand.fromLine(newLine);
-                    
-                    if (!rc.isFeedback())
-                    {
-                        throw new Exception("Feedback Conditions must be feedback commands.");
-                    }
-                    
-                    newConditions.add(rc);
-                }
-            }
-            
             if (!newRoute.isEmpty())
             {    
                 // Editing a route
@@ -1535,7 +1478,6 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JCheckBox captureCommands;
     private javax.swing.JComboBox<String> commandTypeList;
     private javax.swing.JTextArea conditionAccs;
-    private javax.swing.JTextArea conditionS88;
     private javax.swing.JTextField delay;
     private javax.swing.JRadioButton executionAuto;
     private javax.swing.JRadioButton executionManual;
@@ -1543,7 +1485,6 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel18;
@@ -1564,7 +1505,6 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;

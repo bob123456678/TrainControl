@@ -9817,7 +9817,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     routeEditor = new RouteEditor("Edit Route: " + routeName + " (ID: " + currentRoute.getId() + ")",
                             this, routeName, currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                        currentRoute.getConditionS88String(), currentRoute.getConditionAccessoryCSV());
+                        currentRoute.getConditionCSV());
                 }
             }
         }).start();
@@ -10866,7 +10866,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", "");
+                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "");
             }
         }).start();
     }//GEN-LAST:event_AddRouteButtonActionPerformed
