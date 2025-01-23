@@ -9881,8 +9881,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
 
                     this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                            currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditionS88s(),
-                            currentRoute.getConditionAccessories()); 
+                            currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
                     refreshRouteList();
 
@@ -9911,7 +9910,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         if (r.getName().contains(searchString) || "*".equals(searchString))
                         {
                              this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                        r.getS88(), r.getTriggerType(), enable, r.getConditionS88s(), r.getConditionAccessories());
+                                        r.getS88(), r.getTriggerType(), enable, r.getConditions());
                         }
                     }
                 }
@@ -9934,7 +9933,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (r.hasS88())
             {
                 this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, 
-                        r.getConditionS88s(), r.getConditionAccessories());
+                        r.getConditions());
 
                 refreshRouteList();
 

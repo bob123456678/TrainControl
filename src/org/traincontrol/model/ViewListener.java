@@ -52,8 +52,8 @@ public interface ViewListener
     public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
     public String getCS3AppUrl();
-    public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories);
-    public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories);
+    public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, List<RouteCommand> conditions);
+    public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, List<RouteCommand> conditions);
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();

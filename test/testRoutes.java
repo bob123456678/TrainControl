@@ -44,9 +44,14 @@ public class testRoutes
         // Randomly select s88Triggers value
         MarklinRoute.s88Triggers triggerType = (random.nextBoolean()) ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR;
 
-        Map<Integer, Boolean> conditionS88s = new HashMap<>(); // Generate random values for conditionS88s
-        conditionS88s.put(random.nextInt(100), random.nextBoolean());
-        
+        List<RouteCommand> conditions = new ArrayList<>();
+        for (int i = 0; i < random.nextInt(4); i++)
+        {
+            conditions.add(RouteCommand.RouteCommandFeedback(random.nextInt(100), random.nextBoolean()));
+        }
+        //Map<Integer, Boolean> conditionS88s = new HashMap<>(); // Generate random values for conditionS88s
+        //conditionS88s.put(random.nextInt(100), random.nextBoolean());
+                
         List<RouteCommand> routeCommands = new ArrayList<>();
 
         // Populate the list with random RouteCommand objects
@@ -102,18 +107,16 @@ public class testRoutes
             }
         }
         
-        List<RouteCommand> conditionAccessories = new ArrayList<>();
         
         for (int i = 0; i < random.nextInt(20); i++)
         {
             int address = random.nextInt(100);
             boolean setting = random.nextBoolean();
             RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, setting);
-            conditionAccessories.add(accessoryCommand);
+            conditions.add(accessoryCommand);
         }
         
-        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, conditionS88s,
-        conditionAccessories);
+        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, conditions);
         
         return route;
     }

@@ -1,11 +1,13 @@
 package org.traincontrol.marklin;
 
+import java.util.ArrayList;
 import org.traincontrol.base.RouteCommand;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Serializable class for saving state
@@ -44,9 +46,13 @@ public class MarklinSimpleComponent implements java.io.Serializable
     // Route state
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
-    private boolean routeEnabled;
+    private boolean routeEnabled; 
+    private List<RouteCommand> conditions;
+    
+    // Legacy
     private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
     private List<RouteCommand> conditionAccessoroes;
+    // End legacy
     
     // Route state
     private Object route; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
@@ -90,8 +96,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.s88 = r.getS88();
         this.s88TriggerType = r.getTriggerType();
         this.routeEnabled = r.isEnabled();
-        this.conditionS88s = r.getConditionS88s();
-        this.conditionAccessoroes = r.getConditionAccessories();
+        this.conditions = r.getConditions();
     }
     
     /**
@@ -240,22 +245,33 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return s88;
     }
     
-    public Map<Integer, Boolean> getConditionS88s()
+    public List<RouteCommand> getConditions()
     {
-        Map<Integer, Boolean> conditions = new HashMap<>();
+        List<RouteCommand> output = new ArrayList<>();
         
-        try
+        if (this.conditions != null)
         {
-            conditions = (Map<Integer, Boolean>) this.conditionS88s;
+            output.addAll(this.conditions);
         }
-        catch (Exception e)
+        
+        // Legacy
+        if (this.conditionAccessoroes != null)
         {
-            System.out.println("Route " + this.getName() + " conditions have been reset.");
+            output.addAll(this.conditionAccessoroes);
         }
-
-        return conditions;
+        
+        if (this.conditionS88s != null)
+        {
+            for (Entry<Integer, Boolean> e: this.conditionS88s.entrySet())
+            {
+                output.add(RouteCommand.RouteCommandFeedback(e.getKey(), e.getValue()));
+            }
+        }
+        // End legacy
+        
+        return output;
     }
-    
+        
     public MarklinRoute.s88Triggers getS88TriggerType()
     {
         return s88TriggerType;
@@ -333,11 +349,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public boolean getCustomFunctions()
     {
         return this.customFunctions;
-    }
-    
-    public List<RouteCommand> getConditionAccessories()
-    {
-        return this.conditionAccessoroes;
     }
 
     public Map<Integer, String> getLocalFunctionImageURLs()

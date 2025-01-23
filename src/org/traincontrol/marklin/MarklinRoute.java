@@ -80,11 +80,10 @@ public class MarklinRoute extends Route
      * @param s88 
      * @param triggerType 
      * @param enabled 
-     * @param conditionS88s
-     * @param conditionAccessories
+     * @param conditions
      */
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
-            Map<Integer, Boolean> conditionS88s, List<RouteCommand> conditionAccessories)
+            List<RouteCommand> conditions)
     { 
         super(name, route);
         
@@ -98,19 +97,18 @@ public class MarklinRoute extends Route
         
         this.conditions = new ArrayList<>();
         
-        if (conditionS88s != null)
+        if (conditions != null)
         {
-            for (Entry<Integer, Boolean> e : conditionS88s.entrySet())
+            for (RouteCommand rc : conditions)
             {
-                this.addConditionS88(e.getKey(), e.getValue());
-            }
-        }
-        
-        if (conditionAccessories != null)
-        {
-            for (RouteCommand rc : conditionAccessories)
-            {
-                this.addConditionAccessory(rc.getAddress(), rc.getSetting());
+                if (rc.isAccessory())
+                {
+                    this.addConditionAccessory(rc.getAddress(), rc.getSetting());
+                }
+                else if (rc.isFeedback())
+                {
+                    this.addConditionS88(rc.getAddress(), rc.getSetting());
+                }
             }
         }
         
@@ -459,7 +457,8 @@ public class MarklinRoute extends Route
     public String getConditionS88String()
     {
         String out = "";
-        
+     
+        /*
         Map<Integer, Boolean> conditionS88s = this.getConditionS88s();
         
         List<Integer> keys = new ArrayList(conditionS88s.keySet());
@@ -468,6 +467,24 @@ public class MarklinRoute extends Route
         for (int idx : keys)
         {
             out += Integer.toString(idx) + "," + (conditionS88s.get(idx) ? "1" : "0") + "\n";
+        }
+        */
+        
+        for (RouteCommand rc : this.getConditions())
+        {
+            if (rc.isFeedback())
+            {
+                try
+                {
+                    out += rc.toLine(null) + "\n";
+                }
+                catch (Exception e)
+                {
+                    this.network.log("Error converting condition S88s to JSON");
+                    this.network.log(e);
+                }
+            }
+            
         }
         
         return out.trim();
@@ -600,12 +617,7 @@ public class MarklinRoute extends Route
         {
             jsonObj.put("s88", this.getS88());
         }
-        
-        if (this.hasConditionS88())
-        {
-            jsonObj.put("conditionS88", this.getConditionS88String());
-        }
-        
+                
         jsonObj.put("auto", this.enabled);
         
         if (this.triggerType != null)
@@ -623,16 +635,16 @@ public class MarklinRoute extends Route
                     
         jsonObj.put("commands", configObj);
         
-        if (this.hasConditionAccessories())
+        if (this.hasConditions())
         {
-            JSONArray conditionAcc = new JSONArray();
+            JSONArray routeConditions = new JSONArray();
 
-            for (RouteCommand rc : this.getConditionAccessories())
+            for (RouteCommand rc : this.getConditions())
             {
-                conditionAcc.put(rc.toJSON());
+                routeConditions.put(rc.toJSON());
             }
 
-            jsonObj.put("conditionAcc", conditionAcc);
+            jsonObj.put("conditions", routeConditions);
         }
   
         return jsonObj;
@@ -657,8 +669,9 @@ public class MarklinRoute extends Route
             triggerType = MarklinRoute.s88Triggers.valueOf(jsonObject.getString("triggerType"));
         }
 
-        Map<Integer, Boolean> conditionS88s = new HashMap<>();
+        List<RouteCommand> routeConditions = new ArrayList<>();
         
+        // Legacy
         if (jsonObject.has("conditionS88"))
         {
             String conditionS88String = jsonObject.getString("conditionS88");
@@ -666,7 +679,26 @@ public class MarklinRoute extends Route
             for (String pair : conditionS88Pairs)
             {
                 String[] parts = pair.split(",");
-                conditionS88s.put(Math.abs(Integer.parseInt(parts[0])), parts[1].equals("1"));
+                routeConditions.add(RouteCommand.RouteCommandFeedback(Math.abs(Integer.parseInt(parts[0])), parts[1].equals("1")));
+            }
+        }
+        
+        // Legacy
+        if (jsonObject.has("conditionAcc"))
+        {
+            JSONArray commandsArray = jsonObject.getJSONArray("conditionAcc");
+            for (int i = 0; i < commandsArray.length(); i++)
+            {
+                routeConditions.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
+            }
+        }
+        
+        if (jsonObject.has("conditions"))
+        {
+            JSONArray commandsArray = jsonObject.getJSONArray("conditions");
+            for (int i = 0; i < commandsArray.length(); i++)
+            {
+                routeConditions.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
             }
         }
 
@@ -679,22 +711,17 @@ public class MarklinRoute extends Route
                 routeCommands.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
             }
         }
-        
-        List<RouteCommand> conditionAcc = new ArrayList<>();
-        if (jsonObject.has("conditionAcc"))
-        {
-            JSONArray commandsArray = jsonObject.getJSONArray("conditionAcc");
-            for (int i = 0; i < commandsArray.length(); i++)
-            {
-                conditionAcc.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
-            }
-        }
 
-        return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionS88s, conditionAcc);
+        return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, routeConditions);
+    }
+    
+    public List<RouteCommand> getConditions()
+    {
+        return this.conditions;
     }
     
     /**
-     * Returns a CSV representation of the route
+     * Returns a CSV representation of the route's condition accessories
      * @return 
      */
     public String getConditionAccessoryCSV()

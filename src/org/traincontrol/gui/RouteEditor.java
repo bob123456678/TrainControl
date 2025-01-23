@@ -18,6 +18,7 @@ import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import static org.traincontrol.base.RouteCommand.FEEDBACK_PREFIX;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinRoute;
 
@@ -1206,8 +1207,9 @@ public class RouteEditor extends javax.swing.JFrame
             {
                 int address = Math.abs(Integer.parseInt(this.s88CondAddr.getText()));
                                 
-                newEntry += address + "," + (this.s88Occupied.isSelected() ? "1" : "0");
-               
+                //newEntry += address + "," + (this.s88Occupied.isSelected() ? "1" : "0");
+                newEntry += RouteCommand.RouteCommandFeedback(address, this.s88Occupied.isSelected()).toLine(null);
+                
                 this.conditionS88.setText((this.conditionS88.getText() + newEntry).trim());
 
                 this.s88CondAddr.setText("");
@@ -1393,7 +1395,7 @@ public class RouteEditor extends javax.swing.JFrame
                 }
             }
             
-            List<RouteCommand> newAccConditions = new LinkedList<>();
+            List<RouteCommand> newConditions = new LinkedList<>();
             
             for (String line : conditionAccs.split("\n"))
             {
@@ -1411,20 +1413,36 @@ public class RouteEditor extends javax.swing.JFrame
                   
                     //RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
 
-                    newAccConditions.add(rc);
+                    newConditions.add(rc);
                 }
             }
   
-            Map<Integer, Boolean> newConditions = new HashMap<>();
+            //Map<Integer, Boolean> newConditions = new HashMap<>();
             
             for (String line : conditionS88s.split("\n"))
             {
                 if (line.trim().length() > 0)
                 {
-                    int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    boolean state = line.split(",")[1].trim().equals("1");
+                    //int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+                    //boolean state = line.split(",")[1].trim().equals("1");
 
-                    newConditions.put(address, state);
+                    //newConditions.put(address, state);
+                    
+                    // Make it easier for the user
+                    String newLine = line;
+                    if (!line.startsWith(RouteCommand.FEEDBACK_PREFIX))
+                    {
+                        newLine = RouteCommand.FEEDBACK_PREFIX + " " + line;
+                    }
+                    
+                    RouteCommand rc = RouteCommand.fromLine(newLine);
+                    
+                    if (!rc.isFeedback())
+                    {
+                        throw new Exception("Feedback Conditions must be feedback commands.");
+                    }
+                    
+                    newConditions.add(rc);
                 }
             }
             
@@ -1434,7 +1452,7 @@ public class RouteEditor extends javax.swing.JFrame
                 if (!"".equals(origName))
                 {
                     parent.getModel().editRoute(origName, routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, newAccConditions);
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                 }
                 // New route
                 else
@@ -1446,7 +1464,7 @@ public class RouteEditor extends javax.swing.JFrame
                     }
                                         
                     parent.getModel().newRoute(routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions, newAccConditions);
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
                 }
                 
                 parent.refreshRouteList();
