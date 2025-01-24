@@ -253,6 +253,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
             return (NodeExpression) this.conditions;
         }
         
+        // Legacy
         List<RouteCommand> output = new ArrayList<>();
         
         if (this.conditions != null && this.conditions instanceof List)
@@ -260,7 +261,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
             output.addAll((List<RouteCommand>) this.conditions);
         }
         
-        // Legacy
         if (this.conditionAccessoroes != null)
         {
             output.addAll(this.conditionAccessoroes);

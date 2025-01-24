@@ -1368,6 +1368,7 @@ public class RouteEditor extends javax.swing.JFrame
                 }
             }
             
+            /*
             List<RouteCommand> newConditions = new LinkedList<>();
             
             for (String line : conditions.split("\n"))
@@ -1388,6 +1389,13 @@ public class RouteEditor extends javax.swing.JFrame
 
                     newConditions.add(rc);
                 }
+            }*/
+            
+            NodeExpression conditionExpression = null;
+            
+            if (conditions.trim().length() > 0)
+            {
+                conditionExpression = NodeExpression.fromTextRepresentation(conditions, parent.getModel());
             }
   
             if (!newRoute.isEmpty())
@@ -1396,7 +1404,7 @@ public class RouteEditor extends javax.swing.JFrame
                 if (!"".equals(origName))
                 {
                     parent.getModel().editRoute(origName, routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, NodeExpression.fromList(newConditions));
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
                 }
                 // New route
                 else
@@ -1408,7 +1416,7 @@ public class RouteEditor extends javax.swing.JFrame
                     }
                                         
                     parent.getModel().newRoute(routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, NodeExpression.fromList(newConditions));
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
                 }
                 
                 parent.refreshRouteList();

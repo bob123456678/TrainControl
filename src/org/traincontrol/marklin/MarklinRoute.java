@@ -607,23 +607,10 @@ public class MarklinRoute extends Route
      */
     public String getConditionCSV()
     {
-        String out = "";
-        
-        // TODO - convert to boolean expression
-        for (RouteCommand r : NodeExpression.toList(this.conditions))
-        {
-            if (r.isAccessory())
-            {
-                // out += Integer.toString(r.getAddress()) + "," + (r.getSetting() ? "1" : "0") + "\n";
-                out += r.toLine(network.getAccessoryByAddress(r.getAddress()));
-            }
-            else if (r.isFeedback())
-            {
-                out += r.toLine(null) + "\n";
-            }
-        }
-        
-        return out.trim();
+        StringBuilder out = new StringBuilder();
+        String expression = NodeExpression.toTextRepresentation(this.conditions, network);
+        out.append(expression);
+        return out.toString().trim();
     }
     
     @Override
