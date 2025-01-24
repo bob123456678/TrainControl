@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.traincontrol.base.NodeExpression;
 
 /**
  * Serializable class for saving state
@@ -47,7 +48,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private int s88;
     private MarklinRoute.s88Triggers s88TriggerType;
     private boolean routeEnabled; 
-    private List<RouteCommand> conditions;
+    private NodeExpression conditions;
     
     // Legacy
     private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
@@ -245,13 +246,18 @@ public class MarklinSimpleComponent implements java.io.Serializable
         return s88;
     }
     
-    public List<RouteCommand> getConditions()
+    public NodeExpression getConditions()
     {
+        if (this.conditions != null && this.conditions instanceof NodeExpression)
+        {
+            return (NodeExpression) this.conditions;
+        }
+        
         List<RouteCommand> output = new ArrayList<>();
         
-        if (this.conditions != null)
+        if (this.conditions != null && this.conditions instanceof List)
         {
-            output.addAll(this.conditions);
+            output.addAll((List<RouteCommand>) this.conditions);
         }
         
         // Legacy
@@ -267,9 +273,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
                 output.add(RouteCommand.RouteCommandFeedback(e.getKey(), e.getValue()));
             }
         }
-        // End legacy
         
-        return output;
+        return NodeExpression.fromList(output);
+        // End legacy
     }
         
     public MarklinRoute.s88Triggers getS88TriggerType()

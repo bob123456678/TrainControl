@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
@@ -116,7 +117,7 @@ public class testRoutes
             conditions.add(accessoryCommand);
         }
         
-        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, conditions);
+        MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, NodeExpression.fromList(conditions));
         
         return route;
     }
@@ -169,7 +170,7 @@ public class testRoutes
      * @throws java.lang.NoSuchFieldException
      */
     @Test
-    public void testJSONImport() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    public void testJSONImport() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception
     {   
         List<MarklinRoute> currentRoutes = new ArrayList<>(model.getRoutes());
 

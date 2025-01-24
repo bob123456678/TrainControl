@@ -1543,7 +1543,6 @@
         "name": "Auto Bottom Main Track 1",
         "id": 26,
         "s88": 1032,
-        "conditionS88": "9,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
@@ -1568,13 +1567,22 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Auto Bottom Main Track 2",
         "id": 27,
         "s88": 1032,
-        "conditionS88": "9,1\n10,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
@@ -1606,13 +1614,35 @@
                     "SETTING": "false"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Bottom Main Track 3",
         "id": 28,
         "s88": 1032,
-        "conditionS88": "9,1\n10,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
@@ -1651,13 +1681,35 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Bottom Sec Track 1",
         "id": 29,
         "s88": 2015,
-        "conditionS88": "1009,1",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -1689,13 +1741,22 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1009",
+                    "SETTING": "true"
+                }
+            }
+        }
     },
     {
         "name": "Auto Bottom Sec Track 2",
         "id": 30,
         "s88": 2015,
-        "conditionS88": "1009,0",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -1720,13 +1781,22 @@
                     "SETTING": "false"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1009",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Auto Top R1",
         "id": 31,
         "s88": 2013,
-        "conditionS88": "1012,0\n1015,0\n1022,0",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -1751,13 +1821,48 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1012",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1022",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Top R2",
         "id": 32,
         "s88": 2013,
-        "conditionS88": "1013,0\n1016,0\n1022,1\n1023,0",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -1782,7 +1887,56 @@
                     "SETTING": "false"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1013",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1016",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Lower Parking 12",
@@ -1933,7 +2087,6 @@
         "name": "Auto Bottom Sec Track 1 Crossover",
         "id": 39,
         "s88": 1011,
-        "conditionS88": "9,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -1942,13 +2095,22 @@
                 "ADDRESS": "103",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Auto Bottom Sec Track 1 Crossover 2",
         "id": 40,
         "s88": 1011,
-        "conditionS88": "10,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -1957,13 +2119,22 @@
                 "ADDRESS": "103",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Auto Bottom Sec Track 1 Crossover 3",
         "id": 41,
         "s88": 1011,
-        "conditionS88": "4,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -1972,13 +2143,22 @@
                 "ADDRESS": "103",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Auto Bottom Sec Track 1 Crossover 4",
         "id": 42,
         "s88": 1011,
-        "conditionS88": "4,1\n9,1\n10,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
@@ -2003,7 +2183,43 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "4",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Lower Parking 11",
@@ -2183,39 +2399,69 @@
         "name": "Auto Emergency Stop Main A",
         "id": 49,
         "s88": 1007,
-        "conditionS88": "9,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "100",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "100",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Main B",
         "id": 50,
         "s88": 1006,
-        "conditionS88": "10,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "60",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "60",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Parking Off",
@@ -2593,7 +2839,6 @@
         "name": "SigReset Main A Post",
         "id": 59,
         "s88": 2013,
-        "conditionS88": "9,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2602,13 +2847,22 @@
                 "ADDRESS": "40",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Main B Post",
         "id": 60,
         "s88": 2013,
-        "conditionS88": "10,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2617,13 +2871,22 @@
                 "ADDRESS": "38",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset R1",
         "id": 61,
         "s88": 1022,
-        "conditionS88": "2015,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2632,13 +2895,22 @@
                 "ADDRESS": "107",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2015",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset R2",
         "id": 62,
         "s88": 1023,
-        "conditionS88": "2015,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2647,13 +2919,22 @@
                 "ADDRESS": "108",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2015",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Main A",
         "id": 63,
         "s88": 9,
-        "conditionS88": "2013,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2662,13 +2943,22 @@
                 "ADDRESS": "86",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Main B",
         "id": 64,
         "s88": 10,
-        "conditionS88": "2013,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2677,13 +2967,22 @@
                 "ADDRESS": "87",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset R1 Post",
         "id": 65,
         "s88": 2012,
-        "conditionS88": "1022,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2692,13 +2991,22 @@
                 "ADDRESS": "63",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1022",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset R2 Post",
         "id": 66,
         "s88": 2012,
-        "conditionS88": "1023,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2707,13 +3015,22 @@
                 "ADDRESS": "64",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1023",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Secondary",
         "id": 67,
         "s88": 1009,
-        "conditionS88": "1030,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2722,13 +3039,22 @@
                 "ADDRESS": "39",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1030",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Main C Post",
         "id": 68,
         "s88": 2013,
-        "conditionS88": "4,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2737,13 +3063,22 @@
                 "ADDRESS": "94",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "SigReset Main C",
         "id": 69,
         "s88": 4,
-        "conditionS88": "2013,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2752,7 +3087,17 @@
                 "ADDRESS": "87",
                 "SETTING": "true"
             }
-        }]
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
     },
     {
         "name": "Lower Parking 17",
@@ -2830,64 +3175,108 @@
         "name": "Auto Emergency Stop Top R1",
         "id": 72,
         "s88": 1027,
-        "conditionS88": "1015,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1015",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Top R2",
         "id": 73,
         "s88": 1027,
-        "conditionS88": "1016,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1016",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Main C",
         "id": 74,
         "s88": 1006,
-        "conditionS88": "4,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "60",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "4",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "60",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Top R1 Pre",
         "id": 75,
         "s88": 2013,
-        "conditionS88": "1015,0\n1022,1\n1023,1",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -2912,13 +3301,48 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Top R2 Pre",
         "id": 77,
         "s88": 2013,
-        "conditionS88": "1015,1\n1016,0\n1022,1\n1023,1",
         "auto": false,
         "triggerType": "OCCUPIED_THEN_CLEAR",
         "commands": [
@@ -2943,13 +3367,61 @@
                     "SETTING": "true"
                 }
             }
-        ]
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1015",
+                                "SETTING": "true"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1016",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Red Light Top R1 pre",
         "id": 78,
         "s88": 1027,
-        "conditionS88": "1012,1\n1022,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2959,19 +3431,47 @@
                 "SETTING": "true"
             }
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1012",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Red Light Top R2 pre",
         "id": 79,
         "s88": 1027,
-        "conditionS88": "1013,1\n1023,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -2981,57 +3481,115 @@
                 "SETTING": "true"
             }
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1013",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1023",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Top R1 2",
         "id": 80,
         "s88": 2014,
-        "conditionS88": "1026,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1026",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Top R2 2",
         "id": 81,
         "s88": 2014,
-        "conditionS88": "1025,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1025",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Top R1 Pre partial",
         "id": 82,
         "s88": 2014,
-        "conditionS88": "1015,1\n1016,0",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -3041,19 +3599,47 @@
                 "SETTING": "false"
             }
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1016",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Top R2 Pre partial",
         "id": 83,
         "s88": 2014,
-        "conditionS88": "1015,0\n1016,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
@@ -3063,38 +3649,81 @@
                 "SETTING": "true"
             }
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "9",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1016",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Bottom Inner",
         "id": 84,
         "s88": 2012,
-        "conditionS88": "1011,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "12",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1011",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "12",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Bottom Secondary",
         "id": 85,
         "s88": 2012,
-        "conditionS88": "1009,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
@@ -3110,31 +3739,62 @@
                 "state": {}
             }
         ],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "12",
-                "SETTING": "false"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1009",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "12",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     },
     {
         "name": "Auto Emergency Stop Bottom Inner 2",
         "id": 86,
         "s88": 1008,
-        "conditionS88": "1030,1",
         "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
             "state": {}
         }],
-        "conditionAcc": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "103",
-                "SETTING": "true"
-            }
-        }]
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1030",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "103",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
     }
 ]}

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,6 +44,7 @@ import org.json.JSONObject;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
@@ -654,7 +656,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) 
                             || r.getS88() != this.routeDB.getById(r.getId()).getS88()
                             || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
-                            || !r.getConditionS88s().equals(this.routeDB.getById(r.getId()).getConditionS88s())
+                            || !Objects.equals(r.getConditions(), this.routeDB.getById(r.getId()).getConditions())
                         ) 
                 )
                 {   
@@ -949,7 +951,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     @Override
     public final void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            List<RouteCommand> conditions)
+            NodeExpression conditions)
     {
         Integer id = this.routeDB.getByName(name).getId();
         
@@ -1030,7 +1032,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return  
      */
     public final boolean newRoute(String name, int id, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-            List<RouteCommand> conditions)
+            NodeExpression conditions)
     {
         name = name.trim();
         
@@ -1058,7 +1060,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     @Override
     public final boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
-        List<RouteCommand> conditions)
+        NodeExpression conditions)
     {
         int newId = 1;
         if (!this.routeDB.getItemIds().isEmpty())
@@ -2224,7 +2226,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @throws java.lang.NoSuchFieldException
      */
     @Override
-    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception
     {
         JSONObject outputObj = new JSONObject();
         

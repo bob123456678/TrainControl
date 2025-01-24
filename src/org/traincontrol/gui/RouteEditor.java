@@ -17,6 +17,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import static org.traincontrol.base.RouteCommand.FEEDBACK_PREFIX;
 import org.traincontrol.marklin.MarklinAccessory;
@@ -1395,7 +1396,7 @@ public class RouteEditor extends javax.swing.JFrame
                 if (!"".equals(origName))
                 {
                     parent.getModel().editRoute(origName, routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, NodeExpression.fromList(newConditions));
                 }
                 // New route
                 else
@@ -1407,7 +1408,7 @@ public class RouteEditor extends javax.swing.JFrame
                     }
                                         
                     parent.getModel().newRoute(routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, newConditions);
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, NodeExpression.fromList(newConditions));
                 }
                 
                 parent.refreshRouteList();

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
@@ -52,8 +53,8 @@ public interface ViewListener
     public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
     public String getCS3AppUrl();
-    public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, List<RouteCommand> conditions);
-    public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, List<RouteCommand> conditions);
+    public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
+    public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public MarklinRoute getRoute(String name);
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
@@ -67,7 +68,7 @@ public interface ViewListener
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);
     public void clearLayouts();
-    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException;
+    public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception;
     public void importRoutes(String json);
     public List<MarklinLocomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
