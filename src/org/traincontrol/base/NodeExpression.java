@@ -151,6 +151,11 @@ public abstract class NodeExpression implements Serializable
             } 
             else if (line.equals("(")) 
             {
+                // Handle implicit AND before a group
+                if (i > 0 && !lines.get(i - 1).trim().equals("OR") && !lines.get(i - 1).trim().equals("(") && !lines.get(i - 1).trim().equals(")"))
+                {
+                    operators.push("AND");
+                }
                 operators.push("(");
             } 
             else if (line.equals(")")) 
@@ -213,6 +218,7 @@ public abstract class NodeExpression implements Serializable
 
         return stack.pop();
     }
+
 
 
     private static List<String> preprocessText(String text)
