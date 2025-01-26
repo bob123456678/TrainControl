@@ -110,7 +110,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeOr)
         {
             toTextRepresentationHelper(((NodeOr) node).getLeft(), sb, network);
-            sb.append(" OR \n");
+            sb.append("OR\n");
             toTextRepresentationHelper(((NodeOr) node).getRight(), sb, network);
         }
         else if (node instanceof NodeGroup)
@@ -155,7 +155,6 @@ public abstract class NodeExpression implements Serializable
             } 
             else if (line.equals(")")) 
             {
-                List<NodeExpression> groupExpressions = new ArrayList<>();
                 while (!operators.isEmpty() && !operators.peek().equals("(")) 
                 {
                     String op = operators.pop();
@@ -170,26 +169,23 @@ public abstract class NodeExpression implements Serializable
                         stack.push(new NodeOr(left, right));
                     }
                 }
-                while (!stack.isEmpty() && stack.peek() instanceof NodeExpression) 
-                {
-                    groupExpressions.add(stack.pop());
-                }
-                stack.push(new NodeGroup(groupExpressions));
                 operators.pop(); // Remove the '('
+                NodeExpression group = stack.pop();
+                stack.push(new NodeGroup(Arrays.asList(group)));
             } 
             else 
             {
                 if (!line.isEmpty()) 
                 {
                     stack.push(parseLine(line, network));
-                }
 
-                if (i + 1 < lines.size())
-                {
-                    String nextLine = lines.get(i + 1).trim();
-                    if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
+                    if (i + 1 < lines.size())
                     {
-                        operators.push("AND");
+                        String nextLine = lines.get(i + 1).trim();
+                        if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
+                        {
+                            operators.push("AND");
+                        }
                     }
                 }
             }

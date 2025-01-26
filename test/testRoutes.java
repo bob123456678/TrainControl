@@ -4,9 +4,7 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_STOP;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -28,6 +26,9 @@ import org.traincontrol.marklin.MarklinAccessory;
 public class testRoutes
 {   
     public static MarklinControlStation model;
+        
+    private static final int MAX_NUM_COMMANDS = 10;
+    private static final Random RANDOM = new Random();
     
     public testRoutes()
     {
@@ -120,6 +121,141 @@ public class testRoutes
         MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, NodeExpression.fromList(conditions));
         
         return route;
+    }
+
+       @Test
+    public void testNodeExpressionEvaluation() throws Exception 
+    {
+        // Initialize model and set states
+        model.setFeedbackState("10", true);
+        model.setFeedbackState("6", false);
+        MarklinAccessory accessory1 = model.getAccessoryByAddress(60);
+        accessory1.setSwitched(true);
+        MarklinAccessory accessory2 = model.getAccessoryByAddress(55);
+        accessory2.setSwitched(false);
+
+        // Generate command strings
+        String command1 = RouteCommand.RouteCommandAccessory(60, true).toLine(model.getAccessoryByAddress(60));
+        String command2 = RouteCommand.RouteCommandFeedback(10, true).toLine(null);
+        String command3 = RouteCommand.RouteCommandFeedback(6, false).toLine(null);
+        String command4 = RouteCommand.RouteCommandAccessory(55, false).toLine(model.getAccessoryByAddress(55));
+        String commandOpposite2 = RouteCommand.RouteCommandFeedback(10, false).toLine(null); // False feedback
+        String commandOpposite3 = RouteCommand.RouteCommandFeedback(6, true).toLine(null); // False feedback
+        String commandOpposite1 = RouteCommand.RouteCommandAccessory(60, false).toLine(model.getAccessoryByAddress(60));
+        String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, true).toLine(model.getAccessoryByAddress(55));
+
+        // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 11,1
+        String expr1 = "(" + command1 + "\n" + command2 + ")\nOR\n" + commandOpposite2;
+        NodeExpression node1 = NodeExpression.fromTextRepresentation(expr1, model);
+        assertTrue(node1.evaluate(model));
+
+        // Test 2: (Switch 60,turn Feedback 10,1)
+        String expr2 = "(" + command1 + "\n" + command2 + ")";
+        NodeExpression node2 = NodeExpression.fromTextRepresentation(expr2, model);
+        assertTrue(node2.evaluate(model));
+
+        // Test 3: Switch 60,turn AND Feedback 6,0
+        String expr3 = command1 + "\n" + command3;
+        NodeExpression node3 = NodeExpression.fromTextRepresentation(expr3, model);
+        assertTrue(node3.evaluate(model));
+
+        // Test 4: Switch 60,turn OR (Feedback 6,0 AND Switch 55,straight)
+        String expr4 = command1 + "\nOR\n(" + command3 + "\n" + command4 + ")";
+        NodeExpression node4 = NodeExpression.fromTextRepresentation(expr4, model);
+        assertTrue(node4.evaluate(model));
+
+        // Test 5: (Switch 60,turn AND Feedback 10,1 AND Feedback 6,0 AND Switch 55,straight) should be false
+        String expr5 = "(" + command1 + "\n" + command2 + " " + command3 + "\n" + command4 + ")";
+        NodeExpression node5 = NodeExpression.fromTextRepresentation(expr5, model);
+        assertFalse(node5.evaluate(model));
+
+        // Test 6: (Switch 60,turn) OR (Feedback 10,1 AND Switch 55,straight) should be true
+        String expr6 = "(" + command1 + ")\nOR\n(" + command2 + "\n" + command4 + ")";
+        NodeExpression node6 = NodeExpression.fromTextRepresentation(expr6, model);
+        assertTrue(node6.evaluate(model));
+
+        // Test 7: (Feedback 10,1 AND Switch 55,straight) OR (Feedback 6,0) should be true
+        String expr7 = "(" + command2 + "\n" + command4 + ")\nOR\n(" + commandOpposite3 + ")";
+        NodeExpression node7 = NodeExpression.fromTextRepresentation(expr7, model);
+        assertTrue(node7.evaluate(model));
+
+        // Test 7a: (Feedback 10,1 AND Switch 55,turn) OR (Feedback 6,0) should be false
+        String expr7a = "(" + command2 + "\n" + commandOpposite4 + ")\nOR\n(" + commandOpposite3 + ")";
+        NodeExpression node7a = NodeExpression.fromTextRepresentation(expr7a, model);
+        assertFalse(node7a.evaluate(model));
+        
+        // Test 8: Feedback 10,1 AND (Feedback 6,0 OR Switch 55,straight) should be false
+        String expr8 = "(" + command2 + ")\n \n(" + command3 + "\nOR\n" + command4 + ")";
+        NodeExpression node8 = NodeExpression.fromTextRepresentation(expr8, model);
+        assertFalse(node8.evaluate(model));
+
+        // Test 9: Switch 60,turn AND Switch 60,straight should be false
+        String expr9 = command1 + "\n" + commandOpposite1;
+        NodeExpression node9 = NodeExpression.fromTextRepresentation(expr9, model);
+        assertFalse(node9.evaluate(model));
+    }
+    
+    @Test
+    public void testExpressions() throws Exception 
+    {
+        // Generate random expressions and verify consistency
+        for (int i = 0; i < 20; i++)
+        {
+            String randomExpr = generateRandomExpression();
+            NodeExpression node = NodeExpression.fromTextRepresentation(randomExpr, model);
+            String textRepresentation = NodeExpression.toTextRepresentation(node, model);            
+            NodeExpression parsedNode = NodeExpression.fromTextRepresentation(textRepresentation, model);
+            assertEquals(node, parsedNode);
+        }
+    }
+
+    private String generateRandomExpression() throws Exception
+    {
+        StringBuilder sb = new StringBuilder();
+        int numCommands = RANDOM.nextInt(MAX_NUM_COMMANDS) + 1;
+        boolean useParens = RANDOM.nextBoolean();
+        boolean useOr = RANDOM.nextBoolean();
+
+        if (useParens)
+        {
+            sb.append("(");
+        }
+
+        for (int i = 0; i < numCommands; i++)
+        {
+            if (RANDOM.nextBoolean())
+            {
+                int address = 50 + RANDOM.nextInt(10);
+                boolean setting = RANDOM.nextBoolean();
+                String command = RouteCommand.RouteCommandAccessory(address, setting).toLine(model.getAccessoryByAddress(address));
+                sb.append(command);
+            }
+            else
+            {
+                int address = 5 + RANDOM.nextInt(5);
+                boolean setting = RANDOM.nextBoolean();
+                String command = RouteCommand.RouteCommandFeedback(address, setting).toLine(null);
+                sb.append(command);
+            }
+
+            if (i < numCommands - 1)
+            {
+                sb.append("\n");
+            }
+        }
+
+        if (useParens)
+        {
+            sb.append(")");
+        }
+
+        if (useOr && RANDOM.nextBoolean())
+        {
+            sb.append("\nOR\n");
+            sb.append(generateRandomExpression());
+        }
+
+        return sb.toString();
     }
     
     /**
