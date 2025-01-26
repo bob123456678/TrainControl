@@ -240,7 +240,6 @@ public class testRoutes
 
         // Test 16: (Switch 50,turn Feedback 4,1) AND (Switch 60,turn Feedback 10,1) should be true
         String expr16 = "(" + command6 + "\n" + command5 + ")\n(" + command1 + "\n" + command2 + ")";
-        System.out.println(expr16);
         NodeExpression node16 = NodeExpression.fromTextRepresentation(expr16, model);
         assertTrue(node16.evaluate(model));
 
@@ -255,7 +254,6 @@ public class testRoutes
         assertTrue(node18.evaluate(model));
     }
 
-    
     @Test
     public void testExpressions() throws Exception 
     {
@@ -272,8 +270,13 @@ public class testRoutes
 
     private String generateRandomExpression() throws Exception
     {
+        return generateRandomExpression(RANDOM.nextInt(MAX_NUM_COMMANDS) + 1);
+    }
+
+    private String generateRandomExpression(int remainingCommands) throws Exception
+    {
         StringBuilder sb = new StringBuilder();
-        int numCommands = RANDOM.nextInt(MAX_NUM_COMMANDS) + 1;
+        int numCommands = remainingCommands > 1 ? RANDOM.nextInt(remainingCommands - 1) + 1 : 1;
         boolean useParens = RANDOM.nextBoolean();
         boolean useOr = RANDOM.nextBoolean();
 
@@ -303,6 +306,12 @@ public class testRoutes
             {
                 sb.append("\n");
             }
+
+            // 20% likelihood of generating a nested expression
+            if (remainingCommands > 1 && RANDOM.nextInt(100) < 20)
+            {
+                sb.append(generateRandomExpression(remainingCommands - numCommands));
+            }
         }
 
         if (useParens)
@@ -313,12 +322,12 @@ public class testRoutes
         if (useOr && RANDOM.nextBoolean())
         {
             sb.append("\nOR\n");
-            sb.append(generateRandomExpression());
+            sb.append(generateRandomExpression(remainingCommands - numCommands));
         }
 
         return sb.toString();
     }
-    
+
     /**
      * Adding and removing a route from the database
      */

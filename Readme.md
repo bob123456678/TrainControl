@@ -285,6 +285,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.3 [Beta]
+    - Routes
+        - Route S88 and accessory conditions are now editable in a single field
+        - Added support for complex boolean expressions (parentheses, OR, implicit AND for consecutive lines) in route conditions
+        - Added buttons to insert logical operators in the route condition editor UI
+
 * v2.4.2 [1/22/2025]
     - Fixed bug where conditional accessories in routes would be ignored if there was no conditional S88
     - Fixed occasional active locomotive rendering issue at startup
