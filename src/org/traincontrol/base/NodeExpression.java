@@ -59,6 +59,13 @@ public abstract class NodeExpression implements Serializable
             collectCommandsHelper(((NodeOr) node).getLeft(), commands);
             collectCommandsHelper(((NodeOr) node).getRight(), commands);
         }
+        else if (node instanceof NodeGroup)
+        {
+            for (NodeExpression expr : ((NodeGroup) node).getExpressions())
+            {
+                collectCommandsHelper(expr, commands);
+            }
+        }
     }
     
     public abstract JSONObject toJSON() throws Exception;
@@ -72,6 +79,8 @@ public abstract class NodeExpression implements Serializable
                 return NodeRouteCommand.fromJSON(jsonObject);
             case "NodeAnd":
                 return NodeAnd.fromJSON(jsonObject);
+            case "NodeGroup":
+                return NodeGroup.fromJSON(jsonObject);
             case "NodeOr":
                 return NodeOr.fromJSON(jsonObject);
             default:
@@ -86,7 +95,6 @@ public abstract class NodeExpression implements Serializable
         return sb.toString().replaceAll("\n+", "\n").trim(); // Remove empty lines and trailing newline
     }
 
-    // TODO this does not work
     private static void toTextRepresentationHelper(NodeExpression node, StringBuilder sb, ViewListener network)
     {
         if (node instanceof NodeRouteCommand)
@@ -96,87 +104,136 @@ public abstract class NodeExpression implements Serializable
         }
         else if (node instanceof NodeAnd)
         {
-            sb.append("(");
             toTextRepresentationHelper(((NodeAnd) node).getLeft(), sb, network);
             toTextRepresentationHelper(((NodeAnd) node).getRight(), sb, network);
-            sb.append(")");
         }
         else if (node instanceof NodeOr)
         {
             toTextRepresentationHelper(((NodeOr) node).getLeft(), sb, network);
-            sb.append("OR\n");
+            sb.append(" OR \n");
             toTextRepresentationHelper(((NodeOr) node).getRight(), sb, network);
         }
+        else if (node instanceof NodeGroup)
+        {
+            sb.append("(");
+            List<NodeExpression> expressions = ((NodeGroup) node).getExpressions();
+            for (int i = 0; i < expressions.size(); i++)
+            {
+                toTextRepresentationHelper(expressions.get(i), sb, network);
+                if (i == expressions.size() - 1)
+                {
+                    sb.append(")");
+                }
+            }
+        }
     }
-    
-     public static NodeExpression fromTextRepresentation(String text, ViewListener network) throws Exception
+
+    public static NodeExpression fromTextRepresentation(String text, ViewListener network) throws Exception 
     {
         List<String> lines = preprocessText(text);
         Stack<NodeExpression> stack = new Stack<>();
         Stack<String> operators = new Stack<>();
 
-        for (String line : lines)
+        for (int i = 0; i < lines.size(); i++)
         {
-            line = line.trim();
-            if (line.equals("OR"))
+            String line = lines.get(i).trim();
+
+            if (line.equals("OR")) 
             {
-                if (stack.isEmpty())
+                while (!operators.isEmpty() && operators.peek().equals("AND")) 
                 {
-                    throw new Exception("Invalid expression: 'OR' cannot be at the beginning or end of the expression.");
+                    operators.pop();
+                    NodeExpression right = stack.pop();
+                    NodeExpression left = stack.pop();
+                    stack.push(new NodeAnd(left, right));
                 }
                 operators.push("OR");
-            }
-            else if (line.equals("("))
+            } 
+            else if (line.equals("(")) 
             {
                 operators.push("(");
-            }
-            else if (line.equals(")"))
+            } 
+            else if (line.equals(")")) 
             {
-                while (!operators.isEmpty() && !operators.peek().equals("("))
+                List<NodeExpression> groupExpressions = new ArrayList<>();
+                while (!operators.isEmpty() && !operators.peek().equals("(")) 
                 {
-                    if (operators.pop().equals("OR"))
+                    String op = operators.pop();
+                    NodeExpression right = stack.pop();
+                    NodeExpression left = stack.pop();
+                    if (op.equals("AND")) 
                     {
-                        NodeExpression right = stack.pop();
-                        NodeExpression left = stack.pop();
+                        stack.push(new NodeAnd(left, right));
+                    } 
+                    else if (op.equals("OR")) 
+                    {
                         stack.push(new NodeOr(left, right));
                     }
                 }
-                if (!operators.isEmpty() && operators.peek().equals("("))
+                while (!stack.isEmpty() && stack.peek() instanceof NodeExpression) 
                 {
-                    operators.pop();
+                    groupExpressions.add(stack.pop());
                 }
-            }
-            else
+                stack.push(new NodeGroup(groupExpressions));
+                operators.pop(); // Remove the '('
+            } 
+            else 
             {
-                if (line.trim().length() > 0)
+                if (!line.isEmpty()) 
                 {
                     stack.push(parseLine(line, network));
+                }
+
+                if (i + 1 < lines.size())
+                {
+                    String nextLine = lines.get(i + 1).trim();
+                    if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
+                    {
+                        operators.push("AND");
+                    }
                 }
             }
         }
 
-        while (!operators.isEmpty() && !operators.peek().equals("("))
+        while (!operators.isEmpty()) 
         {
-            if (operators.pop().equals("OR"))
+            String op = operators.pop();
+            NodeExpression right = stack.pop();
+            NodeExpression left = stack.pop();
+            if (op.equals("AND")) 
             {
-                NodeExpression right = stack.pop();
-                NodeExpression left = stack.pop();
+                stack.push(new NodeAnd(left, right));
+            } 
+            else if (op.equals("OR")) 
+            {
                 stack.push(new NodeOr(left, right));
             }
         }
 
-        if (!operators.isEmpty() || stack.size() > 1)
+        if (stack.size() != 1) 
         {
-            throw new Exception("Mismatched parentheses or incomplete expression.");
+            throw new Exception("Invalid expression: mismatched operators or parentheses.");
         }
 
         return stack.pop();
     }
 
+
     private static List<String> preprocessText(String text)
     {
         text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n").replaceAll("OR", "\nOR\n");
-        return Arrays.asList(text.split("\n"));
+        List<String> lines = Arrays.asList(text.split("\n"));
+        List<String> filteredLines = new ArrayList<>();
+
+        for (String line : lines)
+        {
+            if (!line.trim().isEmpty())
+            {
+                filteredLines.add(line);
+            }
+        }
+
+        return filteredLines;
     }
 
     private static NodeExpression parseLine(String line, ViewListener network) throws Exception
