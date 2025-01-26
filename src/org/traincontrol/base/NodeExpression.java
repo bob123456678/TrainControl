@@ -177,12 +177,22 @@ public abstract class NodeExpression implements Serializable
                 operators.pop(); // Remove the '('
                 NodeExpression group = stack.pop();
                 stack.push(new NodeGroup(Arrays.asList(group)));
+
+                // Handle implicit AND after a group
+                if (i + 1 < lines.size())
+                {
+                    String nextLine = lines.get(i + 1).trim();
+                    if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
+                    {
+                        operators.push("AND");
+                    }
+                }
             } 
             else 
             {
                 if (!line.isEmpty()) 
                 {
-                    stack.push(parseLine(line, network));
+                    stack.push(parseLine(line));
 
                     if (i + 1 < lines.size())
                     {
@@ -219,8 +229,6 @@ public abstract class NodeExpression implements Serializable
         return stack.pop();
     }
 
-
-
     private static List<String> preprocessText(String text)
     {
         text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n").replaceAll("OR", "\nOR\n");
@@ -238,7 +246,7 @@ public abstract class NodeExpression implements Serializable
         return filteredLines;
     }
 
-    private static NodeExpression parseLine(String line, ViewListener network) throws Exception
+    private static NodeExpression parseLine(String line) throws Exception
     {
         RouteCommand rc = RouteCommand.fromLine(line);
         if (!rc.isAccessory() && !rc.isFeedback())
