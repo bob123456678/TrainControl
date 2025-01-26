@@ -92,7 +92,7 @@ public abstract class NodeExpression implements Serializable
     {
         StringBuilder sb = new StringBuilder();
         toTextRepresentationHelper(expression, sb, network);
-        return sb.toString().replaceAll("\n+", "\n").trim(); // Remove empty lines and trailing newline
+        return sb.toString().replaceAll("\n+", "\n").replaceAll("\n[ ]+OR", "\nOR").trim(); // Remove empty lines and trailing newline
     }
 
     private static void toTextRepresentationHelper(NodeExpression node, StringBuilder sb, ViewListener network)
@@ -110,7 +110,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeOr)
         {
             toTextRepresentationHelper(((NodeOr) node).getLeft(), sb, network);
-            sb.append("OR\n");
+            sb.append(" OR\n");
             toTextRepresentationHelper(((NodeOr) node).getRight(), sb, network);
         }
         else if (node instanceof NodeGroup)
@@ -182,7 +182,7 @@ public abstract class NodeExpression implements Serializable
                 if (i + 1 < lines.size())
                 {
                     String nextLine = lines.get(i + 1).trim();
-                    if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
+                    if (!nextLine.equals("OR") && !nextLine.equals(")"))
                     {
                         operators.push("AND");
                     }

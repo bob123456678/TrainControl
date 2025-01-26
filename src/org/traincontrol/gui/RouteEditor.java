@@ -245,7 +245,7 @@ public class RouteEditor extends javax.swing.JFrame
         Help = new javax.swing.JButton();
         saveButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
+        Logic = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
@@ -283,6 +283,10 @@ public class RouteEditor extends javax.swing.JFrame
         s88Occupied = new javax.swing.JRadioButton();
         s88Clear = new javax.swing.JRadioButton();
         addS88Condition = new javax.swing.JButton();
+        jPanel7 = new javax.swing.JPanel();
+        addGroup = new javax.swing.JButton();
+        addOR = new javax.swing.JButton();
+        jLabel13 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Route Editor");
@@ -510,9 +514,9 @@ public class RouteEditor extends javax.swing.JFrame
             }
         });
 
-        jTabbedPane1.setBackground(new java.awt.Color(255, 255, 255));
-        jTabbedPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-        jTabbedPane1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        Logic.setBackground(new java.awt.Color(255, 255, 255));
+        Logic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        Logic.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         jPanel6.setBackground(new java.awt.Color(245, 245, 245));
         jPanel6.setFocusable(false);
@@ -686,7 +690,7 @@ public class RouteEditor extends javax.swing.JFrame
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Accessory Commands", jPanel1);
+        Logic.addTab("Accessory Commands", jPanel1);
 
         s88Panel1.setBackground(new java.awt.Color(245, 245, 245));
 
@@ -832,7 +836,7 @@ public class RouteEditor extends javax.swing.JFrame
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Locomotive Commands", jPanel3);
+        Logic.addTab("Locomotive Commands", jPanel3);
 
         s88Panel.setBackground(new java.awt.Color(245, 245, 245));
 
@@ -928,7 +932,56 @@ public class RouteEditor extends javax.swing.JFrame
                 .addContainerGap(9, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("S88 Conditions", jPanel4);
+        Logic.addTab("S88 Conditions", jPanel4);
+
+        addGroup.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        addGroup.setText("Group Highlighted");
+        addGroup.setFocusable(false);
+        addGroup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addGroupActionPerformed(evt);
+            }
+        });
+
+        addOR.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        addOR.setText("Add OR");
+        addOR.setFocusable(false);
+        addOR.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addORActionPerformed(evt);
+            }
+        });
+
+        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel13.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel13.setText("You can group multiple conditions in parentheses, and use OR operators, to form logical expressions.");
+
+        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
+        jPanel7.setLayout(jPanel7Layout);
+        jPanel7Layout.setHorizontalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel13)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 59, Short.MAX_VALUE)
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(addGroup, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(addOR, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        jPanel7Layout.setVerticalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel13))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(18, Short.MAX_VALUE))
+        );
+
+        Logic.addTab("Condition Logic", jPanel7);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -960,7 +1013,7 @@ public class RouteEditor extends javax.swing.JFrame
                             .addComponent(jLabel2)
                             .addComponent(jLabel1))
                         .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(jTabbedPane1))
+                    .addComponent(Logic))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -982,7 +1035,7 @@ public class RouteEditor extends javax.swing.JFrame
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(Logic, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(saveButton)
@@ -1323,6 +1376,31 @@ public class RouteEditor extends javax.swing.JFrame
         }
     }//GEN-LAST:event_saveButtonActionPerformed
 
+    private void addGroupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addGroupActionPerformed
+        int start = conditionAccs.getSelectionStart();
+        int end = conditionAccs.getSelectionEnd();
+
+        if (start == end)
+        {
+            // No selection, add parentheses around everything
+            String text = conditionAccs.getText();
+            conditionAccs.setText("(" + text + ")");
+        }
+        else
+        {
+            // Add parentheses around the selected text
+            String text = conditionAccs.getText();
+            String selectedText = text.substring(start, end);
+            String newText = text.substring(0, start) + "(" + selectedText + ")" + text.substring(end);
+            conditionAccs.setText(newText);
+        }
+    }//GEN-LAST:event_addGroupActionPerformed
+
+    private void addORActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addORActionPerformed
+        
+        conditionAccs.setText(conditionAccs.getText().trim() + "\nOR\n");
+    }//GEN-LAST:event_addORActionPerformed
+
     /**
      * Callback to edit or add a route
      * @param origName
@@ -1431,8 +1509,16 @@ public class RouteEditor extends javax.swing.JFrame
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "Error parsing route (" + e.getMessage() + ").\n\nBe sure to enter comma-separated values, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
-        
+            String message = e.getMessage();
+            if (message != null)
+            {
+                JOptionPane.showMessageDialog(this, "Error parsing route (" + message + ").\n\nBe sure to enter comma-separated values, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(this, "Error parsing logic.  Ensure parentheses are matched and OR tokens aren't dangling.");
+            }
+            
             parent.log(e.toString());
             return false;
         }
@@ -1468,12 +1554,15 @@ public class RouteEditor extends javax.swing.JFrame
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Help;
+    private javax.swing.JTabbedPane Logic;
     private javax.swing.JTextField accAddr;
     private javax.swing.JComboBox<String> accState;
     private javax.swing.JRadioButton accType3Way;
     private javax.swing.JRadioButton accTypeSignal;
     private javax.swing.JRadioButton accTypeTurnout;
+    private javax.swing.JButton addGroup;
     private javax.swing.JButton addLocCommand;
+    private javax.swing.JButton addOR;
     private javax.swing.JButton addS88Condition;
     private javax.swing.JButton addStopCommand;
     private javax.swing.JButton addToRouteButton;
@@ -1494,6 +1583,7 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel18;
@@ -1513,12 +1603,12 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPanel7;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
-    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTextField locDelay;
     private javax.swing.JRadioButton locFuncOff;
     private javax.swing.JRadioButton locFuncOn;
