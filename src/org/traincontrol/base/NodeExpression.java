@@ -106,7 +106,12 @@ public abstract class NodeExpression implements Serializable
         if (node instanceof NodeRouteCommand)
         {
             RouteCommand command = ((NodeRouteCommand) node).getRouteCommand();
-            sb.append(command.toLine(network.getAccessoryByAddress(command.getAddress()))).append("\n");
+            
+            // We need to make this check to prevent invalid lookups of S88 addresses
+            Accessory acc = null;
+            if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress());
+            
+            sb.append(command.toLine(acc)).append("\n");
         }
         else if (node instanceof NodeAnd)
         {
