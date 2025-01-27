@@ -6,10 +6,8 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
@@ -19,7 +17,6 @@ import javax.swing.text.BadLocationException;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
-import static org.traincontrol.base.RouteCommand.FEEDBACK_PREFIX;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinRoute;
 
@@ -1446,29 +1443,7 @@ public class RouteEditor extends javax.swing.JFrame
                 }
             }
             
-            /*
-            List<RouteCommand> newConditions = new LinkedList<>();
-            
-            for (String line : conditions.split("\n"))
-            {
-                if (line.trim().length() > 0)
-                {
-                    RouteCommand rc = RouteCommand.fromLine(line);
-                    
-                    if (!rc.isAccessory() && !rc.isFeedback())
-                    {
-                        throw new Exception("Accessory Conditions must be accessory or feedback commands.");
-                    }
-                    
-                    //int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                    //boolean state = line.split(",")[1].trim().equals("1");
-                  
-                    //RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
-
-                    newConditions.add(rc);
-                }
-            }*/
-            
+            // Parse conditions
             NodeExpression conditionExpression = null;
             
             if (conditions.trim().length() > 0)

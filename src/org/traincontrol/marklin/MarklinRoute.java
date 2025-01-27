@@ -6,20 +6,16 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.traincontrol.base.NodeAnd;
 import org.traincontrol.base.NodeExpression;
-import org.traincontrol.base.NodeRouteCommand;
 
 /**
  * Simple route representation
@@ -97,22 +93,7 @@ public class MarklinRoute extends Route
         this.enabled = enabled;
         
         this.conditions = conditions;
-        
-        /*if (conditions != null)
-        {
-            for (RouteCommand rc : conditions)
-            {
-                if (rc.isAccessory())
-                {
-                    this.addConditionAccessory(rc.getAddress(), rc.getSetting());
-                }
-                else if (rc.isFeedback())
-                {
-                    this.addConditionS88(rc.getAddress(), rc.getSetting());
-                }
-            }
-        }*/
-        
+                
         // Starts the execution of the automated route
         this.executeAutoRoute();
     }
@@ -549,8 +530,10 @@ public class MarklinRoute extends Route
         {
             triggerType = MarklinRoute.s88Triggers.valueOf(jsonObject.getString("triggerType"));
         }
+        
+        NodeExpression conditionExpression = null;
 
-        // Legacy
+        // Legacy - remove in v2.5.0
         List<RouteCommand> routeConditions = new ArrayList<>();
         
         if (jsonObject.has("conditionS88"))
@@ -573,10 +556,8 @@ public class MarklinRoute extends Route
             }
         }
         
-        NodeExpression conditionExpression = NodeExpression.fromList(routeConditions);
-        
+        conditionExpression = NodeExpression.fromList(routeConditions);
         // End legacy
-        // NodeExpression conditionExpression = null;
         
         if (jsonObject.has("conditions"))
         {

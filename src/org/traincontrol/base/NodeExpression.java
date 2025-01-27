@@ -88,11 +88,17 @@ public abstract class NodeExpression implements Serializable
         }
     }
     
+    /**
+     * Converts this expression to a parseable text representation
+     * @param expression
+     * @param network
+     * @return 
+     */
     public static String toTextRepresentation(NodeExpression expression, ViewListener network)
     {
         StringBuilder sb = new StringBuilder();
         toTextRepresentationHelper(expression, sb, network);
-        return sb.toString().replaceAll("\n+", "\n").replaceAll("\n[ ]+OR", "\nOR").trim(); // Remove empty lines and trailing newline
+        return sb.toString().replaceAll("\n+", "\n").replaceAll("\n[ ]+OR", "\nOR").replaceAll("\n\\)", ")").trim(); // Remove empty lines and trailing newline
     }
 
     private static void toTextRepresentationHelper(NodeExpression node, StringBuilder sb, ViewListener network)
@@ -110,7 +116,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeOr)
         {
             toTextRepresentationHelper(((NodeOr) node).getLeft(), sb, network);
-            sb.append(" OR\n");
+            sb.append("\nOR\n");
             toTextRepresentationHelper(((NodeOr) node).getRight(), sb, network);
         }
         else if (node instanceof NodeGroup)
@@ -128,6 +134,13 @@ public abstract class NodeExpression implements Serializable
         }
     }
 
+    /**
+     * Converts a text representation into a complete expression
+     * @param text
+     * @param network
+     * @return
+     * @throws Exception 
+     */
     public static NodeExpression fromTextRepresentation(String text, ViewListener network) throws Exception 
     {
         List<String> lines = preprocessText(text);
@@ -249,10 +262,12 @@ public abstract class NodeExpression implements Serializable
     private static NodeExpression parseLine(String line) throws Exception
     {
         RouteCommand rc = RouteCommand.fromLine(line);
+        
         if (!rc.isAccessory() && !rc.isFeedback())
         {
             throw new Exception("Accessory Conditions must be accessory or feedback commands.");
         }
+        
         return new NodeRouteCommand(rc);
     }
 }
