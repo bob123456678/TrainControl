@@ -265,7 +265,7 @@ public abstract class NodeExpression implements Serializable
         
         if (!rc.isAccessory() && !rc.isFeedback())
         {
-            throw new Exception("Accessory Conditions must be accessory or feedback commands.");
+            throw new Exception("Conditions can only contain accessory or feedback settings.");
         }
         
         return new NodeRouteCommand(rc);
