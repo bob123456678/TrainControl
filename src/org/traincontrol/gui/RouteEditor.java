@@ -33,7 +33,7 @@ public class RouteEditor extends javax.swing.JFrame
                     + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
                     + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
                     + "(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
-                    + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"11,1\", then "
+                    + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,1\", then "
                     + "the route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
                     + "Conditional Accessories behave just like S88 conditions: if specified, all accessory state must also match\n"
                     + "the specified values in order for the route to fire.\n\n" 
