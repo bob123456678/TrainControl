@@ -1,9 +1,13 @@
 package org.traincontrol.marklin.udp;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -203,5 +207,24 @@ public class CSDetect
         }
 
         return false;
+    }
+    
+    public static boolean isVNCAvailable(String host)
+    {
+        return isPortOpen(host, 5900, WEB_TIMEOUT_MS);
+    }
+
+    private static boolean isPortOpen(String host, int port, int timeout)
+    {
+        try (Socket socket = new Socket())
+        {
+            SocketAddress socketAddress = new InetSocketAddress(host, port);
+            socket.connect(socketAddress, timeout);
+            return true;
+        }
+        catch (IOException e)
+        {
+            return false;
+        }
     }
 }

@@ -2440,7 +2440,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     else
                     {
                         // Verify that the device is actually a central station
-                        if (!CSDetect.isCentralStation(initIP))
+                        if (!CSDetect.isCentralStation(initIP) && !CSDetect.isVNCAvailable(initIP))
                         {
                             System.out.println("Warning: the device at " + initIP + " does not appear to be a Central Station, or its web server is down/unreachable.");
 
