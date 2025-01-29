@@ -23,7 +23,7 @@ import org.traincontrol.marklin.MarklinRoute;
 /**
  * UI for editing routes 
  */
-public class RouteEditor extends javax.swing.JFrame
+public class RouteEditor extends PositionAwareJFrame
 {    
     private final String helpMessage = "In the Route Commands field, one per line, enter the accessory name and state, separated by a comma."
                     + "\nFor example, Switch 20,turn or Signal 21,green."
@@ -151,6 +151,15 @@ public class RouteEditor extends javax.swing.JFrame
         this.captureCommands.setSelected(false);
         
         this.pack();
+        
+        // Only load location once
+        if (!this.isLoaded())
+        {
+            loadWindowBounds();
+        }
+        
+        saveWindowBounds();
+        
         this.setVisible(true);
         
         this.setAlwaysOnTop(parent.isAlwaysOnTop());
@@ -284,7 +293,7 @@ public class RouteEditor extends javax.swing.JFrame
         addGroup = new javax.swing.JButton();
         addOR = new javax.swing.JButton();
         jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
+        testButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Route Editor");
@@ -632,7 +641,7 @@ public class RouteEditor extends javax.swing.JFrame
                     .addGroup(jPanel6Layout.createSequentialGroup()
                         .addComponent(jLabel11)
                         .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(accState, 0, 185, Short.MAX_VALUE))
+                    .addComponent(accState, 0, 283, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 12, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -893,7 +902,7 @@ public class RouteEditor extends javax.swing.JFrame
                         .addComponent(s88Occupied)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(s88Clear)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 348, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 446, Short.MAX_VALUE)
                         .addComponent(addS88Condition)))
                 .addContainerGap())
         );
@@ -952,39 +961,47 @@ public class RouteEditor extends javax.swing.JFrame
 
         jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel13.setText("You can group multiple conditions in parentheses, and use OR operators, to form logical expressions.");
+        jLabel13.setText("Group multiple conditions in parentheses, and use OR operators, to form logical expressions. Conditions on consecutive lines are implicitly ANDed.");
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel14.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel14.setText("Conditions on consecutive lines are implicitly ANDed.");
+        testButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        testButton.setText("Test");
+        testButton.setFocusable(false);
+        testButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testButtonActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel13)
-                    .addComponent(jLabel14))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 59, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(addGroup, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(addOR, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addComponent(jLabel13)
+                        .addGap(28, 28, 28))
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addComponent(testButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(addGroup)
+                        .addContainerGap())))
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel13))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel14))
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addComponent(jLabel13)
+                .addGap(14, 14, 14)
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(testButton)
+                    .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
 
         Logic.addTab("Condition Logic", jPanel7);
@@ -1407,6 +1424,21 @@ public class RouteEditor extends javax.swing.JFrame
         conditionAccs.setText(conditionAccs.getText().trim() + "\nOR\n");
     }//GEN-LAST:event_addORActionPerformed
 
+    private void testButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testButtonActionPerformed
+        
+        try
+        {
+            NodeExpression conditionExpression = NodeExpression.fromTextRepresentation(conditionAccs.getText().trim(), parent.getModel());
+            boolean result = conditionExpression.evaluate(parent.getModel());
+            
+            JOptionPane.showMessageDialog(this, "Condition is " + (result ? "TRUE" : "false") + ".");
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, "There is an error in your expression.");
+        }
+    }//GEN-LAST:event_testButtonActionPerformed
+
     /**
      * Callback to edit or add a route
      * @param origName
@@ -1568,7 +1600,6 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel18;
@@ -1609,6 +1640,7 @@ public class RouteEditor extends javax.swing.JFrame
     private javax.swing.JPanel s88Panel;
     private javax.swing.JPanel s88Panel1;
     private javax.swing.JButton saveButton;
+    private javax.swing.JButton testButton;
     private javax.swing.JRadioButton triggerClearThenOccupied;
     private javax.swing.JRadioButton triggerOccupiedThenClear;
     // End of variables declaration//GEN-END:variables

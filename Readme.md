@@ -290,6 +290,8 @@ Requires JDK 1.8+ and the following libraries:
         - Route S88 and accessory conditions are now editable in a single field
         - Added support for complex boolean expressions (parentheses, OR, implicit AND for consecutive lines) in route conditions
         - Added buttons to insert logical operators in the route condition editor UI
+        - Added button to test the route condition
+    - The position of the route editing window will now be remembered
     - Enhanced Central Station check at startup by checking for VNC connection
 
 * v2.4.2 [1/22/2025]
