@@ -32,11 +32,11 @@ public class RouteEditor extends PositionAwareJFrame
                     + "\nAn optional third number specifies a delay before execution, in milliseconds."
                     + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
                     + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
-                    + "(in the same format as routes, one per line) as occupied (1) or clear (0), all of which must be true for the route to automatically execute. "
+                    + "(in the same format as routes, one per line) as occupied (1) or clear (0), which must evaluate to true for the route to automatically execute. "
                     + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,1\", then "
-                    + "the route would only fire if S88 11 was indicating occupied at the time address 10 was triggered.\n\n"
-                    + "Conditional Accessories behave just like S88 conditions: if specified, all accessory state must also match\n"
-                    + "the specified values in order for the route to fire.\n\n" 
+                    + "the route would only fire if S88 11 was indicating occupied at the time S88 10 was triggered.\n\n"
+                    + "Conditional Accessories behave just like S88 conditions: if specified, the accessory state must also match\n"
+                    + "the specified values/logic for the route to fire.\n\n" 
                     + "In addition to accessories, you can set commands for locomotives and functions:" + "\n"
                     + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
                     + "locspeed,Locomotive name,-1 (instant stop)\n" 
@@ -65,8 +65,7 @@ public class RouteEditor extends PositionAwareJFrame
      * @param isEnabled
      * @param s88
      * @param triggerType
-     * @param conditionS88s
-     * @param conditionAccString
+     * @param conditionString
      */
     public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionString)
     {        
@@ -241,6 +240,7 @@ public class RouteEditor extends PositionAwareJFrame
         jSeparator1 = new javax.swing.JSeparator();
         jScrollPane3 = new javax.swing.JScrollPane();
         conditionAccs = new javax.swing.JTextArea();
+        testButton = new javax.swing.JButton();
         jLabel6 = new javax.swing.JLabel();
         jPanel5 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -293,7 +293,7 @@ public class RouteEditor extends PositionAwareJFrame
         addGroup = new javax.swing.JButton();
         addOR = new javax.swing.JButton();
         jLabel13 = new javax.swing.JLabel();
-        testButton = new javax.swing.JButton();
+        jLabel14 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Route Editor");
@@ -377,6 +377,16 @@ public class RouteEditor extends PositionAwareJFrame
         conditionAccs.setWrapStyleWord(true);
         jScrollPane3.setViewportView(conditionAccs);
 
+        testButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        testButton.setText("Test");
+        testButton.setToolTipText("Checks if the route conditions are met based on the current track state.");
+        testButton.setFocusable(false);
+        testButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -397,7 +407,8 @@ public class RouteEditor extends PositionAwareJFrame
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(executionManual)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(executionAuto)))
+                                .addComponent(executionAuto))
+                            .addComponent(testButton))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addGap(18, 18, 18)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -429,7 +440,8 @@ public class RouteEditor extends PositionAwareJFrame
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(executionManual)
                             .addComponent(executionAuto))
-                        .addGap(0, 60, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(testButton))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel9)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -484,7 +496,7 @@ public class RouteEditor extends PositionAwareJFrame
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(14, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 189, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -943,6 +955,7 @@ public class RouteEditor extends PositionAwareJFrame
 
         addGroup.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         addGroup.setText("Group Highlighted");
+        addGroup.setToolTipText("Wrap the highlighted optional conditions in parentheses.");
         addGroup.setFocusable(false);
         addGroup.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -961,46 +974,41 @@ public class RouteEditor extends PositionAwareJFrame
 
         jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel13.setText("Group multiple conditions in parentheses, and use OR operators, to form logical expressions. Conditions on consecutive lines are implicitly ANDed.");
+        jLabel13.setText("In the optional conditions field, group multiple conditions in parentheses, and use OR operators, to form logical expressions. ");
 
-        testButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        testButton.setText("Test");
-        testButton.setFocusable(false);
-        testButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                testButtonActionPerformed(evt);
-            }
-        });
+        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel14.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel14.setText("Conditions on consecutive lines are implicitly ANDed.");
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addComponent(jLabel13)
-                        .addGap(28, 28, 28))
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addComponent(testButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(addGroup)
-                        .addContainerGap())))
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel14)
+                    .addComponent(jLabel13))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(addGroup, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(addOR, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel13)
-                .addGap(14, 14, 14)
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(testButton)
-                    .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel13)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel14))
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addGap(9, 9, 9)
+                        .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(15, Short.MAX_VALUE))
         );
 
@@ -1257,7 +1265,6 @@ public class RouteEditor extends PositionAwareJFrame
             {
                 int address = Math.abs(Integer.parseInt(this.s88CondAddr.getText()));
                                 
-                //newEntry += address + "," + (this.s88Occupied.isSelected() ? "1" : "0");
                 newEntry += RouteCommand.RouteCommandFeedback(address, this.s88Occupied.isSelected()).toLine(null);
                 
                 this.conditionAccs.setText((this.conditionAccs.getText() + newEntry).trim());
@@ -1428,14 +1435,26 @@ public class RouteEditor extends PositionAwareJFrame
         
         try
         {
-            NodeExpression conditionExpression = NodeExpression.fromTextRepresentation(conditionAccs.getText().trim(), parent.getModel());
-            boolean result = conditionExpression.evaluate(parent.getModel());
+            Boolean status = parent.getModel().getFeedbackState(this.getS88().getText().trim());
             
-            JOptionPane.showMessageDialog(this, "Condition is " + (result ? "TRUE" : "false") + ".");
+            NodeExpression conditionExpression;  
+            boolean result = true;
+            
+            if (!conditionAccs.getText().trim().isEmpty())
+            {      
+                conditionExpression = NodeExpression.fromTextRepresentation(conditionAccs.getText().trim(), parent.getModel());
+                result = conditionExpression.evaluate(parent.getModel());
+            }
+            
+            JOptionPane.showMessageDialog(this, 
+                "Triggering S88 condition is: " + (status ? "TRUE" : "false") + "\n"
+                + "Optional condition is: " + (result ? "TRUE" : "false") + "\n\n"
+                + "Route " + ((status && result) ? "WOULD" : "would not") + " be triggered."
+            );
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "There is an error in your expression.");
+            JOptionPane.showMessageDialog(this, "There is an error in the condition expression.");
         }
     }//GEN-LAST:event_testButtonActionPerformed
 
@@ -1600,6 +1619,7 @@ public class RouteEditor extends PositionAwareJFrame
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel18;

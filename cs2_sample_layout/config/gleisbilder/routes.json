@@ -2409,16 +2409,6 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
-                    "state": {
-                        "ADDRESS": "9",
-                        "SETTING": "true"
-                    }
-                }
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "100",
@@ -2426,37 +2416,13 @@
                     }
                 }
             },
-            "type": "NodeAnd"
-        }
-    },
-    {
-        "name": "Auto Emergency Stop Main B",
-        "id": 50,
-        "s88": 1006,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_STOP",
-            "state": {}
-        }],
-        "conditions": {
-            "left": {
+            "right": {
                 "type": "NodeRouteCommand",
                 "command": {
                     "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "10",
+                        "ADDRESS": "9",
                         "SETTING": "true"
-                    }
-                }
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
-                    "type": "TYPE_ACCESSORY",
-                    "state": {
-                        "ADDRESS": "60",
-                        "SETTING": "false"
                     }
                 }
             },
@@ -3185,9 +3151,9 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
+                    "type": "TYPE_ACCESSORY",
                     "state": {
-                        "ADDRESS": "1015",
+                        "ADDRESS": "9",
                         "SETTING": "true"
                     }
                 }
@@ -3195,9 +3161,9 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
+                        "ADDRESS": "1015",
                         "SETTING": "true"
                     }
                 }
@@ -3219,16 +3185,6 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
-                    "state": {
-                        "ADDRESS": "1016",
-                        "SETTING": "true"
-                    }
-                }
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "9",
@@ -3236,36 +3192,12 @@
                     }
                 }
             },
-            "type": "NodeAnd"
-        }
-    },
-    {
-        "name": "Auto Emergency Stop Main C",
-        "id": 74,
-        "s88": 1006,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_STOP",
-            "state": {}
-        }],
-        "conditions": {
-            "left": {
+            "right": {
                 "type": "NodeRouteCommand",
                 "command": {
                     "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "4",
-                        "SETTING": "true"
-                    }
-                }
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
-                    "type": "TYPE_ACCESSORY",
-                    "state": {
-                        "ADDRESS": "60",
+                        "ADDRESS": "1016",
                         "SETTING": "true"
                     }
                 }
@@ -3436,9 +3368,9 @@
                 "left": {
                     "type": "NodeRouteCommand",
                     "command": {
-                        "type": "TYPE_FEEDBACK",
+                        "type": "TYPE_ACCESSORY",
                         "state": {
-                            "ADDRESS": "1012",
+                            "ADDRESS": "9",
                             "SETTING": "true"
                         }
                     }
@@ -3448,8 +3380,8 @@
                     "command": {
                         "type": "TYPE_FEEDBACK",
                         "state": {
-                            "ADDRESS": "1022",
-                            "SETTING": "false"
+                            "ADDRESS": "1012",
+                            "SETTING": "true"
                         }
                     }
                 },
@@ -3458,10 +3390,10 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
-                        "SETTING": "true"
+                        "ADDRESS": "1022",
+                        "SETTING": "false"
                     }
                 }
             },
@@ -3486,10 +3418,10 @@
                 "left": {
                     "type": "NodeRouteCommand",
                     "command": {
-                        "type": "TYPE_FEEDBACK",
+                        "type": "TYPE_ACCESSORY",
                         "state": {
-                            "ADDRESS": "1013",
-                            "SETTING": "true"
+                            "ADDRESS": "9",
+                            "SETTING": "false"
                         }
                     }
                 },
@@ -3498,8 +3430,8 @@
                     "command": {
                         "type": "TYPE_FEEDBACK",
                         "state": {
-                            "ADDRESS": "1023",
-                            "SETTING": "false"
+                            "ADDRESS": "1013",
+                            "SETTING": "true"
                         }
                     }
                 },
@@ -3508,9 +3440,9 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
+                        "ADDRESS": "1023",
                         "SETTING": "false"
                     }
                 }
@@ -3532,9 +3464,9 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
+                    "type": "TYPE_ACCESSORY",
                     "state": {
-                        "ADDRESS": "1026",
+                        "ADDRESS": "9",
                         "SETTING": "true"
                     }
                 }
@@ -3542,9 +3474,9 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
+                        "ADDRESS": "1026",
                         "SETTING": "true"
                     }
                 }
@@ -3566,20 +3498,20 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
+                    "type": "TYPE_ACCESSORY",
                     "state": {
-                        "ADDRESS": "1025",
-                        "SETTING": "true"
+                        "ADDRESS": "9",
+                        "SETTING": "false"
                     }
                 }
             },
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
-                        "SETTING": "false"
+                        "ADDRESS": "1025",
+                        "SETTING": "true"
                     }
                 }
             },
@@ -3604,9 +3536,9 @@
                 "left": {
                     "type": "NodeRouteCommand",
                     "command": {
-                        "type": "TYPE_FEEDBACK",
+                        "type": "TYPE_ACCESSORY",
                         "state": {
-                            "ADDRESS": "1015",
+                            "ADDRESS": "9",
                             "SETTING": "true"
                         }
                     }
@@ -3616,8 +3548,8 @@
                     "command": {
                         "type": "TYPE_FEEDBACK",
                         "state": {
-                            "ADDRESS": "1016",
-                            "SETTING": "false"
+                            "ADDRESS": "1015",
+                            "SETTING": "true"
                         }
                     }
                 },
@@ -3626,10 +3558,10 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
-                        "SETTING": "true"
+                        "ADDRESS": "1016",
+                        "SETTING": "false"
                     }
                 }
             },
@@ -3654,9 +3586,9 @@
                 "left": {
                     "type": "NodeRouteCommand",
                     "command": {
-                        "type": "TYPE_FEEDBACK",
+                        "type": "TYPE_ACCESSORY",
                         "state": {
-                            "ADDRESS": "1015",
+                            "ADDRESS": "9",
                             "SETTING": "false"
                         }
                     }
@@ -3666,8 +3598,8 @@
                     "command": {
                         "type": "TYPE_FEEDBACK",
                         "state": {
-                            "ADDRESS": "1016",
-                            "SETTING": "true"
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
                         }
                     }
                 },
@@ -3676,10 +3608,10 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "9",
-                        "SETTING": "false"
+                        "ADDRESS": "1016",
+                        "SETTING": "true"
                     }
                 }
             },
@@ -3700,9 +3632,9 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
+                    "type": "TYPE_ACCESSORY",
                     "state": {
-                        "ADDRESS": "1011",
+                        "ADDRESS": "12",
                         "SETTING": "true"
                     }
                 }
@@ -3710,9 +3642,9 @@
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "12",
+                        "ADDRESS": "1011",
                         "SETTING": "true"
                     }
                 }
@@ -3743,20 +3675,20 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
+                    "type": "TYPE_ACCESSORY",
                     "state": {
-                        "ADDRESS": "1009",
-                        "SETTING": "true"
+                        "ADDRESS": "12",
+                        "SETTING": "false"
                     }
                 }
             },
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_ACCESSORY",
+                    "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "12",
-                        "SETTING": "false"
+                        "ADDRESS": "1009",
+                        "SETTING": "true"
                     }
                 }
             },
@@ -3777,16 +3709,6 @@
             "left": {
                 "type": "NodeRouteCommand",
                 "command": {
-                    "type": "TYPE_FEEDBACK",
-                    "state": {
-                        "ADDRESS": "1030",
-                        "SETTING": "true"
-                    }
-                }
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "103",
@@ -3794,7 +3716,77 @@
                     }
                 }
             },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1030",
+                        "SETTING": "true"
+                    }
+                }
+            },
             "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Main BC",
+        "id": 87,
+        "s88": 1006,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "60",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "4",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "60",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "10",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "type": "NodeOr"
         }
     }
 ]}
