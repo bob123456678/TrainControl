@@ -287,7 +287,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.3 [Beta]
+* v2.4.3 [1/29/2025]
     - Routes
         - Route S88 and accessory conditions are now editable in a single field
         - Added support for complex boolean expressions (parentheses, OR, implicit AND for consecutive lines) in route conditions
