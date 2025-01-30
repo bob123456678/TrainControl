@@ -84,9 +84,11 @@ As the CS3 has its own web-based UI which can be used as an alternative, native 
 
 **Routes**
 
-Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track.  Manual routes can also be defined and activated directly or via the layout tab.
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track, or triggering an emergency stop.  Manual routes can also be defined and activated directly or via the layout tab.
 
-![UI screenshot: layout](assets/ui_route.png?raw=true)
+In addition to all Central Station functionality, complex logical expressions are supported.
+
+![UI screenshot: layout](assets/ui_route2.png?raw=true)
 
 **Keyboard**
 
