@@ -997,7 +997,7 @@ element
  .id=0x2080f
  .typ=signal
  .drehung=2
- .artikel=178
+ .artikel=232
 element
  .id=0x20810
  .typ=bogen

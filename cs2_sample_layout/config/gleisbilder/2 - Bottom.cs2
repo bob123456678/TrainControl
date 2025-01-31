@@ -125,7 +125,7 @@ element
  .id=0x3010a
  .typ=signal
  .drehung=3
- .artikel=178
+ .artikel=232
 element
  .id=0x3010b
  .typ=bogen
@@ -508,7 +508,7 @@ element
  .id=0x30705
  .typ=signal
  .drehung=3
- .artikel=178
+ .artikel=232
 element
  .id=0x30706
  .typ=gerade
@@ -716,7 +716,7 @@ element
  .id=0x30a07
  .typ=signal
  .drehung=3
- .artikel=178
+ .artikel=232
 element
  .id=0x30a08
  .typ=prellbock
