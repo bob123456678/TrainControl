@@ -3329,9 +3329,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(1129, 667));
         setMinimumSize(new java.awt.Dimension(1110, 619));
-        setPreferredSize(null);
         setResizable(false);
         setSize(new java.awt.Dimension(1110, 619));
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -5197,6 +5195,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        validateButton.setBackground(new java.awt.Color(204, 255, 204));
         validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         validateButton.setText("Validate Configuration & Open Graph UI");
         validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
