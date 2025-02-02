@@ -25,23 +25,20 @@ import org.traincontrol.marklin.MarklinRoute;
  */
 public class RouteEditor extends PositionAwareJFrame
 {    
-    private final String helpMessage = "In the Route Commands field, one per line, enter the accessory name and state, separated by a comma."
-                    + "\nFor example, Switch 20,turn or Signal 21,green."
-                    + "\nYou can also skip the accessory type, such as 20,straight or 21,red."
-                    + "\nFor even more brevity, replace turn/red with 1 or straight/green with 0."
-                    + "\nAn optional third number specifies a delay before execution, in milliseconds."
-                    + "\n\nOptionally, specify a Triggering S88 sensor address to automatically trigger this route when Automatic Execution is set to On. "
-                    + "\n\nAdditionally, the S88 Condition sensors allow you to specify one or more sensor addresses "
-                    + "(in the same format as routes, one per line) as occupied (1) or clear (0), which must evaluate to true for the route to automatically execute. "
-                    + "\nFor example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,1\", then "
-                    + "the route would only fire if S88 11 was indicating occupied at the time S88 10 was triggered.\n\n"
-                    + "Conditional Accessories behave just like S88 conditions: if specified, the accessory state must also match\n"
-                    + "the specified values/logic for the route to fire.\n\n" 
-                    + "In addition to accessories, you can set commands for locomotives and functions:" + "\n"
+    private final String helpMessage = "Routes are simply a series of commands executed in sequence. Use the wizard until you are comfortable typing commands.\n\nIn the Route Commands field, one per line, enter the accessory name and state, separated by a comma. For example: "
+                    + "Switch 20,turn or Signal 21,green. "
+                    + "You can also skip the accessory type: 20,straight or 21,red. "  
+                    + "For even more brevity, replace turn/red with 1 or straight/green with 0. "
+                    + "An optional third number specifies a delay before execution, in milliseconds."
+                    + "\n\nIf you want your route to execute automatically, specify a Triggering S88 sensor address and set Automatic Execution to \"On\"."
+                    + "\n\nOptional Conditions allow you to specify logic consiting of S88 sensors and/or accessory states (in the same format as above) which must also evaluate"
+                    + "to true for the route to automatically execute.  Boolean logic with OR and parentheses is allowed. "
+                    + "For example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,0\", then "
+                    + "the route would only fire if S88 11 was indicating clear at the time S88 10 was triggered.\n\n"
+                    + "Beyond accessories, route commands can also include locomotives and functions:" + "\n"
                     + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
                     + "locspeed,Locomotive name,-1 (instant stop)\n" 
-                    + "locfunc,Locomotive name,20,1 (toggles F20).\n\n"
-                    + "Use the wizard until you are comfortable typing commands.";
+                    + "locfunc,Locomotive name,20,1 (toggles F20).";
     
     public static final String TURNOUT = "Turn (1)";
     public static final String STRAIGHT = "Straight (0)";
@@ -66,8 +63,9 @@ public class RouteEditor extends PositionAwareJFrame
      * @param s88
      * @param triggerType
      * @param conditionString
+     * @param locked
      */
-    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionString)
+    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionString, boolean locked)
     {        
         initComponents();
         this.parent = parent;
@@ -159,6 +157,18 @@ public class RouteEditor extends PositionAwareJFrame
         
         saveWindowBounds();
         
+        // Check if the route is locked
+        this.saveButton.setEnabled(!locked);
+        
+        if (locked)
+        {
+            this.saveButton.setToolTipText("To ensure consistency, routes from the Central Station cannot be edited.  Duplicate the route instead.");
+        }
+        else
+        {
+            this.saveButton.setToolTipText("");
+        }
+                
         this.setVisible(true);
         
         this.setAlwaysOnTop(parent.isAlwaysOnTop());
@@ -379,7 +389,6 @@ public class RouteEditor extends PositionAwareJFrame
 
         testButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         testButton.setText("Test");
-        testButton.setToolTipText("Checks if the route conditions are met based on the current track state.");
         testButton.setFocusable(false);
         testButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1044,7 +1053,7 @@ public class RouteEditor extends PositionAwareJFrame
                             .addComponent(jLabel2)
                             .addComponent(jLabel1))
                         .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(Logic))
+                    .addComponent(Logic, javax.swing.GroupLayout.DEFAULT_SIZE, 928, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1487,7 +1496,7 @@ public class RouteEditor extends PositionAwareJFrame
 
             return false;
         }
-                              
+                                      
         // Add route
         try
         {
@@ -1516,6 +1525,13 @@ public class RouteEditor extends PositionAwareJFrame
                 // Editing a route
                 if (!"".equals(origName))
                 {
+                    // Renaming to the same name as an existing route
+                    if (!origName.equals(routeName) && this.parent.getModel().getRoute(routeName) != null)
+                    {
+                        JOptionPane.showMessageDialog(this, "A route called " + routeName + " already exists.  Please pick a different name.");
+                        return false;
+                    }
+                    
                     parent.getModel().editRoute(origName, routeName, newRoute,
                         Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
                 }
@@ -1530,14 +1546,15 @@ public class RouteEditor extends PositionAwareJFrame
                                         
                     parent.getModel().newRoute(routeName, newRoute,
                         Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
+                    
+                    // Ensure route changes are synced
+                    // Moved into this condition as this is no longer needed when editing, since CS routes can't be edited
+                    parent.getModel().syncWithCS2();
+                    parent.repaintLayout();
+                    parent.repaintLoc();
                 }
                 
                 parent.refreshRouteList();
-
-                // Ensure route changes are synced
-                parent.getModel().syncWithCS2();
-                parent.repaintLayout();
-                parent.repaintLoc();
                 
                 return true;
             }

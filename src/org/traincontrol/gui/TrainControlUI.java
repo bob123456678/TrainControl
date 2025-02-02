@@ -9184,9 +9184,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {    
                         if (!this.model.changeRouteId(routeName, newId))
                         {
-                            JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the route first.");
+                            JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the other route first.");
                         }
 
+                        this.model.syncWithCS2();
+                        this.repaintLayout();  
+                        
                         this.refreshRouteList();
                     }
                 }
@@ -9814,10 +9817,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 else
                 {
                     MarklinRoute currentRoute = this.model.getRoute(routeName);
-
+                    
                     routeEditor = new RouteEditor("Edit Route: " + routeName + " (ID: " + currentRoute.getId() + ")",
                             this, routeName, currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                        currentRoute.getConditionCSV());
+                        currentRoute.getConditionCSV(), currentRoute.isLocked());
                 }
             }
         }).start();
@@ -9883,11 +9886,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
-                    refreshRouteList();
-
                     // Ensure route changes are synced
                     this.model.syncWithCS2();
                     this.repaintLayout();   
+                    
+                    refreshRouteList();
                 }  
             }
         }).start();
@@ -9915,11 +9918,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                refreshRouteList();
-
                 // Ensure route changes are synced
                 this.model.syncWithCS2();
                 this.repaintLayout();
+                
+                refreshRouteList();
             }
         }).start();
     }
@@ -9935,11 +9938,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, 
                         r.getConditions());
 
-                refreshRouteList();
-
                 // Ensure route changes are synced
                 this.model.syncWithCS2();
                 this.repaintLayout();
+                
+                refreshRouteList();
             }
             else
             {
@@ -10866,7 +10869,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "");
+                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", false);
             }
         }).start();
     }//GEN-LAST:event_AddRouteButtonActionPerformed
@@ -11531,12 +11534,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         prefs.put(LAST_USED_FOLDER, f.getParent());
 
-                        refreshRouteList();
-
                         // Ensure route changes are synced
                         this.model.syncWithCS2();
                         this.repaintLayout();
                         this.repaintLoc();
+                        refreshRouteList();
                     }
                 }
                 catch (Exception e)
@@ -12477,6 +12479,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     setText(getRouteId(name) + ". " + name);
                 }
                 
+                // Differentiate central station routes
+                if (model.getRoute(name).isLocked())
+                {
+                    setText(getText() + " *");
+                    // setToolTipText("Route from Central Station.");
+                }
+                else
+                {
+                    // setToolTipText("");
+                }
+                
                 if (model.getRoute(name).isEnabled() && model.getRoute(name).hasS88())
                 {
                     // set to red bold font
@@ -12518,7 +12531,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 Collections.sort(names);
             }
-            
             
             // Collect the objects to store in the grid - no more strings
             List<MarklinRoute> routes = names.stream().map(this.model::getRoute).collect(Collectors.toList());

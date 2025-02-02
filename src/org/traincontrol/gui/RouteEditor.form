@@ -73,7 +73,7 @@
                       </Group>
                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                   </Group>
-                  <Component id="Logic" alignment="0" max="32767" attributes="0"/>
+                  <Component id="Logic" alignment="0" pref="928" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -382,7 +382,6 @@
               <Font name="Segoe UI" size="12" style="1"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Test"/>
-            <Property name="toolTipText" type="java.lang.String" value="Checks if the route conditions are met based on the current track state."/>
             <Property name="focusable" type="boolean" value="false"/>
           </Properties>
           <Events>

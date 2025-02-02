@@ -57,7 +57,7 @@ public class RightClickRouteMenu extends MouseAdapter
                 add(menuItem);
                 addSeparator();
 
-                menuItem = new JMenuItem("Edit Route");
+                menuItem = new JMenuItem(route.isLocked() ? "View Route Details" : "Edit Route");
                 menuItem.addActionListener(event -> ui.editRoute(routeName));    
                 add(menuItem);
 
@@ -75,15 +75,18 @@ public class RightClickRouteMenu extends MouseAdapter
                 menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));    
                 add(menuItem);
 
-                addSeparator();
+                if (!route.isLocked())
+                {      
+                    addSeparator();
 
-                menuItem = new JMenuItem("Change Route ID");
-                menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
-                add(menuItem);
+                    menuItem = new JMenuItem("Change Route ID");
+                    menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
+                    add(menuItem);
 
-                menuItem = new JMenuItem("Delete Route");
-                menuItem.addActionListener(event -> ui.deleteRoute(routeName));    
-                add(menuItem);
+                    menuItem = new JMenuItem("Delete Route");
+                    menuItem.addActionListener(event -> ui.deleteRoute(routeName));    
+                    add(menuItem);
+                }
             }
         }
     }

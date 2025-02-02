@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.4.3";
+    public static final String RAW_VERSION = "2.4.4";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -92,6 +92,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
+    
+    // The ID where we start internal routes
+    private static final int ROUTE_STARTING_ID = 1000;
     
     //// State
     
@@ -640,13 +643,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 parsedRoutes = fileParser.parseRoutes();
             }
             
+            // Unlock all routes in case they have been deleted
+            for (MarklinRoute r : this.getRoutes())
+            {
+                r.setLocked(false);
+            }
+            
             // Import routes
             for (MarklinRoute r : parsedRoutes)
             {
                 // Other existing route with same name but different ID
                 if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
                 {
-                    this.log("Deleting old route (duplicate name) " + this.routeDB.getByName(r.getName()).toString());
+                    this.log("Deleting old route (duplicate name): " + r.getName());
 
                     this.deleteRoute(r.getName());
                 }
@@ -660,16 +669,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         ) 
                 )
                 {   
-                    this.log("Deleting old route (duplicate ID) " + this.routeDB.getById(r.getId()).toString());
+                    this.log("Deleting old route (duplicate ID): " + this.routeDB.getById(r.getId()).getName());
 
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
                 }
                 
                 if (!this.routeDB.hasId(r.getId()))
-                {
-                    newRoute(r);
+                {                    
+                    newRoute(r);                    
                     this.log("Added route " + r.getName());
                     num++;
+                }
+                
+                // Routes from the Central Station are not editable
+                if (this.routeDB.getById(r.getId()) != null)
+                {
+                    this.routeDB.getById(r.getId()).setLocked(true);
                 }
             }
             
@@ -1062,8 +1077,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
         NodeExpression conditions)
     {
-        int newId = 1;
-        if (!this.routeDB.getItemIds().isEmpty())
+        int newId = ROUTE_STARTING_ID;
+        
+        if (this.routeDB.hasId(newId))
         {
             newId = Collections.max(this.routeDB.getItemIds()) + 1;
         }

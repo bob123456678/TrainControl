@@ -287,6 +287,17 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.4 [2/1/2025]
+    - Routes
+        - To minimize collisions with Central Station routes, routes created in TrainControl now start at ID 1000 instead of 1
+        - To avoid data being overwritten, routes defined in the Central Station can no longer be edited in TrainControl
+        - Routes from the Central Station are now designated with a *
+        - Improved the clarity of the route help dialog
+        - Improved the performance when editing routes
+        - In the Optional Conditions, improved the rendering of AND conditions that follow parentheses
+    - Fixed bug where a route could be renamed to the same name as an existing route
+    - Fixed UI bug where the route list would be temporarily incorrect if imported routes conflicted with routes in the Central Station
+
 * v2.4.3 [1/29/2025]
     - Routes
         - Route S88 and accessory conditions are now editable in a single field

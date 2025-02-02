@@ -116,6 +116,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeAnd)
         {
             toTextRepresentationHelper(((NodeAnd) node).getLeft(), sb, network);
+            sb.append("\n");
             toTextRepresentationHelper(((NodeAnd) node).getRight(), sb, network);
         }
         else if (node instanceof NodeOr)

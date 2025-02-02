@@ -45,6 +45,9 @@ public class MarklinRoute extends Route
     private int s88;
     private NodeExpression conditions;
     
+    // Controls if the route can be edited
+    private boolean locked = false;
+    
     /**
      * Simple constructor
      * @param network
@@ -96,6 +99,16 @@ public class MarklinRoute extends Route
                 
         // Starts the execution of the automated route
         this.executeAutoRoute();
+    }
+
+    public boolean isLocked()
+    {
+        return locked;
+    }
+
+    public void setLocked(boolean locked)
+    {
+        this.locked = locked;
     }
     
     /**
@@ -577,6 +590,10 @@ public class MarklinRoute extends Route
         return new MarklinRoute(network, name, id, routeCommands, s88, triggerType, enabled, conditionExpression);
     }
     
+    /**
+     * Gets the route condition expression
+     * @return 
+     */
     public NodeExpression getConditions()
     {
         return this.conditions;
