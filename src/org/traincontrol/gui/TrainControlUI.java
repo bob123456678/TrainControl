@@ -11206,7 +11206,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
                             , "Confirm Reset", JOptionPane.YES_NO_OPTION);
 
-                        if(dialogResult == JOptionPane.NO_OPTION) return;
+                        if (dialogResult == JOptionPane.NO_OPTION)
+                        {
+                            // Reopen the window
+                            if (this.graphViewer != null) this.graphViewer.setVisible(true);
+                            return;
+                        }
                     }
                 }
                 catch (Exception e)
