@@ -895,7 +895,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException
         {
             String name = desc.getName();
-            if ((name.contains("base.") || name.contains("marklin.")) && !name.startsWith("org.traincontrol"))
+            if ((name.contains("base.") || name.contains("marklin.")) && !name.contains("org.traincontrol"))
             {
                 name = "org.traincontrol." + name;
             }

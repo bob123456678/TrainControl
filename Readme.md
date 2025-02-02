@@ -295,6 +295,7 @@ Requires JDK 1.8+ and the following libraries:
         - Improved the clarity of the route help dialog
         - Improved the performance when editing routes
         - In the Optional Conditions, improved the rendering of AND conditions that follow parentheses
+    - Fixed bug from v2.4.3 where saved route data would sometimes be corrupted
     - Fixed bug where a route could be renamed to the same name as an existing route
     - Fixed UI bug where the route list would be temporarily incorrect if imported routes conflicted with routes in the Central Station
 
