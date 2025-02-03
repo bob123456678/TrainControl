@@ -2764,7 +2764,7 @@
                       <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2191;"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Increase Speed"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Increase Speed (+Control to fine-tune, +Alt for 2x increment)"/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>
@@ -2777,7 +2777,7 @@
                       <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2193;"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Decrease Speed"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Decrease Speed (+Control to fine-tune, +Alt for 2x increment)"/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>
@@ -2790,7 +2790,7 @@
                       <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2192;"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Switch Direction"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Switch Direction (+Control to force forward)"/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>
@@ -2803,7 +2803,7 @@
                       <Font name="Segoe UI" size="12" style="1"/>
                     </Property>
                     <Property name="text" type="java.lang.String" value="&#x2190;"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Switch Direction"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Switch Direction (+Control to force reverse)"/>
                     <Property name="focusable" type="boolean" value="false"/>
                   </Properties>
                   <Events>

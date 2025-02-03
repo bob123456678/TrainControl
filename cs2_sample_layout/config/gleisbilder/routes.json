@@ -983,7 +983,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "true"
                 }
             },
@@ -1397,7 +1397,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             },
@@ -1433,7 +1433,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             },
@@ -1476,7 +1476,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             }
@@ -1961,7 +1961,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             }
@@ -2048,7 +2048,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             }
@@ -2063,7 +2063,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             },
@@ -2085,57 +2085,9 @@
     },
     {
         "name": "Auto Bottom Sec Track 1 Crossover",
-        "id": 39,
-        "s88": 1011,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "103",
-                "SETTING": "true"
-            }
-        }],
-        "conditions": {
-            "type": "NodeRouteCommand",
-            "command": {
-                "type": "TYPE_FEEDBACK",
-                "state": {
-                    "ADDRESS": "9",
-                    "SETTING": "false"
-                }
-            }
-        }
-    },
-    {
-        "name": "Auto Bottom Sec Track 1 Crossover 2",
-        "id": 40,
-        "s88": 1011,
-        "auto": false,
-        "triggerType": "CLEAR_THEN_OCCUPIED",
-        "commands": [{
-            "type": "TYPE_ACCESSORY",
-            "state": {
-                "ADDRESS": "103",
-                "SETTING": "true"
-            }
-        }],
-        "conditions": {
-            "type": "NodeRouteCommand",
-            "command": {
-                "type": "TYPE_FEEDBACK",
-                "state": {
-                    "ADDRESS": "10",
-                    "SETTING": "false"
-                }
-            }
-        }
-    },
-    {
-        "name": "Auto Bottom Sec Track 1 Crossover 3",
         "id": 41,
         "s88": 1011,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -2145,21 +2097,63 @@
             }
         }],
         "conditions": {
-            "type": "NodeRouteCommand",
-            "command": {
-                "type": "TYPE_FEEDBACK",
-                "state": {
-                    "ADDRESS": "4",
-                    "SETTING": "false"
+            "left": {
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "4",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "right": {
+                        "left": {
+                            "type": "NodeRouteCommand",
+                            "command": {
+                                "type": "TYPE_FEEDBACK",
+                                "state": {
+                                    "ADDRESS": "10",
+                                    "SETTING": "false"
+                                }
+                            }
+                        },
+                        "right": {
+                            "type": "NodeRouteCommand",
+                            "command": {
+                                "type": "TYPE_FEEDBACK",
+                                "state": {
+                                    "ADDRESS": "9",
+                                    "SETTING": "false"
+                                }
+                            }
+                        },
+                        "type": "NodeOr"
+                    },
+                    "type": "NodeOr"
+                }]
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1030",
+                        "SETTING": "false"
+                    }
                 }
-            }
+            },
+            "type": "NodeAnd"
         }
     },
     {
-        "name": "Auto Bottom Sec Track 1 Crossover 4",
+        "name": "Auto Bottom Sec Track 1 Not Crossover",
         "id": 42,
         "s88": 1011,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -2175,50 +2169,59 @@
                     "ADDRESS": "52",
                     "SETTING": "false"
                 }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "6",
-                    "SETTING": "true"
-                }
             }
         ],
         "conditions": {
             "left": {
-                "left": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_FEEDBACK",
-                        "state": {
-                            "ADDRESS": "4",
-                            "SETTING": "true"
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "4",
+                                "SETTING": "true"
+                            }
                         }
-                    }
-                },
-                "right": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_FEEDBACK",
-                        "state": {
-                            "ADDRESS": "9",
-                            "SETTING": "true"
-                        }
-                    }
-                },
-                "type": "NodeAnd"
+                    },
+                    "right": {
+                        "left": {
+                            "type": "NodeRouteCommand",
+                            "command": {
+                                "type": "TYPE_FEEDBACK",
+                                "state": {
+                                    "ADDRESS": "9",
+                                    "SETTING": "true"
+                                }
+                            }
+                        },
+                        "right": {
+                            "type": "NodeRouteCommand",
+                            "command": {
+                                "type": "TYPE_FEEDBACK",
+                                "state": {
+                                    "ADDRESS": "10",
+                                    "SETTING": "true"
+                                }
+                            }
+                        },
+                        "type": "NodeAnd"
+                    },
+                    "type": "NodeAnd"
+                }]
             },
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
                     "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "10",
+                        "ADDRESS": "1030",
                         "SETTING": "true"
                     }
                 }
             },
-            "type": "NodeAnd"
+            "type": "NodeOr"
         }
     },
     {
@@ -2237,7 +2240,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "false"
                 }
             }
@@ -2452,7 +2455,7 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
-                    "ADDRESS": "116",
+                    "ADDRESS": "89",
                     "SETTING": "true"
                 }
             },

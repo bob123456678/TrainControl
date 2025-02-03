@@ -4607,7 +4607,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         UpArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         UpArrow.setText("↑");
-        UpArrow.setToolTipText("Increase Speed");
+        UpArrow.setToolTipText("Increase Speed (+Control to fine-tune, +Alt for 2x increment)");
         UpArrow.setFocusable(false);
         UpArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4617,7 +4617,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         DownArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         DownArrow.setText("↓");
-        DownArrow.setToolTipText("Decrease Speed");
+        DownArrow.setToolTipText("Decrease Speed (+Control to fine-tune, +Alt for 2x increment)");
         DownArrow.setFocusable(false);
         DownArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4627,7 +4627,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         RightArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         RightArrow.setText("→");
-        RightArrow.setToolTipText("Switch Direction");
+        RightArrow.setToolTipText("Switch Direction (+Control to force forward)");
         RightArrow.setFocusable(false);
         RightArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -4637,7 +4637,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         LeftArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         LeftArrow.setText("←");
-        LeftArrow.setToolTipText("Switch Direction");
+        LeftArrow.setToolTipText("Switch Direction (+Control to force reverse)");
         LeftArrow.setFocusable(false);
         LeftArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
