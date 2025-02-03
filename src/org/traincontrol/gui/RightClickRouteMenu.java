@@ -44,6 +44,12 @@ public class RightClickRouteMenu extends MouseAdapter
     {
         JMenuItem menuItem;
 
+        public String getRouteTooltip(TrainControlUI ui, String route)
+        {
+            MarklinRoute currentRoute = ui.getModel().getRoute(route);
+            return currentRoute.getName() + " (ID: " + ui.getRouteId(route) + ")";
+        }
+        
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {       
             MarklinRoute route = ui.getRouteAtCursor(e);
@@ -52,7 +58,7 @@ public class RightClickRouteMenu extends MouseAdapter
             {
                 String routeName = route.getName();
             
-                menuItem = new JMenuItem("Execute " + ui.getRouteTooltip(routeName));
+                menuItem = new JMenuItem("Execute " + getRouteTooltip(ui, routeName));
                 menuItem.addActionListener(event -> ui.executeRoute(routeName));    
                 add(menuItem);
                 addSeparator();
@@ -67,14 +73,19 @@ public class RightClickRouteMenu extends MouseAdapter
 
                 addSeparator();
 
-                menuItem = new JMenuItem("Enable Auto Execution");
-                menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
-                add(menuItem);
-
-                menuItem = new JMenuItem("Disable Auto Execution");
-                menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));    
-                add(menuItem);
-
+                if (!route.isEnabled())
+                {
+                    menuItem = new JMenuItem("Enable Auto Execution");
+                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
+                    add(menuItem);
+                }
+                else
+                {
+                    menuItem = new JMenuItem("Disable Auto Execution");
+                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false)); 
+                    add(menuItem);
+                }
+                
                 if (!route.isLocked())
                 {      
                     addSeparator();

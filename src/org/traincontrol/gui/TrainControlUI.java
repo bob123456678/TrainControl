@@ -62,6 +62,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
@@ -6829,16 +6830,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             }
         ));
-        RouteList.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        RouteList.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         RouteList.setFocusable(false);
         RouteList.setGridColor(new java.awt.Color(0, 0, 0));
         RouteList.setRowHeight(30);
         RouteList.setRowSelectionAllowed(false);
         RouteList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         RouteList.setTableHeader(null);
+        RouteList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                RouteListMouseMoved(evt);
+            }
+        });
         RouteList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 RouteListMouseClicked(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                RouteListMouseExited(evt);
             }
         });
         jScrollPane5.setViewportView(RouteList);
@@ -9004,13 +9013,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             refreshRouteList();
         }).start();
     }
-    
-    public String getRouteTooltip(String route)
-    {
-        MarklinRoute currentRoute = this.model.getRoute(route);
-        return currentRoute.getName() + " (ID: " + getRouteId(route) + " | " + (currentRoute.isEnabled() ? "Auto" : "Manual") + ")";
-    }
-    
+        
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
         this.LocControlPanelKeyPressed(evt);
@@ -11662,6 +11665,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.restoreLayoutTitles();
         }
     }//GEN-LAST:event_rememberLocationMenuItemActionPerformed
+    
+    // Track the last hovered row and column
+    private int lastRow = -1;
+    private int lastColumn = -1;
+    
+    private void RouteListMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseMoved
+        int row = RouteList.rowAtPoint(evt.getPoint());
+        int column = RouteList.columnAtPoint(evt.getPoint());
+
+        if (row != lastRow || column != lastColumn)
+        {
+            if (lastRow != -1 && lastColumn != -1)
+            {
+                CustomTableRenderer lastRenderer = (CustomTableRenderer) RouteList.getColumnModel().getColumn(lastColumn).getCellRenderer();
+                lastRenderer.resetHoveredCell();
+                lastRow = -1;
+                lastColumn = -1;
+            }
+
+            CustomTableRenderer renderer = (CustomTableRenderer) RouteList.getColumnModel().getColumn(column).getCellRenderer();
+            renderer.setHoveredCell(row, column);
+            lastRow = row;
+            lastColumn = column;
+            RouteList.repaint();
+        }
+    }//GEN-LAST:event_RouteListMouseMoved
+
+    private void RouteListMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseExited
+        
+        for (int column = 0; column < RouteList.getColumnCount(); column++)
+        {
+            CustomTableRenderer renderer = (CustomTableRenderer) RouteList.getColumnModel().getColumn(column).getCellRenderer();
+            renderer.resetHoveredCell();
+        }
+        
+        lastRow = -1;
+        lastColumn = -1;
+        RouteList.repaint();
+    }//GEN-LAST:event_RouteListMouseExited
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -12462,13 +12504,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
          
     public class CustomTableRenderer extends DefaultTableCellRenderer
     {
+        // Support hover events
+        private int hoveredRow = -1;
+        private int hoveredColumn = -1;
+        
+        public void setHoveredCell(int row, int column)
+        {
+            hoveredRow = row;
+            hoveredColumn = column;
+        }
+        
+        public void resetHoveredCell()
+        {
+            hoveredRow = -1;
+            hoveredColumn = -1;
+        }
+        
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-
+                boolean isSelected, boolean hasFocus, int row, int column)
+        {
             Component c = super.getTableCellRendererComponent(table, value, isSelected,
                     hasFocus, row, column);
 
+            // Hover effect
+            JLabel j = (JLabel) c;
+            
+            if (row == hoveredRow && column == hoveredColumn && value != null)
+            {
+                j.setBackground(new Color(240,240,240));
+            }
+            else
+            {
+                j.setBackground(Color.WHITE);
+            }
+          
+            // Determine the border to set
+            int top = (row == 0) ? 1 : 0;
+            int left = (column == 0) ? 1 : 0;
+            int bottom = 1;
+            int right = 1;
+
+            j.setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, Color.BLACK));
+            // End hover effect
+            
             if (value != null)
             {
                 String name = ((MarklinRoute) value).getName();
@@ -12493,6 +12572,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // setToolTipText("");
                 }
+                
+                // Add padding due to hover effect
+                setText(" " + getText());
                 
                 if (model.getRoute(name).isEnabled() && model.getRoute(name).hasS88())
                 {
