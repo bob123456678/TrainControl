@@ -288,7 +288,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.5 [Beta]
+* v2.4.5 [2/12/2025]
     - Graph UI
         - Added Control+S hotkey to change the S88 address of a node
     - Autonomy UI
