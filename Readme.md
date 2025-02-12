@@ -188,6 +188,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+X (remove locomotive from currently hovered node and place it in the clipboard)
     * Control+E (exclude active locomotive from currently hovered node)
     * Control+U (unexclude active locomotive from currently hovered node)
+    * Control+S (change S88 of currently hovered node)
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
@@ -286,6 +287,15 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.4.5 [Beta]
+    - Graph UI
+        - Added Control+S hotkey to change the S88 address of a node
+    - Autonomy UI
+        - Clicking on a locomotive name in the Locomotive Commands tab will now select that locomotive
+        - Rearranged buttons on the Autonomy Configuration tab, for a more consistent appearance
+        - Improved the phrasing of various error messages and tooltips
+        - Fixed bug where inactive locomotives would sometimes be shown in front of active ones in the Locomotive Commands tab
 
 * v2.4.4 [2/2/2025]
     - Routes

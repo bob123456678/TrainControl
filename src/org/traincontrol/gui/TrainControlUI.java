@@ -3061,7 +3061,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jsonDocumentationButton = new javax.swing.JButton();
         loadDefaultBlankGraph = new javax.swing.JButton();
         validateButton = new javax.swing.JButton();
-        jSeparator3 = new javax.swing.JSeparator();
         jSeparator4 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
@@ -5144,7 +5143,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        loadJSONButton.setText("Load JSON from File");
+        loadJSONButton.setText("Load Configuration from File");
         loadJSONButton.setFocusable(false);
         loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5154,7 +5153,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autosave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         autosave.setSelected(true);
-        autosave.setText("Save on exit");
+        autosave.setText("Auto-save on exit");
         autosave.setToolTipText("If unchecked, be sure to manually export the graph prior to exiting.");
         autosave.setFocusable(false);
         autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -5199,7 +5198,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         validateButton.setBackground(new java.awt.Color(204, 255, 204));
         validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         validateButton.setText("Validate Configuration & Open Graph UI");
-        validateButton.setToolTipText("Parses the JSON data and displays the graph UI.  Force stops any running trains.");
+        validateButton.setToolTipText("Parses the JSON configuration data and displays the graph UI.  Force stops any running trains.");
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5207,37 +5206,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
-
         jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
         autonomyPanel.setLayout(autonomyPanelLayout);
         autonomyPanelLayout.setHorizontalGroup(
             autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
+            .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
+                        .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(autonomyPanelLayout.createSequentialGroup()
+                                .addComponent(validateButton)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(loadDefaultBlankGraph)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jsonDocumentationButton))
+                            .addComponent(jScrollPane2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel6))
                     .addGroup(autonomyPanelLayout.createSequentialGroup()
                         .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE)
-                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(loadDefaultBlankGraph)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jsonDocumentationButton))
-                    .addComponent(jScrollPane2)
-                    .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(validateButton)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel6))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 248, Short.MAX_VALUE)
+                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
         );
         autonomyPanelLayout.setVerticalGroup(
             autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -5246,15 +5243,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jsonDocumentationButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(loadDefaultBlankGraph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator3)
-                    .addComponent(autosave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(validateButton)
                     .addComponent(jSeparator4))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(validateButton)
+                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(autosave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
             .addGroup(autonomyPanelLayout.createSequentialGroup()
                 .addGap(34, 34, 34)
@@ -11206,7 +11204,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
                         int dialogResult = JOptionPane.showConfirmDialog(
-                            this, "UI graph state has changed.  Reloading the JSON will reset any unsaved changes.  Proceed?"
+                            this, "Autonomy graph state has changed.  Reloading the JSON configuration will reset any unsaved changes.  Proceed?"
                             , "Confirm Reset", JOptionPane.YES_NO_OPTION);
 
                         if (dialogResult == JOptionPane.NO_OPTION)
@@ -11397,7 +11395,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
         
         String[] options = {"Blank Graph", "Sample Graph", "Cancel"};
-        int choice = JOptionPane.showOptionDialog(this, "Do you want to load a new graph?  This will overwrite any existing JSON. Right-click the graph window to add points and edges, and to place locomotives.",
+        int choice = JOptionPane.showOptionDialog(this, "Do you want to load a new graph?  This will overwrite any existing configuration. Right-click the graph window to add points and edges, and to place locomotives.",
              "Graph Selection",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 
@@ -11472,7 +11470,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 try
                 {
                     JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy"),
-                        "JSON for current state", JOptionPane.PLAIN_MESSAGE
+                        "Export current graph state to JSON file", JOptionPane.PLAIN_MESSAGE
                     );
 
                     // Place in clipboard
@@ -12478,19 +12476,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 Point loc1Point = this.model.getAutoLayout().getLocomotiveLocation(l1);
                 Point loc2Point = this.model.getAutoLayout().getLocomotiveLocation(l2);
-
+                
                 if (loc1Point != null && loc2Point != null)
                 {
                     if (loc1Point.isActive() && !loc2Point.isActive()) return -1;
                     if (!loc1Point.isActive() && loc2Point.isActive()) return 1;
                 }
+                else if (loc1Point == null)
+                {
+                    return 1;
+                }
+                else if (loc2Point == null)
+                {
+                    return -1;
+                }            
                 
                 return l1.getName().compareTo(l2.getName());
             });
             
             for (Locomotive loc : locs)
             {
-                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this.model));
+                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this));
             }
             
             // Speed up scrolling
@@ -12986,7 +12992,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
-    private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
     private javax.swing.JPopupMenu.Separator jSeparator6;

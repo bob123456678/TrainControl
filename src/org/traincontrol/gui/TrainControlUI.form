@@ -3399,32 +3399,34 @@
                   <Layout>
                     <DimensionLayout dim="0">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="1" attributes="0">
+                          <Group type="102" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" attributes="0">
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Group type="102" alignment="0" attributes="0">
+                                              <Component id="validateButton" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace max="32767" attributes="0"/>
+                                              <Component id="loadDefaultBlankGraph" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                              <Component id="jSeparator4" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                              <Component id="jsonDocumentationButton" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Component id="jScrollPane2" max="32767" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" alignment="0" attributes="0">
                                       <Component id="loadJSONButton" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                       <Component id="exportJSON" min="-2" pref="158" max="-2" attributes="0"/>
-                                      <EmptySpace pref="48" max="32767" attributes="0"/>
-                                      <Component id="autosave" min="-2" pref="118" max="-2" attributes="0"/>
+                                      <EmptySpace pref="248" max="32767" attributes="0"/>
+                                      <Component id="autosave" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jSeparator3" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="loadDefaultBlankGraph" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jSeparator4" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jsonDocumentationButton" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Component id="jScrollPane2" max="32767" attributes="0"/>
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <Component id="validateButton" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                   </Group>
                               </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -3435,16 +3437,19 @@
                               <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                   <Component id="jsonDocumentationButton" alignment="0" max="32767" attributes="0"/>
                                   <Component id="loadDefaultBlankGraph" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="exportJSON" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="loadJSONButton" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="jSeparator3" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="autosave" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="validateButton" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="jSeparator4" alignment="0" max="32767" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane2" max="32767" attributes="0"/>
+                              <Component id="jScrollPane2" pref="491" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="validateButton" min="-2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                  <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                                      <Component id="exportJSON" alignment="3" max="32767" attributes="0"/>
+                                      <Component id="autosave" alignment="3" max="32767" attributes="0"/>
+                                  </Group>
+                                  <Component id="loadJSONButton" alignment="0" max="32767" attributes="0"/>
+                              </Group>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
@@ -3499,7 +3504,7 @@
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                           <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
-                        <Property name="text" type="java.lang.String" value="Load JSON from File"/>
+                        <Property name="text" type="java.lang.String" value="Load Configuration from File"/>
                         <Property name="focusable" type="boolean" value="false"/>
                       </Properties>
                       <Events>
@@ -3512,7 +3517,7 @@
                           <Font name="Segoe UI" size="14" style="0"/>
                         </Property>
                         <Property name="selected" type="boolean" value="true"/>
-                        <Property name="text" type="java.lang.String" value="Save on exit"/>
+                        <Property name="text" type="java.lang.String" value="Auto-save on exit"/>
                         <Property name="toolTipText" type="java.lang.String" value="If unchecked, be sure to manually export the graph prior to exiting."/>
                         <Property name="focusable" type="boolean" value="false"/>
                         <Property name="horizontalAlignment" type="int" value="4"/>
@@ -3590,17 +3595,12 @@
                           <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Validate Configuration &amp; Open Graph UI"/>
-                        <Property name="toolTipText" type="java.lang.String" value="Parses the JSON data and displays the graph UI.  Force stops any running trains."/>
+                        <Property name="toolTipText" type="java.lang.String" value="Parses the JSON configuration data and displays the graph UI.  Force stops any running trains."/>
                         <Property name="focusable" type="boolean" value="false"/>
                       </Properties>
                       <Events>
                         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="validateButtonActionPerformed"/>
                       </Events>
-                    </Component>
-                    <Component class="javax.swing.JSeparator" name="jSeparator3">
-                      <Properties>
-                        <Property name="orientation" type="int" value="1"/>
-                      </Properties>
                     </Component>
                     <Component class="javax.swing.JSeparator" name="jSeparator4">
                       <Properties>

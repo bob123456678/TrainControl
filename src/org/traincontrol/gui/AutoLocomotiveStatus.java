@@ -23,17 +23,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private List<List<Edge>> paths;
     private final Layout layout;
     private final ViewListener control;
+    private final TrainControlUI parent;
     
     /**
      * Creates new form AutoLocomotiveStatus
      * @param loc
-     * @param control
+     * @param parent
      */
-    public AutoLocomotiveStatus(Locomotive loc, ViewListener control) 
+    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent) 
     {
-        this.layout = control.getAutoLayout();
+        this.parent = parent;
+        this.control = parent.getModel();
+        this.layout = this.control.getAutoLayout();
         this.locomotive = loc;
-        this.control = control;
         initComponents();
         
         this.locName.setText(locomotive.getName());
@@ -197,8 +199,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         locName.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         locName.setText("locName");
+        locName.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         locName.setFocusable(false);
         locName.setMaximumSize(new java.awt.Dimension(205, 25));
+        locName.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                locNameMouseClicked(evt);
+            }
+        });
 
         locDest.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
         locDest.setForeground(new java.awt.Color(0, 0, 115));
@@ -353,6 +361,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         locomotive.setAutonomyPaused(pauseButton.isSelected());
     }//GEN-LAST:event_pauseButtonActionPerformed
 
+    private void locNameMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locNameMouseClicked
+        
+        if (parent.getActiveLoc() != locomotive)
+        {
+            parent.mapLocToCurrentButton(locomotive.getName());
+        }
+    }//GEN-LAST:event_locNameMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;

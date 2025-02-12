@@ -68,6 +68,49 @@ final public class GraphViewer extends PositionAwareJFrame
         return null;
     }
     
+    /**
+     * Opens a dialog to set the S88 sensor of a given point
+     * @param p 
+     */
+    private void setS88 (Point p)
+    {
+        if (p != null)
+        {
+            String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
+                "Enter the s88 sensor address for " + p.getName() + ":",
+                p.getS88());
+
+            if (dialogResult != null)
+            {
+                dialogResult = dialogResult.trim();
+
+                try
+                {
+                    Integer value;
+                    if (dialogResult.equals(""))
+                    {
+                        value = null;
+                    }
+                    else
+                    {
+                        value = Integer.valueOf(dialogResult);
+                    }
+
+                    p.setS88(value);
+
+                    parent.updatePoint(p, mainGraph);
+
+                    parent.repaintAutoLocList(false);
+                }
+                catch (NumberFormatException e)
+                {
+                    JOptionPane.showMessageDialog((Component) swingView,
+                        "Invalid value (must be a non-negative integer, or blank to disable if not a station)");
+                }
+            }
+        }
+    }
+    
     final class RightClickMenu extends JPopupMenu
     {
         JMenuItem menuItem;
@@ -235,6 +278,17 @@ final public class GraphViewer extends PositionAwareJFrame
                 add(menuItem);
             }
             
+            // Edit sensor
+            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
+            menuItem.setToolTipText("Control+S");
+            menuItem.addActionListener(event -> 
+                {
+                    setS88(p);
+                }
+            );     
+
+            add(menuItem);
+            
             // Excluded locomotives
             menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
             menuItem.setToolTipText("Control+E/U to exclude/unexclude active locomotive");
@@ -262,47 +316,6 @@ final public class GraphViewer extends PositionAwareJFrame
                         "Error editing point: " + e.getMessage());
                 }
             });
-
-            add(menuItem);
-            
-            // Edit sensor
-            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
-            menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the s88 sensor address for " + nodeName + ":",
-                        p.getS88());
-
-                    if (dialogResult != null)
-                    {
-                        dialogResult = dialogResult.trim();
-
-                        try
-                        {
-                            Integer value;
-                            if (dialogResult.equals(""))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                value = Integer.valueOf(dialogResult);
-                            }
-                            
-                            p.setS88(value);
-
-                            ui.updatePoint(p, mainGraph);
-
-                            parent.repaintAutoLocList(false);
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Invalid value (must be a non-negative integer, or blank to disable if not a station)");
-                        }
-                    }
-                }
-            );     
 
             add(menuItem);
             
@@ -454,7 +467,7 @@ final public class GraphViewer extends PositionAwareJFrame
                     catch (Exception e)
                     {
                         JOptionPane.showMessageDialog((Component) swingView,
-                            "Error adding edge.");
+                            "Error adding edge: " + e.getMessage());
                     }
                 });
   
@@ -486,7 +499,7 @@ final public class GraphViewer extends PositionAwareJFrame
                 if (!pointNames.isEmpty())
                 {
                     String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                            "Choose the name of the station/point you wish to connect to from " + nodeName + ":",
+                            "Choose the name of the station/point you want to connect " + nodeName + " to:",
                             "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
                             pointNames.toArray(), // Array of choices
                             pointNames.get(0));
@@ -1341,6 +1354,11 @@ final public class GraphViewer extends PositionAwareJFrame
                     parent.repaintAutoLocList(true);
                 }
             }
+        }
+        // Configure S88
+        else if (!isRunning && controlPressed && (keyCode == KeyEvent.VK_S))
+        {
+            this.setS88(parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode));
         }
         // Default key commands
         else
