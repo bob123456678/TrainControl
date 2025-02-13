@@ -444,6 +444,12 @@ public class RouteCommand implements java.io.Serializable
         return "invalid command";
     }
     
+    /**
+     * Converts a route command integer (1 or 0) to boolean, throws an error otherwise
+     * @param setting
+     * @return
+     * @throws Exception 
+     */
     private static boolean intToAccessorySwitched(int setting) throws Exception
     {
         if (setting != 1 && setting != 0)

@@ -288,7 +288,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.5 [2/12/2025]
+* v2.4.6 [2/12/2025]
+    - Graph UI
+        - Added a "test" button to simulate the configuration commands on an edge
+        - Improved the alignment of the buttons in the edge editor
+
+* v2.4.5 [2/11/2025]
     - Graph UI
         - Added Control+S hotkey to change the S88 address of a node
     - Autonomy UI

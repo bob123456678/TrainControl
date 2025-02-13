@@ -2,10 +2,6 @@ package org.traincontrol.automation;
 
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessorySetting;
-import static org.traincontrol.base.Accessory.accessorySetting.GREEN;
-import static org.traincontrol.base.Accessory.accessorySetting.RED;
-import static org.traincontrol.base.Accessory.accessorySetting.STRAIGHT;
-import static org.traincontrol.base.Accessory.accessorySetting.TURN;
 import org.traincontrol.base.Locomotive;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -825,15 +821,9 @@ public class Layout
             {
                 control.log("Auto layout: Configuring " + acc.getName() + " " + state.toString().toLowerCase());
 
-                if (state == TURN || state == RED)
-                {   
-                    acc.turn();
-                }
-                else if (state == STRAIGHT || state == GREEN)
-                {
-                    acc.straight();
-                }
-                else
+                boolean result = acc.setState(state);
+                
+                if (!result)
                 {
                     // This should never happen
                     control.log("Invalid configuration command: " + name + " " + state.toString());

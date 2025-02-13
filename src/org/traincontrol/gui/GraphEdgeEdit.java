@@ -149,9 +149,10 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     
     /**
      * Applies configuration commands as specified in the UI
+     * @param test - true to execute commands but not save
      * @throws java.lang.Exception
      */
-    public void validateAndApplyConfigCommands() throws Exception
+    public void validateAndApplyConfigCommands(boolean test) throws Exception
     {
         String[] commands = this.configCommands.getText().split("\n");
         
@@ -173,7 +174,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             }
         }
         
-        e.clearAllConfigCommands();
+        if (!test) e.clearAllConfigCommands();
         
         for (String s : commands)
         {
@@ -182,7 +183,16 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                 String command = s.split(",")[0].trim();
                 String setting = s.split(",")[1].trim();
                 
-                e.addConfigCommand(command, Accessory.stringToAccessorySetting(setting));     
+                if (!test)
+                {
+                    e.addConfigCommand(command, Accessory.stringToAccessorySetting(setting));    
+                }
+                else
+                {
+                    Accessory a = this.parent.getModel().getAccessoryByName(command);
+
+                    if (a != null) a.setState(Accessory.stringToAccessorySetting(setting));
+                }
             }
         }   
     }
@@ -207,6 +217,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         okButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
         captureCommands = new javax.swing.JCheckBox();
+        testCommands = new javax.swing.JButton();
 
         setMaximumSize(new java.awt.Dimension(520, 611));
         setMinimumSize(new java.awt.Dimension(520, 611));
@@ -272,6 +283,16 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         captureCommands.setToolTipText("Select this to automatically capture commands from the track diagram and keyboard.");
         captureCommands.setFocusable(false);
 
+        testCommands.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        testCommands.setText("Test");
+        testCommands.setToolTipText("Execute the commands for verification on the track diagram.");
+        testCommands.setFocusable(false);
+        testCommands.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testCommandsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -285,7 +306,9 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                         .addComponent(departureFuncLabel1)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)
+                            .addComponent(testCommands, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane1)
                         .addContainerGap())))
@@ -294,10 +317,10 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                     .addGroup(layout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addComponent(captureCommands, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(9, 9, 9)
                         .addComponent(departureFuncLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
-                        .addComponent(edgeLength, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(10, 10, 10)
+                        .addComponent(edgeLength, 0, 180, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(okButton)
@@ -314,7 +337,10 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                     .addComponent(departureFuncLabel1))
                 .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(testCommands))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 507, Short.MAX_VALUE))
                 .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -339,7 +365,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         
         try
         {
-            validateAndApplyConfigCommands();
+            validateAndApplyConfigCommands(false);
             applyLockEdges();
 
             parent.updateEdgeLength(e, graph);
@@ -374,6 +400,24 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         parent.getModel().getAutoLayout().refreshUI();
     }//GEN-LAST:event_formWindowClosing
 
+    private void testCommandsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testCommandsActionPerformed
+        
+        this.captureCommands.setSelected(false);
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {   
+            try
+            {
+                this.validateAndApplyConfigCommands(true);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this,
+                    "Error: " + e.getMessage());
+            }
+        }));
+    }//GEN-LAST:event_testCommandsActionPerformed
+
     /**
      * Updates the lock edges shown on the graph for easier editing
      */
@@ -401,5 +445,6 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JList<String> lockEdges;
     private javax.swing.JButton okButton;
+    private javax.swing.JButton testCommands;
     // End of variables declaration//GEN-END:variables
 }

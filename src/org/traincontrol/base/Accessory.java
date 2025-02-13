@@ -53,6 +53,27 @@ abstract public class Accessory
     }
     
     /**
+     * Sets state based on the provided accessory setting
+     * @param state
+     * @return was the state value valid?
+     */
+    public boolean setState(accessorySetting state)
+    {
+        if (state == accessorySetting.TURN || state == accessorySetting.RED)
+        {   
+            this.turn();
+            return true;
+        }
+        else if (state == accessorySetting.STRAIGHT || state == accessorySetting.GREEN)
+        {
+            this.straight();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
      * Sets to green
      * @return 
      */
