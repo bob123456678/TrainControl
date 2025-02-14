@@ -8997,12 +8997,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.log("Layout page " + page + " does not exist.");
         }
     }
-    
-    public int getRouteId (Object route)
-    {
-        return this.model.getRouteId(route.toString());
-    }
-    
+        
     public void executeRoute(String route)
     {
         new Thread(() ->
@@ -10885,7 +10880,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);
                 
-                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + getRouteId(route.getName()) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + this.model.getRouteId(route.getName()) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
                 if (dialogResult == JOptionPane.YES_OPTION)
                 {
                     new Thread(() ->
@@ -12565,7 +12560,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 else
                 {
-                    setText(getRouteId(name) + ". " + name);
+                    setText(model.getRouteId(name) + ". " + name);
                 }
                 
                 // Differentiate central station routes

@@ -47,7 +47,7 @@ public class RightClickRouteMenu extends MouseAdapter
         public String getRouteTooltip(TrainControlUI ui, String route)
         {
             MarklinRoute currentRoute = ui.getModel().getRoute(route);
-            return currentRoute.getName() + " (ID: " + ui.getRouteId(route) + ")";
+            return currentRoute.getName() + " (ID: " + ui.getModel().getRouteId(route) + ")";
         }
         
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
