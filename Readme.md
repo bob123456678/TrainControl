@@ -288,10 +288,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.6 [2/12/2025]
+* v2.4.6 [2/14/2025]
     - Graph UI
         - Added a "test" button to simulate the configuration commands on an edge
         - Improved the alignment of the buttons in the edge editor
+    - Fixed bug from v2.4.1 where routes would not execute when clicked in the route table
 
 * v2.4.5 [2/11/2025]
     - Graph UI

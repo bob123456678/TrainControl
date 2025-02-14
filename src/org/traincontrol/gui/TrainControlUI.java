@@ -10890,7 +10890,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     new Thread(() ->
                     {
-                        executeRoute(route.toString());
+                        executeRoute(route.getName());
                     }).start();
                 }
                 
