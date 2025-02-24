@@ -1681,6 +1681,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 model.log("Turning off power because network latency exceeded " + l.getMaxLatency() + "ms while in autonomy mode.");
 
                 model.stop();
+                
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    JOptionPane.showMessageDialog(
+                        this, 
+                        "The power was turned off because the network latency exceeded " + l.getMaxLatency() + "ms while in autonomy mode.\n\nCheck your network connection before restoring power, or update this threshold in the autonomy settings."
+                    );
+                }));
             }
         }
     }
