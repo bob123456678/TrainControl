@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.4.6";
+    public static final String RAW_VERSION = "2.4.7";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -1580,7 +1580,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.pingStart > 0)
         {
-            return  (System.nanoTime() - this.pingStart) / 1000000;
+            return (System.nanoTime() - this.pingStart) / 1000000;
         }
         
         return 0;

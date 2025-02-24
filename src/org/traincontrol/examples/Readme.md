@@ -427,6 +427,14 @@ Unless the `speed` is specified within the `loc` array, each locomotive's prefer
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking on any point within the graph UI.
 
+## Ensuring network stability 
+
+From v2.4.7, the `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
+
+If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
+
+The lowest allowed nonzero threshold is 100ms.
+
 # Timetables
 
 From v2.1.0, TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.

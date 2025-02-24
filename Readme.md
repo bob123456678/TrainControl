@@ -288,6 +288,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.7 [2/23/2025]
+    - Autonomy UI
+        - Added a setting to automatically turn off the power if the network latency is too high
+        - Added corresponding `maxLatency` JSON key
+
 * v2.4.6 [2/14/2025]
     - Graph UI
         - Added a "test" button to simulate the configuration commands on an edge

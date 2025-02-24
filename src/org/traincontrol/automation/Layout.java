@@ -77,6 +77,7 @@ public class Layout
     private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
     private boolean timetableCapture = false;
+    private int maxLatency = 0;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
@@ -136,6 +137,12 @@ public class Layout
         Layout.lastError = "";
     }
     
+    /**
+     * Adds a new locomotive to the timetable
+     * @param loc
+     * @param path
+     * @return 
+     */
     private boolean addTimetableEntry(Locomotive loc, List<Edge> path)
     {
         return addTimetableEntry(loc, path, System.currentTimeMillis());
@@ -194,6 +201,27 @@ public class Layout
     public Set<Locomotive> getLocomotivesToRun()
     {
         return this.locomotivesToRun;
+    }
+    
+    /**
+     * Sets the maximum allowed network latency. (minimum of 100ms)
+     * @param latency 
+     */
+    public void setMaxLatency(int latency)
+    {
+        latency = Math.abs(latency);
+        
+        if (latency < 100)
+        {
+            latency = 0; // disable setting
+        }
+        
+        this.maxLatency = latency;
+    }
+    
+    public int getMaxLatency()
+    {
+        return this.maxLatency;
     }
     
     /**
@@ -2297,6 +2325,7 @@ public class Layout
         jsonObj.put("maxDelay", this.getMaxDelay());
         jsonObj.put("defaultLocSpeed", this.getDefaultLocSpeed());
         jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
+        jsonObj.put("maxLatency", this.getMaxLatency());
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
         jsonObj.put("turnOnFunctionsOnDeparture", this.isTurnOnFunctionsOnDeparture());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
@@ -2394,6 +2423,19 @@ public class Layout
             catch (Exception e)
             {
                 layout.invalidate("Auto layout error: invalid value for preArrivalSpeedReduction (must be 0.0-1.0)");
+                return layout;
+            }    
+        }
+        
+        if (o.has("maxLatency"))
+        {
+            try
+            {
+                layout.setMaxLatency(o.getInt("maxLatency"));
+            }
+            catch (Exception e)
+            {
+                layout.invalidate("Auto layout error: invalid value for maxLatency (must be an integer)");
                 return layout;
             }    
         }

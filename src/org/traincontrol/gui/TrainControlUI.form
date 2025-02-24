@@ -3905,12 +3905,7 @@
                                       <Component id="atomicRoutes" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="turnOffFunctionsOnArrival" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="simulate" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="jLabel49" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Component id="jLabel46" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="turnOnFunctionsOnDeparture" max="32767" attributes="0"/>
-                                          <Component id="preArrivalSpeedReduction" min="-2" pref="230" max="-2" attributes="0"/>
-                                      </Group>
                                       <Component id="jLabel50" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="0" attributes="0">
@@ -3928,6 +3923,20 @@
                                               <Component id="defaultLocSpeed" min="-2" pref="230" max="-2" attributes="0"/>
                                           </Group>
                                       </Group>
+                                      <Group type="102" attributes="0">
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="jLabel49" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
+                                                  <Component id="turnOnFunctionsOnDeparture" max="32767" attributes="0"/>
+                                                  <Component id="preArrivalSpeedReduction" min="-2" pref="230" max="-2" attributes="0"/>
+                                              </Group>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="jLabel44" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="maximumLatency" alignment="0" min="-2" pref="230" max="-2" attributes="0"/>
+                                          </Group>
+                                      </Group>
                                   </Group>
                                   <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
                               </Group>
@@ -3936,30 +3945,39 @@
                         <DimensionLayout dim="1">
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Group type="102" alignment="0" attributes="0">
-                                  <EmptySpace min="-2" max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="3" attributes="0">
-                                      <Component id="jLabel46" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="jLabel48" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="102" attributes="0">
+                                          <Group type="103" groupAlignment="3" attributes="0">
+                                              <Component id="jLabel46" alignment="3" min="-2" max="-2" attributes="0"/>
+                                              <Component id="jLabel48" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="3" attributes="0">
+                                              <Component id="minDelay" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
+                                              <Component id="maxLocInactiveSeconds" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="3" attributes="0">
+                                              <Component id="jLabel47" alignment="3" min="-2" max="-2" attributes="0"/>
+                                              <Component id="jLabel43" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="3" attributes="0">
+                                              <Component id="maxDelay" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
+                                              <Component id="defaultLocSpeed" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="jLabel49" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="preArrivalSpeedReduction" min="-2" pref="55" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Group type="102" attributes="0">
+                                          <Component id="jLabel44" min="-2" max="-2" attributes="0"/>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Component id="maximumLatency" min="-2" pref="55" max="-2" attributes="0"/>
+                                      </Group>
                                   </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="3" attributes="0">
-                                      <Component id="minDelay" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
-                                      <Component id="maxLocInactiveSeconds" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="3" attributes="0">
-                                      <Component id="jLabel47" alignment="3" min="-2" max="-2" attributes="0"/>
-                                      <Component id="jLabel43" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="3" attributes="0">
-                                      <Component id="maxDelay" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
-                                      <Component id="defaultLocSpeed" alignment="3" min="-2" pref="55" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="jLabel49" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="preArrivalSpeedReduction" min="-2" pref="55" max="-2" attributes="0"/>
                                   <EmptySpace type="separate" max="-2" attributes="0"/>
                                   <Component id="jLabel50" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
@@ -4213,6 +4231,42 @@
                           <Events>
                             <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="turnOnFunctionsOnDepartureMouseReleased"/>
                           </Events>
+                        </Component>
+                        <Component class="javax.swing.JSlider" name="maximumLatency">
+                          <Properties>
+                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                              <Font name="Segoe UI" size="14" style="0"/>
+                            </Property>
+                            <Property name="majorTickSpacing" type="int" value="1000"/>
+                            <Property name="maximum" type="int" value="4000"/>
+                            <Property name="minorTickSpacing" type="int" value="250"/>
+                            <Property name="paintLabels" type="boolean" value="true"/>
+                            <Property name="paintTicks" type="boolean" value="true"/>
+                            <Property name="toolTipText" type="java.lang.String" value="If greater than 0, the power will automatically be turned off if the network latency exceeds this value."/>
+                            <Property name="value" type="int" value="0"/>
+                            <Property name="focusable" type="boolean" value="false"/>
+                            <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                              <Dimension value="[230, 55]"/>
+                            </Property>
+                            <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                              <Dimension value="[230, 55]"/>
+                            </Property>
+                          </Properties>
+                          <Events>
+                            <EventHandler event="mouseReleased" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="maximumLatencyMouseReleased"/>
+                          </Events>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="jLabel44">
+                          <Properties>
+                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                              <Font name="Segoe UI" size="14" style="0"/>
+                            </Property>
+                            <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                              <Color blue="73" green="0" red="0" type="rgb"/>
+                            </Property>
+                            <Property name="text" type="java.lang.String" value="Maximum Network Latency (ms)"/>
+                            <Property name="focusable" type="boolean" value="false"/>
+                          </Properties>
                         </Component>
                       </SubComponents>
                     </Container>
