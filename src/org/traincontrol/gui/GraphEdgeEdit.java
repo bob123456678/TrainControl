@@ -3,8 +3,10 @@ package org.traincontrol.gui;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.Accessory;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import javax.swing.DefaultListModel;
@@ -64,8 +66,9 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     public void appendCommand(String command)
     {
         this.configCommands.setText(this.configCommands.getText().trim() + "\n" + command);
+        this.configCommands.setText(RouteEditor.filterConfigCommands(this.configCommands.getText()));
     }
-    
+        
     public final void updateValues()
     {
         // Configure lock edge list

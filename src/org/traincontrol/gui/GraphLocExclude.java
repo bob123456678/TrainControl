@@ -113,7 +113,6 @@ public class GraphLocExclude extends javax.swing.JPanel
         allowedLocLabel.setForeground(new java.awt.Color(0, 0, 115));
         allowedLocLabel.setText("Allowed Locomotives (Default)");
 
-        infoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
 
         allowedLocList.setBackground(new java.awt.Color(254, 254, 254));

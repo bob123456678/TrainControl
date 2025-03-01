@@ -288,6 +288,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.8 [2/28/2025]
+    - Graph UI
+        - Added a right-click setting to optionally adjust the speed of trains incoming to a point by 1-200% (default of 100% maintains old behavior)
+        - Added corresponding `speedMultiplier` JSON key on each `Point`
+    - When capturing commands for routes or lock edges, prior duplicates are now automatically removed
+
 * v2.4.7 [2/23/2025]
     - Autonomy UI
         - Added a setting to automatically turn off the power if the network latency is too high

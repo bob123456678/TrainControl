@@ -29,7 +29,8 @@ public class Point
     private Integer uniqueId;
     private boolean active;
     private Set<Locomotive> excludedLocs;
-    
+    private double speedMultiplier = 1.0;
+
     // Unique ID for any new node
     private static Integer id = 0;
   
@@ -51,6 +52,41 @@ public class Point
         
         // Save the immutable unique ID
         this.uniqueId = ++id;
+    }
+    
+    /**
+     * Get the speed multiplier for this point
+     * @return 
+     */
+    public double getSpeedMultiplier()
+    {
+        return speedMultiplier;
+    }
+    
+    /**
+     * Get the speed multiplier for this point
+     * @return 
+     */
+    public int getSpeedMultiplierPercent()
+    {
+        return (int) (100.0 * speedMultiplier);
+    }
+        
+    /**
+     * Change how much locomotives are slowed when this point is traversed
+     * @param speedMultiplier 
+     * @throws java.lang.Exception 
+     */
+    public void setSpeedMultiplier(double speedMultiplier) throws Exception
+    {
+        if (speedMultiplier > 0 && speedMultiplier <= 2)
+        {
+            this.speedMultiplier = speedMultiplier;
+        }
+        else
+        {
+            throw new Exception("speedMultiplier must be > 0 and <= 2");
+        }
     }
     
     /**
@@ -388,6 +424,11 @@ public class Point
         if (this.priority != 0)
         {
             jsonObj.put("priority", this.priority);
+        }
+        
+        if (this.speedMultiplier != 1.0)
+        {
+            jsonObj.put("speedMultiplier", this.speedMultiplier);
         }
         
         if (this.currentLoc != null)

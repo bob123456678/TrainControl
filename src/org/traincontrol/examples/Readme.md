@@ -427,6 +427,12 @@ Unless the `speed` is specified within the `loc` array, each locomotive's prefer
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking on any point within the graph UI.
 
+## Speed adjustments
+
+From v2.4.8, the `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
+
+The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
+
 ## Ensuring network stability 
 
 From v2.4.7, the `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 

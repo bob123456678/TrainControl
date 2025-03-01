@@ -6,8 +6,10 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
@@ -211,10 +213,51 @@ public class RouteEditor extends PositionAwareJFrame
     
     public void appendCommand(String command)
     {
-        //String newVal = this.routeContents.getText() + "\n" + Integer.toString(accessory) + "," + (state ? "1" : "0") + "\n";
         this.routeContents.setText(this.routeContents.getText().trim() + "\n" + command + "\n");
+        this.routeContents.setText(filterConfigCommands(this.routeContents.getText()));
     }
     
+    /**
+     * Deduplicate lines
+     * @param text
+     * @return 
+     */
+    public static String filterConfigCommands(String text)
+    {
+        String[] lines = text.split("\n");
+        Map<String, String> map = new LinkedHashMap<>();
+
+        for (String line : lines)
+        {
+            String[] keyValue = line.split(",", 2); // Split on the first comma
+            if (keyValue.length == 2)
+            {
+                String key = keyValue[0];
+                String value = keyValue[1];
+                map.put(key, value); // This keeps the latest value for each key
+            }
+            else
+            {
+                map.put(line, "");
+            }
+        }
+
+        StringBuilder filteredCommands = new StringBuilder();
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            if ("".equals(entry.getValue()))
+            {
+                filteredCommands.append(entry.getKey()).append("\n");
+            }
+            else
+            {
+                filteredCommands.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
+            }
+        }
+
+        return filteredCommands.toString().trim();
+    }
+        
     public boolean isCaptureCommandsSelected()
     {
         return this.captureCommands.isSelected();

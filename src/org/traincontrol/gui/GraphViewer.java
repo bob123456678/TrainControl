@@ -319,6 +319,51 @@ final public class GraphViewer extends PositionAwareJFrame
 
             add(menuItem);
             
+            // Speed multiplier         
+            menuItem = new JMenuItem("Set speed multiplier (" + p.getSpeedMultiplierPercent() + "%)");
+            menuItem.addActionListener(event ->
+            {
+                try
+                {
+                    // Prefill the dialog with the current value
+                    String input = JOptionPane.showInputDialog(
+                        (Component) swingView,
+                        "Enter speed multiplier (1-200%):",
+                        "Set Speed Multiplier",
+                        JOptionPane.PLAIN_MESSAGE,
+                        null,
+                        null,
+                        p.getSpeedMultiplierPercent()
+                    ).toString();
+
+                    if (input != null)
+                    {
+                        p.setSpeedMultiplier(Integer.parseInt(input) * 0.01); // Convert to multiplier
+                    }
+                } 
+                catch (NumberFormatException ex)
+                {
+                    JOptionPane.showMessageDialog(
+                        (Component) swingView,
+                        "Invalid input. Please enter a valid number.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(
+                        (Component) swingView,
+                        ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            });
+
+            menuItem.setToolTipText("Optionally adjust the speed of trains incoming to this point.");
+            add(menuItem);
+            
             addSeparator();
                         
             // Allow changes because locomotive on non-stations will by design not run
@@ -398,7 +443,7 @@ final public class GraphViewer extends PositionAwareJFrame
                 }
             });
 
-            add(menuItem);
+            add(menuItem);  
             addSeparator();
 
             // Rename option applicable to all nodes

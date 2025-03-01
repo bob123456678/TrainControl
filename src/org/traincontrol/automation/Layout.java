@@ -1715,11 +1715,24 @@ public class Layout
         for (int i = 0; i < path.size(); i++)
         {
             Point current = path.get(i).getEnd();
-
+            
             if (i != path.size() - 1)
             {
+                // Adjust speed based on multiplier
+                if (currentLayoutVersion == Layout.layoutVersion)
+                {
+                    int calculatedSpeed = (int) Math.floor((double) speed * current.getSpeedMultiplier());
+                    calculatedSpeed = Math.min(calculatedSpeed, 100);
+                    
+                    if (loc.getSpeed() != calculatedSpeed)
+                    {
+                        this.control.log("Auto layout: adjusting speed to " + calculatedSpeed + " for " + loc.getName());
+                        loc.setSpeed(calculatedSpeed);
+                    }
+                }
+                
                 // Intermediate points - wait for feedback to be triggered and to clear
-                if (current.hasS88())
+                if (current.hasS88() && currentLayoutVersion == Layout.layoutVersion)
                 {
                     if (this.simulate)
                     {
@@ -1799,8 +1812,8 @@ public class Layout
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    loc.setSpeed((int) Math.floor( (double) loc.getSpeed() * preArrivalSpeedReduction));
-                    this.control.log("Auto layout: pre-arrival for " + loc.getName());
+                    loc.setSpeed((int) Math.floor((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
+                    this.control.log("Auto layout: pre-arrival speed of " + loc.getSpeed() + " for " + loc.getName());
                                     
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
@@ -2652,7 +2665,26 @@ public class Layout
                     {
                         layout.invalidate("Auto layout error: invalid value for reversing " + point.toString());
                     }
-                }    
+                }  
+                
+                if (point.has("speedMultiplier"))
+                {
+                    if (point.get("speedMultiplier") instanceof Number)
+                    {
+                        try
+                        {
+                            layout.getPoint(point.getString("name")).setSpeedMultiplier(point.getDouble("speedMultiplier"));
+                        } 
+                        catch (Exception e)
+                        {
+                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                        }
+                    }
+                    else
+                    {
+                        layout.invalidate("Auto layout error: invalid value for speedMultiplier " + point.toString() + ", must be a number.");
+                    }
+                } 
                 
                 if (point.has("priority"))
                 {
