@@ -326,7 +326,7 @@ final public class GraphViewer extends PositionAwareJFrame
                 try
                 {
                     // Prefill the dialog with the current value
-                    String input = JOptionPane.showInputDialog(
+                    Object input = JOptionPane.showInputDialog(
                         (Component) swingView,
                         "Enter speed multiplier (1-200%):",
                         "Set Speed Multiplier",
@@ -334,18 +334,18 @@ final public class GraphViewer extends PositionAwareJFrame
                         null,
                         null,
                         p.getSpeedMultiplierPercent()
-                    ).toString();
-
-                    if (input != null)
+                    );
+                    
+                    if (input != null && input instanceof String)
                     {
-                        p.setSpeedMultiplier(Integer.parseInt(input) * 0.01); // Convert to multiplier
+                        p.setSpeedMultiplier(Integer.parseInt(input.toString()) * 0.01); // Convert to multiplier
                     }
                 } 
                 catch (NumberFormatException ex)
                 {
                     JOptionPane.showMessageDialog(
                         (Component) swingView,
-                        "Invalid input. Please enter a valid number.",
+                        "Invalid input. Please enter a valid integer.",
                         "Error",
                         JOptionPane.ERROR_MESSAGE
                     );
