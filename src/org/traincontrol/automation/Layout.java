@@ -1721,7 +1721,7 @@ public class Layout
                 // Adjust speed based on multiplier
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {
-                    int calculatedSpeed = (int) Math.floor((double) speed * current.getSpeedMultiplier());
+                    int calculatedSpeed = (int) Math.ceil((double) speed * current.getSpeedMultiplier());
                     calculatedSpeed = Math.min(calculatedSpeed, 100);
                     
                     if (loc.getSpeed() != calculatedSpeed)
