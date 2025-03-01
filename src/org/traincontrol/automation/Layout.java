@@ -1812,7 +1812,7 @@ public class Layout
                 if (currentLayoutVersion == Layout.layoutVersion)
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    loc.setSpeed((int) Math.floor((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
+                    loc.setSpeed((int) Math.ceil((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
                     this.control.log("Auto layout: pre-arrival speed of " + loc.getSpeed() + " for " + loc.getName());
                                     
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
