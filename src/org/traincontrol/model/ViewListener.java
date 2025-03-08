@@ -78,4 +78,5 @@ public interface ViewListener
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset);
     public int getTotalLocStats(int days, long offset);
     public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l);
+    public void waitForPowerState(boolean state) throws InterruptedException;
 }

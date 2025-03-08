@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.4.8";
+    public static final String RAW_VERSION = "2.4.9";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -420,6 +420,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.feedbackDB.delete(fb.getName());
                 }
             }
+        }
+    }
+    
+    /**
+     * Delays until the power state matches the specified state
+     * @param state
+     * @throws InterruptedException 
+     */
+    @Override
+    public void waitForPowerState(boolean state) throws InterruptedException
+    {
+        while (this.getPowerState() != state)
+        {
+            Thread.sleep(Locomotive.POLL_INTERVAL);
         }
     }
         

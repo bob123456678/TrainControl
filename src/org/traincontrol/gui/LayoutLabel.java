@@ -97,18 +97,51 @@ public final class LayoutLabel extends JLabel
                         @Override
                         public void mouseClicked(MouseEvent e)  
                         {  
-                            if (!tcUI.getModel().getPowerState())
+                            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
                             {
-                                if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-                                    tcUI,  "This will only update the UI because the power is off. Proceed?", "Please Confirm",
-                                    JOptionPane.YES_NO_OPTION
-                                ))
+                                if (!tcUI.getModel().getPowerState())
                                 {
-                                    return;
+                                    Object[] options = {"Turn Power On & Proceed", "Proceed", "Cancel"};
+
+                                    int choice = JOptionPane.showOptionDialog(
+                                        tcUI,
+                                        "Switching this accessory will only update the UI because the power is off. Proceed?",
+                                        "Please Confirm",
+                                        JOptionPane.YES_NO_CANCEL_OPTION,
+                                        JOptionPane.QUESTION_MESSAGE,
+                                        null,
+                                        options,
+                                        options[0]
+                                    );
+
+                                    switch (choice)
+                                    {
+                                        case 0: // Power on
+                                            tcUI.getModel().go();
+                                            // return;
+                                            
+                                            if (tcUI.getModel().getNetworkCommState())
+                                            try
+                                            {
+                                                tcUI.getModel().waitForPowerState(true);
+                                                
+                                                // We need a significant delay because the power might take some time to come on
+                                                Thread.sleep(1000);
+                                            } 
+                                            catch (InterruptedException ex) { }    
+                                            
+                                            break;
+                                        case 2: // No
+                                            return;
+                                        default:
+                                            break;
+                                    }
                                 }
-                            }
-                            lastClicked = System.currentTimeMillis();
-                            component.execSwitching();
+                                
+                                lastClicked = System.currentTimeMillis();
+                                component.execSwitching();
+                                
+                            }));
                         }  
                     });    
                 }

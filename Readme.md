@@ -288,6 +288,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.9 [Beta]
+    - Added an option to turn the power on when attempting to switch an accessory while the power is off
+
 * v2.4.8 [2/28/2025]
     - Graph UI
         - Added a right-click setting to optionally adjust the speed of trains incoming to a point by 1-200% (default of 100% maintains old behavior)
