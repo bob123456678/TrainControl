@@ -253,6 +253,23 @@ public class Layout
     }
     
     /**
+     * Gets the starting point of this active locomotive
+     * @param locomotive
+     * @return 
+     */
+    public Point getStart(Locomotive locomotive)
+    {
+        List<Edge> path = getActiveLocomotives().get(locomotive);
+
+        if (path == null || path.isEmpty())
+        {
+            return null;
+        }
+
+        return path.get(0).getStart();
+    }
+    
+    /**
      * Gets the destination of this active locomotive
      * @param locomotive
      * @return 
@@ -273,7 +290,7 @@ public class Layout
         
         return output;
     }
-       
+           
     /**
      * Gets locomotives currently running
      * @return  

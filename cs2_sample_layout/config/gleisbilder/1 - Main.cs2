@@ -988,7 +988,7 @@ element
  .id=0xa0e
  .typ=gerade
  .artikel=-1
- .text=Point:BottomInner
+ .text=Point:BottomSecondary
 element
  .id=0xa0f
  .typ=gerade

@@ -154,7 +154,7 @@ public class LayoutGrid
                         
                         // This callback will populate the label
                         ui.addLayoutStation(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""), text);
-                        text.setToolTipText(c.getLabel());
+                        text.setToolTipText(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
                     }
                     // Regular labels
                     else

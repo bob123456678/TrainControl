@@ -1414,6 +1414,9 @@ final public class GraphViewer extends PositionAwareJFrame
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         parent.greyOutAutonomy();
+        
+        // Easy way to clear out the track diagram on demand
+        parent.resetLayoutStationLabels();
     }//GEN-LAST:event_formWindowClosing
 
     

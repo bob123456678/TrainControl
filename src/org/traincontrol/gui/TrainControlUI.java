@@ -688,6 +688,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Clears out the labels, i.e. after reloading autonomy
+     */
+    public void resetLayoutStationLabels()
+    {
+        if (this.model.getAutoLayout() != null && !this.model.getAutoLayout().isRunning())
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {  
+                for (Set<JLabel> labelSet : layoutStations.values())
+                {
+                    for (JLabel j : labelSet)
+                    {
+                        j.setText("");
+                        j.setOpaque(false);
+                    }
+                }
+            }));
+        }
+    }
+    
+    /**
      * Gets the keyboard type preference from the radio button group
      * @return 
      */
@@ -11281,6 +11302,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
+            resetLayoutStationLabels();
+            
             // If valid, confirm before we overwrite
             if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
@@ -11296,8 +11319,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         if (dialogResult == JOptionPane.NO_OPTION)
                         {
                             // Reopen the window
-                            if (this.graphViewer != null) this.graphViewer.setVisible(true);
+                            this.ensureGraphUIVisible();
                             return;
+                        }
+                        else
+                        {
+                            // Hide the window
+                            if (this.graphViewer != null) this.graphViewer.setVisible(false);
                         }
                     }
                 }
@@ -11408,6 +11436,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /**
+     * Opens the autonomy UI
+     */
+    public void ensureGraphUIVisible()
+    {
+        // Show graph window if it was closed
+        if (this.graphViewer != null && !this.graphViewer.isVisible())
+        {
+            this.graphViewer.setVisible(true);
+            this.repaintLoc();
+            updateVisiblePoints();
+        }
+    }
+    
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
         new Thread(() ->
@@ -11418,12 +11460,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // Show graph window if it was closed
-                if (!this.graphViewer.isVisible())
-                {
-                    this.graphViewer.setVisible(true);
-                    this.repaintLoc();
-                }
+                this.ensureGraphUIVisible();
 
                 for (String routeName : this.model.getRouteList())
                 {
@@ -12215,61 +12252,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Update locomotive autonomy location labels on the main layout
-        SwingUtilities.invokeLater(() ->
+        if (!this.getLayoutStations(p.getName()).isEmpty())
         {
             Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
+            Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());
             Locomotive current = p.getCurrentLocomotive();
             List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(current);
-
-            for (JLabel j : this.getLayoutStations(p.getName()))
+            
+            SwingUtilities.invokeLater(() ->
             {
-                j.setOpaque(true);
+                // This will exclude locked points
+                for (JLabel j : this.getLayoutStations(p.getName()))
+                {                    
+                    j.setOpaque(true);
 
-                if (current != null)
-                {
-                    j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)) + "]");
+                    if (current != null)
+                    {
+                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)) + "]");
 
-                    if (milestones != null)
-                    {                    
-                        if (milestones.contains(p))
+                        if (milestones != null)
+                        {                                 
+                            if (milestones.contains(p))
+                            {
+                                // Completed parts of the route in black
+                                j.setForeground(Color.BLACK);
+                            }
+                            else
+                            {
+                                // Pending in red
+                                j.setForeground(Color.RED);
+                            }    
+
+                            if (p.equals(destination))
+                            {
+                                // Highlight destination
+                                j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                            }
+                            else
+                            {
+                                // Don't display locomotive name at intermediate stations to avoid confusion
+                                if (!p.equals(start))
+                                {
+                                    j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+                                }
+                                
+                                j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                            }
+                        }
+                        else
                         {
+                            // Stationary locomotive
                             j.setForeground(Color.BLACK);
-                        }
-                        else
-                        {
-                            j.setForeground(Color.RED);
-                        }    
-                        
-                        if (p.equals(destination))
-                        {
-                            j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
-                        }
-                        else
-                        {
                             j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
                         }
                     }
                     else
                     {
+                        // Empty station
+                        j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+
                         j.setForeground(Color.BLACK);
                         j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
                     }
-                }
-                else
-                {
-                    j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
 
-                    j.setForeground(Color.BLACK);
-                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
-                }
-
-                j.repaint();
-                j.getParent().revalidate();
-                j.getParent().repaint();
-            }
-        });
+                    j.repaint();
+                    j.getParent().revalidate();
+                    j.getParent().repaint();
+                }          
+            });
+        }
     }
-    
+        
     /**
      * Highlights lock edges on the graph for easier editing
      * @param current
