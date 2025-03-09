@@ -8902,83 +8902,83 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.switchF(9);
         }
-        else if (keyCode == KeyEvent.VK_F10 || (keyCode == KeyEvent.VK_0 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F10 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && !altPressed && controlPressed))
         {
             this.switchF(10);
         }
-        else if (keyCode == KeyEvent.VK_F11 || (keyCode == KeyEvent.VK_1 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F11 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && !altPressed && controlPressed))
         {
             this.switchF(11);
         }
-        else if (keyCode == KeyEvent.VK_F12 || (keyCode == KeyEvent.VK_2 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F12 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && !altPressed && controlPressed))
         {
             this.switchF(12);
         }
-        else if (keyCode == KeyEvent.VK_F13 || (keyCode == KeyEvent.VK_3 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F13 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && !altPressed && controlPressed))
         {
             this.switchF(13);
         }
-        else if (keyCode == KeyEvent.VK_F14 || (keyCode == KeyEvent.VK_4 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F14 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && !altPressed && controlPressed))
         {
             this.switchF(14);
         }
-        else if (keyCode == KeyEvent.VK_F15 || (keyCode == KeyEvent.VK_5 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F15 || ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && !altPressed && controlPressed))
         {
             this.switchF(15);
         }
-        else if (keyCode == KeyEvent.VK_F16 || (keyCode == KeyEvent.VK_6 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F16 || ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && !altPressed && controlPressed))
         {
             this.switchF(16);
         }
-        else if (keyCode == KeyEvent.VK_F17 || (keyCode == KeyEvent.VK_7 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F17 || ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && !altPressed && controlPressed))
         {
             this.switchF(17);
         }
-        else if (keyCode == KeyEvent.VK_F18 || (keyCode == KeyEvent.VK_8 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F18 || ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && !altPressed && controlPressed))
         {
             this.switchF(18);
         }
-        else if (keyCode == KeyEvent.VK_F19 || (keyCode == KeyEvent.VK_9 && !altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F19 || ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && !altPressed && controlPressed))
         {
             this.switchF(19);
         }
-        else if (keyCode == KeyEvent.VK_F20 || (keyCode == KeyEvent.VK_0 && altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F20 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && altPressed && controlPressed))
         {
             this.switchF(20);
         }
-        else if (keyCode == KeyEvent.VK_F21 || (keyCode == KeyEvent.VK_1 && altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F21 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && altPressed && controlPressed))
         {
             this.switchF(21);
         }
-        else if (keyCode == KeyEvent.VK_F22 || (keyCode == KeyEvent.VK_2 && altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F22 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && altPressed && controlPressed))
         {
             this.switchF(22);
         }
-        else if (keyCode == KeyEvent.VK_F23 || (keyCode == KeyEvent.VK_3 && altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F23 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && altPressed && controlPressed))
         {
             this.switchF(23);
         }
-        else if (keyCode == KeyEvent.VK_F24 || (keyCode == KeyEvent.VK_4 && altPressed && controlPressed))
+        else if (keyCode == KeyEvent.VK_F24 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && altPressed && controlPressed))
         {
             this.switchF(24);
         }
-        else if (keyCode == KeyEvent.VK_5 && altPressed && controlPressed)
+        else if ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && altPressed && controlPressed)
         {
             this.switchF(25);
         }
-        else if (keyCode == KeyEvent.VK_6 && altPressed && controlPressed)
+        else if ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && altPressed && controlPressed)
         {
             this.switchF(26);
         }
-        else if (keyCode == KeyEvent.VK_7 && altPressed && controlPressed)
+        else if ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && altPressed && controlPressed)
         {
             this.switchF(27);
         }
-        else if (keyCode == KeyEvent.VK_8 && altPressed && controlPressed)
+        else if ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && altPressed && controlPressed)
         {
             this.switchF(28);
         }
-        else if (keyCode == KeyEvent.VK_9 && altPressed && controlPressed)
+        else if ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && altPressed && controlPressed)
         {
             this.switchF(29);
         }

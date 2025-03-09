@@ -295,6 +295,7 @@ Requires JDK 1.8+ and the following libraries:
         - The locations are hidden if the autonomy graph UI is closed
     - Graph UI
         - The graph UI will now automatically re-open if a semi-automatic route is activated
+    - Control and Control+Alt combined with numpad numbers will now control F10-19 and F20-29, respectively
 
 * v2.4.8 [2/28/2025]
     - Graph UI
