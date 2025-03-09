@@ -234,6 +234,45 @@ public class Layout
         this.activeLocomotives.remove(l);
         this.locomotiveMilestones.remove(l);     
     }
+    
+    /**
+     * Gets the destination of this active locomotive
+     * @param locomotive
+     * @return 
+     */
+    public Point getDestination(Locomotive locomotive)
+    {
+        List<Edge> path = getActiveLocomotives().get(locomotive);
+
+        if (path == null || path.isEmpty())
+        {
+            return null;
+        }
+
+        return path.get(path.size() - 1).getEnd();
+    }
+    
+    /**
+     * Gets the destination of this active locomotive
+     * @param locomotive
+     * @return 
+     */
+    public Set<Point> getPointsInActivePath(Locomotive locomotive)
+    {
+        List<Edge> path = getActiveLocomotives().get(locomotive);
+        Set<Point> output = new HashSet<>();
+
+        if (path != null && !path.isEmpty())
+        {
+            for (Edge e : path)
+            {
+                output.add(e.getStart());
+                output.add(e.getEnd());
+            }
+        }
+        
+        return output;
+    }
        
     /**
      * Gets locomotives currently running
@@ -789,7 +828,7 @@ public class Layout
      * @param path
      * @return 
      */
-    public int getPathLegnth(List<Edge> path)
+    public int getPathLength(List<Edge> path)
     {
         int pathLength = 0;
         

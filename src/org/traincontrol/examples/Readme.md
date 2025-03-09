@@ -455,3 +455,7 @@ From v2.1.5, you can prevent locomotives from stopping at a given station by add
 `excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
 
 However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
+
+# Displaying locomotive locations on track diagrams
+
+From v2.4.9, if you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.

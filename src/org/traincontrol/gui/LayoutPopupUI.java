@@ -62,6 +62,9 @@ public class LayoutPopupUI extends PositionAwareJFrame
         }
         
         saveWindowBounds();
+        
+        // Update auto layout station labels on the track diagram
+        this.parent.updateVisiblePoints();
     }
     
     public String getLayoutTitle()

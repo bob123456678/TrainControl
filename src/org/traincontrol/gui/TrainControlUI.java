@@ -321,6 +321,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
+    
+    // So we can track locomotive (autonomy) locations on track diagrams
+    private final Map<String, Set<JLabel>> layoutStations = new HashMap<>();
          
     // Quick search cache
     private String lastSearch = "";
@@ -661,6 +664,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Style tables
         timetable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+    }
+    
+    /**
+     * Registers a track diagram label as corresponding to an autonomy station (point)
+     * @param key
+     * @param value 
+     */
+    public void addLayoutStation(String key, JLabel value)
+    {
+        // Use computeIfAbsent to initialize the set if it doesn't exist
+        layoutStations.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+    }
+    
+    /**
+     * Get all labels corresponding to a station (point)
+     * @param key
+     * @return 
+     */
+    public Set<JLabel> getLayoutStations(String key)
+    {
+        return layoutStations.getOrDefault(key, Collections.emptySet());
     }
     
     /**
@@ -12061,6 +12085,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
+        if (this.graphViewer == null || this.model.getAutoLayout() == null) return;
+        
         Graph g = this.graphViewer.getMainGraph();
         
         for (Point p : this.model.getAutoLayout().getPoints())
@@ -12187,6 +12213,61 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle);
         }
+        
+        // Update locomotive autonomy location labels on the main layout
+        SwingUtilities.invokeLater(() ->
+        {
+            Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
+            Locomotive current = p.getCurrentLocomotive();
+            List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(current);
+
+            for (JLabel j : this.getLayoutStations(p.getName()))
+            {
+                j.setOpaque(true);
+
+                if (current != null)
+                {
+                    j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)) + "]");
+
+                    if (milestones != null)
+                    {                    
+                        if (milestones.contains(p))
+                        {
+                            j.setForeground(Color.BLACK);
+                        }
+                        else
+                        {
+                            j.setForeground(Color.RED);
+                        }    
+                        
+                        if (p.equals(destination))
+                        {
+                            j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                        }
+                        else
+                        {
+                            j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                        }
+                    }
+                    else
+                    {
+                        j.setForeground(Color.BLACK);
+                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                    }
+                }
+                else
+                {
+                    j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+
+                    j.setForeground(Color.BLACK);
+                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                }
+
+                j.repaint();
+                j.getParent().revalidate();
+                j.getParent().repaint();
+            }
+        });
     }
     
     /**
@@ -13248,7 +13329,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         InnerLayoutPanel.removeAll();
                         
                         InnerLayoutPanel.add(this.layoutCache.get(cacheKey));
-                        
+                                                
                         if (this.model.isDebug())
                         {
                             this.model.log("Used cache to paint " + cacheKey);
@@ -13288,6 +13369,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.KeyboardTab.repaint();
                     
                     if (showTab) this.KeyboardTab.setSelectedIndex(1);
+                    
+                    // Update auto layout station labels on the track diagram
+                    this.updateVisiblePoints();
                 }
             }));
         }));

@@ -254,13 +254,14 @@ element
  .artikel=-1
 element
  .id=0x20d
- .typ=gerade
- .artikel=-1
-element
- .id=0x20e
  .typ=s88kontakt
  .artikel=2011
  .deviceId=0xc
+element
+ .id=0x20e
+ .typ=gerade
+ .artikel=-1
+ .text=Point:BottomInnerOtherside
 element
  .id=0x20f
  .typ=gerade
@@ -407,6 +408,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR2
 element
  .id=0x406
  .typ=gerade
@@ -491,6 +493,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR1
 element
  .id=0x505
  .typ=gerade
@@ -666,6 +669,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR1Inter
 element
  .id=0x704
  .typ=fahrstrasse
@@ -737,6 +741,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR2Inter
 element
  .id=0x801
  .typ=gerade
@@ -759,6 +764,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:Tunnel
 element
  .id=0x809
  .typ=s88kontakt
@@ -871,6 +877,7 @@ element
  .id=0x90d
  .typ=gerade
  .artikel=-1
+ .text=Point:BottomInner
 element
  .id=0x90e
  .typ=fahrstrasse
@@ -973,22 +980,23 @@ element
  .deviceId=0xc
 element
  .id=0xa0d
- .typ=fahrstrasse
- .artikel=57
-element
- .id=0xa0e
  .typ=linksweiche
  .drehung=1
  .artikel=198
  .zustand=1
+element
+ .id=0xa0e
+ .typ=gerade
+ .artikel=-1
+ .text=Point:BottomInner
 element
  .id=0xa0f
  .typ=gerade
  .artikel=-1
 element
  .id=0xa10
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=57
 element
  .id=0xa11
  .typ=linksweiche
@@ -1050,22 +1058,23 @@ element
  .artikel=-1
 element
  .id=0xb0d
- .typ=gerade
- .artikel=-1
-element
- .id=0xb0e
  .typ=linksweiche
  .drehung=3
  .artikel=200
  .zustand=1
 element
- .id=0xb0f
+ .id=0xb0e
  .typ=gerade
  .artikel=-1
 element
- .id=0xb10
+ .id=0xb0f
  .typ=fahrstrasse
  .artikel=52
+element
+ .id=0xb10
+ .typ=gerade
+ .artikel=-1
+ .text=Point:BottomMainA
 element
  .id=0xb11
  .typ=gerade
@@ -1138,16 +1147,17 @@ element
  .artikel=-1
 element
  .id=0xc0e
- .typ=gerade
- .artikel=-1
-element
- .id=0xc0f
  .typ=fahrstrasse
  .artikel=53
+element
+ .id=0xc0f
+ .typ=gerade
+ .artikel=-1
 element
  .id=0xc10
  .typ=gerade
  .artikel=-1
+ .text=Point:BottomMainB
 element
  .id=0xc11
  .typ=gerade
@@ -1191,12 +1201,12 @@ element
  .artikel=-1
 element
  .id=0xd0d
- .typ=gerade
- .artikel=-1
-element
- .id=0xd0e
  .typ=fahrstrasse
  .artikel=54
+element
+ .id=0xd0e
+ .typ=gerade
+ .artikel=-1
 element
  .id=0xd0f
  .typ=gerade
@@ -1205,6 +1215,7 @@ element
  .id=0xd10
  .typ=gerade
  .artikel=-1
+ .text=Point:BottomMainC
 element
  .id=0xd11
  .typ=gerade

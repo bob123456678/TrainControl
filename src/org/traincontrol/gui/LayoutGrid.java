@@ -26,6 +26,13 @@ public class LayoutGrid
     // Should the .text property be rendered in non-empty cells?
     public static final boolean ALLOW_TEXT_ANYWHERE = true;
     
+    // Prefix that denotes a station label
+    // Used to show autonomy locations on the layout
+    public static final String LAYOUT_STATION_PREFIX = "Point:";
+    public static final String LAYOUT_STATION_EMPTY = "[---]";
+    public static final int LAYOUT_STATION_MAX_LENGTH = 10;
+    public static final int LAYOUT_STATION_OPACITY = 210;
+    
     // Component that holds the layout
     private JPanel container;
     
@@ -138,7 +145,23 @@ public class LayoutGrid
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
                 {
                     JLabel text = new JLabel();
-                    text.setText(c.getLabel());
+                    
+                    // Autonomy Station label 
+                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX))
+                    {
+                        // Hide text initially
+                        text.setText("");
+                        
+                        // This callback will populate the label
+                        ui.addLayoutStation(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""), text);
+                        text.setToolTipText(c.getLabel());
+                    }
+                    // Regular labels
+                    else
+                    {
+                        text.setText(c.getLabel());
+                    }
+                    
                     text.setForeground(Color.BLACK);
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
@@ -152,7 +175,7 @@ public class LayoutGrid
                         gbc.gridheight = 0;
                         text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");      
                         
-                        // How the correct cursor
+                        // Show the correct cursor
                         if (c.isClickable()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     else

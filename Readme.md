@@ -290,6 +290,8 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.4.9 [Beta]
     - Added an option to turn the power on when attempting to switch an accessory while the power is off
+    - Track Diagrams
+        - Locomotive autonomy locations can now be shown on the track diagram.  Text labels in the format `"Point:StationName"` will now display the locomotive at StationName.
 
 * v2.4.8 [2/28/2025]
     - Graph UI
