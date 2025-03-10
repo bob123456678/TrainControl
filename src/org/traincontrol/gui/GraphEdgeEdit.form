@@ -193,6 +193,7 @@
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Lock Edges"/>
+        <Property name="toolTipText" type="java.lang.String" value="Select all other edges that should be locked when this one is occupied."/>
       </Properties>
     </Component>
     <Component class="javax.swing.JComboBox" name="edgeLength">

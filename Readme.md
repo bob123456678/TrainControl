@@ -291,10 +291,11 @@ Requires JDK 1.8+ and the following libraries:
 * v2.4.9 [Beta]
     - Added an option to turn the power on when attempting to switch an accessory while the power is off
     - Track Diagrams
-        - Locomotive autonomy locations can now be shown on the track diagram.  Text labels in the format `"Point:StationName"` will now display the locomotive at StationName.
-        - The locations are hidden if the autonomy graph UI is closed
+        - Locomotive autonomy locations can now be shown on the track diagram.  Text labels in the format `Point:StationName` will now display the locomotive at StationName.
+        - The autonomy locations will be hidden when the autonomy graph UI is closed
     - Graph UI
         - The graph UI will now automatically re-open if a semi-automatic route is activated
+        - Consolidated advanced options in the right-click menu into a sub-menu
     - Control and Control+Alt combined with numpad numbers will now control F10-19 and F20-29, respectively
 
 * v2.4.8 [2/28/2025]

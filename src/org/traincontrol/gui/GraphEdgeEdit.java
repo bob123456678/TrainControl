@@ -261,6 +261,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         departureFuncLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
         departureFuncLabel1.setText("Lock Edges");
+        departureFuncLabel1.setToolTipText("Select all other edges that should be locked when this one is occupied.");
 
         edgeLength.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         edgeLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));

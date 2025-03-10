@@ -1,6 +1,5 @@
 package org.traincontrol.gui;
 
-import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import java.awt.Component;
@@ -8,16 +7,10 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
@@ -52,12 +45,11 @@ final public class GraphViewer extends PositionAwareJFrame
     private Locomotive clipboard;
     
     public static final String WINDOW_TITLE = "Autonomy Graph";
-    
-    public Graph getMainGraph()
-    {
-        return mainGraph;
-    }
-    
+ 
+    /**
+     * Called externally - will return null if the window is hidden
+     * @return 
+     */
     public GraphEdgeEdit getGraphEdgeEditor()
     {
         if (this.graphEdgeEdit != null && this.graphEdgeEdit.isVisible())
@@ -72,7 +64,7 @@ final public class GraphViewer extends PositionAwareJFrame
      * Opens a dialog to set the S88 sensor of a given point
      * @param p 
      */
-    private void setS88 (Point p)
+    public void setS88(Point p)
     {
         if (p != null)
         {
@@ -107,893 +99,6 @@ final public class GraphViewer extends PositionAwareJFrame
                     JOptionPane.showMessageDialog((Component) swingView,
                         "Invalid value (must be a non-negative integer, or blank to disable if not a station)");
                 }
-            }
-        }
-    }
-    
-    final class RightClickMenu extends JPopupMenu
-    {
-        JMenuItem menuItem;
-
-        public RightClickMenu(TrainControlUI ui, Point p)
-        {       
-            String nodeName = p.getName();
-            
-            if (p.isDestination())
-            {
-                // Select the active locomotive
-                if (!parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
-                {
-                    menuItem = new JMenuItem("Edit Locomotive at " + nodeName);
-                    menuItem.addActionListener(event -> 
-                        {
-                            GraphLocAssign edit = new GraphLocAssign(parent, p, false);
-
-                            int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Edit / Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                            if(dialogResult == JOptionPane.OK_OPTION)
-                            {
-                                edit.commitChanges();
-                            }
-                        }
-                    );    
-
-                    add(menuItem);
-                }
-
-                menuItem = new JMenuItem("Add new Locomotive to graph at " + nodeName);
-                menuItem.addActionListener(event -> 
-                    {
-                        if (parent.getModel().getLocomotives().isEmpty())
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                TrainControlUI.NO_LOC_MESSAGE
-                            );
-                        }
-                        else
-                        {
-                            GraphLocAssign edit = new GraphLocAssign(parent, p, true);
-                            
-                            if (edit.getNumLocs() == 0)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "All locomotives in the database have already been placed on the graph."
-                                );
-                            }
-                            else
-                            {
-                                int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                                if(dialogResult == JOptionPane.OK_OPTION)
-                                {
-                                    edit.commitChanges();
-                                }
-                            }
-                        }
-                    }
-                ); 
-
-                add(menuItem);
-                
-                if (!parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && parent.getActiveLoc() != null)
-                {
-                    menuItem = new JMenuItem("Assign " + parent.getActiveLoc().getName() + " to Node");
-                    menuItem.setToolTipText("Control+V");
-                    menuItem.addActionListener(event -> 
-                        {
-                            parent.getModel().getAutoLayout().moveLocomotive(parent.getActiveLoc().getName(), nodeName, false);
-
-                        }
-                    );    
-
-                    add(menuItem);
-                }
-            
-                addSeparator();
-                
-                if (p.isOccupied())
-                {
-                    menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Node");
-                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); parent.repaintAutoLocList(false);});    
-                    add(menuItem);
-                    
-                    menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
-                    menuItem.setToolTipText("Delete");
-                    menuItem.addActionListener(event -> { parent.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); parent.repaintAutoLocList(false); });    
-                    add(menuItem);
-                    
-                    addSeparator();
-                }
-            }
-             
-            if (p.isDestination())
-            {              
-                menuItem = new JMenuItem("Edit maximum train length at " + nodeName + " (" + (p.getMaxTrainLength() != 0 ? p.getMaxTrainLength() : "any") + ")");
-                menuItem.addActionListener(event -> 
-                    {
-                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                            "Enter the maximum length of a train that can stop at this station.",
-                            p.getMaxTrainLength());
-                        
-                        if (dialogResult != null)
-                        {
-                            try
-                            {
-                                int newLength = Math.abs(Integer.parseInt(dialogResult));
-                                p.setMaxTrainLength(newLength);
-                                ui.updatePoint(p, mainGraph);
-                                parent.repaintAutoLocList(false);
-                            }
-                            catch (NumberFormatException e)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "Invalid value (must be a positive integer, or 0 to disable)");
-                            }
-                        }
-                    }
-                );     
-            
-                add(menuItem);
-            }
-                
-            // Edit Priority
-            if (p.isDestination())
-            {    
-                menuItem = new JMenuItem("Edit station priority (" + (p.getPriority() != 0 ? (p.getPriority() > 0 ? "+" : "") + p.getPriority() : "default") + ")");
-                menuItem.addActionListener(event -> 
-                    {
-                        String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                            "Enter the priority for " + nodeName + " (negative is lower, positive is higher):",
-                            p.getPriority());
-
-                        if (dialogResult != null)
-                        {
-                            dialogResult = dialogResult.trim();
-
-                            try
-                            {
-                                Integer value;
-                                if (dialogResult.equals(""))
-                                {
-                                    value = null;
-                                }
-                                else
-                                {
-                                    value = Integer.valueOf(dialogResult);
-                                }
-
-                                p.setPriority(value);
-
-                                ui.updatePoint(p, mainGraph);
-
-                                parent.repaintAutoLocList(false);
-                            }
-                            catch (NumberFormatException e)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "Invalid value (must be an integer, or 0 for default)");
-                            }
-                        }
-                    }
-                );     
-
-                add(menuItem);
-            }
-            
-            // Edit sensor
-            menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
-            menuItem.setToolTipText("Control+S");
-            menuItem.addActionListener(event -> 
-                {
-                    setS88(p);
-                }
-            );     
-
-            add(menuItem);
-            
-            // Excluded locomotives
-            menuItem = new JMenuItem("Edit excluded locomotives (" + p.getExcludedLocs().size() + ")");
-            menuItem.setToolTipText("Control+E/U to exclude/unexclude active locomotive");
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    GraphLocExclude edit = new GraphLocExclude(parent, p);
-
-                    int dialogResult2 = JOptionPane.showConfirmDialog((Component) swingView, edit, 
-                            "Edit Excluded Locomotives at " + p.getName(), 
-                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                    if (dialogResult2 == JOptionPane.OK_OPTION)
-                    {
-                        p.setExcludedLocs(edit.getSelectedExcludeLocs());
-                    }
-
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(true);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        "Error editing point: " + e.getMessage());
-                }
-            });
-
-            add(menuItem);
-            
-            // Speed multiplier         
-            menuItem = new JMenuItem("Set speed multiplier (" + p.getSpeedMultiplierPercent() + "%)");
-            menuItem.addActionListener(event ->
-            {
-                try
-                {
-                    // Prefill the dialog with the current value
-                    Object input = JOptionPane.showInputDialog(
-                        (Component) swingView,
-                        "Enter speed multiplier (1-200%):",
-                        "Set Speed Multiplier",
-                        JOptionPane.PLAIN_MESSAGE,
-                        null,
-                        null,
-                        p.getSpeedMultiplierPercent()
-                    );
-                    
-                    if (input != null && input instanceof String)
-                    {
-                        p.setSpeedMultiplier(Integer.parseInt(input.toString()) * 0.01); // Convert to multiplier
-                    }
-                } 
-                catch (NumberFormatException ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        (Component) swingView,
-                        "Invalid input. Please enter a valid integer.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                    );
-                }
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        (Component) swingView,
-                        ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            });
-
-            menuItem.setToolTipText("Optionally adjust the speed of trains incoming to this point.");
-            add(menuItem);
-            
-            addSeparator();
-                        
-            // Allow changes because locomotive on non-stations will by design not run
-            //if (!p.isDestination() || !p.isOccupied())
-            menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    p.setDestination(!p.isDestination());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex) 
-                { 
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-
-            menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    if (!p.isTerminus()) p.setDestination(true);
-                    
-                    p.setTerminus(!p.isTerminus());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-            
-            menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " point");
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    p.setReversing(!p.isReversing());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex) 
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);
-               
-            addSeparator();
-            
-            // Enable/disable point
-            menuItem = new JMenuItem("Mark as " + (p.isActive() ? "Inactive" : "Active"));
-            menuItem.addActionListener(event -> { 
-                try
-                { 
-                    p.setActive(!p.isActive());
-                    // parent.getModel().getAutoLayout().refreshUI();
-                    ui.updatePoint(p, mainGraph);
-                    parent.repaintAutoLocList(false); 
-                } 
-                catch (Exception ex) 
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        ex.getMessage()); 
-                }
-            });
-
-            add(menuItem);  
-            addSeparator();
-
-            // Rename option applicable to all nodes
-            menuItem = new JMenuItem("Rename " + nodeName);
-            menuItem.addActionListener(event -> 
-            {
-                String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                    "Enter the new station name.",
-                    nodeName);
-
-                if (dialogResult != null && !"".equals(dialogResult))
-                {
-                    try
-                    {
-                        if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "This station name is already in use.  Pick another.");
-                        }
-                        else
-                        {
-                            parent.getModel().getAutoLayout().renamePoint(nodeName, dialogResult);
-                            parent.repaintAutoLocList(false);
-                            ui.updatePoint(p, mainGraph);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "Error renaming node.");
-                    }
-                }
-            });  
-                
-            add(menuItem);
-                        
-            // Add edge
-            addSeparator();
-            
-            if (lastClickedNode != null && !lastClickedNode.equals(p.getName()))
-            {
-                menuItem = new JMenuItem("Connect to " + lastClickedNode);
-                menuItem.setToolTipText("Last node that was left-clicked.");
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        if (parent.getModel().getAutoLayout().getPoint(lastClickedNode) == null)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "This point name does not exist.");
-                        }
-                        else
-                        {
-                            // Add the edge
-                            parent.getModel().getAutoLayout().createEdge(nodeName, lastClickedNode);
-
-                            Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, lastClickedNode);
-
-                            ui.addEdge(e, mainGraph);
-                            parent.repaintAutoLocList(false);
-                            parent.getModel().getAutoLayout().refreshUI();
-                            lastClickedNode = null;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog((Component) swingView,
-                            "Error adding edge: " + e.getMessage());
-                    }
-                });
-  
-                add(menuItem);
-            }
-            
-            menuItem = new JMenuItem("Connect to Point...");
-            menuItem.addActionListener(event -> 
-            {
-                // Get all point names except this one
-                Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
-                List<String> pointNames = new LinkedList<>();
-
-                for (Point p2 : points)
-                {
-                    pointNames.add(p2.getName());
-                }
-
-                Collections.sort(pointNames);
-
-                // Remove self and all existing neighbors
-                pointNames.remove(nodeName);
-
-                for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                {
-                    pointNames.remove(e2.getEnd().getName());
-                }
-
-                if (!pointNames.isEmpty())
-                {
-                    String dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                            "Choose the name of the station/point you want to connect " + nodeName + " to:",
-                            "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                            pointNames.toArray(), // Array of choices
-                            pointNames.get(0));
-
-                    if (dialogResult != null && !"".equals(dialogResult))
-                    {
-                        try
-                        {
-                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) == null)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "This point name does not exist.");
-                            }
-                            else
-                            {
-                                // Add the edge
-                                parent.getModel().getAutoLayout().createEdge(nodeName, dialogResult);
-
-                                Edge e = parent.getModel().getAutoLayout().getEdge(nodeName, dialogResult);
-
-                                ui.addEdge(e, mainGraph);
-                                parent.repaintAutoLocList(false);
-                                parent.getModel().getAutoLayout().refreshUI();
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Error adding edge.");
-                        }
-                    }
-                }
-                else
-                {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        "No other points to connect to.  Add more points to the graph.");
-                }
-            }); 
-            
-            add(menuItem);
-            
-            if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
-            {
-                menuItem = new JMenuItem("Edit outgoing Edge...");
-                
-                menuItem.addActionListener(event -> 
-                    {
-                        // This will return not null if the window is visible
-                        if (getGraphEdgeEditor() != null)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Only one edge can be edited at a time.");
-                            getGraphEdgeEditor().toFront();
-                            getGraphEdgeEditor().requestFocus();
-                            return;
-                        }
-                        
-                        // Get all point names except this one
-                        List<String> edgeNames = new LinkedList<>();
-
-                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                        {
-                            edgeNames.add(e2.getName());
-                        }
-
-                        Collections.sort(edgeNames);
-
-                        String dialogResult;
-                        
-                        // Only prompt if there are multiple outgoing edges
-                        if (edgeNames.size() > 1)
-                        {
-                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                "Which edge do you want to edit?",
-                                "Edit Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                edgeNames.toArray(), // Array of choices
-                                edgeNames.get(0));
-                        }
-                        else
-                        {
-                            dialogResult = edgeNames.get(0);
-                        }
-
-                        if (dialogResult != null && !"".equals(dialogResult))
-                        {
-                            try
-                            {
-                                if (parent.getModel().getAutoLayout().getEdge(dialogResult) == null)
-                                {
-                                    JOptionPane.showMessageDialog((Component) swingView,
-                                        "This edge name does not exist.");
-                                }
-                                else
-                                {
-                                    graphEdgeEdit = new GraphEdgeEdit(parent, mainGraph, parent.getModel().getAutoLayout().getEdge(dialogResult));
-                                    // Align with main window.  Graph window coordinates are not correct for some reason
-                                    graphEdgeEdit.setLocation(
-                                        parent.getX() + (parent.getWidth() - graphEdgeEdit.getWidth()) / 2,
-                                        parent.getY() + (parent.getHeight() - graphEdgeEdit.getHeight()) / 2
-                                    );
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "Error editing edge: " + e.getMessage());
-                            }
-                        }
-                        
-                    }
-                ); 
-
-                add(menuItem);
-            }
-            
-            // Copy edge
-            if (!parent.getModel().getAutoLayout().getNeighbors(p).isEmpty())
-            {
-                menuItem = new JMenuItem("Copy outgoing Edge...");
-                menuItem.addActionListener(event -> 
-                    {
-                        // Get all point names except this one
-                        List<String> edgeNames = new LinkedList<>();
-
-                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                        {
-                            edgeNames.add(e2.getName());
-                        }
-
-                        Collections.sort(edgeNames);
-
-                        String dialogResult;
-                        
-                        // Only prompt if there are multiple outgoing edges
-                        if (edgeNames.size() > 1)
-                        {
-                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                "Which edge do you want to copy?",
-                                "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                edgeNames.toArray(), // Array of choices
-                                edgeNames.get(0));
-                        }
-                        else
-                        {
-                            dialogResult = edgeNames.get(0);
-                        }
-
-                        if (dialogResult != null && !"".equals(dialogResult))
-                        {
-                            try
-                            {
-                                if (parent.getModel().getAutoLayout().getEdge(dialogResult) == null)
-                                {
-                                    JOptionPane.showMessageDialog((Component) swingView,
-                                        "This edge name does not exist.");
-                                }
-                                else
-                                {
-                                    Edge original = parent.getModel().getAutoLayout().getEdge(dialogResult);
-                                    
-                                    String[] options = { "Start", "End" };
-                                    int res = JOptionPane.showOptionDialog((Component) swingView, "Change which point?", "Copy Type",
-                                        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, 
-                                        options, options[0]);
-                                    
-                                    // Do nothing after pressing escape
-                                    if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION) return;
-                                        
-                                    boolean changeEnd = (res == 1);
-                                
-                                    // Get all point names except this one
-                                    Collection<Point> points = parent.getModel().getAutoLayout().getPoints();
-                                    List<String> pointNames = new LinkedList<>();
-
-                                    for (Point p2 : points)
-                                    {
-                                        pointNames.add(p2.getName());
-                                    }
-
-                                    Collections.sort(pointNames);
-
-                                    // Remove self and all existing neighbors
-                                    pointNames.remove(nodeName);
-
-                                    if(changeEnd)
-                                    {
-                                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                                        {
-                                            pointNames.remove(e2.getEnd().getName());
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Remove current end
-                                        pointNames.remove(original.getEnd().getName());
-                                    }
-
-                                    if (!pointNames.isEmpty())
-                                    {
-                                        dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                                "Choose the name of the station/point you wish to connect " + (changeEnd ? "to" : "from") + ":",
-                                                "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                                pointNames.toArray(), // Array of choices
-                                                pointNames.get(0));
-
-                                        if (dialogResult != null && !"".equals(dialogResult))
-                                        {
-                                            Edge e = parent.getModel().getAutoLayout().copyEdge(original, dialogResult, changeEnd);
-
-                                            ui.addEdge(e, mainGraph);
-                                            parent.repaintAutoLocList(false);
-                                            parent.getModel().getAutoLayout().refreshUI();
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "Error copying edge: " + e.getMessage());
-                            }
-                        }
-                    }
-                ); 
-
-                add(menuItem);
-            }
-                        
-            // Delete edges
-            List<Edge> neighbors =  parent.getModel().getAutoLayout().getNeighbors(p);
-            if (!neighbors.isEmpty())
-            {                    
-                addSeparator();
-
-                menuItem = new JMenuItem("Delete outgoing Edge...");
-                menuItem.addActionListener(event -> 
-                    {
-                        // Get all point names except this one
-                        List<String> edgeNames = new LinkedList<>();
-
-                        for (Edge e2 : parent.getModel().getAutoLayout().getNeighbors(p))
-                        {
-                            edgeNames.add(e2.getName());
-                        }
-
-                        Collections.sort(edgeNames);
-
-                        String dialogResult;
-                        
-                        // Only prompt if there are multiple outgoing edges
-                        if (edgeNames.size() > 1)
-                        {
-                            dialogResult = (String) JOptionPane.showInputDialog((Component) swingView, 
-                                "Which edge do you want to permanently delete?",
-                                "Delete Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                edgeNames.toArray(), // Array of choices
-                                edgeNames.get(0));
-                        }
-                        else
-                        {
-                            dialogResult = edgeNames.get(0);
-                        }
-
-                        if (dialogResult != null && !"".equals(dialogResult))
-                        {                            
-                            try
-                            {
-                                Edge e = parent.getModel().getAutoLayout().getEdge(dialogResult);
-                                
-                                int confirmation = JOptionPane.showConfirmDialog((Component) swingView, 
-                                    "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
-                                    "Edge Deletion", JOptionPane.YES_NO_OPTION
-                                );
-                        
-                                if (confirmation == JOptionPane.YES_OPTION)
-                                {
-                                    parent.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
-                                    mainGraph.removeEdge(e.getUniqueId());
-                                    parent.getModel().getAutoLayout().refreshUI();
-                                    parent.repaintAutoLocList(false);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "Error deleting edge: " + e.getMessage());
-                            }
-                        }   
-                    }
-                ); 
-
-                add(menuItem);
-            }
-            
-            // Delete point
-            addSeparator();
-
-            menuItem = new JMenuItem("Delete Point");
-            menuItem.addActionListener(event -> 
-            {
-                int dialogResult = JOptionPane.showConfirmDialog((Component) swingView, 
-                        "This will entirely remove " + nodeName + " from the graph.  Proceed?", 
-                        "Point Deletion", JOptionPane.YES_NO_OPTION);
-                if(dialogResult == JOptionPane.YES_OPTION)
-                {
-                    try 
-                    {
-                        lastClickedNode = null;
-                        lastHoveredNode = null;
-                        parent.getModel().getAutoLayout().deletePoint(p.getName());
-                        mainGraph.removeNode(p.getUniqueId());
-                        parent.repaintAutoLocList(false);
-                    } 
-                    catch (Exception e)
-                    {
-                       JOptionPane.showMessageDialog((Component) swingView, e.getMessage());
-                    }
-                } 
-            });    
-            
-            add(menuItem);    
-        }
-    }
-    
-    final class RightClickMenuNew extends JPopupMenu
-    {
-        JMenuItem menuItem;
-
-        public RightClickMenuNew(TrainControlUI ui, int x, int y, boolean running)
-        {
-            if (!running)
-            {
-                menuItem = new JMenuItem("Create New Point");
-                menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                        "Enter the new point name.",
-                        "");
-
-                    if (dialogResult != null && !"".equals(dialogResult))
-                    {
-                        try
-                        {
-                            if (parent.getModel().getAutoLayout().getPoint(dialogResult) != null)
-                            {
-                                JOptionPane.showMessageDialog((Component) swingView,
-                                    "This point name is already in use.  Pick another.");
-                            }
-                            else
-                            {
-                                parent.getModel().getAutoLayout().createPoint(dialogResult, false, null);
-
-                                Point p = parent.getModel().getAutoLayout().getPoint(dialogResult);
-
-                                p.setX(x);
-                                p.setY(y);
-
-                                mainGraph.addNode(p.getUniqueId());
-                                mainGraph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
-                                mainGraph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
-                                mainGraph.getNode(p.getUniqueId()).setAttribute("weight", 3);
-
-                                ui.updatePoint(p, mainGraph);                            
-                                parent.getModel().getAutoLayout().refreshUI();
-                                parent.repaintAutoLocList(false);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) swingView,
-                                "Error adding node.");
-                        }
-                    }
-                }); 
-
-                add(menuItem);
-
-                addSeparator();
-
-                menuItem = new JMenuItem("Start Autonomous Operation");
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        parent.requestStartAutonomy();
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
-                    }
-                });
-                
-                add(menuItem);
-
-                addSeparator();
-
-                menuItem = new JMenuItem("Clear Locomotives from Graph");
-                menuItem.addActionListener(event -> 
-                {
-                    if (!parent.getModel().getAutoLayout().isRunning())
-                    {
-                        try
-                        {
-                            int dialogResult = JOptionPane.showConfirmDialog(
-                                (Component) swingView, "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-
-                            if(dialogResult == JOptionPane.YES_OPTION)
-                            {
-                                List<Locomotive> locs = new ArrayList<>(parent.getModel().getAutoLayout().getLocomotivesToRun());
-
-                                for (Locomotive l: locs)
-                                {
-                                    Point p = parent.getModel().getAutoLayout().getLocomotiveLocation(l);
-
-                                    if (p != null && !p.isReversing() && p.isDestination())
-                                    {
-                                        parent.getModel().getAutoLayout().moveLocomotive(null, p.getName(), false);
-                                        ui.updatePoint(p, mainGraph);
-                                    }
-                                }
-
-                                parent.repaintAutoLocList(false);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog(this, e.getMessage());
-                        }
-                    }
-                });
-
-                add(menuItem);
-            }
-            else
-            {
-                menuItem = new JMenuItem("Gracefully Stop Autonomy");
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        parent.requestStopAutonomy();
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
-                    }
-                });    
-                
-                add(menuItem);
             }
         }
     }
@@ -1116,7 +221,7 @@ final public class GraphViewer extends PositionAwareJFrame
 
                             parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
                         
-                            lastClickedNode = parent.getModel().getAutoLayout().getPointById(node.getId()).getName();
+                            setLastClickedNode(parent.getModel().getAutoLayout().getPointById(node.getId()).getName());
                         }
                     }
                 }
@@ -1156,7 +261,7 @@ final public class GraphViewer extends PositionAwareJFrame
 
                         if (p != null)
                         {                            
-                            if (!p.getName().equals(lastHoveredNode))
+                            if (!p.getName().equals(getLastHoveredNode()))
                             {
                                 // Last hovered node will be used by key listener, so put this condition here instead of above
                                 if (parent.isShowStationLengthsSelected())
@@ -1171,13 +276,13 @@ final public class GraphViewer extends PositionAwareJFrame
                                     }
                                 }
                                 
-                                lastHoveredNode = p.getName();
+                                setLastHoveredNode(p.getName());
                             }
                         }
                     }
                     else
                     {
-                        lastHoveredNode = null;
+                        setLastHoveredNode(null);
                     }
                 }
             }
@@ -1242,7 +347,7 @@ final public class GraphViewer extends PositionAwareJFrame
 
                                 if (p != null)
                                 {                         
-                                    RightClickMenu menu = new RightClickMenu(parent, p);
+                                    GraphRightClickPointMenu menu = new GraphRightClickPointMenu(parent, p, g);
 
                                     menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
                                 }
@@ -1253,7 +358,7 @@ final public class GraphViewer extends PositionAwareJFrame
                                 // Insert at cursor
                                 Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
 
-                                RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y, false);
+                                GraphRightClickGeneralMenu menu = new GraphRightClickGeneralMenu(parent, (int) position.x, (int) position.y, false, g);
                                 menu.show(evt.getComponent(), evt.getX(), evt.getY());  
                             }           
                         }    
@@ -1262,7 +367,7 @@ final public class GraphViewer extends PositionAwareJFrame
                     {
                         Point3 position = view.getCamera().transformPxToGu(evt.getX(), evt.getY());
 
-                        RightClickMenuNew menu = new RightClickMenuNew(parent, (int) position.x, (int) position.y, true);
+                        GraphRightClickGeneralMenu menu = new GraphRightClickGeneralMenu(parent, (int) position.x, (int) position.y, true, g);
                         menu.show(evt.getComponent(), evt.getX(), evt.getY()); 
                     }
                 }
@@ -1316,6 +421,48 @@ final public class GraphViewer extends PositionAwareJFrame
         // Remember window location
         this.loadWindowBounds();
     }
+    
+    // Getters and setters
+    
+    public GraphEdgeEdit getGraphEdgeEdit()
+    {
+        return graphEdgeEdit;
+    }
+
+    public void setGraphEdgeEdit(GraphEdgeEdit graphEdgeEdit)
+    {
+        this.graphEdgeEdit = graphEdgeEdit;
+    }
+    
+    public String getLastHoveredNode()
+    {
+        return lastHoveredNode;
+    }
+
+    public void setLastHoveredNode(String lastHoveredNode)
+    {
+        this.lastHoveredNode = lastHoveredNode;
+    }
+
+    public String getLastClickedNode()
+    {
+        return lastClickedNode;
+    }
+
+    public void setLastClickedNode(String lastClickedNode)
+    {
+        this.lastClickedNode = lastClickedNode;
+    }
+    
+    public Graph getMainGraph()
+    {
+        return mainGraph;
+    }
+    
+    public View getSwingView()
+    {
+        return swingView;
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -1357,7 +504,7 @@ final public class GraphViewer extends PositionAwareJFrame
         if (!isRunning && controlPressed && keyCode == KeyEvent.VK_V)
         {
             // can also be parent.getCopyTarget()
-            if (parent.getActiveLoc() != null && this.lastHoveredNode != null)
+            if (parent.getActiveLoc() != null && this.getLastHoveredNode() != null)
             {
                 parent.getModel().getAutoLayout().moveLocomotive(this.clipboard != null ? this.clipboard.getName() : parent.getActiveLoc().getName(), this.lastHoveredNode, false);
                 this.clipboard = null;
@@ -1366,23 +513,23 @@ final public class GraphViewer extends PositionAwareJFrame
         }
         else if (!isRunning && (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE || controlPressed && keyCode == KeyEvent.VK_X))
         {
-            if (this.lastHoveredNode != null)
+            if (this.getLastHoveredNode() != null)
             {
                 this.clipboard = null;
                 if (controlPressed && keyCode == KeyEvent.VK_X)
                 {
-                    this.clipboard = parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode).getCurrentLocomotive();
+                    this.clipboard = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode()).getCurrentLocomotive();
                 }
                 
-                parent.getModel().getAutoLayout().moveLocomotive(null, this.lastHoveredNode, true);
+                parent.getModel().getAutoLayout().moveLocomotive(null, this.getLastHoveredNode(), true);
                 parent.repaintAutoLocList(false);
             }
         }
         else if (!isRunning && controlPressed && (keyCode == KeyEvent.VK_E || keyCode == KeyEvent.VK_U))
         {
-            if (parent.getActiveLoc() != null && this.lastHoveredNode != null)
+            if (parent.getActiveLoc() != null && this.getLastHoveredNode() != null)
             {
-                Point p = parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode);
+                Point p = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode());
                 
                 if (p != null)
                 {
@@ -1403,7 +550,7 @@ final public class GraphViewer extends PositionAwareJFrame
         // Configure S88
         else if (!isRunning && controlPressed && (keyCode == KeyEvent.VK_S))
         {
-            this.setS88(parent.getModel().getAutoLayout().getPoint(this.lastHoveredNode));
+            this.setS88(parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode()));
         }
         // Default key commands
         else
