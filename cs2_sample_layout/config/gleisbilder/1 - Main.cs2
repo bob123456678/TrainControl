@@ -359,10 +359,6 @@ element
  .artikel=-1
  .text=Inner Loop
 element
- .id=0x310
- .artikel=-1
- .text=Point:LowerUp
-element
  .id=0x311
  .typ=gerade
  .drehung=1
@@ -372,10 +368,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
-element
- .id=0x313
- .artikel=-1
- .text=Point:LowerBack
 element
  .id=0x314
  .typ=gerade
@@ -471,10 +463,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
-element
- .id=0x413
- .artikel=-1
- .text=Point:LowerFront
 element
  .id=0x414
  .typ=gerade
