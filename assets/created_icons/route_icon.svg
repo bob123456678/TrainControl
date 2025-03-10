@@ -1,15 +1,16 @@
 <svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
-  <rect x="84" y="33" width="8" height="12" fill="none" stroke="black" stroke-width="4" />
-  <rect x="26" y="63" width="8" height="12" fill="none" stroke="black" stroke-width="4" />
-  <rect x="34" y="64" width="5" height="10" fill="black" stroke="none" />
-  <rect x="79" y="34" width="5" height="10" fill="black" stroke="none" />
+  <rect x="84" y="34" width="7" height="12" fill="none" stroke="black" stroke-width="4" />
+  <rect x="27" y="62" width="7" height="12" fill="none" stroke="black" stroke-width="4" />
+  <rect x="34" y="63" width="5" height="10" fill="black" stroke="none" />
+  <rect x="79" y="35" width="5" height="10" fill="black" stroke="none" />
 
-  <path d="M 38 69 C 52 69, 60 64, 60 54 C 60 44, 68 39, 80 39" stroke="black" stroke-width="10" fill="none" />
+  <path d="M 38 68 C 52 68, 60 64, 60 54 C 60 44, 68 40, 80 40" stroke="black" stroke-width="10" fill="none" />
   
-  <path d="M 40 69 C 52 69, 60 64, 60 54 C 60 44, 68 39, 78 39" stroke="yellow" stroke-width="8" fill="none" />
-  <rect x="36" y="65" width="5" height="8" fill="yellow" stroke="none" />
-  <rect x="76" y="35" width="6" height="8" fill="yellow" stroke="none" />
+  <!-- toggle for active version -->
+  <!-- <path d="M 40 68 C 52 68, 60 64, 60 54 C 60 44, 68 40, 78 40" stroke="yellow" stroke-width="8" fill="none" />
+  <rect x="36" y="64" width="5" height="8" fill="yellow" stroke="none" />
+  <rect x="76" y="36" width="6" height="8" fill="yellow" stroke="none" /> -->
   
-  <rect x="54" y="52" width="12" height="4" fill="white" stroke="none" />
+  <rect x="54" y="50" width="12" height="6" fill="white" stroke="none" />
 
 </svg>
