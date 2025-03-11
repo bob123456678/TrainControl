@@ -11322,6 +11322,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
     }//GEN-LAST:event_windowAlwaysOnTopMenuItemActionPerformed
 
+    /**
+     * Jumps to the locomotive tab on the autonomy page
+     */
+    public void jumpToAutonomyLocTab()
+    {
+        this.KeyboardTab.setSelectedIndex(2);
+        
+        // Advance to locomotive autonomy tab
+        this.locCommandPanels.setSelectedIndex(
+            1
+        );
+
+        this.KeyboardTab.requestFocus();
+    }
+    
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->

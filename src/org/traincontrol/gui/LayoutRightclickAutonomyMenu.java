@@ -14,6 +14,8 @@ import org.traincontrol.base.Locomotive;
  */
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
+    public static final int MAX_PATHS = 14;
+    
     public LayoutRightclickAutonomyMenu(TrainControlUI ui, String stationName)
     {        
         JMenuItem menuItem;
@@ -85,6 +87,25 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         });    
 
                         add(menuItem);
+                        
+                        if (this.getComponentCount() > MAX_PATHS + 1)
+                        {
+                            menuItem = new JMenuItem("...");
+                            menuItem.addActionListener(event -> 
+                            {
+                                try
+                                {
+                                    ui.jumpToAutonomyLocTab();
+                                }
+                                catch (Exception e)
+                                {
+                                    JOptionPane.showMessageDialog(this, e.getMessage());
+                                }
+                            });    
+
+                            add(menuItem);
+                            break;
+                        }
                     }
                 }
             }
@@ -108,3 +129,4 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
     }
 }
+   
