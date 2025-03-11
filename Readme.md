@@ -288,6 +288,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.10 [Beta[]
+    - Track Diagrams
+        - Added a right-click menu to autonomy labels.  These can invoke locomotive commands and start/stop autonomy.
+    - In the preferences menu, added an option to auto load the autonomy graph at startup
+
 * v2.4.9 [3/9/2025]
     - Track Diagrams
         - Locomotive autonomy locations can now be shown on the track diagram.  Text labels in the format `Point:StationName` will now display the locomotive at StationName.

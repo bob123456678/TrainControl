@@ -168,6 +168,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String CHECK_FOR_UPDATES = "CheckForUpdates";
     public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
     public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
+    public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
 
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
@@ -603,7 +604,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, true));
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
-        
+        this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
+    
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -1611,6 +1613,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
             }, 0, PING_INTERVAL);
+        }
+        
+        // Load autonomy if requested
+        if (this.AutoLoadAutonomyMenuItem.isSelected())
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+            {
+                this.validateButtonActionPerformed(null);
+            }));
         }
         
         // Release the latch
@@ -3388,6 +3399,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         powerOffStartup = new javax.swing.JRadioButtonMenuItem();
         powerNoChangeStartup = new javax.swing.JRadioButtonMenuItem();
         jSeparator18 = new javax.swing.JPopupMenu.Separator();
+        AutoLoadAutonomyMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         checkForUpdates = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         viewReleasesMenuItem = new javax.swing.JMenuItem();
@@ -8554,6 +8567,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jMenu1.add(powerNoChangeStartup);
         jMenu1.add(jSeparator18);
 
+        AutoLoadAutonomyMenuItem.setSelected(true);
+        AutoLoadAutonomyMenuItem.setText("Auto Load Autonomy");
+        AutoLoadAutonomyMenuItem.setToolTipText("Attempts to parse the autonomy graph at startup.");
+        AutoLoadAutonomyMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AutoLoadAutonomyMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(AutoLoadAutonomyMenuItem);
+        jMenu1.add(jSeparator3);
+
         checkForUpdates.setSelected(true);
         checkForUpdates.setText("Auto Check for Updates");
         checkForUpdates.setToolTipText("At startup, should we check for a new release of TrainControl?");
@@ -11843,6 +11867,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_maximumLatencyMouseReleased
 
+    private void AutoLoadAutonomyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AutoLoadAutonomyMenuItemActionPerformed
+        prefs.putBoolean(AUTO_LOAD_AUTONOMY, this.AutoLoadAutonomyMenuItem.isSelected());
+    }//GEN-LAST:event_AutoLoadAutonomyMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12876,6 +12904,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel ActiveLocLabel;
     private javax.swing.JButton AddRouteButton;
     private javax.swing.JButton AltEmergencyStop;
+    private javax.swing.JCheckBoxMenuItem AutoLoadAutonomyMenuItem;
     private javax.swing.JButton BButton;
     private javax.swing.JTextField BLabel;
     private javax.swing.JSlider BSlider;
@@ -13207,6 +13236,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
+    private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
     private javax.swing.JPopupMenu.Separator jSeparator6;

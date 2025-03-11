@@ -396,6 +396,18 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator18">
                 </MenuItem>
+                <MenuItem class="javax.swing.JCheckBoxMenuItem" name="AutoLoadAutonomyMenuItem">
+                  <Properties>
+                    <Property name="selected" type="boolean" value="true"/>
+                    <Property name="text" type="java.lang.String" value="Auto Load Autonomy"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Attempts to parse the autonomy graph at startup."/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AutoLoadAutonomyMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator3">
+                </MenuItem>
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="checkForUpdates">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>

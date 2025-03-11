@@ -8,6 +8,8 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLayout;
@@ -155,6 +157,23 @@ public class LayoutGrid
                         // This callback will populate the label
                         ui.addLayoutStation(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""), text);
                         text.setToolTipText(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
+                        
+                        text.addMouseListener(new MouseAdapter()  
+                        {  
+                            @Override
+                            public void mouseClicked(MouseEvent e)  
+                            {  
+                                if (e.getButton() == MouseEvent.BUTTON3)
+                                {                              
+                                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                                    {
+                                        LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, text.getToolTipText());
+
+                                        menu.show(e.getComponent(), e.getX(), e.getY());      
+                                    }));
+                                }
+                            }  
+                        }); 
                     }
                     // Regular labels
                     else
