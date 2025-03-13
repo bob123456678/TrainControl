@@ -292,6 +292,7 @@ Requires JDK 1.8+ and the following libraries:
     - Track Diagrams
         - Added a right-click menu to autonomy labels.  These can invoke locomotive commands and start/stop autonomy.
     - In the preferences menu, added an option to auto load the autonomy graph at startup
+    - Bundled TrackDiagramEditor v2.2.2
 
 * v2.4.9 [3/9/2025]
     - Track Diagrams

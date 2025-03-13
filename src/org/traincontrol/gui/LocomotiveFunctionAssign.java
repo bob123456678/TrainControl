@@ -5,7 +5,6 @@ import static org.traincontrol.gui.TrainControlUI.LAST_USED_ICON_FOLDER;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +21,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * UI for changing locomotive functions
  */
-public class LocomotiveFunctionAssign extends javax.swing.JPanel {
-
+public class LocomotiveFunctionAssign extends javax.swing.JPanel
+{
     MarklinLocomotive loc;
     TrainControlUI parent;
     String customIconPath;

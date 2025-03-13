@@ -1,12 +1,11 @@
 package org.traincontrol.gui;
 
+import java.awt.Toolkit;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.Accessory;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import javax.swing.DefaultListModel;
@@ -222,6 +221,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         captureCommands = new javax.swing.JCheckBox();
         testCommands = new javax.swing.JButton();
 
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(520, 611));
         setMinimumSize(new java.awt.Dimension(520, 611));
         setPreferredSize(new java.awt.Dimension(520, 611));

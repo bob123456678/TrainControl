@@ -14,6 +14,7 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -1620,10 +1621,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
             {
-                this.validateButtonActionPerformed(null);
+                this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
             }));
         }
-        
+                
         // Release the latch
         if (latch != null) latch.countDown();
         
@@ -11421,6 +11422,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.exportJSON.setEnabled(true);
                 this.gracefulStop.setEnabled(false);
+                
+                if (evt != null && evt instanceof CustomActionEvent)
+                {
+                    this.KeyboardTab.setSelectedIndex(0);
+                    this.requestFocus();
+                    this.toFront();
+                }
             }
 
             // Stop all locomotives
