@@ -6,7 +6,6 @@
             "s88": 14,
             "excludedLocs": [
                 "MZ 1425 DSB",
-                "MY 1126 ATCS",
                 "MY 1150 DSB"
             ],
             "x": 505,
@@ -16,12 +15,10 @@
             "name": "BottomExitVIrt",
             "station": false,
             "excludedLocs": [
-                "EU07-314",
                 "MZ 1425 DSB",
-                "MY 1126 ATCS",
+                "EU07-314",
                 "MF 5028 DSB",
                 "ER 2035 DSB",
-                "MF+ER DSB",
                 "MY 1150 DSB"
             ],
             "x": 455,
@@ -35,10 +32,8 @@
             "priority": -3,
             "excludedLocs": [
                 "MZ 1425 DSB",
-                "MY 1126 ATCS",
                 "MF 5028 DSB",
                 "ER 2035 DSB",
-                "MF+ER DSB",
                 "MY 1150 DSB"
             ],
             "x": 567,
@@ -52,10 +47,8 @@
             "priority": -2,
             "excludedLocs": [
                 "MZ 1425 DSB",
-                "MY 1126 ATCS",
                 "MF 5028 DSB",
                 "ER 2035 DSB",
-                "MF+ER DSB",
                 "MY 1150 DSB"
             ],
             "x": 612,
@@ -66,6 +59,14 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "SU46-035",
+                "reversible": false,
+                "speed": 52,
+                "arrivalFunc": 3,
+                "departureFunc": 20,
+                "trainLength": 3
+            },
             "x": 836,
             "y": 51
         },
@@ -236,14 +237,6 @@
             "s88": 2004,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EN57-1022",
-                "reversible": true,
-                "speed": 50,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 2
-            },
             "x": 1081,
             "y": 464
         },
@@ -302,14 +295,6 @@
             "s88": 2008,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "V 200 150",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 3,
-                "trainLength": 2
-            },
             "x": 1082,
             "y": 306
         },
@@ -358,8 +343,8 @@
             "name": "TopMainPostReverse",
             "station": false,
             "s88": 2015,
-            "x": 784,
-            "y": 381
+            "x": 791,
+            "y": 390
         },
         {
             "name": "TopMainR0",
@@ -387,6 +372,11 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
+            "loc": {
+                "name": "06 001 DRG",
+                "reversible": false,
+                "speed": 35
+            },
             "x": 401,
             "y": 406
         },
@@ -419,6 +409,14 @@
             "s88": 1023,
             "maxTrainLength": 0,
             "priority": 1,
+            "loc": {
+                "name": "BR 232 241-0",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 11,
+                "trainLength": 2
+            },
             "x": 297,
             "y": 418
         },
@@ -509,14 +507,6 @@
             "s88": 1018,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "SU46-035",
-                "reversible": false,
-                "speed": 52,
-                "arrivalFunc": 3,
-                "departureFunc": 20,
-                "trainLength": 3
-            },
             "x": 818,
             "y": -55
         },
@@ -541,6 +531,7 @@
             "name": "TunnelPre",
             "station": false,
             "s88": 1030,
+            "speedMultiplier": 0.9,
             "x": 350,
             "y": 184
         },
@@ -564,14 +555,6 @@
             "s88": 1029,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "BR 232 241-0",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 11,
-                "trainLength": 2
-            },
             "x": 693,
             "y": -79
         }
@@ -635,10 +618,16 @@
             "start": "BottomInner",
             "end": "BottomCrossover",
             "length": 2,
-            "commands": [{
-                "acc": "Switch 52",
-                "state": "turn"
-            }],
+            "commands": [
+                {
+                    "acc": "Switch 52",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 103",
+                    "state": "straight"
+                }
+            ],
             "lockedges": [
                 {
                     "start": "BottomSecondaryPre",
@@ -2499,13 +2488,15 @@
             ]
         }
     ],
-    "minDelay": 4,
-    "maxDelay": 10,
+    "minDelay": 1,
+    "maxDelay": 1,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
+    "maxLatency": 0,
     "turnOffFunctionsOnArrival": false,
     "turnOnFunctionsOnDeparture": true,
     "atomicRoutes": false,
+    "maxActiveTrains": 0,
     "maxLocInactiveSeconds": 120,
     "timetable": [
         {
