@@ -295,6 +295,7 @@ Requires JDK 1.8+ and the following libraries:
     - Graph UI
         - Both incoming and outgoing edges can now be deleted and edited from the Point right-click menu
         - Edges are now highlighted prior to copy/deletion
+        - Newly added points are automatically added to the clipboard for easier edge creation
         - Enhanced various tooltips and error messages
 
 * v2.4.10 [3/12/2025]

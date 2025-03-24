@@ -54,6 +54,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                             ui.updatePoint(p, parent.getMainGraph());                            
                             ui.getModel().getAutoLayout().refreshUI();
                             ui.repaintAutoLocList(false);
+                            parent.setLastClickedNode(p.getName());
                         }
                     }
                     catch (Exception e)
