@@ -463,9 +463,9 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
         add(menuItem);
 
-        if (!ui.getModel().getAutoLayout().getNeighbors(p).isEmpty())
+        if (!ui.getModel().getAutoLayout().getNeighborsAndIncoming(p).isEmpty())
         {
-            menuItem = new JMenuItem("Edit outgoing Edge...");
+            menuItem = new JMenuItem("Edit Edge...");
 
             menuItem.addActionListener(event -> 
                 {
@@ -482,12 +482,12 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     // Get all point names except this one
                     List<String> edgeNames = new LinkedList<>();
 
-                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
+                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
                     {
                         edgeNames.add(e2.getName());
                     }
 
-                    Collections.sort(edgeNames);
+                    // Collections.sort(edgeNames);
 
                     String dialogResult;
 
@@ -581,6 +581,8 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             else
                             {
                                 Edge original = ui.getModel().getAutoLayout().getEdge(dialogResult);
+                                
+                                ui.highlightLockedEdges(original, new LinkedList<>());
 
                                 String[] options = { "Start", "End" };
                                 int res = JOptionPane.showOptionDialog((Component) parent.getSwingView(), "Change which point?", "Copy Type",
@@ -588,7 +590,11 @@ final class GraphRightClickPointMenu extends JPopupMenu
                                     options, options[0]);
 
                                 // Do nothing after pressing escape
-                                if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION) return;
+                                if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION)
+                                {
+                                    ui.highlightLockedEdges(null, null);
+                                    return;
+                                }
 
                                 boolean changeEnd = (res == 1);
 
@@ -647,6 +653,8 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             JOptionPane.showMessageDialog((Component) parent.getSwingView(),
                                 "Error copying edge: " + e.getMessage());
                         }
+                        
+                        ui.highlightLockedEdges(null, null);
                     }
                 }
             ); 
@@ -655,23 +663,24 @@ final class GraphRightClickPointMenu extends JPopupMenu
         }
 
         // Delete edges
-        List<Edge> neighbors =  ui.getModel().getAutoLayout().getNeighbors(p);
+        List<Edge> neighbors =  ui.getModel().getAutoLayout().getNeighborsAndIncoming(p);
         if (!neighbors.isEmpty())
         {                    
             addSeparator();
 
-            menuItem = new JMenuItem("Delete outgoing Edge...");
+            menuItem = new JMenuItem("Delete Edge...");
             menuItem.addActionListener(event -> 
                 {
                     // Get all point names except this one
                     List<String> edgeNames = new LinkedList<>();
 
-                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
+                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
                     {
                         edgeNames.add(e2.getName());
                     }
 
-                    Collections.sort(edgeNames);
+                    // No longer necessary as getNeighborsAndIncoming sorts by outgoing first
+                    // Collections.sort(edgeNames);
 
                     String dialogResult;
 
@@ -695,11 +704,16 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         {
                             Edge e = ui.getModel().getAutoLayout().getEdge(dialogResult);
 
+                            List<Edge> highlight = new LinkedList<>();
+                            highlight.add(e);
+                            
+                            ui.highlightLockedEdges(null, highlight);
+
                             int confirmation = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), 
                                 "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
                                 "Edge Deletion", JOptionPane.YES_NO_OPTION
                             );
-
+                                           
                             if (confirmation == JOptionPane.YES_OPTION)
                             {
                                 ui.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
@@ -713,6 +727,8 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             JOptionPane.showMessageDialog((Component) parent.getSwingView(),
                                 "Error deleting edge: " + e.getMessage());
                         }
+                        
+                        ui.highlightLockedEdges(null, null);
                     }   
                 }
             ); 

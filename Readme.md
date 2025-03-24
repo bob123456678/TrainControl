@@ -288,10 +288,14 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.4.11 [Beta]
+* v2.4.11 [3/23/2025]
     - Autonomy UI
-        - Added slider to control the maximum number of locomotives allowed to run concurrently
+        - Added a slider to optionally set a maximum number of locomotives allowed to run concurrently
         - Added corresponding `maxActiveTrains` JSON key
+    - Graph UI
+        - Both incoming and outgoing edges can now be deleted and edited from the Point right-click menu
+        - Edges are now highlighted prior to copy/deletion
+        - Enhanced various tooltips and error messages
 
 * v2.4.10 [3/12/2025]
     - Track Diagrams

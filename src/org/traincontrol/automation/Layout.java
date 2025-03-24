@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -711,6 +712,45 @@ public class Layout
         return neighbors;
     }
     
+    /**
+     * Gets all edges neighboring and incoming to a point
+     * @param p
+     * @return 
+     */
+    public List<Edge> getNeighborsAndIncoming(Point p)
+    {
+        List<Edge> neighbors = new LinkedList<>();
+
+        // Separate outgoing and incoming edges
+        List<Edge> outgoing = new ArrayList<>();
+        List<Edge> incoming = new ArrayList<>();
+
+        for (Edge e : this.getEdges())
+        {
+            if (e.getStart().equals(p))
+            {
+                outgoing.add(e);
+            }
+            
+            if (e.getEnd().equals(p))
+            {
+                incoming.add(e);
+            }
+        }
+
+        // Sort outgoing edges by e.getEnd().getName()
+        outgoing.sort(Comparator.comparing(e -> e.getEnd().getName()));
+
+        // Sort incoming edges by e.getStart().getName()
+        incoming.sort(Comparator.comparing(e -> e.getStart().getName()));
+
+        // Combine sorted outgoing and incoming edges
+        neighbors.addAll(outgoing);
+        neighbors.addAll(incoming);
+
+        return neighbors;
+    }
+
     /**
      * Writes a log message that the specified path is impossible
      * @param loc
