@@ -772,13 +772,10 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
-        synchronized (this.activeLocomotives)
+        if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
         {
-            if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
-            {
-                logPathError(loc, path, "More than the " + this.maxActiveTrains + " maximum allowed trains are running concurrently");
-                return false;
-            }
+            logPathError(loc, path, "More than the " + this.maxActiveTrains + " maximum allowed trains are running concurrently");
+            return false;
         }
         
         for (Edge e : path)
