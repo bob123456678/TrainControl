@@ -3179,6 +3179,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         turnOnFunctionsOnDeparture = new javax.swing.JCheckBox();
         maximumLatency = new javax.swing.JSlider();
         jLabel44 = new javax.swing.JLabel();
+        maxActiveTrains = new javax.swing.JSlider();
+        jLabel53 = new javax.swing.JLabel();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         hideReversing = new javax.swing.JCheckBox();
@@ -5666,6 +5668,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel44.setText("Maximum Network Latency (ms)");
         jLabel44.setFocusable(false);
 
+        maxActiveTrains.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        maxActiveTrains.setMajorTickSpacing(5);
+        maxActiveTrains.setMaximum(10);
+        maxActiveTrains.setMinorTickSpacing(1);
+        maxActiveTrains.setPaintLabels(true);
+        maxActiveTrains.setPaintTicks(true);
+        maxActiveTrains.setToolTipText("Controls the maximum number of concurrent trains (0 to disable).");
+        maxActiveTrains.setFocusable(false);
+        maxActiveTrains.setMaximumSize(new java.awt.Dimension(230, 55));
+        maxActiveTrains.setPreferredSize(new java.awt.Dimension(230, 55));
+        maxActiveTrains.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                maxActiveTrainsMouseReleased(evt);
+            }
+        });
+
+        jLabel53.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel53.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel53.setText("Maximum Active Trains");
+        jLabel53.setToolTipText("");
+        jLabel53.setFocusable(false);
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -5673,11 +5697,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(atomicRoutes)
-                    .addComponent(turnOffFunctionsOnArrival)
                     .addComponent(simulate)
                     .addComponent(jLabel46)
-                    .addComponent(jLabel50)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
@@ -5695,9 +5716,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(jLabel49)
                             .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                 .addComponent(turnOnFunctionsOnDeparture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(atomicRoutes)
+                            .addComponent(turnOffFunctionsOnArrival)
+                            .addComponent(jLabel50))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(maxActiveTrains, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel53)
                             .addComponent(jLabel44)
                             .addComponent(maximumLatency, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(25, 25, 25))
@@ -5732,11 +5758,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(maximumLatency, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
-                .addComponent(jLabel50)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(atomicRoutes)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(turnOffFunctionsOnArrival)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel50)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(atomicRoutes)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(turnOffFunctionsOnArrival))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel53)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(maxActiveTrains, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(turnOnFunctionsOnDeparture)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -11894,6 +11926,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         prefs.putBoolean(AUTO_LOAD_AUTONOMY, this.AutoLoadAutonomyMenuItem.isSelected());
     }//GEN-LAST:event_AutoLoadAutonomyMenuItemActionPerformed
 
+    private void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxActiveTrainsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxActiveTrains(this.maxActiveTrains.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxActiveTrainsMouseReleased
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12114,11 +12161,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.defaultLocSpeed.setValue(this.model.getAutoLayout().getDefaultLocSpeed());
         this.preArrivalSpeedReduction.setValue(Double.valueOf(this.model.getAutoLayout().getPreArrivalSpeedReduction() * 100).intValue());
         this.maxLocInactiveSeconds.setValue(Double.valueOf(this.model.getAutoLayout().getMaxLocInactiveSeconds() / 60).intValue());
+        this.maxActiveTrains.setValue(this.model.getAutoLayout().getMaxActiveTrains());
         this.simulate.setSelected(this.model.getAutoLayout().isSimulate());
         this.atomicRoutes.setSelected(this.model.getAutoLayout().isAtomicRoutes());
         this.turnOffFunctionsOnArrival.setSelected(this.model.getAutoLayout().isTurnOffFunctionsOnArrival());
         this.turnOnFunctionsOnDeparture.setSelected(this.model.getAutoLayout().isTurnOnFunctionsOnDeparture());
-        this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());
+        this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());        
     }
     
     /**
@@ -13232,6 +13280,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel jLabel50;
     private javax.swing.JLabel jLabel51;
     private javax.swing.JLabel jLabel52;
+    private javax.swing.JLabel jLabel53;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
@@ -13286,6 +13335,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu locomotiveMenu;
     private javax.swing.JPanel logPanel;
     private javax.swing.JMenuBar mainMenuBar;
+    private javax.swing.JSlider maxActiveTrains;
     private javax.swing.JSlider maxDelay;
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider maximumLatency;

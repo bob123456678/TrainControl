@@ -288,6 +288,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.11 [Beta]
+    - Autonomy UI
+        - Added slider to control the maximum number of locomotives allowed to run concurrently
+        - Added corresponding `maxActiveTrains` JSON key
+
 * v2.4.10 [3/12/2025]
     - Track Diagrams
         - Added a right-click menu to autonomy labels.  These can invoke locomotive commands and start/stop autonomy.

@@ -78,6 +78,7 @@ public class Layout
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
     private boolean timetableCapture = false;
     private int maxLatency = 0;
+    private int maxActiveTrains = 0;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
@@ -731,6 +732,15 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
+        synchronized (this.activeLocomotives)
+        {
+            if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
+            {
+                logPathError(loc, path, "More than the " + this.maxActiveTrains + " maximum allowed trains are running concurrently");
+                return false;
+            }
+        }
+        
         for (Edge e : path)
         {
             if (e.isOccupied(loc))
@@ -1317,7 +1327,7 @@ public class Layout
         new Thread( () ->
         {    
             while(running)
-            {
+            {                
                 List<Edge> path = this.pickPath(loc);
 
                 if (path != null)
@@ -1701,7 +1711,7 @@ public class Layout
             this.control.log("Locomotive is null");
             return false;
         }
-        
+                
         if (this.activeLocomotives.containsKey(loc))
         {
             this.control.log("Locomotive is currently busy");
@@ -2398,6 +2408,7 @@ public class Layout
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
         jsonObj.put("turnOnFunctionsOnDeparture", this.isTurnOnFunctionsOnDeparture());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
+        jsonObj.put("maxActiveTrains", this.maxActiveTrains);
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         jsonObj.put("timetable", timeTableJson);
         
@@ -2505,6 +2516,24 @@ public class Layout
             catch (Exception e)
             {
                 layout.invalidate("Auto layout error: invalid value for maxLatency (must be an integer)");
+                return layout;
+            }    
+        }
+              
+        if (o.has("maxActiveTrains"))
+        {
+            try
+            {
+                layout.setMaxActiveTrains(o.getInt("maxActiveTrains"));
+                
+                if (o.getInt("maxActiveTrains") > 0)
+                {
+                     control.log("Auto layout: set maximum of " + o.getInt("maxActiveTrains") + " concurrently active trains");
+                }
+            }
+            catch (Exception e)
+            {
+                layout.invalidate("Auto layout error: invalid value for maxActiveTrains (must not be negative)");
                 return layout;
             }    
         }
@@ -3112,7 +3141,20 @@ public class Layout
                     
         return layout;
     }
-       
+
+    public int getMaxActiveTrains()
+    {
+        return maxActiveTrains;
+    }
+
+    public void setMaxActiveTrains(int maxActiveTrains)
+    {
+        if (maxActiveTrains >= 0)
+        {
+            this.maxActiveTrains = maxActiveTrains;
+        }
+    }
+    
     public static String getLastError()
     {
         return Layout.lastError;

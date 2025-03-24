@@ -459,3 +459,7 @@ However, if you set an exclusion on a non-station, the excluded locomotives will
 # Displaying locomotive locations on track diagrams
 
 From v2.4.9, if you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
+
+# Locomotive concurrency
+
+From v2.4.11, use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
