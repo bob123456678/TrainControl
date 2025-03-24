@@ -11,6 +11,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
+
 /**
  * This class represents a right-click menu when the graph UI is clicked on a point
  * @author Adam
@@ -605,7 +606,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                                 // Remove self and all existing neighbors
                                 pointNames.remove(nodeName);
 
-                                if(changeEnd)
+                                if (changeEnd)
                                 {
                                     for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
                                     {
@@ -634,6 +635,10 @@ final class GraphRightClickPointMenu extends JPopupMenu
                                         ui.repaintAutoLocList(false);
                                         ui.getModel().getAutoLayout().refreshUI();
                                     }
+                                }
+                                else
+                                {
+                                    throw new Exception("There are no other valid points to connect to.");
                                 }
                             }
                         }

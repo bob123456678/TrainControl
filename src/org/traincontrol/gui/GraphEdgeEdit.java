@@ -156,10 +156,15 @@ public class GraphEdgeEdit extends javax.swing.JFrame
      */
     public void validateAndApplyConfigCommands(boolean test) throws Exception
     {
-        String[] commands = this.configCommands.getText().split("\n");
+        String[] commands = this.configCommands.getText().trim().split("\n");
         
         // Reset highlighed lock edges
         this.parent.highlightLockedEdges(null, null);
+        
+        if (test && this.configCommands.getText().length() == 0)
+        {
+            throw new Exception("To test that a configuration matches the intended segment of track, enter the necessary switch and signal commands first.");
+        }
                 
         for (String s : commands)
         {
@@ -234,6 +239,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Signal/Switch Commands");
+        arrivalFuncLabel.setToolTipText("The commands needed to make this edge match a real segment of track.");
 
         departureFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));

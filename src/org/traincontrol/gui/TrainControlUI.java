@@ -5237,7 +5237,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        loadJSONButton.setText("Load Configuration from File");
+        loadJSONButton.setText("Import Configuration from File");
         loadJSONButton.setFocusable(false);
         loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5277,7 +5277,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
-        loadDefaultBlankGraph.setText("Initialize New Graph");
+        loadDefaultBlankGraph.setText("Initialize New Configuration");
         loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
         loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
         loadDefaultBlankGraph.setContentAreaFilled(false);
@@ -5326,7 +5326,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addComponent(loadJSONButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 248, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 221, Short.MAX_VALUE)
                         .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap())))
         );
@@ -11597,7 +11597,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
         
         String[] options = {"Blank Graph", "Sample Graph", "Cancel"};
-        int choice = JOptionPane.showOptionDialog(this, "Do you want to load a new graph?  This will overwrite any existing configuration. Right-click the graph window to add points and edges, and to place locomotives.",
+        int choice = JOptionPane.showOptionDialog(this, "Do you want to create a new autonomy graph?  This will overwrite any existing configuration. Right-click the graph window to add points and edges, and to place locomotives.  See the documentation for details.",
              "Graph Selection",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 

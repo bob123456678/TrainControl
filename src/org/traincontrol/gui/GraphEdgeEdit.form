@@ -124,6 +124,7 @@
           <Color blue="73" green="0" red="0" type="rgb"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Signal/Switch Commands"/>
+        <Property name="toolTipText" type="java.lang.String" value="The commands needed to make this edge match a real segment of track."/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="departureFuncLabel">

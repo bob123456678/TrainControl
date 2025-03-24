@@ -110,7 +110,7 @@ public class Edge
                 
                 if (control.getAccessoryByName("Switch " + address) != null)
                 {
-                    throw new Exception("Command " + accessory + " conflicts with switch with the same address.");
+                    throw new Exception("Command " + accessory + " conflicts with a switch with the same address and should be renamed.");
                 }
                 
                 control.newSignal(address, false);
@@ -122,7 +122,7 @@ public class Edge
                 
                 if (control.getAccessoryByName("Signal " + address) != null)
                 {
-                    throw new Exception("Command " + accessory + " conflicts with signal with the same address.");
+                    throw new Exception("Command " + accessory + " conflicts with a signal with the same address and should be renamed.");
                 }
 
                 control.newSwitch(address, false);
