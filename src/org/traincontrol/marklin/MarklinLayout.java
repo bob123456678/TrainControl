@@ -209,4 +209,32 @@ public class MarklinLayout
     {        
         return "Layout " + this.name + " (" + Integer.toString(sx) + "x" + Integer.toString(sy) + ")";
     }
+    
+    /**
+     * Exports this layout to the CS2 format
+     * @return
+     * @throws Exception 
+     */
+    public String exportToCS2TextFormat() throws Exception
+    {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("[gleisbildseite]\n" +
+            "version\n" +
+            " .major=1\n");
+        
+        for (int y = 0; y < sy; y++)
+        {
+            for (int x = 0; x < sx; x++)
+            {            
+                if (this.getComponent(x, y) != null)
+                {
+                    builder.append(this.getComponent(x, y).exportToCS2TextFormat());
+                    builder.append("\n");
+                }
+            }
+        }
+        
+        return builder.toString().trim();
+    }
 }

@@ -567,4 +567,122 @@ public class MarklinLayoutComponent
     {
         return this.getImageName(size) + "_" + Integer.toString(orientation);
     } 
+    
+    /**
+     * Exports this component in the CS2 file format
+     * Limited to the component types supported in TrainControl
+     * @return
+     * @throws Exception 
+     */
+    public String exportToCS2TextFormat() throws Exception
+    {
+        StringBuilder builder = new StringBuilder();
+
+        // Add "element"
+        builder.append("element\n");
+
+        // Add .id (format it back to hex)
+        if (this.x != 0 || this.y != 0)
+        {
+            builder.append(" .id=0x").append(String.format("%x", this.x + (this.y << 8))).append("\n");
+        }
+        
+        // Add .typ
+        builder.append(" .typ=").append(getTypeString(this.type)).append("\n");
+
+        // Add .drehung only if orientation is not 0
+        if (this.orientation != 0)
+        {
+            builder.append(" .drehung=").append(this.orientation).append("\n");
+        }
+
+        // Add .artikel (raw address)        
+        builder.append(" .artikel=").append(this.rawAddress).append("\n");
+        
+        // Add state
+        if (this.state > 0)
+        {
+            builder.append(" .zustand=").append(this.state).append("\n");
+        }
+
+        // Add .text (label, if not empty)
+        if (this.label != null && !this.label.isEmpty())
+        {
+            builder.append(" .text=").append(this.label).append("\n");
+        }
+
+        return builder.toString().trim();
+    }
+    
+    /**
+     * Converts the internal type to the Marklin format
+     * @param type
+     * @return
+     * @throws Exception 
+     */
+    public static String getTypeString(MarklinLayoutComponent.componentType type) throws Exception
+    {
+        switch (type)
+        {
+            case UNCOUPLER:
+                return "entkuppler";
+            case END:
+                return "prellbock";
+            case FEEDBACK:
+                return "s88kontakt";
+            case FEEDBACK_CURVE:
+                return "s88bogen";
+            case FEEDBACK_DOUBLE_CURVE:
+                return "s88doppelbogen";
+            case STRAIGHT:
+                return "gerade";
+            case SIGNAL:
+                return "signal"; // Default to generic signal string
+            case DOUBLE_CURVE:
+                return "doppelbogen";
+            case CURVE:
+                return "bogen";
+            case TUNNEL:
+                return "tunnel";
+            case CROSSING:
+                return "kreuzung";
+            case OVERPASS:
+                return "unterfuehrung";
+            case SWITCH_CROSSING:
+                return "dkweiche";
+            case TURNTABLE:
+                return "drehscheibe";
+            case LAMP:
+                return "lampe";
+            case ROUTE:
+                return "fahrstrasse";
+            case TEXT:
+                return "text";
+            case LINK:
+                return "pfeil";
+            case SWITCH_LEFT:
+                return "linksweiche";
+            case CUSTOM_PERM_LEFT:
+                return "custom_perm_left";
+            case SWITCH_RIGHT:
+                return "rechtsweiche";
+            case CUSTOM_PERM_RIGHT:
+                return "custom_perm_right";
+            case SWITCH_Y:
+                return "yweiche";
+            case CUSTOM_PERM_Y:
+                return "custom_perm_y";
+            case SWITCH_THREE:
+                return "dreiwegweiche";
+            case CUSTOM_PERM_THREEWAY:
+                return "custom_perm_threeway";
+            case CUSTOM_SCISSORS:
+                return "hosentraeger";
+            case CUSTOM_PERM_SCISSORS:
+                return "custom_perm_scissors";
+            default:
+                throw new Exception("Unknown component " + type.toString());
+                //return "unknown";
+        }
+    }
 }
