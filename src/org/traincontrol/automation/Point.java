@@ -125,7 +125,7 @@ public class Point
      */
     public Point setS88(Integer value)
     {
-        if (value == null && (this.isDestination() || this.isReversing()))
+        if (value == null && this.isDestination()) // || this.isReversing()))
         {
             throw new NumberFormatException("Stations must have a valid S88 address");
         }

@@ -1,10 +1,14 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComboBox;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -19,10 +23,12 @@ import org.traincontrol.automation.Point;
 final class GraphRightClickPointMenu extends JPopupMenu
 {
     JMenuItem menuItem;
+    TrainControlUI tcui;
 
     public GraphRightClickPointMenu(TrainControlUI ui, Point p, GraphViewer parent)
     {       
         String nodeName = p.getName();
+        this.tcui = ui;
 
         if (p.isDestination())
         {
@@ -276,84 +282,108 @@ final class GraphRightClickPointMenu extends JPopupMenu
         
         addSeparator();
 
-        // Allow changes because locomotive on non-stations will by design not run
-        //if (!p.isDestination() || !p.isOccupied())
-        menuItem = new JMenuItem("Mark as " + (p.isDestination() ? "Non-station" : "Station"));
-        menuItem.addActionListener(event -> { 
+        // Allow changes because locomotives on non-stations will by design not run
+        //if (!p.isDestination() || !p.isOccupied())        
+        JCheckBoxMenuItem stationCheckbox = new JCheckBoxMenuItem("Mark as Station", p.isDestination());
+        stationCheckbox.addItemListener(event ->
+        {
             try
-            { 
-                p.setDestination(!p.isDestination());
-                // parent.getModel().getAutoLayout().refreshUI();
+            {
+                if (!p.hasS88()) parent.setS88(p);
+                
+                p.setDestination(stationCheckbox.isSelected());
+                // Refresh UI updates
                 ui.updatePoint(p, parent.getMainGraph());
-                ui.repaintAutoLocList(false); 
-            } 
-            catch (Exception ex) 
-            { 
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    ex.getMessage()); 
+                ui.repaintAutoLocList(false);
             }
-        });
-
-        add(menuItem);
-
-        menuItem = new JMenuItem("Mark as " + (p.isTerminus() ? "Non-terminus" : "Terminus") + " station");
-        menuItem.addActionListener(event -> { 
-            try
-            { 
-                if (!p.isTerminus()) p.setDestination(true);
-
-                p.setTerminus(!p.isTerminus());
-                // parent.getModel().getAutoLayout().refreshUI();
-                ui.updatePoint(p, parent.getMainGraph());
-                ui.repaintAutoLocList(false); 
-            } 
             catch (Exception ex)
             {
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    ex.getMessage()); 
+                JOptionPane.showMessageDialog(parent, ex.getMessage());
             }
         });
 
-        add(menuItem);
+        add(stationCheckbox);
 
-        menuItem = new JMenuItem("Mark as " + (p.isReversing() ? "Non-reversing" : "Reversing") + " point");
-        menuItem.addActionListener(event -> { 
+        // Create "Terminus Station" checkbox
+        JCheckBoxMenuItem terminusCheckbox = new JCheckBoxMenuItem("Mark as Terminus Station", p.isTerminus());
+        JCheckBoxMenuItem reversingCheckbox = new JCheckBoxMenuItem("Mark as Reversing Point", p.isReversing());
+        
+        stationCheckbox.setToolTipText("Trains can stop at stations.");
+        terminusCheckbox.setToolTipText("Terminus stations act like stations but will change the direction of the train.");
+        reversingCheckbox.setToolTipText("Trains will change directions at reversing points, but will never end at them in autonomous operation.");
+        
+        terminusCheckbox.addItemListener(event ->
+        {
             try
-            { 
-                p.setReversing(!p.isReversing());
-                // parent.getModel().getAutoLayout().refreshUI();
-                ui.updatePoint(p, parent.getMainGraph());
-                ui.repaintAutoLocList(false); 
-            } 
-            catch (Exception ex) 
             {
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    ex.getMessage()); 
+                if (!p.hasS88()) parent.setS88(p);
+                
+                p.setDestination(true);
+                
+                if (p.isReversing())
+                {
+                    p.setReversing(false);
+                }
+
+                p.setTerminus(terminusCheckbox.isSelected());
+                // Refresh UI updates
+                ui.updatePoint(p, parent.getMainGraph());
+                ui.repaintAutoLocList(false);
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(parent, ex.getMessage());
             }
         });
 
-        add(menuItem);
+        add(terminusCheckbox);
+
+        // Create "Reversing Point" checkbox
+        reversingCheckbox.addItemListener(event ->
+        {
+            try
+            {
+                if (p.isTerminus())
+                {
+                    p.setTerminus(false);
+                }
+                
+                p.setReversing(reversingCheckbox.isSelected());
+                // Refresh UI updates
+                ui.updatePoint(p, parent.getMainGraph());
+                ui.repaintAutoLocList(false);
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(parent, ex.getMessage());
+            }
+        });
+
+        add(reversingCheckbox);
 
         addSeparator();
 
         // Enable/disable point
-        menuItem = new JMenuItem("Mark as " + (p.isActive() ? "Inactive" : "Active"));
-        menuItem.addActionListener(event -> { 
+        // Create a checkbox menu item for the active state
+        JCheckBoxMenuItem activeCheckbox = new JCheckBoxMenuItem("Active", p.isActive());
+        activeCheckbox.setToolTipText("Inactive points will not be traversed in autonomous operation.");
+        activeCheckbox.addItemListener(event ->
+        {
             try
-            { 
-                p.setActive(!p.isActive());
-                // parent.getModel().getAutoLayout().refreshUI();
-                ui.updatePoint(p, parent.getMainGraph());
-                ui.repaintAutoLocList(false); 
-            } 
-            catch (Exception ex) 
             {
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    ex.getMessage()); 
+                // Toggle the active state of the point
+                p.setActive(activeCheckbox.isSelected());
+                // Refresh the UI after the change
+                ui.updatePoint(p, parent.getMainGraph());
+                ui.repaintAutoLocList(false);
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(parent, ex.getMessage());
             }
         });
 
-        add(menuItem);  
+        add(activeCheckbox);  
 
         // Add edge
         addSeparator();
@@ -494,11 +524,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     // Only prompt if there are multiple outgoing edges
                     if (edgeNames.size() > 1)
                     {
-                        dialogResult = (String) JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                            "Which edge do you want to edit?",
-                            "Edit Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                            edgeNames.toArray(), // Array of choices
-                            edgeNames.get(0));
+                        dialogResult = showEdgeSelectionDialog(parent, edgeNames);
                     }
                     else
                     {
@@ -799,6 +825,50 @@ final class GraphRightClickPointMenu extends JPopupMenu
         });    
 
         add(menuItem);    
+    }
+    
+    private String showEdgeSelectionDialog(Component parent, java.util.List<String> edgeNames)
+    {
+        JComboBox<String> edgeDropdown = new JComboBox<>(edgeNames.toArray(new String[0]));
+
+        tcui.highlightLockedEdges(tcui.getModel().getAutoLayout().getEdge(edgeNames.get(0)), new LinkedList<>());
+        
+        // Add an ItemListener to detect when the user selects a different option
+        edgeDropdown.addItemListener((ItemEvent e) ->
+        {
+            if (e.getStateChange() == ItemEvent.SELECTED)
+            {
+                String selectedEdge = (String) e.getItem();
+                
+                handleEdgeSelection(selectedEdge);
+            }
+        });
+
+        // Show the JComboBox in a JOptionPane
+        int result = JOptionPane.showConfirmDialog(parent, 
+            edgeDropdown, 
+            "Select an Edge", 
+            JOptionPane.OK_CANCEL_OPTION, 
+            JOptionPane.QUESTION_MESSAGE);
+        
+        tcui.highlightLockedEdges(null, null);
+
+        // If the user clicks "OK," retrieve the selected item
+        if (result == JOptionPane.OK_OPTION)
+        {
+            return (String) edgeDropdown.getSelectedItem();
+        }
+        // Cancel or close
+        else
+        {
+            return null;
+        }
+    }
+
+    // Custom method to handle the selected edge
+    private void handleEdgeSelection(String edgeName)
+    {
+        tcui.highlightLockedEdges(tcui.getModel().getAutoLayout().getEdge(edgeName), new LinkedList<>());        
     }
 }
    

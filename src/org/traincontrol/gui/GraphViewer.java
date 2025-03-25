@@ -87,6 +87,13 @@ final public class GraphViewer extends PositionAwareJFrame
                     {
                         value = Integer.valueOf(dialogResult);
                     }
+                    
+                    // Reset station status
+                    if (value == null)
+                    {
+                        p.setTerminus(false);
+                        p.setDestination(false);
+                    }
 
                     p.setS88(value);
 
@@ -94,7 +101,7 @@ final public class GraphViewer extends PositionAwareJFrame
 
                     parent.repaintAutoLocList(false);
                 }
-                catch (NumberFormatException e)
+                catch (Exception e)
                 {
                     JOptionPane.showMessageDialog((Component) swingView,
                         "Invalid value (must be a non-negative integer, or blank to disable if not a station)");

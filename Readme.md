@@ -288,6 +288,15 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.4.12 [3/24/2025]
+    - Graph UI
+        - Points can now more easily be converted to station/terminus/reversing
+        - Missing S88 addresses will now automatically be prompted
+        - If an S88 address is removed, a station will now automatically be reverted to a point
+        - Edges are now highlighted while being selected in the Edit dialog
+        - Improved the appearance of the Point right-click menu, and added new tooltips
+    - Fixed UI bug where reversing (non-station) points could not have their S88 removed
+
 * v2.4.11 [3/23/2025]
     - Autonomy UI
         - Added a slider to optionally set a maximum number of locomotives allowed to run concurrently
