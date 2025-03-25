@@ -295,6 +295,8 @@ Requires JDK 1.8+ and the following libraries:
         - If an S88 address is removed, a station will now automatically be reverted to a point
         - Edges are now highlighted while being selected in the Edit dialog
         - Improved the appearance of the Point right-click menu, and added new tooltips
+    - Track Diagrams
+        - Occupied intermediate stations from autonomy routes are now highlighted more clearly
     - Fixed UI bug where reversing (non-station) points could not have their S88 removed
 
 * v2.4.11 [3/23/2025]

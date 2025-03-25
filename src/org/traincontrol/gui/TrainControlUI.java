@@ -12392,7 +12392,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Don't display locomotive name at intermediate stations to avoid confusion
                                 if (!p.equals(start))
                                 {
-                                    j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+                                    j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
                                 }
                                 
                                 j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));

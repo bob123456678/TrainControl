@@ -32,6 +32,7 @@ public class LayoutGrid
     // Used to show autonomy locations on the layout
     public static final String LAYOUT_STATION_PREFIX = "Point:";
     public static final String LAYOUT_STATION_EMPTY = "[---]";
+    public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
     public static final int LAYOUT_STATION_OPACITY = 210;
     
