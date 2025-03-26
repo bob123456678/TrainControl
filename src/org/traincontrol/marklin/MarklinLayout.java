@@ -93,12 +93,17 @@ public class MarklinLayout
     }
     
     public void addComponent(MarklinLayoutComponent.componentType t, 
-            int x, int y, int orient, int state, int address, int rawAddresss) throws IOException
+            int x, int y, int orient, int state, int address, int rawAddresss, String text) throws IOException
     {
         assert x < sx;
         assert y < sy;
                 
         grid.get(x).set(y, new MarklinLayoutComponent(t, x, y, orient, state, address, rawAddresss));
+        
+        if (text != null)
+        {
+            this.getComponent(x, y).setLabel(text);
+        }
     }
     
     public void addComponent(MarklinLayoutComponent l, int x, int y) throws IOException

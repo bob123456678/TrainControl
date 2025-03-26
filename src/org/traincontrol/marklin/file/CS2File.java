@@ -1413,14 +1413,8 @@ public final class CS2File
                     {
                         layout.addComponent(
                            getComponentType(type, address),
-                           x, y, orient, state, address, rawAddress
-                        );  
-                        
-                        // Add text, if any
-                        if (m.get("text") != null)
-                        {
-                            layout.getComponent(x, y).setLabel(m.get("text"));
-                        }
+                           x, y, orient, state, address, rawAddress, m.get("text")
+                        );
                     }
                 }
             }
