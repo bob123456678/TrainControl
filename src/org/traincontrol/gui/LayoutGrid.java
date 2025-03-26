@@ -49,8 +49,9 @@ public class LayoutGrid
      * @param master container with the panel
      * @param popup is this layout being rendered in a separate window?
      * @param ui
+     * @param edit
      */
-    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
+    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui, boolean edit)
     {  
         // Calculate boundaries
         int offsetX = layout.getMinx();
@@ -111,7 +112,7 @@ public class LayoutGrid
                 // GBC fix - we create a dummy column at the end with nothing in it to ensure long labels don't misalign things
                 if (x == (width - 1) || y == (height - 1))
                 {
-                    grid[x][y] = new LayoutLabel(null, master, size, ui);
+                    grid[x][y] = new LayoutLabel(null, master, size, ui, false);
                     gbc.gridwidth = 0;
                     gbc.gridheight = 0;
                     gbc.gridx = x;
@@ -123,7 +124,7 @@ public class LayoutGrid
                 
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                 
-                grid[x][y] = new LayoutLabel(c, master, size, ui);
+                grid[x][y] = new LayoutLabel(c, master, size, ui, edit);
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
@@ -254,5 +255,26 @@ public class LayoutGrid
     public boolean isCacheable()
     {
         return cacheable;
+    }
+    
+    /**
+     * Gets the coordinates of the specified layout label
+     * @param target
+     * @return 
+     */
+    public int[] getCoordinates(LayoutLabel target)
+    {
+        for (int x = 0; x < grid.length; x++)
+        {
+            for (int y = 0; y < grid[x].length; y++)
+            {
+                if (grid[x][y] == target)
+                {
+                    return new int[]{x, y};
+                }
+            }
+        }
+
+        return new int[]{-1, -1};
     }
 }

@@ -9,10 +9,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Map;
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.border.Border;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.util.ImageUtil;
 
@@ -35,13 +37,15 @@ public final class LayoutLabel extends JLabel
     private long lastClicked = 0;
     
     private Icon lastIcon;
+    private boolean edit;
     
-    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI tcUI)
+    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this.component = c;
         this.size = size;
         this.parent = parent;
         this.tcUI = tcUI;
+        this.edit = edit;
         
         this.setSize(size, size);
         // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
@@ -52,98 +56,120 @@ public final class LayoutLabel extends JLabel
         
         this.setImage(false);
         
+        // Edit mode callback
+        if (edit)
+        {
+            LayoutLabel clicked = this;
+            this.addMouseListener(new MouseAdapter()  
+                {  
+                    @Override
+                    public void mouseClicked(MouseEvent e)  
+                    {  
+                        ((LayoutEditor) parent).receiveEvent(e, clicked);
+                    }
+                });
+            
+            // Add a border around the icons
+            Border blackBorder = BorderFactory.createLineBorder(Color.BLACK, 1); 
+            this.setBorder(blackBorder);
+        }
+        
         if (this.component != null)
         {
             if (this.component.isSwitch() || this.component.isSignal() 
                     || this.component.isUncoupler() || this.component.isFeedback()
                     || this.component.isRoute() || this.component.isLink())
             {
-                if (this.component.isFeedback())
+                // Regular mouse events
+                if (!edit)
                 {
-                    this.addMouseListener(new MouseAdapter()  
-                    {  
-                        @Override
-                        public void mouseClicked(MouseEvent e)  
+                    if (this.component.isFeedback())
+                    {
+                        this.addMouseListener(new MouseAdapter()  
                         {  
-                           component.execSwitching();
-                           
-                           // So that possible routes get dynamically updated
-                           tcUI.repaintAutoLocList(true);
-                        }  
-                    }); 
-                }
-                else if (this.component.isLink())
-                {
-                    this.addMouseListener(new MouseAdapter()  
-                    {  
-                        @Override
-                        public void mouseClicked(MouseEvent e)  
-                        {                  
-                            if (parent instanceof LayoutPopupUI)
-                            {
-                                ((LayoutPopupUI) parent).goToLayoutPage(component.getRawAddress()); 
-                            }
-                            else
-                            {
-                                tcUI.goToLayoutPage(component.getRawAddress());
-                            }
-                        }  
-                    }); 
-                }
-                else
-                {
-                    this.addMouseListener(new MouseAdapter()  
-                    {  
-                        @Override
-                        public void mouseClicked(MouseEvent e)  
+                            @Override
+                            public void mouseClicked(MouseEvent e)  
+                            {  
+                               component.execSwitching();
+
+                               // So that possible routes get dynamically updated
+                               tcUI.repaintAutoLocList(true);
+                            }  
+                        }); 
+                    }
+                    else if (this.component.isLink())
+                    {
+                        this.addMouseListener(new MouseAdapter()  
                         {  
-                            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
-                            {
-                                if (!tcUI.getModel().getPowerState())
+                            @Override
+                            public void mouseClicked(MouseEvent e)  
+                            {                  
+                                if (parent instanceof LayoutPopupUI)
                                 {
-                                    Object[] options = {"Turn Power On & Proceed", "Proceed", "Cancel"};
-
-                                    int choice = JOptionPane.showOptionDialog(
-                                        tcUI,
-                                        "Switching this accessory will only update the UI because the power is off. Proceed?",
-                                        "Please Confirm",
-                                        JOptionPane.YES_NO_CANCEL_OPTION,
-                                        JOptionPane.QUESTION_MESSAGE,
-                                        null,
-                                        options,
-                                        options[0]
-                                    );
-
-                                    switch (choice)
-                                    {
-                                        case 0: // Power on
-                                            tcUI.getModel().go();
-                                            // return;
-                                            
-                                            if (tcUI.getModel().getNetworkCommState())
-                                            try
-                                            {
-                                                tcUI.getModel().waitForPowerState(true);
-                                                
-                                                // We need a significant delay because the power might take some time to come on
-                                                Thread.sleep(1000);
-                                            } 
-                                            catch (InterruptedException ex) { }    
-                                            
-                                            break;
-                                        case 2: // No
-                                            return;
-                                        default:
-                                            break;
-                                    }
+                                    ((LayoutPopupUI) parent).goToLayoutPage(component.getRawAddress()); 
                                 }
-                                
-                                lastClicked = System.currentTimeMillis();
-                                component.execSwitching();
-                                
-                            }));
-                        }  
-                    });    
+                                else
+                                {
+                                    tcUI.goToLayoutPage(component.getRawAddress());
+                                }
+                            }  
+                        }); 
+                    }
+                    else
+                    {
+                        this.addMouseListener(new MouseAdapter()  
+                        {  
+                            @Override
+                            public void mouseClicked(MouseEvent e)  
+                            {  
+                                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                {
+                                    if (!tcUI.getModel().getPowerState())
+                                    {
+                                        Object[] options = {"Turn Power On & Proceed", "Proceed", "Cancel"};
+
+                                        int choice = JOptionPane.showOptionDialog(
+                                            tcUI,
+                                            "Switching this accessory will only update the UI because the power is off. Proceed?",
+                                            "Please Confirm",
+                                            JOptionPane.YES_NO_CANCEL_OPTION,
+                                            JOptionPane.QUESTION_MESSAGE,
+                                            null,
+                                            options,
+                                            options[0]
+                                        );
+
+                                        switch (choice)
+                                        {
+                                            case 0: // Power on
+                                                tcUI.getModel().go();
+                                                // return;
+
+                                                if (tcUI.getModel().getNetworkCommState())
+                                                try
+                                                {
+                                                    tcUI.getModel().waitForPowerState(true);
+
+                                                    // We need a significant delay because the power might take some time to come on
+                                                    Thread.sleep(1000);
+                                                } 
+                                                catch (InterruptedException ex) { }    
+
+                                                break;
+                                            case 2: // No
+                                                return;
+                                            default:
+                                                break;
+                                        }
+                                    }
+
+                                    lastClicked = System.currentTimeMillis();
+                                    component.execSwitching();
+
+                                }));
+                            }  
+                        });    
+                    }
                 }
             }
             // Blank tiles need to be the same size
@@ -217,7 +243,7 @@ public final class LayoutLabel extends JLabel
                         this.setIcon(lastIcon); 
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
-                        if ((this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                        if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
                             new Thread(() -> 
                             {
@@ -237,7 +263,7 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         // Show a tooltip in the UI
-                        if (!"".equals(this.component.toSimpleString()))
+                        if (!"".equals(this.component.toSimpleString()) && !edit)
                         {
                             this.setToolTipText(this.component.toSimpleString());
                             

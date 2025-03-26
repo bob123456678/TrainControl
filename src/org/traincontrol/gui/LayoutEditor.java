@@ -3,21 +3,27 @@ package org.traincontrol.gui;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLayout;
+import org.traincontrol.marklin.MarklinLayoutComponent;
 
 /**
- * Popup representing a track diagram
+ * Work in progress - track diagram editor
  * @author Adam
  */
-public class LayoutPopupUI extends PositionAwareJFrame
+public class LayoutEditor extends PositionAwareJFrame
 {
     private final TrainControlUI parent;
     private final int size;
-    private MarklinLayout layout;
-    private int pageIndex;
+    private final MarklinLayout layout;
+    private LayoutGrid grid;
     
     /**
      * Popup window showing train layouts
@@ -26,7 +32,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
      * @param ui
      * @param pageIndex
      */
-    public LayoutPopupUI(MarklinLayout l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutEditor(MarklinLayout l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
         
@@ -34,26 +40,50 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.parent = ui;
         this.size = size;
         this.layout = l;
-        this.pageIndex = pageIndex;
+    }
+    
+    public void receiveEvent(MouseEvent e, LayoutLabel x)
+    {
+        System.out.println(x);
+        
+        System.out.println(Arrays.toString(grid.getCoordinates(x)));
+        
+        MarklinLayoutComponent lc = layout.getComponent(grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
+        
+        lc.rotate();
+        
+        try
+        {
+            layout.addComponent(lc, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
+        }
+        catch (IOException ex)
+        {
+            
+        }
+        
+        drawGrid();
     }
     
     private void drawGrid()
     {
         this.ExtLayoutPanel.removeAll();
 
-        LayoutGrid grid = new LayoutGrid(this.layout, size,
+        grid = new LayoutGrid(this.layout, size,
             this.ExtLayoutPanel, 
             this,
-            true, parent, false);
+            true, parent, true);
         
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
-        this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
-        pack();
+        if (!this.isLoaded())
+        {
+            this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
+            pack();
+        }
         
         // Remember window location for different layouts and sizes
-        this.setWindowIndex(this.layout.getName()+ "_" + this.getLayoutSize());
+        this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());
         
         // Only load location once
         if (!this.isLoaded())
@@ -90,44 +120,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             }
         });
     }
-    
-    /**
-     * Refreshes the contents of the layout
-     */
-    public void refreshDiagram()
-    {
-        this.goToLayoutPage(this.pageIndex);
-    }
-    
-    /**
-     * Updates the layout page
-     * @param index
-     */
-    public void goToLayoutPage(int index)
-    {
-        javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
-        {
-            int page = index + 1;
-
-            if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
-            {
-                this.parent.getModel().log("Popup layout: updating or jumping to page " + page);
-
-                this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
-
-                drawGrid();  
-                this.repaint();
-
-                // Update saved index
-                this.pageIndex = index;
-            }
-            else
-            {
-                this.parent.getModel().log("Popup layout: page " + page + " does not exist");
-            }
-        }));
-    }
-    
+      
     public JPanel getPanel()
     {
         return this.ExtLayoutPanel;
@@ -149,6 +142,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
         jScrollPane1 = new javax.swing.JScrollPane();
         ExtLayoutPanel = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(150, 150));
@@ -164,14 +158,27 @@ public class LayoutPopupUI extends PositionAwareJFrame
         ExtLayoutPanel.setLayout(ExtLayoutPanelLayout);
         ExtLayoutPanelLayout.setHorizontalGroup(
             ExtLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 368, Short.MAX_VALUE)
+            .addGap(0, 750, Short.MAX_VALUE)
         );
         ExtLayoutPanelLayout.setVerticalGroup(
             ExtLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 266, Short.MAX_VALUE)
+            .addGap(0, 431, Short.MAX_VALUE)
         );
 
         jScrollPane1.setViewportView(ExtLayoutPanel);
+
+        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 182, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -179,14 +186,18 @@ public class LayoutPopupUI extends PositionAwareJFrame
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 675, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -200,6 +211,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
 }

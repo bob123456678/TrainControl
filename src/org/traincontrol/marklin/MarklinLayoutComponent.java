@@ -685,4 +685,12 @@ public class MarklinLayoutComponent
                 //return "unknown";
         }
     }
+    
+    /**
+     * Rotates the component
+     */
+    public void rotate()
+    {
+        this.orientation = (this.orientation + 1) % 4;
+    }
 }

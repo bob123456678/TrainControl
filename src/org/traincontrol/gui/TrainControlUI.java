@@ -11075,6 +11075,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
             return;
         }
+        
+        // New native editor - work in progress
+        /* LayoutEditor popup = new LayoutEditor(
+            this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+            30,
+            this,
+            this.LayoutList.getSelectedIndex()
+        );
+
+        popup.render();
+
+        if (popup != null)
+        {
+            return;
+        }*/
 
         if (!this.isLocalLayout())
         {
@@ -13499,7 +13514,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             InnerLayoutPanel, 
                             KeyboardTab, 
                             false,
-                            this
+                            this, 
+                            false
                         );
                         
                         if (this.model.isDebug())
