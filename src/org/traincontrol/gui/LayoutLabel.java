@@ -65,12 +65,18 @@ public final class LayoutLabel extends JLabel
                     @Override
                     public void mouseClicked(MouseEvent e)  
                     {  
-                        ((LayoutEditor) parent).receiveEvent(e, clicked);
+                        ((LayoutEditor) parent).receiveClickEvent(e, clicked);
+                    }
+                    
+                    @Override
+                    public void mouseEntered(MouseEvent e)  
+                    {  
+                        ((LayoutEditor) parent).receiveMoveEvent(e, clicked);
                     }
                 });
-            
+
             // Add a border around the icons
-            Border blackBorder = BorderFactory.createLineBorder(Color.BLACK, 1); 
+            Border blackBorder = BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1); 
             this.setBorder(blackBorder);
         }
         
@@ -343,5 +349,10 @@ public final class LayoutLabel extends JLabel
 
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {}
+    }
+    
+    public MarklinLayoutComponent getComponent()
+    {
+        return component;
     }
 }

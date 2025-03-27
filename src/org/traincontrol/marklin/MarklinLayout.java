@@ -1,6 +1,13 @@
 package org.traincontrol.marklin;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,8 +20,8 @@ public class MarklinLayout
     private final String name;
     
     // Size
-    private final int sx;
-    private final int sy;
+    private int sx;
+    private int sy;
     
     // Set to true to trim layouts around the top/left edges & center in the UI
     public static final boolean IGNORE_PADDING = true;
@@ -121,6 +128,8 @@ public class MarklinLayout
     
     public MarklinLayoutComponent getComponent(int x, int y)
     {
+        if (x < 0 || y < 0 || x >= this.grid.size() || y >= this.grid.get(0).size()) return null;
+        
         return this.grid.get(x).get(y);
     }
     
@@ -241,5 +250,77 @@ public class MarklinLayout
         }
         
         return builder.toString().trim();
+    }
+    
+    /**
+     * Gets the path to the layout file
+     * @return
+     * @throws MalformedURLException
+     * @throws URISyntaxException 
+     */
+    private Path getFilePath() throws MalformedURLException, URISyntaxException
+    {
+        String layoutUrl = url.replaceAll(" ", "%20");
+        return Paths.get(new URL(layoutUrl).toURI());
+    }
+    
+    /**
+     * Saves this layout to the existing path.  Should only be called if stored locally.
+     * @throws Exception 
+     */
+    public void saveChanges() throws Exception
+    {
+        try
+        {
+            // Retrieve the export data
+            String data = exportToCS2TextFormat();
+
+            // Write the data to the file using Files.newBufferedWriter()
+            try (BufferedWriter writer = Files.newBufferedWriter(getFilePath()))
+            {
+                writer.write(data);
+            }
+        }
+        catch (IOException | URISyntaxException e)
+        {
+            throw new Exception("Error saving changes to file: " + url, e);
+        }
+    }
+    
+    /**
+     * Expands the layout by the specified number of rows and columns
+     * @param num
+     * @throws IOException 
+     */
+    public void addRowsAndColumns(int num) throws IOException
+    {
+        for (int x = 0; x < num; x++)
+        {
+            List<MarklinLayoutComponent> newRow = new ArrayList<>();
+            
+            for (int i = 0; i < sx; i++)
+            {
+                newRow.add(null);
+            }
+
+            grid.add(newRow);
+
+            for (List<MarklinLayoutComponent> row : grid)
+            {
+                row.add(null);
+            }
+
+            sy+=1;
+            maxy+=1;
+            sx+=1;
+            maxx+=1;
+        }
+        
+        /*addComponent(
+            MarklinLayoutComponent.componentType.TEXT,
+            sx-1, sy-1, 0, 0, 0, 0, "x"
+         );*/
+        //checkBounds();
+        //addComponent(null,0,sy-1);
     }
 }

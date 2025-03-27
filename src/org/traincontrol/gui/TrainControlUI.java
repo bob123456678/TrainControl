@@ -11065,6 +11065,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
+     * Housekeeping to refresh UI after layout has been edited
+     */
+    public void layoutEditingComplete()
+    {
+        this.model.syncWithCS2();
+        
+        // Store previously selected page
+        int oldIndex = this.LayoutList.getSelectedIndex();
+
+        // Update list of pages
+        if (this.model.getLayoutList() != null && !this.model.getLayoutList().isEmpty())
+        {
+            this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+        }
+
+        // Restore index
+        if (this.LayoutList.getModel().getSize() > oldIndex)
+        {
+            this.LayoutList.setSelectedIndex(oldIndex);
+        }
+
+        this.repaintLayout();
+
+        this.updatePopups(true);
+        
+        this.editLayoutButton.setEnabled(true);
+    }
+    
+    /**
      * Opens the layout editor app for the current layout
      * @param evt 
      */
@@ -11142,26 +11171,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     this.model.log("Editing session complete.");
 
-                    this.model.syncWithCS2();
-
-                    // Store previously selected page
-                    int oldIndex = this.LayoutList.getSelectedIndex();
-
-                    // Update list of pages
-                    if (this.model.getLayoutList() != null && !this.model.getLayoutList().isEmpty())
-                    {
-                        this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
-                    }
-
-                    // Restore index
-                    if (this.LayoutList.getModel().getSize() > oldIndex)
-                    {
-                        this.LayoutList.setSelectedIndex(oldIndex);
-                    }
-
-                    this.repaintLayout();
-
-                    this.updatePopups(true);
+                    this.layoutEditingComplete();
                 }
                 catch (Exception ex)
                 {

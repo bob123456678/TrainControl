@@ -151,7 +151,7 @@ public class LayoutGrid
                     JLabel text = new JLabel();
                     
                     // Autonomy Station label 
-                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX))
+                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !edit)
                     {
                         // Hide text initially
                         text.setText("");
@@ -276,5 +276,15 @@ public class LayoutGrid
         }
 
         return new int[]{-1, -1};
+    }
+    
+    public LayoutLabel getValueAt(int x, int y)
+    {
+        if (x < 0 || x >= grid.length || y < 0 || y >= grid[x].length)
+        {
+            return null;
+        }
+        
+        return grid[x][y];
     }
 }

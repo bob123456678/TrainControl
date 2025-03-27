@@ -81,6 +81,30 @@ public class MarklinLayoutComponent
     }
     
     /**
+     * Copy constructor for MarklinLayoutComponent.Copies all base fields, including the text label.
+     * Used by layout editor
+     * 
+     * @param original The original MarklinLayoutComponent to copy.
+     * @throws java.io.IOException
+     */
+    public MarklinLayoutComponent(MarklinLayoutComponent original) throws IOException
+    {
+        if (original == null)
+        {
+            throw new IllegalArgumentException("Original component cannot be null.");
+        }
+
+        this.type = original.type;
+        this.x = original.x;
+        this.y = original.y;
+        this.orientation = original.orientation;
+        this.state = original.state;
+        this.address = original.address;
+        this.rawAddress = original.rawAddress;
+        this.label = original.label;
+    }
+    
+    /**
      * Executes a switch upon user request
      */
     public void execSwitching()
@@ -588,8 +612,11 @@ public class MarklinLayoutComponent
         }
         
         // Add .typ
-        builder.append(" .typ=").append(getTypeString(this.type)).append("\n");
-
+        if (this.type != componentType.TEXT)
+        {
+            builder.append(" .typ=").append(getTypeString(this.type)).append("\n");
+        }
+        
         // Add .drehung only if orientation is not 0
         if (this.orientation != 0)
         {
