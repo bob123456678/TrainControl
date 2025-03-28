@@ -62,7 +62,9 @@ public class MarklinLayout
     
     // Are we in edit mode?
     private boolean edit = false;
-   
+    private boolean editHideText = false;
+    private boolean editShowAddress = false;
+
     /**
      * Constructor
      * @param name
@@ -292,12 +294,13 @@ public class MarklinLayout
     
     /**
      * Expands the layout by the specified number of rows and columns
-     * @param num
+     * @param numRows
+     * @param numColumns
      * @throws IOException 
      */
-    public void addRowsAndColumns(int num) throws IOException
+    public void addRowsAndColumns(int numRows, int numColumns) throws IOException
     {
-        for (int x = 0; x < num; x++)
+        for (int x = 0; x < numRows; x++)
         {
             List<MarklinLayoutComponent> newRow = new ArrayList<>();
             
@@ -307,14 +310,19 @@ public class MarklinLayout
             }
 
             grid.add(newRow);
+            
+            sy+=1;
+            maxy+=1;
+        }
+        
+        for (int x = 0; x < numColumns; x++)
+        {
 
             for (List<MarklinLayoutComponent> row : grid)
             {
                 row.add(null);
             }
 
-            sy+=1;
-            maxy+=1;
             sx+=1;
             maxx+=1;
         }
@@ -356,4 +364,25 @@ public class MarklinLayout
     {
         return this.edit;
     }
+    
+    public boolean getEditHideText()
+    {
+        return editHideText;
+    }
+
+    public void setEditHideText(boolean editHideText)
+    {
+        this.editHideText = editHideText;
+    }
+    
+    public boolean getEditShowAddress()
+    {
+        return editShowAddress;
+    }
+
+    public void setEditShowAddress(boolean editShowAddress)
+    {
+        this.editShowAddress = editShowAddress;
+    }
+    
 }

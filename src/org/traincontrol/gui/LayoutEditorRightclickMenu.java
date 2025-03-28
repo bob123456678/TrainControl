@@ -98,10 +98,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             menuItem.setToolTipText("Control+T");
 
             add(menuItem);
-
+            
             if (component.isClickable())
             {
-                menuItem = new JMenuItem("Edit Address");
+                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -121,13 +121,46 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        
-        menuItem = new JMenuItem("Increase Size");
+        menuItem = new JMenuItem("Toggle Text Labels");
         menuItem.addActionListener(event -> 
         {
             try
             {
-                edit.addRowsAndColumns(1);
+                edit.toggleText();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        menuItem.setToolTipText("Control+L");
+
+        add(menuItem);
+
+        menuItem = new JMenuItem("Toggle Address Labels");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.toggleAddresses();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        menuItem.setToolTipText("Control+D");
+
+        add(menuItem);
+        
+        addSeparator();
+
+        menuItem = new JMenuItem("Increase Diagram Size");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.addRowsAndColumns(1, 1);
             }
             catch (Exception e)
             {

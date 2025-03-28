@@ -48,6 +48,10 @@ public class LayoutEditor extends PositionAwareJFrame
     private int lastHoveredX = -1;
     private int lastHoveredY = -1;
     //private LayoutLabel lastHoveredLabel = null;
+    
+    // Default size of new layouts
+    public static final int DEFAULT_NEW_SIZE_ROWS = 8;
+    public static final int DEFAULT_NEW_SIZE_COLS = 10;
 
     /**
      * Popup window showing train layouts
@@ -499,11 +503,51 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    public void addRowsAndColumns(int num)
+    public void addRowsAndColumns(int rows, int cols)
     {
         try
         {
-            layout.addRowsAndColumns(num);
+            layout.addRowsAndColumns(rows, cols);
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    /**
+     * Toggles the display of text
+     */
+    public void toggleText()
+    {
+        try
+        {
+            this.layout.setEditHideText(!this.layout.getEditHideText());
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    /**
+     * Toggles the display of text
+     */
+    public void toggleAddresses()
+    {
+        try
+        {
+            this.layout.setEditShowAddress(!this.layout.getEditShowAddress());
             
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
@@ -520,18 +564,28 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            layout.clear();
-            lastHoveredX = lastHoveredY = -1;
+            int confirmation = JOptionPane.showConfirmDialog(
+                    this,
+                    "This will delete everything on the track diagram. Are you sure you want to proceed?",
+                    "Please Confirm",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirmation == JOptionPane.YES_OPTION)
+            {
+                layout.clear();
+                lastHoveredX = lastHoveredY = -1;
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    drawGrid();
+                }));
+            }
         }
         catch (Exception e)
         {
             System.out.println(e.getMessage());
-        }
-        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+        }   
     }
     
     /**
@@ -547,7 +601,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         if (this.layout.getSx() <= 1 && this.layout.getSy() <= 1)
         {
-            this.addRowsAndColumns(5);            
+            this.addRowsAndColumns(DEFAULT_NEW_SIZE_ROWS, DEFAULT_NEW_SIZE_COLS);            
         }
         
         grid = new LayoutGrid(this.layout, size,
@@ -756,7 +810,15 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
         {
-            this.addRowsAndColumns(1);
+            this.addRowsAndColumns(1, 1);
+        }
+        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
+        {
+            this.toggleAddresses();
+        }
+        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
+        {
+            this.toggleText();
         }
         else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
         {

@@ -177,7 +177,7 @@ public class LayoutGrid
                         }); 
                     }
                     // Regular labels
-                    else
+                    else if (!layout.getEditHideText())
                     {
                         text.setText(c.getLabel());
                     }
@@ -189,14 +189,14 @@ public class LayoutGrid
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
                     // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
-                    if (!c.isText())
+                    if (!c.isText() && !layout.getEditHideText())
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
                         text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");      
                         
                         // Show the correct cursor
-                        if (c.isClickable()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        if (c.isClickable() && !layout.getEdit()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     else
                     {
@@ -204,6 +204,23 @@ public class LayoutGrid
                         // 11 * (size / 30) at left to center
                         gbc.gridheight = 0;    
                     }
+                    
+                    container.add(text, gbc);
+                    container.setComponentZOrder(text, 0);
+                }
+                
+                // Show address labels
+                if (c != null && layout.getEdit() && layout.getEditShowAddress() && !c.isText() && c.isClickable())
+                {
+                    JLabel text = new JLabel();
+                    text.setForeground(Color.RED);
+                    text.setOpaque(true);
+                    text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3));
+                    
+                    //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
+                    gbc.gridheight = 0;
+                    text.setText("<html>" + c.getLogicalAddress() + "</html>");      
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
