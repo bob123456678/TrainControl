@@ -44,7 +44,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         LayoutGrid grid = new LayoutGrid(this.layout, size,
             this.ExtLayoutPanel, 
             this,
-            true, parent, false);
+            true, parent);
         
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 

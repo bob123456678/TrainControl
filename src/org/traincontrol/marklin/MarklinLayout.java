@@ -59,6 +59,9 @@ public class MarklinLayout
     
     // Path to the layout file
     private final String url;
+    
+    // Are we in edit mode?
+    private boolean edit = false;
    
     /**
      * Constructor
@@ -153,7 +156,7 @@ public class MarklinLayout
     
     public void checkBounds()
     {
-        if (IGNORE_PADDING)
+        if (IGNORE_PADDING && !edit)
         {
             minx = sx;
             miny = sy;
@@ -175,7 +178,7 @@ public class MarklinLayout
                 {
                     if (x < minx)
                     {
-                        if (IGNORE_PADDING)
+                        if (IGNORE_PADDING && !edit)
                         {
                             minx = x;
                         }
@@ -183,7 +186,7 @@ public class MarklinLayout
                     
                     if (y < miny)
                     {
-                        if (IGNORE_PADDING)
+                        if (IGNORE_PADDING && !edit)
                         {
                             miny = y;
                         }
@@ -322,5 +325,35 @@ public class MarklinLayout
          );*/
         //checkBounds();
         //addComponent(null,0,sy-1);
+    }
+    
+    /**
+     * Clears the layout
+     * @throws IOException 
+     */
+    public void clear() throws IOException
+    {
+        for (int y = 0; y < sy; y++)
+        {
+            for (int x = 0; x < sx; x++)
+            {   
+                addComponent(null, x, y);
+            }
+        }
+        
+        this.sx = 0;
+        this.sy = 0;
+        this.checkBounds();
+    }
+    
+    public void setEdit()
+    {
+        this.edit = true;
+        this.checkBounds();
+    }
+    
+    public boolean getEdit()
+    {
+        return this.edit;
     }
 }

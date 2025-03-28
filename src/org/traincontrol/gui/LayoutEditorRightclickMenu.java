@@ -15,69 +15,114 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     {        
         JMenuItem menuItem;
         
-        menuItem = new JMenuItem("Rotate");
-        menuItem.addActionListener(event -> 
+        if (component != null)
         {
-            try
+            menuItem = new JMenuItem("Rotate");
+            menuItem.addActionListener(event -> 
             {
-                edit.rotate(label);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
+                try
+                {
+                    edit.rotate(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+R");
 
-        add(menuItem);
-        
-        menuItem = new JMenuItem("Cut");
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.initCopy(label, null, true);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
+            add(menuItem);
 
-        add(menuItem);
-        
-        menuItem = new JMenuItem("Copy");
-        menuItem.addActionListener(event -> 
-        {
-            try
+            menuItem = new JMenuItem("Cut");
+            menuItem.addActionListener(event -> 
             {
-                edit.initCopy(label, null, false);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
+                try
+                {
+                    edit.initCopy(label, null, true);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+X");
 
-        add(menuItem);
-                
-        menuItem = new JMenuItem("Paste");
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.executeTool(label);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
+            add(menuItem);
 
-        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+            menuItem = new JMenuItem("Copy");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.initCopy(label, null, false);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+C");
+
+            add(menuItem);
+
+            menuItem = new JMenuItem("Paste");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.executeTool(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+V");
+
+            if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+
+            add(menuItem);
+
+            menuItem = new JMenuItem("Edit Text");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.editText(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+T");
+
+            add(menuItem);
+
+            if (component.isClickable())
+            {
+                menuItem = new JMenuItem("Edit Address");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        edit.editAddress(label);
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });
+                menuItem.setToolTipText("Control+A");
+
+                add(menuItem);
+            }
+            
+            addSeparator();
+        }
         
-        add(menuItem);
         
-        menuItem = new JMenuItem("Expand");
+        menuItem = new JMenuItem("Increase Size");
         menuItem.addActionListener(event -> 
         {
             try
@@ -89,7 +134,21 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
+        menuItem.setToolTipText("Control+I");
+        add(menuItem);
         
+        menuItem = new JMenuItem("Clear");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.clear();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
         add(menuItem);
     }
 }

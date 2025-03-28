@@ -49,9 +49,8 @@ public class LayoutGrid
      * @param master container with the panel
      * @param popup is this layout being rendered in a separate window?
      * @param ui
-     * @param edit
      */
-    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui, boolean edit)
+    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {  
         // Calculate boundaries
         int offsetX = layout.getMinx();
@@ -76,7 +75,7 @@ public class LayoutGrid
             container.setBackground(Color.white);
             
             // Things mess up without this
-            if (MarklinLayout.IGNORE_PADDING)
+            if (MarklinLayout.IGNORE_PADDING || layout.getEdit())
             {
                 parent.setLayout(new FlowLayout());
             }
@@ -123,8 +122,8 @@ public class LayoutGrid
                 // End GBC fix
                 
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
-                
-                grid[x][y] = new LayoutLabel(c, master, size, ui, edit);
+                                
+                grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
@@ -142,7 +141,7 @@ public class LayoutGrid
                 gbc.gridheight = 1; // Height will always be 1, except if rendering text
                 
                 // grid[x][y].setBorder(new LineBorder(Color.BLUE, 1)); // for debugging only
-
+                
                 container.add(grid[x][y], gbc);  
                 
                 // Render text separately
@@ -151,7 +150,7 @@ public class LayoutGrid
                     JLabel text = new JLabel();
                     
                     // Autonomy Station label 
-                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !edit)
+                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit())
                     {
                         // Hide text initially
                         text.setText("");

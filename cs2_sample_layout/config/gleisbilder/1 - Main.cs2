@@ -14,6 +14,7 @@ element
  .id=0x2
  .typ=s88kontakt
  .artikel=1027
+ .deviceId=0xc
 element
  .id=0x3
  .typ=gerade
@@ -30,6 +31,7 @@ element
  .id=0x6
  .typ=s88kontakt
  .artikel=2014
+ .deviceId=0xc
 element
  .id=0x7
  .typ=gerade
@@ -103,7 +105,7 @@ element
  .artikel=-1
 element
  .id=0x102
- .typ=signal
+ .typ=signal_sh01
  .artikel=162
  .zustand=1
 element
@@ -126,6 +128,7 @@ element
  .id=0x106
  .typ=s88kontakt
  .artikel=2015
+ .deviceId=0xc
 element
  .id=0x107
  .typ=gerade
@@ -193,16 +196,19 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1025
+ .deviceId=0xc
 element
  .id=0x201
  .typ=s88kontakt
  .drehung=1
  .artikel=1026
+ .deviceId=0xc
 element
  .id=0x203
  .typ=s88kontakt
  .drehung=1
  .artikel=1021
+ .deviceId=0xc
 element
  .id=0x204
  .typ=signal
@@ -241,6 +247,7 @@ element
  .typ=linksweiche
  .drehung=1
  .artikel=180
+ .zustand=0
 element
  .id=0x20c
  .typ=gerade
@@ -249,6 +256,7 @@ element
  .id=0x20d
  .typ=s88kontakt
  .artikel=2011
+ .deviceId=0xc
 element
  .id=0x20e
  .typ=gerade
@@ -308,11 +316,13 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1022
+ .deviceId=0xc
 element
  .id=0x305
  .typ=s88kontakt
  .drehung=1
  .artikel=1023
+ .deviceId=0xc
 element
  .id=0x306
  .typ=gerade
@@ -387,6 +397,7 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1010
+ .deviceId=0xc
 element
  .id=0x404
  .typ=gerade
@@ -498,16 +509,19 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1028
+ .deviceId=0xc
 element
  .id=0x508
  .typ=s88kontakt
  .drehung=1
  .artikel=1031
+ .deviceId=0xc
 element
  .id=0x509
  .typ=s88kontakt
  .drehung=1
  .artikel=1029
+ .deviceId=0xc
 element
  .id=0x50a
  .typ=gerade
@@ -545,11 +559,13 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=2012
+ .deviceId=0xc
 element
  .id=0x515
  .typ=s88kontakt
  .drehung=1
  .artikel=2013
+ .deviceId=0xc
 element
  .id=0x600
  .typ=gerade
@@ -582,6 +598,7 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1032
+ .deviceId=0xc
 element
  .id=0x607
  .typ=bogen
@@ -601,11 +618,13 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1030
+ .deviceId=0xc
 element
  .id=0x60b
  .typ=s88kontakt
  .drehung=1
  .artikel=1008
+ .deviceId=0xc
 element
  .id=0x60c
  .typ=fahrstrasse
@@ -619,11 +638,13 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=14
+ .deviceId=0xc
 element
  .id=0x612
  .typ=s88kontakt
  .drehung=1
  .artikel=15
+ .deviceId=0xc
 element
  .id=0x613
  .typ=lampe
@@ -731,11 +752,13 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1012
+ .deviceId=0xc
 element
  .id=0x805
  .typ=s88kontakt
  .drehung=1
  .artikel=1013
+ .deviceId=0xc
 element
  .id=0x806
  .typ=gerade
@@ -747,6 +770,7 @@ element
  .typ=s88kontakt
  .drehung=1
  .artikel=1018
+ .deviceId=0xc
 element
  .id=0x80a
  .typ=signal
@@ -763,6 +787,7 @@ element
  .typ=s88bogen
  .drehung=3
  .artikel=1011
+ .deviceId=0xc
 element
  .id=0x811
  .typ=gerade
@@ -798,6 +823,7 @@ element
  .typ=s88bogen
  .drehung=1
  .artikel=1015
+ .deviceId=0xc
 element
  .id=0x902
  .typ=gerade
@@ -824,11 +850,11 @@ element
  .artikel=-1
 element
  .id=0x908
- .typ=lampe
+ .typ=bahnschranke
  .artikel=170
 element
  .id=0x909
- .typ=signal
+ .typ=signal_sh01
  .drehung=3
  .artikel=162
  .zustand=1
@@ -864,6 +890,7 @@ element
  .id=0x910
  .typ=s88kontakt
  .artikel=8
+ .deviceId=0xc
 element
  .id=0x911
  .typ=kreuzung
@@ -893,6 +920,7 @@ element
  .typ=s88bogen
  .drehung=1
  .artikel=1016
+ .deviceId=0xc
 element
  .id=0xa01
  .typ=gerade
@@ -949,6 +977,7 @@ element
  .id=0xa0c
  .typ=s88kontakt
  .artikel=1009
+ .deviceId=0xc
 element
  .id=0xa0d
  .typ=linksweiche
@@ -1009,10 +1038,10 @@ element
  .id=0xb08
  .typ=s88kontakt
  .artikel=1007
+ .deviceId=0xc
 element
  .id=0xb09
  .typ=gerade
- .drehung=2
  .artikel=-1
 element
  .id=0xb0a
@@ -1022,12 +1051,10 @@ element
 element
  .id=0xb0b
  .typ=gerade
- .drehung=2
  .artikel=-1
 element
  .id=0xb0c
  .typ=gerade
- .drehung=2
  .artikel=-1
 element
  .id=0xb0d
@@ -1060,6 +1087,7 @@ element
  .id=0xb13
  .typ=s88kontakt
  .artikel=9
+ .deviceId=0xc
 element
  .id=0xb14
  .typ=signal
@@ -1098,6 +1126,7 @@ element
  .id=0xc09
  .typ=s88kontakt
  .artikel=1006
+ .deviceId=0xc
 element
  .id=0xc0a
  .typ=gerade
@@ -1141,6 +1170,7 @@ element
  .id=0xc13
  .typ=s88kontakt
  .artikel=10
+ .deviceId=0xc
 element
  .id=0xc14
  .typ=signal
@@ -1180,7 +1210,6 @@ element
 element
  .id=0xd0f
  .typ=gerade
- .drehung=2
  .artikel=-1
 element
  .id=0xd10
@@ -1199,6 +1228,7 @@ element
  .id=0xd13
  .typ=s88kontakt
  .artikel=4
+ .deviceId=0xc
 element
  .id=0xd14
  .typ=signal

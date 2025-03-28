@@ -1,15 +1,29 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Toolkit;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.border.Border;
+import javax.swing.text.AbstractDocument;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -54,8 +68,33 @@ public class LayoutEditor extends PositionAwareJFrame
         this.setFocusable(true);
         this.requestFocusInWindow();
         
+        // Display the items in a grid
+        this.newComponents.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.NONE; // Prevent scaling
+        gbc.weightx = 0; // Components won't stretch horizontally
+        gbc.weighty = 0; // Components won't stretch vertically
+        gbc.gridx = 0; // Starting column
+        gbc.gridy = 0; // Starting row
+        gbc.insets = new java.awt.Insets(2, 2, 2, 2); // Top, left, bottom, right padding
+
+        int cols = 3;
+ 
+        
         // Initialize components we can place
-        this.jPanel1.add(this.getLabel(MarklinLayoutComponent.componentType.SIGNAL));
+        for (MarklinLayoutComponent.componentType type : MarklinLayoutComponent.componentType.values())
+        {
+            System.out.println(type.toString());
+            this.newComponents.add(this.getLabel(type, "T"), gbc);
+
+            // Move to the next grid position
+            gbc.gridx++;
+            if (gbc.gridx >= cols)
+            {
+                gbc.gridx = 0;
+                gbc.gridy++;
+            }
+        }
     }
     
     public boolean hasToolFlag()
@@ -73,15 +112,38 @@ public class LayoutEditor extends PositionAwareJFrame
         return grid.getCoordinates(label)[1];
     }
     
-    private LayoutLabel getLabel(MarklinLayoutComponent.componentType type)
+    private LayoutLabel getLabel(MarklinLayoutComponent.componentType type, String defaultText)
     {
         try
         {
-            return new LayoutLabel(new MarklinLayoutComponent(type,0,0,0,0,0,0), this, 30, parent, true);
+            MarklinLayoutComponent component = new MarklinLayoutComponent(type,0,0,0,0,0,0);
+            
+            if (type == MarklinLayoutComponent.componentType.TEXT)
+            {
+                component.setLabel(defaultText);   
+            }
+            
+            LayoutLabel newLabel = new LayoutLabel(component, this, 30, parent, true);
+            
+            // We need to add the text back on top of the icon
+            if (type == MarklinLayoutComponent.componentType.TEXT)
+            {
+                newLabel.setText(defaultText);
+            
+                newLabel.setForeground(Color.black);
+                newLabel.setFont(new Font("Sans Serif", Font.PLAIN, this.size / 2));
+                newLabel.setVerticalTextPosition(JLabel.CENTER); 
+                newLabel.setHorizontalTextPosition(JLabel.CENTER);
+            }
+            
+            newLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            return newLabel;
         }
         catch (Exception e)
         {
-            
+            System.out.println("ERROR");
+            e.printStackTrace();
         }
         
         return null;
@@ -104,8 +166,23 @@ public class LayoutEditor extends PositionAwareJFrame
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
         System.out.println("MOVE");
+        
+                        System.out.println(getX(label));
+                System.out.println(getY(label));
+
+                System.out.println(layout.getSx());
+                System.out.println(layout.getSy());
+                                System.out.println(layout.getMinx());
+
+                System.out.println(layout.getMaxx());
+                                                System.out.println(layout.getMiny());
+
+                System.out.println(layout.getMaxy());
+
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
+        
+        
         // lastHoveredLabel = label;
     }
     
@@ -115,17 +192,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 
         System.out.println(Arrays.toString(grid.getCoordinates(label)));
         
+        // Child component
         if (getX(label) == -1 && getY(label) == -1)
         {
             System.out.println("INIT COPY");
             this.initCopy(label, label.getComponent(), false);
+            this.highlightLabel(label);
             return;
         }
         
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
         if (e.getButton() == MouseEvent.BUTTON3)
-        {                              
+        {        
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
@@ -162,6 +241,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         if (lastX != -1 || lastY != -1)
         {
+            this.clearBordersFromChildren(this.newComponents);
             this.toolFlag = null;
         }
     }
@@ -192,6 +272,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Avoid clearing if we are placing new items
             if (lastX != -1 || lastY != -1)
             {
+                this.clearBordersFromChildren(this.newComponents);
                 resetClipboard();
             }
         }
@@ -200,7 +281,10 @@ public class LayoutEditor extends PositionAwareJFrame
             
         }
                 
-        drawGrid();
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            drawGrid();
+        }));
     }
     
     /**
@@ -239,6 +323,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             delete(label);
         }
+        
+        this.clearBordersFromChildren(this.newComponents);
     }
     
     /**
@@ -256,7 +342,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         }
         
-        drawGrid();
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            drawGrid();
+        }));
     }
         
     /**
@@ -280,16 +369,146 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
+                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
             drawGrid();
+        }));
         }
     }
     
+    /**
+     * Changes the text
+     * @param label 
+     */
+    public void editText(LayoutLabel label)
+    {       
+        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+                    
+        if (lc != null)
+        {       
+                String newText = (String) javax.swing.JOptionPane.showInputDialog(
+                    this, 
+                    "Enter new label text:", 
+                    "Edit Label", 
+                    javax.swing.JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    lc.getLabel() // Default value
+                );
+                
+                if (newText != null)
+                {
+                    lc.setLabel(newText);
+                }
+
+            try
+            {
+                layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+            }
+            catch (IOException ex)
+            {
+
+            }
+
+                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            drawGrid();
+        }));
+        }
+    }
+    
+     /**
+     * Changes the address
+     * @param label 
+     */
+    public void editAddress(LayoutLabel label)
+    {       
+        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+                    
+        if (lc != null)
+        {     
+            try
+            {
+                JTextField textField = new JTextField();
+                textField.addKeyListener(new KeyAdapter() {
+                    @Override
+                    public void keyReleased(KeyEvent evt) {
+                        TrainControlUI.validateInt(evt, false); // Call your validation method
+                    }
+                });
+
+
+       
+        textField.setText(Integer.toString(lc.getLogicalAddress()));
+        
+        // Display the input dialog
+        int result = JOptionPane.showConfirmDialog(
+                null,
+                textField,
+                "Enter new address:",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        
+        
+
+                // Process the input when OK is clicked
+                if (result == JOptionPane.OK_OPTION)
+                {
+
+                            lc.setLogicalAddress(Integer.parseInt(textField.getText()));
+                        
+
+
+                        layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            drawGrid();
+        }));
+        }
+    }
+    
+    private void highlightLabel(JLabel label)
+    {
+        if (label != null)
+        {
+            Border yellowBorder = BorderFactory.createLineBorder(java.awt.Color.RED, 1);
+            label.setBorder(yellowBorder);
+        }
+    }
+    
+    private void clearBordersFromChildren(JPanel panel)
+    {
+        if (panel != null)
+        {
+            for (java.awt.Component component : panel.getComponents())
+            {
+                if (component instanceof JLabel)
+                {
+                    JLabel label = (JLabel) component;
+                    label.setBorder(BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY, 1));
+                }
+            }
+        }
+    }
+
     public void addRowsAndColumns(int num)
     {
         try
         {
             layout.addRowsAndColumns(num);
-            drawGrid();
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
         }
         catch (Exception e)
         {
@@ -297,26 +516,59 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    public void clear()
+    {
+        try
+        {
+            layout.clear();
+            lastHoveredX = lastHoveredY = -1;
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            drawGrid();
+        }));
+    }
+    
     /**
      * Refreshes the layout
      */
-    private void drawGrid()
+    synchronized private void drawGrid()
     {
-        this.ExtLayoutPanel.removeAll();
-
+        //this.ExtLayoutPanel.removeAll();
+        if (grid != null)
+        {
+            //grid.getContainer().removeAll();
+        }
+        
+        if (this.layout.getSx() <= 1 && this.layout.getSy() <= 1)
+        {
+            this.addRowsAndColumns(5);            
+        }
+        
         grid = new LayoutGrid(this.layout, size,
             this.ExtLayoutPanel, 
             this,
-            true, parent, true);
-        
+            true, parent);
+                
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
         if (!this.isLoaded())
         {
-            this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
+            this.setPreferredSize(new Dimension(grid.maxWidth + 150, grid.maxHeight + 150));
+            this.setMinimumSize(new Dimension(500, 500));
             pack();
         }
+            
+        grid.getContainer().revalidate();
+        this.ExtLayoutPanel.revalidate();
+        grid.getContainer().repaint();
+        this.ExtLayoutPanel.repaint();
         
         // Remember window location for different layouts and sizes
         this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());
@@ -337,21 +589,24 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void render()
     {        
-        this.setAlwaysOnTop(parent.isAlwaysOnTop());
-                      
-        drawGrid();
-             
-        setVisible(true);
-        
-        // Hide the window on close so that LayoutLabels know they can be deleted
-        addWindowListener(new WindowAdapter()
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            @Override
-            public void windowClosing(WindowEvent e)
+            layout.setEdit();
+            this.setAlwaysOnTop(parent.isAlwaysOnTop());
+            drawGrid();
+
+            setVisible(true);
+
+            // Hide the window on close so that LayoutLabels know they can be deleted
+            addWindowListener(new WindowAdapter()
             {
-                e.getComponent().setVisible(false);
-            }
-        });
+                @Override
+                public void windowClosing(WindowEvent e)
+                {
+                    //e.getComponent().setVisible(false);
+                }
+            });
+        }));
     }
           
     public int getLayoutSize()
@@ -379,12 +634,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
         jScrollPane1 = new javax.swing.JScrollPane();
         ExtLayoutPanel = new javax.swing.JPanel();
-        jPanel1 = new javax.swing.JPanel();
+        newComponents = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
 
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMinimumSize(new java.awt.Dimension(150, 150));
+        setMinimumSize(new java.awt.Dimension(300, 180));
         addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 formKeyPressed(evt);
@@ -406,16 +662,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
         jScrollPane1.setViewportView(ExtLayoutPanel);
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        newComponents.setBackground(new java.awt.Color(255, 255, 255));
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout newComponentsLayout = new javax.swing.GroupLayout(newComponents);
+        newComponents.setLayout(newComponentsLayout);
+        newComponentsLayout.setHorizontalGroup(
+            newComponentsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 182, Short.MAX_VALUE)
         );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        newComponentsLayout.setVerticalGroup(
+            newComponentsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 0, Short.MAX_VALUE)
         );
 
@@ -444,7 +700,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 675, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -455,7 +711,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -490,6 +746,22 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.rotate(getLastHoveredLabel());
         }
+        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
+        {
+            this.editText(getLastHoveredLabel());
+        }
+        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_A)
+        {
+            this.editAddress(getLastHoveredLabel());
+        }
+        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
+        {
+            this.addRowsAndColumns(1);
+        }
+        else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
+        {
+            this.delete(getLastHoveredLabel());
+        }
     }//GEN-LAST:event_formKeyPressed
     
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -504,14 +776,14 @@ public class LayoutEditor extends PositionAwareJFrame
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        setVisible(false);
+        dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
-    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JPanel newComponents;
     // End of variables declaration//GEN-END:variables
 }

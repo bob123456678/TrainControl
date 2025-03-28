@@ -128,6 +128,17 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {  
+                                // Edit route on right-click
+                                if (e.getButton() == MouseEvent.BUTTON3 && component.isRoute()) 
+                                {
+                                    javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                    {
+                                        tcUI.editRoute(component.getRoute().getName());
+                                    }));
+                                    
+                                    return;
+                                }
+                                
                                 javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
                                 {
                                     if (!tcUI.getModel().getPowerState())
@@ -269,12 +280,15 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         // Show a tooltip in the UI
-                        if (!"".equals(this.component.toSimpleString()) && !edit)
+                        if (!"".equals(this.component.toSimpleString()))
                         {
                             this.setToolTipText(this.component.toSimpleString());
                             
                             // Change the cursor to indicate the component is clickable
-                            this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                            if (!edit)
+                            {
+                                this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                            }
                         }
                     }
                     catch (IOException ex)

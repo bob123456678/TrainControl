@@ -33,8 +33,8 @@ public class MarklinLayoutComponent
     
     // State
     private final int state;
-    private final int address;
-    private final int rawAddress;
+    private int address;
+    private int rawAddress;
     private String label = "";
     
     // Type
@@ -308,7 +308,7 @@ public class MarklinLayoutComponent
         
         if (this.isFeedback())
         {
-            if (this.getFeedback().isSet())
+            if (this.getFeedback() != null && this.getFeedback().isSet())
             {
                 stateString = "_active";
             }
@@ -718,6 +718,52 @@ public class MarklinLayoutComponent
      */
     public void rotate()
     {
-        this.orientation = (this.orientation + 1) % 4;
+        this.orientation = (this.orientation + 1) % (this.type != componentType.STRAIGHT ? 4 : 2);
+    }
+    
+    /**
+     * Updates the component's address
+     * @param address 
+     */
+    public void setLogicalAddress(int address)
+    {
+        this.address = address;
+        this.rawAddress = address;
+
+        // Logical address is 2x the raw address
+        if (this.isSignal() || this.isSwitch() || this.isLamp())
+        {
+            this.rawAddress = address * 2;
+            this.address = address * 2;
+        }
+        
+        // Unsure if this is ever used
+        if (this.isFeedback())
+        {            
+            if (address % 2 == 0)
+            {
+                this.address = (address / 2);
+            }
+            else
+            {
+                this.address = (address - 1) / 2;
+            }
+        }
+    }
+    
+    /**
+     * Gets the human readable version of the address
+     * @return 
+     */
+    public int getLogicalAddress()
+    {
+        if (this.isFeedback() || this.isLink())
+        {
+            return this.rawAddress;
+        }
+        else
+        {
+            return this.address;
+        }
     }
 }

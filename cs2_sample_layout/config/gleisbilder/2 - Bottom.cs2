@@ -58,7 +58,6 @@ element
  .id=0x3000e
  .typ=gerade
  .artikel=-1
- .text=Point:LowerBack
 element
  .id=0x3000f
  .typ=gerade
@@ -896,7 +895,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:LowerUp
 element
  .id=0x30c0b
  .typ=gerade
@@ -1099,7 +1097,6 @@ element
  .id=0x30e10
  .typ=gerade
  .artikel=-1
- .text=Point:LowerFront
 element
  .id=0x30e11
  .typ=gerade
