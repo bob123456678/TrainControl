@@ -169,23 +169,19 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
-        System.out.println("MOVE");
-        
-                        System.out.println(getX(label));
-                System.out.println(getY(label));
-
-                System.out.println(layout.getSx());
-                System.out.println(layout.getSy());
-                                System.out.println(layout.getMinx());
-
-                System.out.println(layout.getMaxx());
-                                                System.out.println(layout.getMiny());
-
-                System.out.println(layout.getMaxy());
-
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
+     
+        label.setBackground(Color.red);
         
+        if (lastHoveredX != -1 && lastHoveredY != -1)
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                this.clearBordersFromChildren(this.grid.getContainer());
+                this.highlightLabel(label);
+            }));
+        }
         
         // lastHoveredLabel = label;
     }
@@ -246,7 +242,11 @@ public class LayoutEditor extends PositionAwareJFrame
         if (lastX != -1 || lastY != -1)
         {
             this.clearBordersFromChildren(this.newComponents);
-            this.toolFlag = null;
+            
+            if (this.toolFlag == tool.MOVE)
+            {
+                this.toolFlag = null;
+            }
         }
     }
     
@@ -268,21 +268,23 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.toggleText();
             }
-            
-            layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
-            
+   
             if (move)
             {
                 layout.addComponent(null, lastX, lastY);
             }
             
+            layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
+            
             System.out.println(lastX);
             System.out.println(lastY);
+            
             // Avoid clearing if we are placing new items
             if (lastX != -1 || lastY != -1)
             {
                 this.clearBordersFromChildren(this.newComponents);
-                resetClipboard();
+                
+                if (move) resetClipboard();
             }
         }
         catch (IOException ex)
@@ -290,7 +292,7 @@ public class LayoutEditor extends PositionAwareJFrame
             
         }
                 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
             drawGrid();
         }));
@@ -351,7 +353,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         }
         
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
             drawGrid();
         }));
@@ -378,10 +380,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
         }
     }
     
@@ -419,10 +421,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
         }
     }
     
@@ -485,10 +487,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
         }
     }
     
@@ -496,8 +498,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
-            Border yellowBorder = BorderFactory.createLineBorder(java.awt.Color.RED, 1);
-            label.setBorder(yellowBorder);
+            label.setBorder(BorderFactory.createLineBorder(java.awt.Color.RED, 1));
         }
     }
     
@@ -510,9 +511,56 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (component instanceof JLabel)
                 {
                     JLabel label = (JLabel) component;
-                    label.setBorder(BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY, 1));
+                    
+                    // Don't reset components without a border, because they might be something else...
+                    if (label.getBorder() != null) 
+                    {
+                        label.setBorder(BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY, 1));
+                    }
                 }
             }
+        }
+    }
+    
+    public void shiftDown()
+    {
+        try
+        {
+            if (lastHoveredY > -1)
+            {
+                layout.shiftDown(lastHoveredY);
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    drawGrid();
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
+    public void shiftRight()
+    {
+        try
+        {
+            if (lastHoveredX > -1)
+            {
+                layout.shiftRight(lastHoveredX);
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    drawGrid();
+                }));
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
         }
     }
 
@@ -529,7 +577,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception e)
         {
-            System.out.println(e.getMessage());
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
         }
     }
     
@@ -549,7 +598,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception e)
         {
-            System.out.println(e.getMessage());
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
         }
     }
     
@@ -569,7 +619,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception e)
         {
-            System.out.println(e.getMessage());
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
         }
     }
     
@@ -597,7 +648,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception e)
         {
-            System.out.println(e.getMessage());
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
         }   
     }
     
@@ -716,6 +768,11 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         ExtLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
+        ExtLayoutPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                ExtLayoutPanelMouseEntered(evt);
+            }
+        });
 
         javax.swing.GroupLayout ExtLayoutPanelLayout = new javax.swing.GroupLayout(ExtLayoutPanel);
         ExtLayoutPanel.setLayout(ExtLayoutPanelLayout);
@@ -861,6 +918,10 @@ public class LayoutEditor extends PositionAwareJFrame
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
+        clearBordersFromChildren(this.grid.getContainer());
+    }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;

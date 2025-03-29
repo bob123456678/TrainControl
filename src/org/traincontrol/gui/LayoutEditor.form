@@ -78,6 +78,9 @@
               <Color blue="ff" green="ff" red="ff" type="rgb"/>
             </Property>
           </Properties>
+          <Events>
+            <EventHandler event="mouseEntered" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="ExtLayoutPanelMouseEntered"/>
+          </Events>
 
           <Layout>
             <DimensionLayout dim="0">

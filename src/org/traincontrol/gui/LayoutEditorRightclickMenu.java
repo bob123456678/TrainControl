@@ -15,6 +15,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     {        
         JMenuItem menuItem;
         
+        menuItem = new JMenuItem("Paste");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.executeTool(label);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        menuItem.setToolTipText("Control+V");
+
+        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+
+        add(menuItem);
+        
         if (component != null)
         {
             menuItem = new JMenuItem("Rotate");
@@ -62,24 +80,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
             });
             menuItem.setToolTipText("Control+C");
-
-            add(menuItem);
-
-            menuItem = new JMenuItem("Paste");
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.executeTool(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+V");
-
-            if (!edit.hasToolFlag()) menuItem.setEnabled(false);
 
             add(menuItem);
             
@@ -135,10 +135,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 menuItem.setToolTipText("Control+A");
 
                 add(menuItem);
-            }
-            
-            addSeparator();
+            }            
         }
+        
+        addSeparator();
         
         menuItem = new JMenuItem("Toggle Text Labels");
         menuItem.addActionListener(event -> 
@@ -187,6 +187,36 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         menuItem.setToolTipText("Control+I");
+        add(menuItem);
+        
+        menuItem = new JMenuItem("Shift Right");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.shiftRight();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        //menuItem.setToolTipText("Control+I");
+        add(menuItem);
+        
+        menuItem = new JMenuItem("Shift Down");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.shiftDown();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        //menuItem.setToolTipText("Control+I");
         add(menuItem);
         
         menuItem = new JMenuItem("Clear Diagram");

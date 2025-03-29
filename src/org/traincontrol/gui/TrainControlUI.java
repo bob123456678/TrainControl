@@ -11173,7 +11173,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // New native editor - work in progress
-        /* LayoutEditor popup = new LayoutEditor(
+        /*LayoutEditor popup = new LayoutEditor(
             this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
             this,
@@ -12159,6 +12159,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                 this.layoutEditingComplete();
+                
+                this.LayoutList.setSelectedItem(newLayoutName);
+                this.repaintLayout();   
             }
             catch (Exception ex)
             {
