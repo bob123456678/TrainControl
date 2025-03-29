@@ -1,6 +1,8 @@
 package org.traincontrol.marklin;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -270,22 +272,47 @@ public class MarklinLayout
     }
     
     /**
-     * Saves this layout to the existing path.  Should only be called if stored locally.
-     * @throws Exception 
+     * Deletes the current layout file
+     * @throws MalformedURLException
+     * @throws URISyntaxException
+     * @throws IOException 
      */
-    public void saveChanges() throws Exception
+    public void deleteLayoutFile() throws MalformedURLException, URISyntaxException, IOException
+    {
+        Files.delete(this.getFilePath());
+    }
+    
+    /**
+     * Saves this layout to the existing path. Should only be called if stored locally.
+     * @param filename the new filename (without extension) or null to use the original filename
+     * @param duplicate true to avoid deleting the original file when renaming
+     * @throws Exception
+     */
+    public void saveChanges(String filename, boolean duplicate) throws Exception
     {
         try
         {
             // Retrieve the export data
             String data = exportToCS2TextFormat();
 
+            // Determine the file path
+            Path originalFilePath = getFilePath();
+            Path newFilePath = (filename != null && !"".equals(filename.trim()))
+                    ? originalFilePath.resolveSibling(filename.trim() + ".cs2")
+                    : originalFilePath;
+
             // Write the data to the file using Files.newBufferedWriter()
-            try (BufferedWriter writer = Files.newBufferedWriter(getFilePath()))
+            try (BufferedWriter writer = Files.newBufferedWriter(newFilePath))
             {
                 writer.write(data);
             }
-        }
+
+            // If filename is not null, delete the original file
+            if (filename != null && !duplicate)
+            {
+                Files.delete(originalFilePath);
+            }
+        } 
         catch (IOException | URISyntaxException e)
         {
             throw new Exception("Error saving changes to file: " + url, e);
@@ -385,4 +412,40 @@ public class MarklinLayout
         this.editShowAddress = editShowAddress;
     }
     
+    public static void writeLayoutIndex(String path, List<String> layoutList) throws IOException
+    {
+        // Ensure the directory exists
+        File directory = new File(Paths.get(path, "config").toString());
+        if (!directory.exists())
+        {
+            directory.mkdirs();
+        }
+
+        // Construct the file path
+        String filePath = Paths.get(path, "config", "gleisbild.cs2").toString();
+        
+        // Write the file
+        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+        
+        // Write header and static content
+        writer.write("[gleisbild]\n");
+        writer.write("version\n");
+        writer.write(" .major=1\n");
+        writer.write("groesse\n");
+
+        // Write layout details
+        int id = 1;
+        for (String layout : layoutList)
+        {
+            writer.write("seite\n");
+            if (id != 1) { // Skip ID for the first layout
+                writer.write(" .id=" + id + "\n");
+            }
+            
+            writer.write(" .name=" + layout + "\n");
+            id++;
+        }
+        
+        writer.close();
+    }
 }

@@ -15,6 +15,7 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -57,6 +58,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -111,6 +114,7 @@ import org.traincontrol.model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
+import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
@@ -3379,6 +3383,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
         chooseLocalDataFolderMenuItem = new javax.swing.JMenuItem();
         initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
+        modifyLocalLayoutMenu = new javax.swing.JMenu();
+        addBlankPageMenuItem = new javax.swing.JMenuItem();
+        renameLayoutMenuItem = new javax.swing.JMenuItem();
+        duplicateLayoutMenuItem = new javax.swing.JMenuItem();
+        jSeparator21 = new javax.swing.JPopupMenu.Separator();
+        deleteLayoutMenuItem = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JPopupMenu.Separator();
         switchCSLayoutMenuItem = new javax.swing.JMenuItem();
         openCS3AppMenuItem = new javax.swing.JMenuItem();
@@ -8425,7 +8435,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         layoutMenu.add(chooseLocalDataFolderMenuItem);
 
-        initializeLocalLayoutMenuItem.setText("Initialize New Local Layout");
+        initializeLocalLayoutMenuItem.setText("Initialize New Layout");
         initializeLocalLayoutMenuItem.setToolTipText("Creates a blank track diagram that you can edit visually.");
         initializeLocalLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -8433,6 +8443,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         layoutMenu.add(initializeLocalLayoutMenuItem);
+
+        modifyLocalLayoutMenu.setText("Modify Layout");
+        modifyLocalLayoutMenu.setToolTipText("Lets you change the track diagram.");
+
+        addBlankPageMenuItem.setText("Add Blank Page");
+        addBlankPageMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addBlankPageMenuItemActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(addBlankPageMenuItem);
+
+        renameLayoutMenuItem.setText("Rename Current Page");
+        renameLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                renameLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(renameLayoutMenuItem);
+
+        duplicateLayoutMenuItem.setText("Duplicate Current Page");
+        duplicateLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                duplicateLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(duplicateLayoutMenuItem);
+        modifyLocalLayoutMenu.add(jSeparator21);
+
+        deleteLayoutMenuItem.setText("Delete Current Page");
+        deleteLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(deleteLayoutMenuItem);
+
+        layoutMenu.add(modifyLocalLayoutMenu);
         layoutMenu.add(jSeparator8);
 
         switchCSLayoutMenuItem.setText("Switch to Central Station Layout");
@@ -9953,6 +10001,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Validates that a component's value is simple string
+     * @param evt 
+     */
+    public static void validateLayoutName(java.awt.event.KeyEvent evt)
+    {
+        JTextField field = (JTextField) evt.getSource();
+        
+        if (field.getText() != null)
+        {
+            String candidate = field.getText().replaceAll("[^0-9a-zA-Z_\\. \\-]", "");
+
+            if (!candidate.equals(field.getText())) field.setText(candidate);
+        }
+    }
+    
+    /**
      * Validates that a component's value is an integer
      * @param evt 
      * @param maxLength 
@@ -10624,7 +10688,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else
             {
                 this.repaintLoc();
-                JOptionPane.showMessageDialog(this, "Invalid path. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
+                JOptionPane.showMessageDialog(this, "Invalid path or corrupt data. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
             }    
         }).start();
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
@@ -11091,6 +11155,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.updatePopups(true);
         
         this.editLayoutButton.setEnabled(true);
+        
+        // Revert preference
+        windowAlwaysOnTopMenuItemActionPerformed(null);
     }
     
     /**
@@ -11106,19 +11173,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // New native editor - work in progress
-        LayoutEditor popup = new LayoutEditor(
+        /* LayoutEditor popup = new LayoutEditor(
             this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-            30,
+            this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
             this,
             this.LayoutList.getSelectedIndex()
         );
 
+        // Force window to not be on top
+        this.setAlwaysOnTop(false);
+        
         popup.render();
 
         if (popup != null)
         {
             return;
-        }
+        }*/
 
         if (!this.isLocalLayout())
         {
@@ -11966,6 +12036,195 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_maxActiveTrainsMouseReleased
 
+    /**
+     * Opens a window and prompts the user for layout name
+     * @param defaultVal
+     * @return 
+     */
+    private String promptUserForLayout(String defaultVal)
+    {
+        JTextField textField = new JTextField()
+        {
+            @Override
+            public void addNotify()
+            {
+                super.addNotify();
+                javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
+                focusTimer.setRepeats(false);
+                focusTimer.start();
+            }
+        };
+        
+        textField.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent evt)
+            {
+                TrainControlUI.validateLayoutName(evt); 
+                TrainControlUI.limitLength(evt, 40);
+            }
+        });
+
+        textField.setText(defaultVal);
+        textField.requestFocusInWindow();
+        
+        // Display the input dialog
+        int result = JOptionPane.showConfirmDialog(
+                null,
+                textField,
+                "Enter new layout name:",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        
+        if (result == JOptionPane.OK_OPTION && textField.getText() != null && textField.getText().trim().length() > 0)
+        {
+            return textField.getText().trim();
+        }
+        
+        return null;
+    }
+    
+    private void renameLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_renameLayoutMenuItemActionPerformed
+
+        this.KeyboardTab.setSelectedIndex(1);
+
+        String name = promptUserForLayout(this.LayoutList.getSelectedItem().toString());
+
+        if (name != null)
+        {
+            duplicateOrRenameCurrentLayout(name, true, false, false);
+        }
+    }//GEN-LAST:event_renameLayoutMenuItemActionPerformed
+
+    private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
+        
+        String newName = this.LayoutList.getSelectedItem().toString() + " copy";
+
+        // Check if the new name already exists in the layout list
+        while (this.model.getLayoutList().contains(newName))
+        {
+            newName += " copy";
+        }
+
+        this.KeyboardTab.setSelectedIndex(1);
+
+        duplicateOrRenameCurrentLayout(newName, false, true, false);
+    }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
+
+    /**
+     * Duplicates or renames the current layout page, optionally clearing it
+     * @param newLayoutName - name of the new layout
+     * @param rename - true if renaming
+     * @param duplicate - true if duplicating
+     * @param blank - true to clear
+     */
+    private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
+    {
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this, "Cannot manipulate remote layouts.");
+            return;
+        }
+        
+        if (this.model.getLayoutList().contains(newLayoutName))
+        {
+            JOptionPane.showMessageDialog(this, "A page called " + newLayoutName + " already exists. Delete or rename it first.");
+            return;
+        }
+                
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            try
+            {
+                List<String> layoutList = this.model.getLayoutList();
+                String currentLayout = this.LayoutList.getSelectedItem().toString();
+
+                if (rename)
+                {
+                    layoutList.remove(currentLayout);
+                }
+                
+                if (blank)
+                {
+                    this.model.getLayout(currentLayout).clear();
+                }
+                
+                this.model.getLayout(currentLayout).saveChanges(
+                    newLayoutName, duplicate
+                );
+    
+                layoutList.add(newLayoutName);
+                
+                MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+
+                this.layoutEditingComplete();
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(this, "Error saving layout: " + ex.getMessage());
+                this.model.log(ex);
+            }
+        }));
+    }
+    
+    private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
+        
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this, "Cannot manipulate remote layouts.");
+            return;
+        }
+        
+        this.KeyboardTab.setSelectedIndex(1);
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            if (this.model.getLayoutList().size() <= 1)
+            {
+                JOptionPane.showMessageDialog(this, "Cannot delete the only remaining page.");
+                return;
+            }
+            
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this, "This will delete layout page \"" + this.LayoutList.getSelectedItem().toString() + "\". Are you sure?"
+                , "Confirm Deletion", JOptionPane.YES_NO_OPTION
+            );
+
+            if (dialogResult == JOptionPane.YES_OPTION)
+            {
+                try
+                {
+                    List<String> layoutList = this.model.getLayoutList();
+
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()).deleteLayoutFile();
+
+                    layoutList.remove(this.LayoutList.getSelectedItem().toString());
+                    MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+
+                    this.layoutEditingComplete();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(this, "Error saving layout: " + ex.getMessage());
+                    this.model.log(ex);
+                }
+            }
+        }));
+    }//GEN-LAST:event_deleteLayoutMenuItemActionPerformed
+
+    private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
+
+        this.KeyboardTab.setSelectedIndex(1);
+
+        String name = promptUserForLayout("");
+
+        if (name != null)
+        {
+            duplicateOrRenameCurrentLayout(name, false, true, true);
+        }
+    }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -11991,7 +12250,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     , "Confirm Deletion", JOptionPane.YES_NO_OPTION
                 );
 
-                if(dialogResult == JOptionPane.NO_OPTION) return;
+                if (dialogResult == JOptionPane.NO_OPTION) return;
          
                 this.model.getAutoLayout().getTimetable().remove(index);
                 this.repaintTimetable();
@@ -13225,6 +13484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel ZeroPercentSpeedLabel;
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JCheckBoxMenuItem activeLocInTitle;
+    private javax.swing.JMenuItem addBlankPageMenuItem;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
     private javax.swing.JButton allButton;
     private javax.swing.JCheckBox atomicRoutes;
@@ -13245,7 +13505,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel controlsPanel;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
+    private javax.swing.JMenuItem deleteLayoutMenuItem;
     private javax.swing.JMenuItem downloadUpdateMenuItem;
+    private javax.swing.JMenuItem duplicateLayoutMenuItem;
     private javax.swing.JButton editLayoutButton;
     private javax.swing.JButton executeTimetable;
     private javax.swing.JMenuItem exitMenuItem;
@@ -13333,6 +13595,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
+    private javax.swing.JPopupMenu.Separator jSeparator21;
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
@@ -13365,6 +13628,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider maximumLatency;
     private javax.swing.JSlider minDelay;
+    private javax.swing.JMenu modifyLocalLayoutMenu;
     private javax.swing.JMenuItem openCS3AppMenuItem;
     private javax.swing.JRadioButtonMenuItem powerNoChangeStartup;
     private javax.swing.JRadioButtonMenuItem powerOffStartup;
@@ -13372,6 +13636,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider preArrivalSpeedReduction;
     private javax.swing.JMenuItem quickFindMenuItem;
     private javax.swing.JCheckBoxMenuItem rememberLocationMenuItem;
+    private javax.swing.JMenuItem renameLayoutMenuItem;
     private javax.swing.JMenu routesMenu;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;
@@ -13415,6 +13680,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
     
+    private String getLocalLayoutPath()
+    {
+        return prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
+    }
+    
     /**
      * Gets the active layout path
      * @return 
@@ -13443,11 +13713,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
+                this.modifyLocalLayoutMenu.setEnabled(false);
             }
             else
             {
                 // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
                 this.switchCSLayoutMenuItem.setEnabled(true);
+                this.modifyLocalLayoutMenu.setEnabled(true);
             }
         }));
     }

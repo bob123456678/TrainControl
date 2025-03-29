@@ -82,6 +82,25 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             if (!edit.hasToolFlag()) menuItem.setEnabled(false);
 
             add(menuItem);
+            
+            addSeparator();
+            
+            menuItem = new JMenuItem("Delete");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.delete(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Delete");
+            add(menuItem);
+
+            addSeparator();
 
             menuItem = new JMenuItem("Edit Text");
             menuItem.addActionListener(event -> 
@@ -170,7 +189,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         menuItem.setToolTipText("Control+I");
         add(menuItem);
         
-        menuItem = new JMenuItem("Clear");
+        menuItem = new JMenuItem("Clear Diagram");
         menuItem.addActionListener(event -> 
         {
             try

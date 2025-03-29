@@ -195,13 +195,55 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="initializeLocalLayoutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Initialize New Local Layout"/>
+                <Property name="text" type="java.lang.String" value="Initialize New Layout"/>
                 <Property name="toolTipText" type="java.lang.String" value="Creates a blank track diagram that you can edit visually."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="initializeLocalLayoutMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
+            <Menu class="javax.swing.JMenu" name="modifyLocalLayoutMenu">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Modify Layout"/>
+                <Property name="toolTipText" type="java.lang.String" value="Lets you change the track diagram."/>
+              </Properties>
+              <SubComponents>
+                <MenuItem class="javax.swing.JMenuItem" name="addBlankPageMenuItem">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Add Blank Page"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addBlankPageMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="renameLayoutMenuItem">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Rename Current Page"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="renameLayoutMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="duplicateLayoutMenuItem">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Duplicate Current Page"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="duplicateLayoutMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator21">
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="deleteLayoutMenuItem">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Delete Current Page"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteLayoutMenuItemActionPerformed"/>
+                  </Events>
+                </MenuItem>
+              </SubComponents>
+            </Menu>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator8">
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="switchCSLayoutMenuItem">

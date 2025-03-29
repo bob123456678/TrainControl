@@ -2,26 +2,17 @@
 version
  .major=1
 groesse
-zuletztBenutzt
- .name=1 - Main
 seite
  .name=1 - Main
- .yoffset=1
-seite
- .id=5
- .name=5 - Test
- .yoffset=4
-seite
- .id=3
- .name=3 - Top Parking
- .yoffset=2
 seite
  .id=2
  .name=2 - Bottom
- .xoffset=2
- .yoffset=1
+seite
+ .id=3
+ .name=3 - Top Parking
 seite
  .id=4
  .name=4 - Combined
- .xoffset=2
- .yoffset=2
+seite
+ .id=5
+ .name=5 - Test

@@ -127,7 +127,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 component.setLabel(defaultText);   
             }
             
-            LayoutLabel newLabel = new LayoutLabel(component, this, 30, parent, true);
+            LayoutLabel newLabel = new LayoutLabel(component, this, this.size, parent, true);
             
             // We need to add the text back on top of the icon
             if (type == MarklinLayoutComponent.componentType.TEXT)
@@ -264,6 +264,11 @@ public class LayoutEditor extends PositionAwareJFrame
             newComponent.setX(getX(destLabel));
             newComponent.setY(getY(destLabel));
 
+            if (newComponent.isText() && this.layout.getEditHideText())
+            {
+                this.toggleText();
+            }
+            
             layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
             
             if (move)
@@ -433,29 +438,37 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             try
             {
-                JTextField textField = new JTextField();
-                textField.addKeyListener(new KeyAdapter() {
+                JTextField textField = new JTextField()
+                {
+                    @Override
+                    public void addNotify()
+                    {
+                        super.addNotify();
+                        javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
+                        focusTimer.setRepeats(false);
+                        focusTimer.start();
+                    }
+                };
+                
+                textField.addKeyListener(new KeyAdapter()
+                {
                     @Override
                     public void keyReleased(KeyEvent evt) {
                         TrainControlUI.validateInt(evt, false); // Call your validation method
                     }
                 });
-
-
        
-        textField.setText(Integer.toString(lc.getLogicalAddress()));
-        
-        // Display the input dialog
-        int result = JOptionPane.showConfirmDialog(
-                null,
-                textField,
-                "Enter new address:",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
-        
-        
+                textField.setText(Integer.toString(lc.getLogicalAddress()));
 
+                // Display the input dialog
+                int result = JOptionPane.showConfirmDialog(
+                        null,
+                        textField,
+                        "Enter new address:",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE
+                );
+        
                 // Process the input when OK is clicked
                 if (result == JOptionPane.OK_OPTION)
                 {
@@ -609,7 +622,7 @@ public class LayoutEditor extends PositionAwareJFrame
             this,
             true, parent);
                 
-        setTitle(this.layout.getName() + this.parent.getWindowTitleString());
+        setTitle("Layout Editor: " + this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
         if (!this.isLoaded())
@@ -691,6 +704,7 @@ public class LayoutEditor extends PositionAwareJFrame
         newComponents = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
@@ -745,6 +759,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         });
 
+        jLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(0, 0, 155));
+        jLabel1.setText("New Components");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -756,7 +774,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -765,6 +784,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton1)
@@ -829,7 +850,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         try
         {
-            layout.saveChanges();
+            layout.saveChanges(null, false);
             parent.layoutEditingComplete();
             setVisible(false);
         } catch (Exception ex) {
@@ -845,6 +866,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private javax.swing.JPanel ExtLayoutPanel;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel newComponents;
     // End of variables declaration//GEN-END:variables
