@@ -28,6 +28,41 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         menuItem.setToolTipText("Control+V");
+        
+        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+
+        add(menuItem);
+        
+        menuItem = new JMenuItem("Paste Column");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.setBulkColumn();
+                edit.executeTool(label);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+
+        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+
+        add(menuItem);
+        
+        menuItem = new JMenuItem("Paste Row");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                //edit.copyRow(label);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
 
         if (!edit.hasToolFlag()) menuItem.setEnabled(false);
 

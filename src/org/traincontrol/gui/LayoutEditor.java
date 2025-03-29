@@ -15,6 +15,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -34,6 +35,8 @@ import org.traincontrol.marklin.MarklinLayoutComponent;
 public class LayoutEditor extends PositionAwareJFrame
 {
     public static enum tool {MOVE, COPY};
+        public static enum bulk {ROW, COL};
+
     
     private final TrainControlUI parent;
     private final int size;
@@ -44,6 +47,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private int lastY = -1;
     private MarklinLayoutComponent lastComponent = null;
     private tool toolFlag = null;
+    private bulk bulkFlag = null;
     
     private int lastHoveredX = -1;
     private int lastHoveredY = -1;
@@ -218,25 +222,67 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    public void setBulkColumn()
+    {
+        this.bulkFlag = bulk.COL;
+    }
+    
     /**
      * Executes the currently active tool
      * @param label 
      */
     public void executeTool(LayoutLabel label)
     {
-        switch (this.toolFlag)
+                          
+        if (bulkFlag == bulk.COL)
         {
-            case COPY:
+
+            int startCol = this.lastX;
+            int destCol = this.getX(label);
+
+            if (startCol != -1 && destCol != -1 && startCol != destCol)
+            {
+                List<LayoutLabel> destColumn = grid.getColumn(destCol);
+                List<LayoutLabel> sourceColumn = grid.getColumn(startCol);
+
+                for (int i = 0; i < sourceColumn.size(); i++)
+                {
+                    LayoutLabel sourceLabel = sourceColumn.get(i);
+                    LayoutLabel destLabel = destColumn.get(i);
+                    this.lastX = startCol;
+                    this.lastY = i;
+                    this.lastComponent = sourceLabel.getComponent();
+
+                    if (this.lastComponent != null)
+                    {
+                        execCopy(destLabel, false);
+                    }
+
+                    //this.toolFlag = tool.COPY;
+                    this.bulkFlag = null;
+                }
                 
-                execCopy(label, false);
+                for (LayoutLabel l : sourceColumn)
+                {
+                    if (this.toolFlag == tool.MOVE && l.getComponent() != null) this.delete(l);
+
+                }
                 
-                break;
-                
-            case MOVE:
-                
-                execCopy(label, true);
-                
-                break;
+                // TODO - defer redraw
+            }
+        }
+        else
+        {
+            if (toolFlag == tool.COPY)
+            {
+                                execCopy(label, false);
+
+            }
+            else
+            {
+                                execCopy(label, true);
+
+            }
         }
         
         if (lastX != -1 || lastY != -1)
@@ -332,7 +378,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         if (move)
         {
-            delete(label);
+            // delete(label);
         }
         
         this.clearBordersFromChildren(this.newComponents);

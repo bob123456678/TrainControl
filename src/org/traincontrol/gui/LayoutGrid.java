@@ -10,6 +10,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLayout;
@@ -302,5 +305,43 @@ public class LayoutGrid
         }
         
         return grid[x][y];
+    }
+    
+    /**
+    * Retrieves a specific column from the grid.
+    * @param colIndex The index of the column to retrieve.
+    * @return A List of LayoutLabel objects representing the row.
+    * @throws IndexOutOfBoundsException if the colIndex is invalid.
+    */
+    public List<LayoutLabel> getColumn(int colIndex)
+    {
+       if (colIndex < 0 || colIndex >= grid.length)
+       {
+           throw new IndexOutOfBoundsException("Column index out of bounds: " + colIndex);
+       }
+       
+       return Arrays.asList(grid[colIndex]);
+    }
+
+   /**
+    * Retrieves a specific column from the grid.
+    * @param rowIndex The index of the column to retrieve.
+    * @return A List of LayoutLabel objects representing the column.
+    * @throws IndexOutOfBoundsException if the columnIndex is invalid.
+    */
+    public List<LayoutLabel> getRow(int rowIndex)
+    {
+        if (grid.length == 0 || rowIndex < 0 || rowIndex >= grid[0].length)
+        {
+            throw new IndexOutOfBoundsException("Row index out of bounds: " + rowIndex);
+        }
+
+        List<LayoutLabel> column = new ArrayList<>();
+        for (LayoutLabel[] grid1 : grid)
+        {
+            column.add(grid1[rowIndex]);
+        }
+
+        return column;
     }
 }
