@@ -736,13 +736,13 @@ public class MarklinLayoutComponent
      * @throws java.lang.Exception 
      */
     public void setLogicalAddress(int address) throws Exception
-    {
+    {        
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
             if (!MarklinAccessory.isValidAddress(address * 2))
             {
-                throw new Exception("Invalid address, too large");
+                throw new Exception("Invalid address, must be 0-256");
             }
             
             this.rawAddress = address * 2;
