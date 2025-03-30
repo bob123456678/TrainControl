@@ -1,6 +1,5 @@
 package org.traincontrol.gui;
 
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -8,7 +7,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
 /**
- * This class represents a right-click menu on the track diagram, to control autonomy
+ * This class represents a right-click menu on the track editor
  * @author Adam
  */
 final class LayoutEditorRightclickMenu extends JPopupMenu
@@ -24,7 +23,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         {
             try
             {
-                edit.executeTool(label);
+                edit.executeTool(label, null);
             }
             catch (Exception e)
             {
@@ -40,8 +39,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         {
             try
             {
-                edit.setBulkColumn();
-                edit.executeTool(label);
+                edit.executeTool(label, LayoutEditor.bulk.COL);
             }
             catch (Exception e)
             {
@@ -62,8 +60,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         {
             try
             {
-                edit.setBulkRow();
-                edit.executeTool(label);
+                edit.executeTool(label, LayoutEditor.bulk.ROW);
             }
             catch (Exception e)
             {

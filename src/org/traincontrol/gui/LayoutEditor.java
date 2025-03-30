@@ -30,7 +30,7 @@ import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
 /**
- * Work in progress - track diagram editor
+ * Track diagram editor
  * @author Adam
  */
 public class LayoutEditor extends PositionAwareJFrame
@@ -50,7 +50,6 @@ public class LayoutEditor extends PositionAwareJFrame
     private int lastY = -1;
     private MarklinLayoutComponent lastComponent = null;
     private tool toolFlag = null;
-    private bulk bulkFlag = null;
     
     private int lastHoveredX = -1;
     private int lastHoveredY = -1;
@@ -138,7 +137,13 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            MarklinLayoutComponent component = new MarklinLayoutComponent(type,0,0,0,0,0,0);
+            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0);
+            
+            // Set a default address, otherwise switches will become unclickable after saving
+            if (component.isClickable())
+            {
+                component.setLogicalAddress(1, false);
+            }
             
             if (type == MarklinLayoutComponent.componentType.TEXT)
             {
@@ -182,7 +187,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (this.hasToolFlag())
             {
-                this.executeTool(label);
+                this.executeTool(label, null);
             }
         }
     }
@@ -296,7 +301,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (this.hasToolFlag())
             {
-                executeTool(label);
+                executeTool(label, null);
             }
             else
             {
@@ -308,22 +313,13 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
     }
-    
-    public void setBulkRow()
-    {
-        this.bulkFlag = bulk.ROW;
-    }
-    
-    public void setBulkColumn()
-    {
-        this.bulkFlag = bulk.COL;
-    }
-    
+        
     /**
      * Executes the currently active tool
      * @param label 
+     * @param bulkFlag 
      */
-    synchronized public void executeTool(LayoutLabel label)
+    synchronized public void executeTool(LayoutLabel label, bulk bulkFlag)
     {     
         this.snapshotLayout();
         
@@ -360,8 +356,8 @@ public class LayoutEditor extends PositionAwareJFrame
                         execCopy(destLabel, false);
                     }
 
+                    // Tool will get reset
                     //this.toolFlag = tool.COPY;
-                    this.bulkFlag = null;
                 }
                 
                 for (LayoutLabel l : sourceColumn)
@@ -416,23 +412,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 pauseRepaint = false;
-                this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually set toolFlag and bulkFlag here, as deletion resets the flag
+                this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually put the original tile back on the clipboard, and specify the tool
                 refreshGrid();
-                
-                // TODO - defer redraw
             }
         }
         else
         {
-            if (toolFlag == tool.COPY)
-            {
-                execCopy(label, false);
-
-            }
-            else if (toolFlag == tool.MOVE)
-            {
-                execCopy(label, true);
-            }
+            execCopy(label, toolFlag == tool.MOVE);
         }
         
         // Tile is on the main diagram- update borders
@@ -506,7 +492,6 @@ public class LayoutEditor extends PositionAwareJFrame
         this.lastY = -1;
         this.lastComponent = null;
         this.toolFlag = null;
-        this.bulkFlag = null;
         this.clearBordersFromChildren(this.newComponents);
     }
     
@@ -520,7 +505,6 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.lastX = getX(label);
         this.lastY = getY(label);
-        this.bulkFlag = null;
         this.pauseRepaint = false;
                 
         if (component != null)
@@ -1234,7 +1218,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 if (this.hasToolFlag() && getLastHoveredLabel() != null)
                 {
-                    this.executeTool(getLastHoveredLabel());
+                    this.executeTool(getLastHoveredLabel(), null);
                 }
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
@@ -1252,13 +1236,11 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_C)
             {          
-                this.setBulkColumn();
-                this.executeTool(getLastHoveredLabel());
+                this.executeTool(getLastHoveredLabel(), bulk.COL);
             }
             else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_R)
             {
-                this.setBulkRow();
-                this.executeTool(getLastHoveredLabel());
+                this.executeTool(getLastHoveredLabel(), bulk.ROW);
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
             {
