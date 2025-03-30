@@ -282,6 +282,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator();
         
+        menuItem = new JMenuItem("Undo");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.undo();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        
+        if (!edit.canUndo()) menuItem.setEnabled(false);
+        menuItem.setToolTipText("Control+Z");
+        
+        add(menuItem);
+        
         menuItem = new JMenuItem("Clear Diagram");
         menuItem.addActionListener(event -> 
         {

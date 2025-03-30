@@ -15,7 +15,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -59,6 +62,8 @@ public class LayoutEditor extends PositionAwareJFrame
     
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
+    
+    List<MarklinLayoutComponent> previousLayoutComponents;
 
     /**
      * Popup window showing editable train layouts
@@ -314,6 +319,8 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void executeTool(LayoutLabel label)
     {     
+        this.snapshotLayout();
+        
         if (bulkFlag == bulk.COL)
         {
             int startCol = this.lastX;
@@ -541,6 +548,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
+            this.snapshotLayout();
             layout.addComponent(null, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
             this.resetClipboard();
         }
@@ -561,7 +569,9 @@ public class LayoutEditor extends PositionAwareJFrame
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
         if (lc != null)
-        {       
+        {    
+            this.snapshotLayout();
+
             lc.rotate();
 
             try
@@ -587,20 +597,23 @@ public class LayoutEditor extends PositionAwareJFrame
                     
         if (lc != null)
         {       
-                String newText = (String) javax.swing.JOptionPane.showInputDialog(
-                    this, 
-                    "Enter new label text:", 
-                    "Edit Label", 
-                    javax.swing.JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    null,
-                    lc.getLabel() // Default value
-                );
-                
-                if (newText != null)
-                {
-                    lc.setLabel(newText);
-                }
+            String newText = (String) javax.swing.JOptionPane.showInputDialog(
+                this, 
+                "Enter new label text:", 
+                "Edit Label", 
+                javax.swing.JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                lc.getLabel() // Default value
+            );
+            
+
+            if (newText != null)
+            {
+                this.snapshotLayout();
+
+                lc.setLabel(newText);
+            }
 
             try
             {
@@ -620,7 +633,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param label 
      */
     public void editAddress(LayoutLabel label)
-    {       
+    {               
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
                     
         if (lc != null)
@@ -661,6 +674,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Process the input when OK is clicked
                 if (result == JOptionPane.OK_OPTION)
                 {
+                    this.snapshotLayout();
+
                     lc.setLogicalAddress(Integer.parseInt(textField.getText()));
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                 }
@@ -710,6 +725,8 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void shiftDown()
     {
+        this.snapshotLayout();
+        
         try
         {
             if (lastHoveredY > -1)
@@ -728,6 +745,8 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void shiftRight()
     {
+        this.snapshotLayout();
+
         try
         {
             if (lastHoveredX > -1)
@@ -790,7 +809,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         // Check if we are doing bulk actions
         if (!pauseRepaint)
-        {      
+        {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 drawGrid();
@@ -869,6 +888,63 @@ public class LayoutEditor extends PositionAwareJFrame
         this.ExtLayoutPanel.repaint();
     }
     
+    public boolean canUndo()
+    {
+        return this.previousLayoutComponents != null;
+    }
+    
+    /**
+     * Saves a previous version of the layout
+     */
+    private void snapshotLayout()
+    {
+        this.previousLayoutComponents = new ArrayList<>();
+        
+        System.out.println(layout.getSx());
+        System.out.println(layout.getSy());
+
+        for (MarklinLayoutComponent lc : this.layout.getAll())
+        {
+            try
+            {
+                this.previousLayoutComponents.add(new MarklinLayoutComponent(lc));
+            }
+            catch (IOException ex)
+            {
+                this.parent.getModel().log(ex);
+            }
+        }
+    }
+    
+    synchronized public void undo()
+    {
+        try
+        {     
+            if (this.previousLayoutComponents != null)
+            {           
+                // Delete all existing components
+                for (MarklinLayoutComponent lc : this.layout.getAll())
+                {
+                    layout.addComponent(null, lc.getX(), lc.getY());
+                }
+
+                // Placed previous components
+                for (MarklinLayoutComponent lc : this.previousLayoutComponents)
+                {
+                    layout.addComponent(lc, lc.getX(), lc.getY());
+                }
+                                
+                this.previousLayoutComponents = null;
+
+                this.refreshGrid();
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+        }
+    }
+    
     public void render()
     {        
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -909,6 +985,8 @@ public class LayoutEditor extends PositionAwareJFrame
                     //e.getComponent().setVisible(false);
                 }
             });
+            
+            this.previousLayoutComponents = null;
         }));
     }
           
@@ -1093,6 +1171,10 @@ public class LayoutEditor extends PositionAwareJFrame
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
                 this.toggleText();
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
+            {
+                this.undo();
             }
             else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
             {
