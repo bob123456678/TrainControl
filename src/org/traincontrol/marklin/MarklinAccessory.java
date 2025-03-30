@@ -74,6 +74,11 @@ public class MarklinAccessory extends Accessory
         return address >= 0 && address <= MAX_ADDRESS;
     }
     
+    public static boolean isValidAddress(int addr)
+    {
+        return addr >= 0 && addr <= MAX_ADDRESS;
+    }
+    
     /**
      * Returns the UID for the specified integer address
      * @param address

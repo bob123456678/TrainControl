@@ -733,21 +733,34 @@ public class MarklinLayoutComponent
     /**
      * Updates the component's address
      * @param address 
+     * @throws java.lang.Exception 
      */
-    public void setLogicalAddress(int address)
+    public void setLogicalAddress(int address) throws Exception
     {
-        this.address = address;
-        this.rawAddress = address;
-
         // Logical address is 2x the raw address
-        if (this.isSignal() || this.isSwitch() || this.isLamp())
+        if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
+            if (!MarklinAccessory.isValidAddress(address * 2))
+            {
+                throw new Exception("Invalid address, too large");
+            }
+            
             this.rawAddress = address * 2;
             this.address = address * 2;
         }
+        else
+        {
+            if (address < 0)
+            {
+                throw new Exception("Invalid address, must not be negative");
+            }
+            
+            this.address = address;
+            this.rawAddress = address;
+        }
         
         // Unsure if this is ever used
-        if (this.isFeedback())
+        /*if (this.isFeedback())
         {            
             if (address % 2 == 0)
             {
@@ -757,7 +770,7 @@ public class MarklinLayoutComponent
             {
                 this.address = (address - 1) / 2;
             }
-        }
+        }*/
     }
     
     /**
@@ -766,13 +779,20 @@ public class MarklinLayoutComponent
      */
     public int getLogicalAddress()
     {
-        if (this.isFeedback() || this.isLink())
+        if (this.isFeedback() || this.isLink() || this.isRoute())
         {
             return this.rawAddress;
         }
         else
         {
-            return this.address;
+            if (rawAddress % 2 == 0)
+            {
+                return (rawAddress / 2);
+            }
+            else
+            {
+                return (rawAddress - 1) / 2;
+            }
         }
     }
 }

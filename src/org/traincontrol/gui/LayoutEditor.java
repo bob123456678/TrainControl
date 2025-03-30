@@ -291,6 +291,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 menu.show(e.getComponent(), e.getX(), e.getY());      
             }));
         }
+        else if (e.getButton() == MouseEvent.BUTTON2)
+        {
+            this.rotate(label);
+        }
         else 
         {
             if (this.hasToolFlag())
@@ -690,7 +694,8 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             catch (Exception ex)
             {
-
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+                this.parent.getModel().log(ex);
             }
 
             refreshGrid();
