@@ -371,8 +371,9 @@ public class MarklinLayout
             }
         }
         
-        this.sx = 0;
-        this.sy = 0;
+        // Do not reset sx and sy unless we also shrink the arrays...
+        // this.sx = 0;
+        // this.sy = 0;
         this.checkBounds();
     }
     

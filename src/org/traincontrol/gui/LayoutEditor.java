@@ -858,12 +858,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (confirmation == JOptionPane.YES_OPTION)
             {
-                // Reset all history - if we want this to work, the restore method needs to increase diagram size correctly
-                this.previousLayoutComponents.clear();
+                this.snapshotLayout();
                 
                 layout.clear();
                 this.resetClipboard();
-                // lastHoveredX = lastHoveredY = -1;
 
                 refreshGrid();
             }
