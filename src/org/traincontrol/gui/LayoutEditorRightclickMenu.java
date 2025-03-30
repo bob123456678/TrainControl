@@ -19,7 +19,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         JMenu pasteSubMenu = new JMenu("Paste..."); // Create the submenu
 
-        JMenuItem pasteMenuItem = new JMenuItem("Paste Tile");
+        JMenuItem pasteMenuItem = new JMenuItem("Tile");
         pasteMenuItem.addActionListener(event -> 
         {
             try
@@ -33,14 +33,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         });
         pasteMenuItem.setToolTipText("Control+V");
 
-        if (!edit.hasToolFlag()) 
-        {
-            pasteMenuItem.setEnabled(false);
-        }
+        pasteSubMenu.add(pasteMenuItem);
 
-        pasteSubMenu.add(pasteMenuItem); // Add "Paste" to the submenu
-
-        JMenuItem pasteColumnMenuItem = new JMenuItem("Paste Column");
+        JMenuItem pasteColumnMenuItem = new JMenuItem("Entire Column");
         pasteColumnMenuItem.addActionListener(event -> 
         {
             try
@@ -54,15 +49,15 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         pasteColumnMenuItem.setToolTipText("Shift+C");
-
-        if (!edit.hasToolFlag()) 
+        
+        if (edit.addBoxHighlighted())
         {
             pasteColumnMenuItem.setEnabled(false);
         }
 
-        pasteSubMenu.add(pasteColumnMenuItem); // Add "Paste Column" to the submenu
+        pasteSubMenu.add(pasteColumnMenuItem);
 
-        JMenuItem pasteRowMenuItem = new JMenuItem("Paste Row");
+        JMenuItem pasteRowMenuItem = new JMenuItem("Entire Row");
         pasteRowMenuItem.addActionListener(event -> 
         {
             try
@@ -77,12 +72,17 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         });
         pasteRowMenuItem.setToolTipText("Shift+R");
 
-        if (!edit.hasToolFlag()) 
+        if (edit.addBoxHighlighted())
         {
             pasteRowMenuItem.setEnabled(false);
         }
+        
+        if (!edit.hasToolFlag()) 
+        {
+            pasteSubMenu.setEnabled(false);
+        }
 
-        pasteSubMenu.add(pasteRowMenuItem); // Add "Paste Row" to the submenu
+        pasteSubMenu.add(pasteRowMenuItem); 
 
         add(pasteSubMenu); // Add the submenu to the parent menu
         
@@ -248,6 +248,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         menuItem.setToolTipText("Control+I");
         add(menuItem);
         
+        addSeparator();
+        
         menuItem = new JMenuItem("Shift Right");
         menuItem.addActionListener(event -> 
         {
@@ -260,7 +262,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        //menuItem.setToolTipText("Control+I");
+        menuItem.setToolTipText("Shifts the entire diagram right from the highlighted column");
         add(menuItem);
         
         menuItem = new JMenuItem("Shift Down");
@@ -275,7 +277,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        //menuItem.setToolTipText("Control+I");
+        menuItem.setToolTipText("Shifts the entire diagram down from the highlighted row");
         add(menuItem);
         
         addSeparator();

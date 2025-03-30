@@ -473,7 +473,7 @@ public class MarklinLayout
         {
              for (int x = maxx - 1; x >= startCol; x--)
              { // Start from the second-to-last column and move backward
-                 for (int y = 0; y < maxy; y++)
+                 for (int y = 0; y <= maxy; y++)
                  {
                      MarklinLayoutComponent component = getComponent(x, y);
 

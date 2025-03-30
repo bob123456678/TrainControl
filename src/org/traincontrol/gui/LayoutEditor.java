@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -171,6 +172,32 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    /**
+     * Checks if any of the tiles in the new component box are highlighted, indicating an active tool
+     * @return 
+     */
+    public boolean addBoxHighlighted()
+    {
+        for (Component component : this.newComponents.getComponents())
+        {
+            if (component instanceof JLabel)
+            {
+                JLabel label = (JLabel) component;
+                Border border = label.getBorder();
+
+                if (border instanceof LineBorder)
+                {
+                    LineBorder lineBorder = (LineBorder) border;
+                    if (lineBorder.getLineColor().equals(Color.RED))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+   
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {        
         lastHoveredX = getX(label);
@@ -314,6 +341,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 pauseRepaint = false;
+                this.resetClipboard();
                 refreshGrid();
             }
         }
@@ -359,6 +387,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 pauseRepaint = false;
+                this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually set toolFlag and bulkFlag here, as deletion resets the flag
                 refreshGrid();
                 
                 // TODO - defer redraw
@@ -453,6 +482,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.lastY = -1;
         this.lastComponent = null;
         this.toolFlag = null;
+        this.bulkFlag = null;
         this.clearBordersFromChildren(this.newComponents);
     }
     
@@ -475,7 +505,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else
         {
-            this.lastComponent = layout.getComponent(lastX, lastY);
+            lastComponent = layout.getComponent(lastX, lastY);
         }
         
         this.toolFlag = move ? tool.MOVE : tool.COPY;
