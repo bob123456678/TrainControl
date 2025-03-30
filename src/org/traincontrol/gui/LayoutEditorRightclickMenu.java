@@ -47,6 +47,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
+        menuItem.setToolTipText("Shift+C");
+
         if (!edit.hasToolFlag()) menuItem.setEnabled(false);
 
         add(menuItem);
@@ -56,13 +58,15 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         {
             try
             {
-                //edit.copyRow(label);
+                edit.setBulkRow();
+                edit.executeTool(label);
             }
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
+        menuItem.setToolTipText("Shift+R");
 
         if (!edit.hasToolFlag()) menuItem.setEnabled(false);
 

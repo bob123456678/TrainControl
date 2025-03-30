@@ -411,6 +411,12 @@ public class MarklinLayout
         this.editShowAddress = editShowAddress;
     }
     
+    /**
+     * Writes a file with the list of all layout pages
+     * @param path
+     * @param layoutList
+     * @throws IOException 
+     */
     public static void writeLayoutIndex(String path, List<String> layoutList) throws IOException
     {
         // Ensure the directory exists
@@ -423,33 +429,33 @@ public class MarklinLayout
         // Construct the file path
         String filePath = Paths.get(path, "config", "gleisbild.cs2").toString();
         
-        // Write the file
-        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
-        
-        // Write header and static content
-        writer.write("[gleisbild]\n");
-        writer.write("version\n");
-        writer.write(" .major=1\n");
-        writer.write("groesse\n");
-
-        // Write layout details
-        int id = 1;
-        for (String layout : layoutList)
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath)))
         {
-            writer.write("seite\n");
-            if (id != 1) { // Skip ID for the first layout
-                writer.write(" .id=" + id + "\n");
-            }
+            // Write header and static content
+            writer.write("[gleisbild]\n");
+            writer.write("version\n");
+            writer.write(" .major=1\n");
+            writer.write("groesse\n");
             
-            writer.write(" .name=" + layout + "\n");
-            id++;
+            // Write layout details
+            int id = 1;
+            for (String layout : layoutList)
+            {
+                writer.write("seite\n");
+                if (id != 1) { // Skip ID for the first layout
+                    writer.write(" .id=" + id + "\n");
+                }
+                
+                writer.write(" .name=" + layout + "\n");
+                id++;
+            }
         }
-        
-        writer.close();
     }
     
+    // We don't use these methods in the UI becuase we would also need shiftLeft and shiftDown for completeness
+    
     /**
-     * Adds a new column to the layout and shifts all existing components one column to the right.
+     * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.
      * @param startCol
      * @throws IOException
      */
@@ -484,7 +490,7 @@ public class MarklinLayout
     }
     
     /**
-    * Adds a new row to the layout and shifts all existing components one row downward.
+    * Adds a new row to the layout at the specified index and shifts all existing components one row downward.
     * @param startRow
     * @throws IOException
     */

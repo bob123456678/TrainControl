@@ -56,6 +56,8 @@ public class LayoutEditor extends PositionAwareJFrame
     // Default size of new layouts
     public static final int DEFAULT_NEW_SIZE_ROWS = 8;
     public static final int DEFAULT_NEW_SIZE_COLS = 10;
+    
+    private boolean pauseRepaint = false;
 
     /**
      * Popup window showing train layouts
@@ -158,10 +160,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     public void receiveKeyEvent(KeyEvent e, LayoutLabel label)
-    {
-                    System.out.println("paste");
-
-        
+    {        
         if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_V)
         {
             if (this.hasToolFlag())
@@ -222,6 +221,11 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    public void setBulkRow()
+    {
+        this.bulkFlag = bulk.ROW;
+    }
+    
     public void setBulkColumn()
     {
         this.bulkFlag = bulk.COL;
@@ -232,11 +236,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param label 
      */
     public void executeTool(LayoutLabel label)
-    {
-                          
+    {     
         if (bulkFlag == bulk.COL)
         {
-
             int startCol = this.lastX;
             int destCol = this.getX(label);
 
@@ -245,6 +247,14 @@ public class LayoutEditor extends PositionAwareJFrame
                 List<LayoutLabel> destColumn = grid.getColumn(destCol);
                 List<LayoutLabel> sourceColumn = grid.getColumn(startCol);
 
+                pauseRepaint = true;
+                
+                // Clear existing tiles
+                for (LayoutLabel l : destColumn)
+                {
+                    if (l.getComponent() != null) this.delete(l);
+                }
+                
                 for (int i = 0; i < sourceColumn.size(); i++)
                 {
                     LayoutLabel sourceLabel = sourceColumn.get(i);
@@ -265,8 +275,56 @@ public class LayoutEditor extends PositionAwareJFrame
                 for (LayoutLabel l : sourceColumn)
                 {
                     if (this.toolFlag == tool.MOVE && l.getComponent() != null) this.delete(l);
+                }
+                
+                pauseRepaint = false;
+                refreshGrid();
+                
+                // TODO - defer redraw
+            }
+        }
+        else if (bulkFlag == bulk.ROW)
+        {
+            int startRow = this.lastY;
+            int destRow = this.getY(label);
+
+            if (startRow != -1 && destRow != -1 && startRow != destRow)
+            {
+                List<LayoutLabel> destinationRow = grid.getRow(destRow);
+                List<LayoutLabel> sourceRow = grid.getRow(startRow);
+
+                pauseRepaint = true;
+                
+                // Clear existing tiles
+                for (LayoutLabel l : destinationRow)
+                {
+                    if (l.getComponent() != null) this.delete(l);
+                }
+                
+                for (int i = 0; i < sourceRow.size(); i++)
+                {
+                    LayoutLabel sourceLabel = sourceRow.get(i);
+                    LayoutLabel destLabel = destinationRow.get(i);
+                    this.lastX = i;
+                    this.lastY = startRow;
+                    this.lastComponent = sourceLabel.getComponent();
+
+                    if (this.lastComponent != null)
+                    {
+                        execCopy(destLabel, false);
+                    }
+
+                    //this.toolFlag = tool.COPY;
+                }
+                
+                for (LayoutLabel l : sourceRow)
+                {
+                    if (this.toolFlag == tool.MOVE && l.getComponent() != null) this.delete(l);
 
                 }
+                
+                pauseRepaint = false;
+                refreshGrid();
                 
                 // TODO - defer redraw
             }
@@ -275,13 +333,12 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (toolFlag == tool.COPY)
             {
-                                execCopy(label, false);
+                execCopy(label, false);
 
             }
-            else
+            else if (toolFlag == tool.MOVE)
             {
-                                execCopy(label, true);
-
+                execCopy(label, true);
             }
         }
         
@@ -338,10 +395,7 @@ public class LayoutEditor extends PositionAwareJFrame
             
         }
                 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+        refreshGrid();
     }
     
     /**
@@ -364,6 +418,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.lastX = getX(label);
         this.lastY = getY(label);
+        this.bulkFlag = null;
+        this.pauseRepaint = false;
         
         if (component != null)
         {
@@ -376,10 +432,11 @@ public class LayoutEditor extends PositionAwareJFrame
         
         this.toolFlag = move ? tool.MOVE : tool.COPY;
         
-        if (move)
+        // Delete after pasting instead
+        /* if (move)
         {
-            // delete(label);
-        }
+            delete(label);
+        }*/
         
         this.clearBordersFromChildren(this.newComponents);
     }
@@ -399,10 +456,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         }
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            drawGrid();
-        }));
+        refreshGrid();
     }
         
     /**
@@ -426,10 +480,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
     }
     
@@ -467,10 +518,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
     }
     
@@ -533,10 +581,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             }
 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
     }
     
@@ -576,10 +621,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 layout.shiftDown(lastHoveredY);
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-                {
-                    drawGrid();
-                }));
+                refreshGrid();
             }
         }
         catch (Exception e)
@@ -597,10 +639,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 layout.shiftRight(lastHoveredX);
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-                {
-                    drawGrid();
-                }));
+                refreshGrid();
             }
         }
         catch (Exception e)
@@ -616,10 +655,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             layout.addRowsAndColumns(rows, cols);
             
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
         catch (Exception e)
         {
@@ -637,15 +673,27 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.layout.setEditHideText(!this.layout.getEditHideText());
             
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
         catch (Exception e)
         {
             this.parent.getModel().log(e.getMessage());
             this.parent.getModel().log(e);
+        }
+    }
+    
+    /**
+     * Threaded version of drawGrid
+     */
+    private void refreshGrid()
+    {
+        // Check if we are doing bulk actions
+        if (!pauseRepaint)
+        {      
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                drawGrid();
+            }));
         }
     }
     
@@ -658,10 +706,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.layout.setEditShowAddress(!this.layout.getEditShowAddress());
             
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                drawGrid();
-            }));
+            refreshGrid();
         }
         catch (Exception e)
         {
@@ -675,10 +720,10 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             int confirmation = JOptionPane.showConfirmDialog(
-                    this,
-                    "This will delete everything on the track diagram. Are you sure you want to proceed?",
-                    "Please Confirm",
-                    JOptionPane.YES_NO_OPTION
+                this,
+                "This will delete everything on the track diagram. Are you sure you want to proceed?",
+                "Please Confirm",
+                JOptionPane.YES_NO_OPTION
             );
 
             if (confirmation == JOptionPane.YES_OPTION)
@@ -686,10 +731,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 layout.clear();
                 lastHoveredX = lastHoveredY = -1;
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-                {
-                    drawGrid();
-                }));
+                refreshGrid();
             }
         }
         catch (Exception e)
@@ -703,7 +745,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * Refreshes the layout
      */
     synchronized private void drawGrid()
-    {
+    {        
         //this.ExtLayoutPanel.removeAll();
         if (grid != null)
         {
@@ -800,8 +842,8 @@ public class LayoutEditor extends PositionAwareJFrame
         jScrollPane1 = new javax.swing.JScrollPane();
         ExtLayoutPanel = new javax.swing.JPanel();
         newComponents = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        saveButton = new javax.swing.JButton();
+        cancelButton = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
@@ -846,19 +888,19 @@ public class LayoutEditor extends PositionAwareJFrame
             .addGap(0, 0, Short.MAX_VALUE)
         );
 
-        jButton1.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
-        jButton1.setText("Save Changes");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        saveButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        saveButton.setText("Save Changes");
+        saveButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                saveButtonActionPerformed(evt);
             }
         });
 
-        jButton2.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
-        jButton2.setText("Cancel");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        cancelButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        cancelButton.setText("Cancel");
+        cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                cancelButtonActionPerformed(evt);
             }
         });
 
@@ -876,8 +918,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(saveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -891,9 +933,9 @@ public class LayoutEditor extends PositionAwareJFrame
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1)
+                        .addComponent(saveButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton2))
+                        .addComponent(cancelButton))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -924,6 +966,18 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.rotate(getLastHoveredLabel());
         }
+        else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_C)
+        {            System.out.println("COL");
+
+            this.setBulkColumn();
+            this.executeTool(getLastHoveredLabel());
+        }
+        else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_R)
+        {
+            System.out.println("ROW");
+            this.setBulkRow();
+            this.executeTool(getLastHoveredLabel());
+        }
         else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
         {
             this.editText(getLastHoveredLabel());
@@ -950,20 +1004,24 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }//GEN-LAST:event_formKeyPressed
     
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
             layout.saveChanges(null, false);
             parent.layoutEditingComplete();
-            setVisible(false);
-        } catch (Exception ex) {
+            dispose();
+        }
+        catch (Exception ex)
+        {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }        
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_saveButtonActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed
+        
+        parent.layoutEditingComplete();
         dispose();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_cancelButtonActionPerformed
 
     private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
         clearBordersFromChildren(this.grid.getContainer());
@@ -971,10 +1029,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton cancelButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel newComponents;
+    private javax.swing.JButton saveButton;
     // End of variables declaration//GEN-END:variables
 }
