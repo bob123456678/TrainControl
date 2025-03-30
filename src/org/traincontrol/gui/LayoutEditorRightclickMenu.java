@@ -86,6 +86,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         add(pasteSubMenu); // Add the submenu to the parent menu
         
+        menuItem = new JMenuItem("Undo");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.undo();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        
+        if (!edit.canUndo()) menuItem.setEnabled(false);
+        menuItem.setToolTipText("Control+Z");
+        
+        add(menuItem);
+        
         if (component != null)
         {
             addSeparator();
@@ -281,24 +299,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         add(menuItem);
         
         addSeparator();
-        
-        menuItem = new JMenuItem("Undo");
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.undo();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        
-        if (!edit.canUndo()) menuItem.setEnabled(false);
-        menuItem.setToolTipText("Control+Z");
-        
-        add(menuItem);
         
         menuItem = new JMenuItem("Clear Diagram");
         menuItem.addActionListener(event -> 

@@ -15,7 +15,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,7 +65,9 @@ public class LayoutEditor extends PositionAwareJFrame
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
     
-    List<MarklinLayoutComponent> previousLayoutComponents;
+    // Undo history
+    Deque<List<MarklinLayoutComponent>> previousLayoutComponents = new ArrayDeque<>();
+    public static final int MAX_UNDO_HISTORY = 20;
 
     /**
      * Popup window showing editable train layouts
@@ -548,7 +552,11 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            this.snapshotLayout();
+            if (!this.pauseRepaint)
+            {
+                this.snapshotLayout();
+            }
+            
             layout.addComponent(null, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
             this.resetClipboard();
         }
@@ -607,7 +615,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 lc.getLabel() // Default value
             );
             
-
             if (newText != null)
             {
                 this.snapshotLayout();
@@ -851,6 +858,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (confirmation == JOptionPane.YES_OPTION)
             {
+                // Reset all history - if we want this to work, the restore method needs to increase diagram size correctly
+                this.previousLayoutComponents.clear();
+                
                 layout.clear();
                 this.resetClipboard();
                 // lastHoveredX = lastHoveredY = -1;
@@ -888,40 +898,54 @@ public class LayoutEditor extends PositionAwareJFrame
         this.ExtLayoutPanel.repaint();
     }
     
+    /**
+     * Checks if there is any history to undo
+     * @return 
+     */
     public boolean canUndo()
     {
-        return this.previousLayoutComponents != null;
+        return !this.previousLayoutComponents.isEmpty();
     }
     
     /**
      * Saves a previous version of the layout
      */
-    private void snapshotLayout()
+    synchronized private void snapshotLayout()
     {
-        this.previousLayoutComponents = new ArrayList<>();
+        List<MarklinLayoutComponent> history = new ArrayList<>();
         
-        System.out.println(layout.getSx());
-        System.out.println(layout.getSy());
-
         for (MarklinLayoutComponent lc : this.layout.getAll())
         {
             try
             {
-                this.previousLayoutComponents.add(new MarklinLayoutComponent(lc));
+                history.add(new MarklinLayoutComponent(lc));
             }
             catch (IOException ex)
             {
                 this.parent.getModel().log(ex);
             }
         }
+        
+        // Enforce size limit
+        if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
+        {
+            this.previousLayoutComponents.removeLast();
+        }
+        
+        this.previousLayoutComponents.push(history);
     }
     
+    /**
+     * Restores previous layout state
+     */
     synchronized public void undo()
     {
         try
         {     
-            if (this.previousLayoutComponents != null)
-            {           
+            if (!this.previousLayoutComponents.isEmpty())
+            {         
+                List<MarklinLayoutComponent> history = this.previousLayoutComponents.pop();
+                
                 // Delete all existing components
                 for (MarklinLayoutComponent lc : this.layout.getAll())
                 {
@@ -929,13 +953,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
 
                 // Placed previous components
-                for (MarklinLayoutComponent lc : this.previousLayoutComponents)
+                for (MarklinLayoutComponent lc : history)
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
                                 
-                this.previousLayoutComponents = null;
-
                 this.refreshGrid();
             }
         }
@@ -984,9 +1006,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     //e.getComponent().setVisible(false);
                 }
-            });
-            
-            this.previousLayoutComponents = null;
+            });            
         }));
     }
           
