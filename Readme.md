@@ -46,9 +46,11 @@ Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (
 
 From v2.5.0, full cross-platfrom track diagram editing support is available in TrainControl.  
 
+![UI screenshot: layout editor](assets/editor.png?raw=true)
+
 Between v2.0.x and v2.4.x, you can also edit local track diagrams via a bundled Windows-only program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor)).
 
-![UI screenshot: layout editor](assets/track_diagram_editor.png?raw=true)
+![UI screenshot: old layout editor](assets/track_diagram_editor.png?raw=true)
 
 <details>
 <summary>Instructions for Managing and Importing Layouts</summary>
