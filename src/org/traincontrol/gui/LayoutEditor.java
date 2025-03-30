@@ -1002,7 +1002,10 @@ public class LayoutEditor extends PositionAwareJFrame
             if (!this.isLoaded())
             {
                 this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 150));
-                this.setMinimumSize(new Dimension(550, 620));
+                this.setMinimumSize(new Dimension(
+                        550 + (this.size == 60 ? 200 : 0), 
+                        620 + (this.size == 60 ? 320 : 0))
+                );
                 pack();
             }
 

@@ -11853,19 +11853,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     JOptionPane.showMessageDialog(this, "Downloaded update to:\n" + f.getAbsolutePath() + "\n\nReplace your existing .jar with the new file.");
                     
-                    try
-                    {
-                        Desktop.getDesktop().open(new File(f.getAbsoluteFile().toString()).getParentFile());
-                    }
-                    catch (Exception e)
-                    {
-                        this.model.log("Could not open file explorer.");
-                        
-                        if (this.model.isDebug())
-                        {
-                            this.model.log(e);
-                        }
-                    }
+                    showFileExplorer(new File(f.getAbsoluteFile().toString()).getParentFile());
                 }));
             }
             catch (Exception e)
@@ -13731,6 +13719,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
     }
     
+    private void showFileExplorer(File path)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            try
+            {
+                Desktop.getDesktop().open(path);
+            }
+            catch (Exception e)
+            {
+                this.model.log("Could not open file explorer.");
+
+                if (this.model.isDebug())
+                {
+                    this.model.log(e);
+                }
+            }
+        }));
+    }
+    
     /**
      * Gets the active layout path
      * @return 
@@ -13743,6 +13751,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
+            showFileExplorer(new File(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "")));
+            
             return "Local Layout Files:\n" + prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
         }
     }
