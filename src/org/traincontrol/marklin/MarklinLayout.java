@@ -32,7 +32,7 @@ public class MarklinLayout
     int miny = 0;
     int maxx;
     int maxy;
-
+    
     public int getMinx()
     {
         return minx;
@@ -325,28 +325,28 @@ public class MarklinLayout
      * @param numColumns
      * @throws IOException 
      */
-    public void addRowsAndColumns(int numRows, int numColumns) throws IOException
+    synchronized public void addRowsAndColumns(int numRows, int numColumns) throws IOException
     {
-        for (int x = 0; x < numRows; x++)
+        for (int x = 0; x < numColumns; x++)
         {
-            List<MarklinLayoutComponent> newRow = new ArrayList<>();
+            List<MarklinLayoutComponent> newColumn = new ArrayList<>();
             
             for (int i = 0; i < sx; i++)
             {
-                newRow.add(null);
+                newColumn.add(null);
             }
 
-            grid.add(newRow);
+            grid.add(newColumn);
             
             sx+=1;
             maxx+=1;
         }
         
-        for (int x = 0; x < numColumns; x++)
+        for (int x = 0; x < numRows; x++)
         {
-            for (List<MarklinLayoutComponent> row : grid)
+            for (List<MarklinLayoutComponent> col : grid)
             {
-                row.add(null);
+                col.add(null);
             }
 
             sy+=1;
@@ -365,7 +365,7 @@ public class MarklinLayout
      * Clears the layout
      * @throws IOException 
      */
-    public void clear() throws IOException
+    synchronized public void clear() throws IOException
     {
         for (int y = 0; y < sy; y++)
         {

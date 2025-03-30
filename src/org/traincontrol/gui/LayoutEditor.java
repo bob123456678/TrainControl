@@ -35,8 +35,10 @@ import org.traincontrol.marklin.MarklinLayoutComponent;
 public class LayoutEditor extends PositionAwareJFrame
 {
     public static enum tool {MOVE, COPY};
-        public static enum bulk {ROW, COL};
+    public static enum bulk {ROW, COL};
 
+    // Max rows or columns
+    public static final int MAX_SIZE = 60;
     
     private final TrainControlUI parent;
     private final int size;
@@ -54,8 +56,8 @@ public class LayoutEditor extends PositionAwareJFrame
     //private LayoutLabel lastHoveredLabel = null;
     
     // Default size of new layouts
-    public static final int DEFAULT_NEW_SIZE_ROWS = 8;
-    public static final int DEFAULT_NEW_SIZE_COLS = 10;
+    public static final int DEFAULT_NEW_SIZE_ROWS = 15;
+    public static final int DEFAULT_NEW_SIZE_COLS = 21;
     
     private boolean pauseRepaint = false;
 
@@ -89,12 +91,10 @@ public class LayoutEditor extends PositionAwareJFrame
         gbc.insets = new java.awt.Insets(2, 2, 2, 2); // Top, left, bottom, right padding
 
         int cols = 3;
- 
         
         // Initialize components we can place
         for (MarklinLayoutComponent.componentType type : MarklinLayoutComponent.componentType.values())
         {
-            System.out.println(type.toString());
             this.newComponents.add(this.getLabel(type, "T"), gbc);
 
             // Move to the next grid position
@@ -152,8 +152,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception e)
         {
-            System.out.println("ERROR");
-            e.printStackTrace();
+            this.parent.getModel().log(e.toString());
+            this.parent.getModel().log(e);
         }
         
         return null;
@@ -171,7 +171,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
-    {
+    {        
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
      
@@ -179,6 +179,15 @@ public class LayoutEditor extends PositionAwareJFrame
         
         if (lastHoveredX != -1 && lastHoveredY != -1)
         {
+            if (this.hasToolFlag())
+            {
+                label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
+            else
+            {
+                label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+            
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 this.clearBordersFromChildren(this.grid.getContainer());
@@ -191,14 +200,9 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
-        System.out.println(label);
-                
-        System.out.println(Arrays.toString(grid.getCoordinates(label)));
-        
-        // Child component
+        // New label to place
         if (getX(label) == -1 && getY(label) == -1)
         {
-            System.out.println("INIT COPY");
             this.initCopy(label, label.getComponent(), false);
             this.highlightLabel(label);
             return;
@@ -217,7 +221,18 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else 
         {
-            executeTool(label);
+            if (this.hasToolFlag())
+            {
+                executeTool(label);
+            }
+            else
+            {
+                // Click to cut
+                if (label != null && label.getComponent() != null)
+                {
+                    this.initCopy(label, null, true);
+                }
+            }
         }
     }
     
@@ -235,7 +250,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * Executes the currently active tool
      * @param label 
      */
-    public void executeTool(LayoutLabel label)
+    synchronized public void executeTool(LayoutLabel label)
     {     
         if (bulkFlag == bulk.COL)
         {
@@ -346,10 +361,12 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.clearBordersFromChildren(this.newComponents);
             
+            // Not needed - done in the execCopy method
+            /*
             if (this.toolFlag == tool.MOVE)
             {
                 this.toolFlag = null;
-            }
+            }*/
         }
     }
     
@@ -358,7 +375,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param destLabel
      * @param move 
      */
-    private void execCopy(LayoutLabel destLabel, boolean move)
+    synchronized private void execCopy(LayoutLabel destLabel, boolean move)
     {        
         try
         {
@@ -379,15 +396,16 @@ public class LayoutEditor extends PositionAwareJFrame
             
             layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
             
-            System.out.println(lastX);
-            System.out.println(lastY);
-            
             // Avoid clearing if we are placing new items
             if (lastX != -1 || lastY != -1)
             {
                 this.clearBordersFromChildren(this.newComponents);
                 
-                if (move) resetClipboard();
+                if (move)
+                {
+                    resetClipboard();
+                    // reset tool now in clipboard
+                }
             }
         }
         catch (IOException ex)
@@ -401,11 +419,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Resets the contents of the clipboard
      */
-    private void resetClipboard()
+    synchronized private void resetClipboard()
     {
         this.lastX = -1;
         this.lastY = -1;
         this.lastComponent = null;
+        this.toolFlag = null;
+        this.clearBordersFromChildren(this.newComponents);
     }
     
     /**
@@ -414,7 +434,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param component - the component at the label location, or one that's specified
      * @param move 
      */
-    public void initCopy(LayoutLabel label, MarklinLayoutComponent component, boolean move)
+    synchronized public void initCopy(LayoutLabel label, MarklinLayoutComponent component, boolean move)
     {
         this.lastX = getX(label);
         this.lastY = getY(label);
@@ -445,11 +465,12 @@ public class LayoutEditor extends PositionAwareJFrame
      * Deletes this label from the layout
      * @param x 
      */
-    public void delete(LayoutLabel x)
+    synchronized public void delete(LayoutLabel x)
     {
         try
         {
             layout.addComponent(null, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
+            this.toolFlag = null;
         }
         catch (IOException ex)
         {
@@ -463,7 +484,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * Rotates the specified label
      * @param label 
      */
-    public void rotate(LayoutLabel label)
+    synchronized public void rotate(LayoutLabel label)
     {       
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
@@ -651,6 +672,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void addRowsAndColumns(int rows, int cols)
     {
+        if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
+        {
+            JOptionPane.showMessageDialog(this, "No more than " + MAX_SIZE + " rows or columns are allowed.");
+            return;
+        }
+        
         try
         {
             layout.addRowsAndColumns(rows, cols);
@@ -946,62 +973,67 @@ public class LayoutEditor extends PositionAwareJFrame
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         
         // Handle key shortcuts
-        if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            if (this.hasToolFlag() && getLastHoveredLabel() != null)
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
+                if (this.hasToolFlag() && getLastHoveredLabel() != null)
+                {
+                    this.executeTool(getLastHoveredLabel());
+                }
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
+            {
+                this.initCopy(getLastHoveredLabel(), null, true);
+
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
+            {
+                this.initCopy(getLastHoveredLabel(), null, false);
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_R)
+            {
+                this.rotate(getLastHoveredLabel());
+            }
+            else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_C)
+            {          
+                this.setBulkColumn();
                 this.executeTool(getLastHoveredLabel());
             }
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
-        {
-            this.initCopy(getLastHoveredLabel(), null, true);
-
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
-        {
-            this.initCopy(getLastHoveredLabel(), null, false);
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_R)
-        {
-            this.rotate(getLastHoveredLabel());
-        }
-        else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_C)
-        {            System.out.println("COL");
-
-            this.setBulkColumn();
-            this.executeTool(getLastHoveredLabel());
-        }
-        else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_R)
-        {
-            System.out.println("ROW");
-            this.setBulkRow();
-            this.executeTool(getLastHoveredLabel());
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
-        {
-            this.editText(getLastHoveredLabel());
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_A)
-        {
-            this.editAddress(getLastHoveredLabel());
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
-        {
-            this.addRowsAndColumns(1, 1);
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
-        {
-            this.toggleAddresses();
-        }
-        else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
-        {
-            this.toggleText();
-        }
-        else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
-        {
-            this.delete(getLastHoveredLabel());
-        }
+            else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_R)
+            {
+                this.setBulkRow();
+                this.executeTool(getLastHoveredLabel());
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
+            {
+                this.editText(getLastHoveredLabel());
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_A)
+            {
+                this.editAddress(getLastHoveredLabel());
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
+            {
+                this.addRowsAndColumns(1, 1);
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
+            {
+                this.toggleAddresses();
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
+            {
+                this.toggleText();
+            }
+            else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
+            {
+                this.delete(getLastHoveredLabel());
+            }
+            else if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+            {
+                this.resetClipboard();
+            }
+        }));
     }//GEN-LAST:event_formKeyPressed
     
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
