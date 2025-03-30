@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -800,6 +801,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             this.layout.setEditHideText(!this.layout.getEditHideText());
             
+            this.showTextCheckbox.setSelected(!this.layout.getEditHideText());
+
             refreshGrid();
         }
         catch (Exception e)
@@ -835,6 +838,8 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             this.layout.setEditShowAddress(!this.layout.getEditShowAddress());
+            
+            this.showAddressCheckbox.setSelected(this.layout.getEditShowAddress());
             
             refreshGrid();
         }
@@ -978,8 +983,8 @@ public class LayoutEditor extends PositionAwareJFrame
             // Scale the popup according to the size of the layout
             if (!this.isLoaded())
             {
-                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 130));
-                this.setMinimumSize(new Dimension(550, 550));
+                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 150));
+                this.setMinimumSize(new Dimension(550, 620));
                 pack();
             }
 
@@ -1002,10 +1007,33 @@ public class LayoutEditor extends PositionAwareJFrame
                 @Override
                 public void windowClosing(WindowEvent e)
                 {
-                    //e.getComponent().setVisible(false);
+                    confirmExit();
                 }
             });            
         }));
+    }
+    
+    /**
+     * If there are unsaved changes, checks with the user prior to closng the window
+     */
+    private void confirmExit()
+    {
+        if (canUndo())
+        {
+            int result = JOptionPane.showConfirmDialog(this, 
+                "Are you sure you want to close the editor without saving changes?", 
+                "Exit Confirmation", 
+            JOptionPane.YES_NO_OPTION);
+
+            if (result != JOptionPane.YES_OPTION)
+            {
+                return;
+            }
+        }
+        
+        parent.layoutEditingComplete();
+
+        this.dispose();    
     }
           
     public int getLayoutSize()
@@ -1037,8 +1065,12 @@ public class LayoutEditor extends PositionAwareJFrame
         saveButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
+        showTextCheckbox = new javax.swing.JCheckBox();
+        showAddressCheckbox = new javax.swing.JCheckBox();
+        jLabel2 = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(300, 180));
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -1062,7 +1094,7 @@ public class LayoutEditor extends PositionAwareJFrame
         );
         ExtLayoutPanelLayout.setVerticalGroup(
             ExtLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 431, Short.MAX_VALUE)
+            .addGap(0, 434, Short.MAX_VALUE)
         );
 
         jScrollPane1.setViewportView(ExtLayoutPanel);
@@ -1100,6 +1132,31 @@ public class LayoutEditor extends PositionAwareJFrame
         jLabel1.setForeground(new java.awt.Color(0, 0, 155));
         jLabel1.setText("New Components");
 
+        showTextCheckbox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        showTextCheckbox.setSelected(true);
+        showTextCheckbox.setText("Text Labels");
+        showTextCheckbox.setToolTipText("Control+T");
+        showTextCheckbox.setFocusable(false);
+        showTextCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showTextCheckboxActionPerformed(evt);
+            }
+        });
+
+        showAddressCheckbox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        showAddressCheckbox.setText("Addresses");
+        showAddressCheckbox.setToolTipText("Control+D");
+        showAddressCheckbox.setFocusable(false);
+        showAddressCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showAddressCheckboxActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(0, 0, 155));
+        jLabel2.setText("Toggle Visibility");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -1112,7 +1169,11 @@ public class LayoutEditor extends PositionAwareJFrame
                     .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(saveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(showTextCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(showAddressCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jSeparator1))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1125,10 +1186,18 @@ public class LayoutEditor extends PositionAwareJFrame
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(showTextCheckbox)
+                        .addGap(4, 4, 4)
+                        .addComponent(showAddressCheckbox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(saveButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(cancelButton))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 449, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -1220,20 +1289,31 @@ public class LayoutEditor extends PositionAwareJFrame
 
     private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed
         
-        parent.layoutEditingComplete();
-        dispose();
+        confirmExit();
     }//GEN-LAST:event_cancelButtonActionPerformed
 
     private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
         clearBordersFromChildren(this.grid.getContainer());
     }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
+    private void showAddressCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAddressCheckboxActionPerformed
+        toggleAddresses();
+    }//GEN-LAST:event_showAddressCheckboxActionPerformed
+
+    private void showTextCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showTextCheckboxActionPerformed
+        toggleText();
+    }//GEN-LAST:event_showTextCheckboxActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;
     private javax.swing.JButton cancelButton;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JPanel newComponents;
     private javax.swing.JButton saveButton;
+    private javax.swing.JCheckBox showAddressCheckbox;
+    private javax.swing.JCheckBox showTextCheckbox;
     // End of variables declaration//GEN-END:variables
 }

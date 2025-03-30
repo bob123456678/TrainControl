@@ -213,7 +213,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator();
         
-        menuItem = new JCheckBoxMenuItem("Show Text Labels");
+        /*menuItem = new JCheckBoxMenuItem("Show Text Labels");
         menuItem.setSelected(!edit.getMarklinLayout().getEditHideText());
 
         menuItem.addActionListener(event -> 
@@ -249,7 +249,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         add(menuItem);
         
-        addSeparator();
+        addSeparator(); */
 
         menuItem = new JMenuItem("Increase Diagram Dimensions");
         menuItem.addActionListener(event -> 
