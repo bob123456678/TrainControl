@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import javax.swing.text.AbstractDocument;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
@@ -175,24 +176,42 @@ public class LayoutEditor extends PositionAwareJFrame
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
      
-        label.setBackground(Color.red);
-        
-        if (lastHoveredX != -1 && lastHoveredY != -1)
+        if (label != null)
         {
+            label.setBackground(Color.red);
+            
+            String toolTipText = "Right-click for options";
+            
             if (this.hasToolFlag())
             {
-                label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                label.setToolTipText("Click to paste / " + toolTipText);
+            }
+            else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
+            {
+                label.setToolTipText("Click to cut / " + toolTipText);     
             }
             else
             {
-                label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                label.setToolTipText(toolTipText);
             }
-            
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                
+            if (lastHoveredX != -1 && lastHoveredY != -1)
             {
-                this.clearBordersFromChildren(this.grid.getContainer());
-                this.highlightLabel(label);
-            }));
+                if (this.hasToolFlag())
+                {
+                    label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                }
+                else
+                {
+                    label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                }
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    this.clearBordersFromChildren(this.grid.getContainer());
+                    this.highlightLabel(label, java.awt.Color.RED);
+                }));
+            }
         }
         
         // lastHoveredLabel = label;
@@ -204,7 +223,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (getX(label) == -1 && getY(label) == -1)
         {
             this.initCopy(label, label.getComponent(), false);
-            this.highlightLabel(label);
+            this.highlightLabel(label, java.awt.Color.RED);
             return;
         }
         
@@ -256,6 +275,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             int startCol = this.lastX;
             int destCol = this.getX(label);
+            
+            boolean isMove = (this.toolFlag == tool.MOVE);
 
             if (startCol != -1 && destCol != -1 && startCol != destCol)
             {
@@ -289,13 +310,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 
                 for (LayoutLabel l : sourceColumn)
                 {
-                    if (this.toolFlag == tool.MOVE && l.getComponent() != null) this.delete(l);
+                    if (isMove && l.getComponent() != null) this.delete(l);
                 }
                 
                 pauseRepaint = false;
                 refreshGrid();
-                
-                // TODO - defer redraw
             }
         }
         else if (bulkFlag == bulk.ROW)
@@ -303,6 +322,8 @@ public class LayoutEditor extends PositionAwareJFrame
             int startRow = this.lastY;
             int destRow = this.getY(label);
 
+            boolean isMove = (this.toolFlag == tool.MOVE);
+            
             if (startRow != -1 && destRow != -1 && startRow != destRow)
             {
                 List<LayoutLabel> destinationRow = grid.getRow(destRow);
@@ -334,8 +355,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 
                 for (LayoutLabel l : sourceRow)
                 {
-                    if (this.toolFlag == tool.MOVE && l.getComponent() != null) this.delete(l);
-
+                    if (isMove && l.getComponent() != null) this.delete(l);
                 }
                 
                 pauseRepaint = false;
@@ -412,8 +432,16 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             
         }
-                
+                        
+        // Re-highlight copied tile
+        this.clearBordersFromChildren(this.grid.getContainer());
+        
         refreshGrid();
+    }
+    
+    public MarklinLayout getMarklinLayout()
+    {
+        return layout;
     }
     
     /**
@@ -440,7 +468,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.lastY = getY(label);
         this.bulkFlag = null;
         this.pauseRepaint = false;
-        
+                
         if (component != null)
         {
             lastComponent = component;
@@ -451,6 +479,9 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         
         this.toolFlag = move ? tool.MOVE : tool.COPY;
+        
+        // For Blue highlight
+        this.clearBordersFromChildren(this.grid.getContainer());
         
         // Delete after pasting instead
         /* if (move)
@@ -589,12 +620,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Process the input when OK is clicked
                 if (result == JOptionPane.OK_OPTION)
                 {
-
-                            lc.setLogicalAddress(Integer.parseInt(textField.getText()));
-                        
-
-
-                        layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                    lc.setLogicalAddress(Integer.parseInt(textField.getText()));
+                    layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                 }
             }
             catch (Exception ex)
@@ -606,11 +633,11 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
-    private void highlightLabel(JLabel label)
+    private void highlightLabel(JLabel label, Color color)
     {
         if (label != null)
         {
-            label.setBorder(BorderFactory.createLineBorder(java.awt.Color.RED, 1));
+            label.setBorder(BorderFactory.createLineBorder(color, 1));
         }
     }
     
@@ -625,11 +652,17 @@ public class LayoutEditor extends PositionAwareJFrame
                     JLabel label = (JLabel) component;
                     
                     // Don't reset components without a border, because they might be something else...
-                    if (label.getBorder() != null) 
+                    if (label.getBorder() != null)
                     {
                         label.setBorder(BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY, 1));
                     }
                 }
+            }
+            
+            // Highlight copied tile in blue
+            if (this.hasToolFlag() && layout.getComponent(lastX, lastY) != null)
+            {
+                this.highlightLabel(this.grid.getValueAt(lastX, lastY), Color.BLUE);
             }
         }
     }
@@ -720,6 +753,9 @@ public class LayoutEditor extends PositionAwareJFrame
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 drawGrid();
+                
+                // Makes sure the right things get highlighted
+                this.clearBordersFromChildren(this.grid.getContainer());
             }));
         }
     }
@@ -799,10 +835,10 @@ public class LayoutEditor extends PositionAwareJFrame
             pack();
         }
             
-        grid.getContainer().revalidate();
+        /*grid.getContainer().revalidate();
         this.ExtLayoutPanel.revalidate();
         grid.getContainer().repaint();
-        this.ExtLayoutPanel.repaint();
+        this.ExtLayoutPanel.repaint();*/
         
         // Remember window location for different layouts and sizes
         this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());

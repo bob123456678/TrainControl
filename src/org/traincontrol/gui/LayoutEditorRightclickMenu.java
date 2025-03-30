@@ -1,5 +1,7 @@
 package org.traincontrol.gui;
 
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -15,8 +17,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     {        
         JMenuItem menuItem;
         
-        menuItem = new JMenuItem("Paste");
-        menuItem.addActionListener(event -> 
+        JMenu pasteSubMenu = new JMenu("Paste..."); // Create the submenu
+
+        JMenuItem pasteMenuItem = new JMenuItem("Paste Tile");
+        pasteMenuItem.addActionListener(event -> 
         {
             try
             {
@@ -27,14 +31,17 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        menuItem.setToolTipText("Control+V");
-        
-        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+        pasteMenuItem.setToolTipText("Control+V");
 
-        add(menuItem);
-        
-        menuItem = new JMenuItem("Paste Column");
-        menuItem.addActionListener(event -> 
+        if (!edit.hasToolFlag()) 
+        {
+            pasteMenuItem.setEnabled(false);
+        }
+
+        pasteSubMenu.add(pasteMenuItem); // Add "Paste" to the submenu
+
+        JMenuItem pasteColumnMenuItem = new JMenuItem("Paste Column");
+        pasteColumnMenuItem.addActionListener(event -> 
         {
             try
             {
@@ -46,15 +53,17 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
+        pasteColumnMenuItem.setToolTipText("Shift+C");
 
-        menuItem.setToolTipText("Shift+C");
+        if (!edit.hasToolFlag()) 
+        {
+            pasteColumnMenuItem.setEnabled(false);
+        }
 
-        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+        pasteSubMenu.add(pasteColumnMenuItem); // Add "Paste Column" to the submenu
 
-        add(menuItem);
-        
-        menuItem = new JMenuItem("Paste Row");
-        menuItem.addActionListener(event -> 
+        JMenuItem pasteRowMenuItem = new JMenuItem("Paste Row");
+        pasteRowMenuItem.addActionListener(event -> 
         {
             try
             {
@@ -66,30 +75,21 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        menuItem.setToolTipText("Shift+R");
+        pasteRowMenuItem.setToolTipText("Shift+R");
 
-        if (!edit.hasToolFlag()) menuItem.setEnabled(false);
+        if (!edit.hasToolFlag()) 
+        {
+            pasteRowMenuItem.setEnabled(false);
+        }
 
-        add(menuItem);
+        pasteSubMenu.add(pasteRowMenuItem); // Add "Paste Row" to the submenu
+
+        add(pasteSubMenu); // Add the submenu to the parent menu
         
         if (component != null)
         {
-            menuItem = new JMenuItem("Rotate");
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.rotate(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+R");
-
-            add(menuItem);
-
+            addSeparator();
+            
             menuItem = new JMenuItem("Cut");
             menuItem.addActionListener(event -> 
             {
@@ -119,6 +119,22 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
             });
             menuItem.setToolTipText("Control+C");
+
+            add(menuItem);
+            
+            menuItem = new JMenuItem("Rotate");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.rotate(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+R");
 
             add(menuItem);
             
@@ -179,7 +195,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator();
         
-        menuItem = new JMenuItem("Toggle Text Labels");
+        menuItem = new JCheckBoxMenuItem("Show Text Labels");
+        menuItem.setSelected(!edit.getMarklinLayout().getEditHideText());
+
         menuItem.addActionListener(event -> 
         {
             try
@@ -195,7 +213,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         add(menuItem);
 
-        menuItem = new JMenuItem("Toggle Address Labels");
+        menuItem = new JCheckBoxMenuItem("Show Address Labels");
+        menuItem.setSelected(edit.getMarklinLayout().getEditShowAddress());
+
         menuItem.addActionListener(event -> 
         {
             try
@@ -257,6 +277,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         });
         //menuItem.setToolTipText("Control+I");
         add(menuItem);
+        
+        addSeparator();
         
         menuItem = new JMenuItem("Clear Diagram");
         menuItem.addActionListener(event -> 
