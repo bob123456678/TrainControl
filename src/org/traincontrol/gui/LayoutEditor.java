@@ -205,7 +205,7 @@ public class LayoutEditor extends PositionAwareJFrame
             
             if (lastHoveredX == -1)
             {
-                label.setToolTipText("Click to start placing this tile on the layout");
+                label.setToolTipText("Click to start placing a new \"" + label.getComponent().getType().toString().toLowerCase() + "\" tile");
             }
             else
             {
