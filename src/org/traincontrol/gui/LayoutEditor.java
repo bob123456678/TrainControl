@@ -19,10 +19,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.BorderFactory;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -674,7 +671,41 @@ public class LayoutEditor extends PositionAwareJFrame
        
                 textField.setText(Integer.toString(lc.getLogicalAddress()));
 
-                // Display the input dialog
+                // 91r == addr 182
+                // 91g == addr 183
+                
+                // Create and display the JPanel LayoutEditorAddressPopup
+                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup();
+                
+                addressPopup.getAddress().setText(Integer.toString(lc.getLogicalAddress()));
+                addressPopup.getGreenButton().setSelected(lc.isGreen());
+                
+                if (!lc.isUncoupler())
+                {
+                    addressPopup.getGreenButton().setVisible(false);
+                    addressPopup.getGreenButton().setSelected(false);
+                }
+                
+                int result = JOptionPane.showConfirmDialog(
+                        null,
+                        addressPopup,
+                        "Edit Address:",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE
+                );
+
+                // Process the input when OK is clicked
+                if (result == JOptionPane.OK_OPTION)
+                {
+                    this.snapshotLayout();
+
+                    // Retrieve the address from LayoutEditorAddressPopup and use it
+                    int newAddress = Integer.parseInt(addressPopup.getAddress().getText()); // Assuming there's a method to get the logical address
+                    lc.setLogicalAddress(newAddress, addressPopup.getGreenButton().isSelected());
+                    layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                }
+                
+                /* // Display the input dialog
                 int result = JOptionPane.showConfirmDialog(
                         null,
                         textField,
@@ -690,7 +721,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     lc.setLogicalAddress(Integer.parseInt(textField.getText()));
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
-                }
+                }*/
             }
             catch (Exception ex)
             {

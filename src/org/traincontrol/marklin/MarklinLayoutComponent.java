@@ -735,7 +735,7 @@ public class MarklinLayoutComponent
      * @param address 
      * @throws java.lang.Exception 
      */
-    public void setLogicalAddress(int address) throws Exception
+    public void setLogicalAddress(int address, boolean isGreen) throws Exception
     {        
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
@@ -747,6 +747,12 @@ public class MarklinLayoutComponent
             
             this.rawAddress = address * 2;
             this.address = address * 2;
+            
+            if (this.isUncoupler() && isGreen)
+            {
+                this.rawAddress += 1;
+                this.address += 1;
+            }
         }
         else
         {
@@ -771,6 +777,11 @@ public class MarklinLayoutComponent
                 this.address = (address - 1) / 2;
             }
         }*/
+    }
+    
+    public boolean isGreen()
+    {
+        return rawAddress % 2 != 0;
     }
     
     /**
