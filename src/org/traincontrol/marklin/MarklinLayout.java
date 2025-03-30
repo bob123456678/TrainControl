@@ -355,13 +355,6 @@ public class MarklinLayout
             sy+=1;
             maxy+=1;
         }
-        
-        /*addComponent(
-            MarklinLayoutComponent.componentType.TEXT,
-            sx-1, sy-1, 0, 0, 0, 0, "x"
-         );*/
-        //checkBounds();
-        //addComponent(null,0,sy-1);
     }
     
     /**

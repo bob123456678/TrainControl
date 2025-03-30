@@ -57,10 +57,11 @@ public class LayoutEditor extends PositionAwareJFrame
     public static final int DEFAULT_NEW_SIZE_ROWS = 16;
     public static final int DEFAULT_NEW_SIZE_COLS = 21;
     
+    // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
 
     /**
-     * Popup window showing train layouts
+     * Popup window showing editable train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
      * @param ui
@@ -120,6 +121,12 @@ public class LayoutEditor extends PositionAwareJFrame
         return grid.getCoordinates(label)[1];
     }
     
+    /**
+     * Generates a new label based on the specified type, so that it can be placed on the diagram
+     * @param type
+     * @param defaultText
+     * @return 
+     */
     private LayoutLabel getLabel(MarklinLayoutComponent.componentType type, String defaultText)
     {
         try
@@ -157,6 +164,11 @@ public class LayoutEditor extends PositionAwareJFrame
         return null;
     }
     
+    /**
+     * Key press on a tile
+     * @param e
+     * @param label 
+     */
     public void receiveKeyEvent(KeyEvent e, LayoutLabel label)
     {        
         if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_V)
@@ -191,6 +203,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             }
         }
+        
         return false;
     }
    
@@ -409,16 +422,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
+        // Tile is on the main diagram- update borders
         if (lastX != -1 || lastY != -1)
         {
             this.clearBordersFromChildren(this.newComponents);
-            
-            // Not needed - done in the execCopy method
-            /*
-            if (this.toolFlag == tool.MOVE)
-            {
-                this.toolFlag = null;
-            }*/
         }
     }
     
@@ -462,7 +469,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (IOException ex)
         {
-            
+            this.parent.getModel().log(ex.getMessage());
+            this.parent.getModel().log(ex);
         }
                         
         // Re-highlight copied tile
@@ -825,7 +833,8 @@ public class LayoutEditor extends PositionAwareJFrame
             if (confirmation == JOptionPane.YES_OPTION)
             {
                 layout.clear();
-                lastHoveredX = lastHoveredY = -1;
+                this.resetClipboard();
+                // lastHoveredX = lastHoveredY = -1;
 
                 refreshGrid();
             }
@@ -842,6 +851,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized private void drawGrid()
     {        
+        // Ensures the grid is a minimum size.  This will automatically initialize the grid if the track diagram is blank
         if (this.layout.getSx() < DEFAULT_NEW_SIZE_COLS || this.layout.getSy() < DEFAULT_NEW_SIZE_ROWS)
         {
             this.addRowsAndColumns(DEFAULT_NEW_SIZE_ROWS - this.layout.getSy(),
@@ -857,11 +867,6 @@ public class LayoutEditor extends PositionAwareJFrame
         this.ExtLayoutPanel.revalidate();
         grid.getContainer().repaint();
         this.ExtLayoutPanel.repaint();
-    }
-    
-    public String getLayoutTitle()
-    {
-        return this.layout.getName();
     }
     
     public void render()

@@ -85,7 +85,7 @@ public class MarklinLayoutComponent
     }
     
     /**
-     * Copy constructor for MarklinLayoutComponent.Copies all base fields, including the text label.
+     * Copy constructor for MarklinLayoutComponent. Copies all base fields, including the text label.
      * Used by layout editor
      * 
      * @param original The original MarklinLayoutComponent to copy.
