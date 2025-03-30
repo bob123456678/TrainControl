@@ -779,7 +779,7 @@ public class MarklinLayoutComponent
         }*/
     }
     
-    public boolean isGreen()
+    public boolean isLogicalGreen()
     {
         return rawAddress % 2 != 0;
     }

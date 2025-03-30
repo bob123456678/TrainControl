@@ -224,7 +224,23 @@ public class LayoutGrid
                     
                     //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                     gbc.gridheight = 0;
-                    text.setText("<html>" + c.getLogicalAddress() + "</html>");      
+                    
+                    // For uncouplers, show the precise address
+                    String redOrGreen = "";
+                    
+                    if (c.isUncoupler())
+                    {
+                        if (c.isLogicalGreen())
+                        {
+                            redOrGreen = " G";
+                        }
+                        else
+                        {
+                            redOrGreen = " R";
+                        }
+                    }
+                    
+                    text.setText("<html>" + c.getLogicalAddress() + redOrGreen + "</html>");      
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);

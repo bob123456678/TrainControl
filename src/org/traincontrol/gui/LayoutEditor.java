@@ -65,7 +65,7 @@ public class LayoutEditor extends PositionAwareJFrame
     
     // Undo history
     Deque<List<MarklinLayoutComponent>> previousLayoutComponents = new ArrayDeque<>();
-    public static final int MAX_UNDO_HISTORY = 20;
+    public static final int MAX_UNDO_HISTORY = 50;
 
     /**
      * Popup window showing editable train layouts
@@ -678,7 +678,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup();
                 
                 addressPopup.getAddress().setText(Integer.toString(lc.getLogicalAddress()));
-                addressPopup.getGreenButton().setSelected(lc.isGreen());
+                addressPopup.getGreenButton().setSelected(lc.isLogicalGreen());
                 
                 if (!lc.isUncoupler())
                 {
@@ -704,24 +704,6 @@ public class LayoutEditor extends PositionAwareJFrame
                     lc.setLogicalAddress(newAddress, addressPopup.getGreenButton().isSelected());
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                 }
-                
-                /* // Display the input dialog
-                int result = JOptionPane.showConfirmDialog(
-                        null,
-                        textField,
-                        "Enter new address:",
-                        JOptionPane.OK_CANCEL_OPTION,
-                        JOptionPane.PLAIN_MESSAGE
-                );
-        
-                // Process the input when OK is clicked
-                if (result == JOptionPane.OK_OPTION)
-                {
-                    this.snapshotLayout();
-
-                    lc.setLogicalAddress(Integer.parseInt(textField.getText()));
-                    layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
-                }*/
             }
             catch (Exception ex)
             {
