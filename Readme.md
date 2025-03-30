@@ -38,13 +38,15 @@ Multi-units can be configured in TrainControl, which can be simpler than using t
 
 ![UI screenshot: multi-units](assets/multiunit.png?raw=true)
 
-**Layout View**
+**Layout View & Layout Editing**
 
-Track diagrams for your layout are downloaded automatically from the CS2, or configurable manually via local layout files if using the CS3.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or customizable through locally managed layout files.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
 ![UI screenshot: layout viewer](assets/layout23.png?raw=true)
 
-From v2.0.0, on Windows only, you can also edit local track diagrams via a bundled app.
+From v2.5.0, full cross-platfrom track diagram editing support is available in TrainControl.  
+
+Between v2.0.x and v2.4.x, you can also edit local track diagrams via a bundled Windows-only program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor)).
 
 ![UI screenshot: layout editor](assets/track_diagram_editor.png?raw=true)
 
@@ -53,24 +55,24 @@ From v2.0.0, on Windows only, you can also edit local track diagrams via a bundl
 
 **Layouts and the CS3**
 
-This program was originally written to import and display layouts created/configured from within the CS2.
+This program was originally written to import and display layouts created/configured from within the CS2, but you can also customize your own layouts without a Central Station.
 
 Because the CS3 uses a different layout format than the CS2, this program does not support displaying native CS3 layouts. 
 However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
 In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
 
-If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can view and edit layouts in this program as follows:
+If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can import and edit layouts in TrainControl as follows:
 
 - If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
     - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
     - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
     - The static local layout will now be shown in the Layout tab
-- Otherwise
-    - Start TrainControl, then from the Layout menu, click on "Initialize New Local Layout"
-    - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically initialize a demo layout at startup.
+- Otherwise, to create a new layout:
+    - Start TrainControl, then from the Layout menu, click on "Initialize Local Layout"
+    - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
 
-A binary program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor), Windows-only) is bundled for complete editing support, and accessible via the "Edit" button within the Layout tab.  This will let you fully customize your layout.
+Complete editing support is accessible via the "Edit" button within the Layout tab. Pages can be managed from the Layouts menu item.  This will let you fully customize your layout.
 
 If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
@@ -287,6 +289,12 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.5.0 [Beta]
+    - Track Diagrams
+        - When the power is off, route icons can be right-clicked to edit the route
+        - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
+        - Added a "Modify Layout" entry to the Layouts menu, enabling the management of track diagram pages
 
 * v2.4.12 [3/24/2025]
     - Graph UI

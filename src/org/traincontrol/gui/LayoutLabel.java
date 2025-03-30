@@ -237,13 +237,13 @@ public final class LayoutLabel extends JLabel
                     {
                         // Cache icons in memory to speed up rendering
                         Map<String,Image> imageCache = TrainControlUI.getImageCache();
-                        String key = this.component.getImageKey(size);
+                        String key = this.component.getImageKey(size, edit);
                         
                         Image img;
                         
                         if (!imageCache.containsKey(key))
                         {
-                            img = this.component.getImage(size);
+                            img = this.component.getImage(size, edit);
 
                             imageCache.put(key, img);
                         }
@@ -293,7 +293,7 @@ public final class LayoutLabel extends JLabel
                         this.tcUI.getModel().log(ex.getMessage());
                     }
 
-                    this.imageName = component.getImageName(size);
+                    this.imageName = component.getImageName(size, edit);
                 }
                 
                 if (update)
@@ -319,7 +319,7 @@ public final class LayoutLabel extends JLabel
         {
             if (this.component != null)
             {
-                if (!this.component.getImageName(size).equals(this.imageName))
+                if (!this.component.getImageName(size, edit).equals(this.imageName))
                 {
                     this.setImage(true);  
                 }

@@ -32,7 +32,7 @@ public class MarklinLayout
     int miny = 0;
     int maxx;
     int maxy;
-    
+        
     public int getMinx()
     {
         return minx;
@@ -178,7 +178,7 @@ public class MarklinLayout
         {            
             for (int y = 0; y < sy; y++)
             {
-                if (this.getComponent(x, y) != null)
+                if (this.getComponent(x, y) != null || edit) // This will persist the grid in edit mode
                 {
                     if (x < minx)
                     {
@@ -327,6 +327,9 @@ public class MarklinLayout
      */
     synchronized public void addRowsAndColumns(int numRows, int numColumns) throws IOException
     {
+        if (numColumns < 0) numColumns = 0;
+        if (numRows < 0) numRows = 0;
+
         for (int x = 0; x < numColumns; x++)
         {
             List<MarklinLayoutComponent> newColumn = new ArrayList<>();
@@ -471,21 +474,19 @@ public class MarklinLayout
         // Shift all existing components one column to the right
         if (sx >= 2)
         {
-             for (int x = maxx - 1; x >= startCol; x--)
-             { // Start from the second-to-last column and move backward
-                 for (int y = 0; y <= maxy; y++)
-                 {
-                     MarklinLayoutComponent component = getComponent(x, y);
+            for (int x = maxx - 1; x >= startCol; x--)
+            { // Start from the second-to-last column and move backward
+                for (int y = 0; y <= maxy; y++)
+                {
+                    MarklinLayoutComponent component = getComponent(x, y);
 
-                     if (component != null) component.setX(x + 1);
-                     addComponent(null, x, y); // Clear the original cell
-                     addComponent(component, x + 1, y); // Move the component to the right
-                 }
-             }
+                    if (component != null) component.setX(x + 1);
+                    addComponent(null, x, y); // Clear the original cell
+                    addComponent(component, x + 1, y); // Move the component to the right
+                }
+            }
 
-             this.checkBounds();
-             this.addRowsAndColumns(0, 1);
-             this.checkBounds();
+            this.checkBounds();
         }
     }
     
@@ -497,7 +498,7 @@ public class MarklinLayout
     public void shiftDown(int startRow) throws IOException
     {
        // Add a new row to the layout
-       this.addRowsAndColumns(1, 1);
+       this.addRowsAndColumns(1, 0);
 
        if (startRow == 0 || startRow > sy - 2)
        {
@@ -509,7 +510,7 @@ public class MarklinLayout
        {
            for (int y = maxy - 1; y >= startRow; y--)
            { // Start from the last row and move upward
-               for (int x = 0; x < maxx; x++)
+               for (int x = 0; x <= maxx; x++)
                {
                    MarklinLayoutComponent component = getComponent(x, y);
 
@@ -519,8 +520,6 @@ public class MarklinLayout
                }
            }
 
-           this.checkBounds();
-           this.addRowsAndColumns(1, 0);
            this.checkBounds();
        }
    }

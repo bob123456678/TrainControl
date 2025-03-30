@@ -126,6 +126,7 @@ public class LayoutGrid
                 
                 MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                                 
+                // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 

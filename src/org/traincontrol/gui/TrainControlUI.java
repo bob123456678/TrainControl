@@ -654,11 +654,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
 
-        // Layout editing only supported on windows
+        // TrackDiagramEditor Layout editing only supported on windows
         if (!this.isWindows())
         {
-            this.editLayoutButton.setEnabled(false);
-            this.editLayoutButton.setToolTipText("Layout editing is currently only supported on Windows");
+            this.openLegacyTrackDiagramEditor.setVisible(false);
+            // this.editLayoutButton.setEnabled(false);
+            // this.editLayoutButton.setToolTipText("Layout editing is currently only supported on Windows");
         }
         
         // Support for changing page names
@@ -3387,6 +3388,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addBlankPageMenuItem = new javax.swing.JMenuItem();
         renameLayoutMenuItem = new javax.swing.JMenuItem();
         duplicateLayoutMenuItem = new javax.swing.JMenuItem();
+        jSeparator22 = new javax.swing.JPopupMenu.Separator();
+        editCurrentPageActionPerformed = new javax.swing.JMenuItem();
+        openLegacyTrackDiagramEditor = new javax.swing.JMenuItem();
         jSeparator21 = new javax.swing.JPopupMenu.Separator();
         deleteLayoutMenuItem = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JPopupMenu.Separator();
@@ -8470,6 +8474,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         modifyLocalLayoutMenu.add(duplicateLayoutMenuItem);
+        modifyLocalLayoutMenu.add(jSeparator22);
+
+        editCurrentPageActionPerformed.setText("Edit Current Page");
+        editCurrentPageActionPerformed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editCurrentPageActionPerformedActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(editCurrentPageActionPerformed);
+
+        openLegacyTrackDiagramEditor.setText("Edit w/ Legacy Editor");
+        openLegacyTrackDiagramEditor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openLegacyTrackDiagramEditorActionPerformed(evt);
+            }
+        });
+        modifyLocalLayoutMenu.add(openLegacyTrackDiagramEditor);
         modifyLocalLayoutMenu.add(jSeparator21);
 
         deleteLayoutMenuItem.setText("Delete Current Page");
@@ -11165,15 +11186,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param evt 
      */
     private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
-
-        if (!this.isWindows())
+        
+        if (!this.isLocalLayout())
         {
-            JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
+            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
+                + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
             return;
         }
         
         // New native editor - work in progress
-        /*LayoutEditor popup = new LayoutEditor(
+        LayoutEditor popup = new LayoutEditor(
             this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
             this,
@@ -11188,74 +11210,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (popup != null)
         {
             return;
-        }*/
-
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
-            return;
         }
-
-        this.editLayoutButton.setEnabled(false);
-
-        // Force window to not be on top
-        this.setAlwaysOnTop(false);
-
-        new Thread(() ->
-            {
-                try
-                {
-                    String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");
-                    Path p = Paths.get(new URL(layoutUrl).toURI());
-
-                    File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
-
-                    // Extract the binary
-                    if (!app.exists())
-                    {
-                        File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
-
-                        this.model.log("Unpacking track diagram editor executable...");
-
-                        copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
-
-                        this.model.log("Attempting to extract " + zippedApp.getAbsolutePath());
-
-                        this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
-                        zippedApp.delete();
-                    }
-
-                    // Delete the binary on exit
-                    app.deleteOnExit();
-
-                    // Execute the app
-                    String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
-
-                    this.model.log("Running layout editor: " + cmd);
-
-                    Runtime rt = Runtime.getRuntime();
-                    Process pr = rt.exec(cmd);
-
-                    pr.waitFor();
-
-                    this.model.log("Editing session complete.");
-
-                    this.layoutEditingComplete();
-                }
-                catch (Exception ex)
-                {
-                    this.model.log("Layout editing error: " + ex.getMessage());
-
-                    this.model.log(ex);
-                }
-
-                this.editLayoutButton.setEnabled(true);
-
-                // Revert preference
-                windowAlwaysOnTopMenuItemActionPerformed(null);
-
-            }).start();
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
     private void showLayoutPopup(String layoutName, int size)
@@ -12227,6 +12182,91 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             duplicateOrRenameCurrentLayout(name, false, true, true);
         }
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
+
+    private void openLegacyTrackDiagramEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLegacyTrackDiagramEditorActionPerformed
+        
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
+                + "Edit your layout via the CS2, or see the Layout Menu to initialize a local track diagram.");
+            return;
+        }
+        
+        if (!this.isWindows())
+        {
+            JOptionPane.showMessageDialog(this, "Layout editing is currently only supported on Windows.");
+            return;
+        }
+
+        this.KeyboardTab.setSelectedIndex(1);
+        
+        this.openLegacyTrackDiagramEditor.setEnabled(false);
+
+        // Force window to not be on top
+        this.setAlwaysOnTop(false);
+
+        new Thread(() ->
+            {
+                try
+                {
+                    String layoutUrl = this.model.getLayout(this.LayoutList.getSelectedItem().toString()).getUrl().replaceAll(" ", "%20");
+                    Path p = Paths.get(new URL(layoutUrl).toURI());
+
+                    File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
+
+                    // Extract the binary
+                    if (!app.exists())
+                    {
+                        File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
+
+                        this.model.log("Unpacking track diagram editor executable...");
+
+                        copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
+
+                        this.model.log("Attempting to extract " + zippedApp.getAbsolutePath());
+
+                        this.unzipFile(Paths.get(zippedApp.getPath()), (new File("")).getAbsolutePath());
+                        zippedApp.delete();
+                    }
+
+                    // Delete the binary on exit
+                    app.deleteOnExit();
+
+                    // Execute the app
+                    String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
+
+                    this.model.log("Running layout editor: " + cmd);
+
+                    Runtime rt = Runtime.getRuntime();
+                    Process pr = rt.exec(cmd);
+
+                    pr.waitFor();
+
+                    this.model.log("Editing session complete.");
+
+                    this.layoutEditingComplete();
+                }
+                catch (Exception ex)
+                {
+                    this.model.log("Layout editing error: " + ex.getMessage());
+
+                    this.model.log(ex);
+                }
+
+                this.openLegacyTrackDiagramEditor.setEnabled(true);
+
+                // Revert preference
+                windowAlwaysOnTopMenuItemActionPerformed(null);
+
+            }).start();
+    }//GEN-LAST:event_openLegacyTrackDiagramEditorActionPerformed
+
+    private void editCurrentPageActionPerformedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editCurrentPageActionPerformedActionPerformed
+        
+        this.KeyboardTab.setSelectedIndex(1);
+
+        this.editLayoutButtonActionPerformed(null);
+    }//GEN-LAST:event_editCurrentPageActionPerformedActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -13511,6 +13551,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem deleteLayoutMenuItem;
     private javax.swing.JMenuItem downloadUpdateMenuItem;
     private javax.swing.JMenuItem duplicateLayoutMenuItem;
+    private javax.swing.JMenuItem editCurrentPageActionPerformed;
     private javax.swing.JButton editLayoutButton;
     private javax.swing.JButton executeTimetable;
     private javax.swing.JMenuItem exitMenuItem;
@@ -13599,6 +13640,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
     private javax.swing.JPopupMenu.Separator jSeparator21;
+    private javax.swing.JPopupMenu.Separator jSeparator22;
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
@@ -13633,6 +13675,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenu modifyLocalLayoutMenu;
     private javax.swing.JMenuItem openCS3AppMenuItem;
+    private javax.swing.JMenuItem openLegacyTrackDiagramEditor;
     private javax.swing.JRadioButtonMenuItem powerNoChangeStartup;
     private javax.swing.JRadioButtonMenuItem powerOffStartup;
     private javax.swing.JRadioButtonMenuItem powerOnStartup;

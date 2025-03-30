@@ -232,6 +232,24 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="duplicateLayoutMenuItemActionPerformed"/>
                   </Events>
                 </MenuItem>
+                <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator22">
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="editCurrentPageActionPerformed">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Edit Current Page"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="editCurrentPageActionPerformedActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="openLegacyTrackDiagramEditor">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Edit w/ Legacy Editor"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="openLegacyTrackDiagramEditorActionPerformed"/>
+                  </Events>
+                </MenuItem>
                 <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator21">
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="deleteLayoutMenuItem">

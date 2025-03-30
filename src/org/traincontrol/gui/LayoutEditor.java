@@ -15,10 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -26,7 +23,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import javax.swing.text.AbstractDocument;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -58,7 +54,7 @@ public class LayoutEditor extends PositionAwareJFrame
     //private LayoutLabel lastHoveredLabel = null;
     
     // Default size of new layouts
-    public static final int DEFAULT_NEW_SIZE_ROWS = 15;
+    public static final int DEFAULT_NEW_SIZE_ROWS = 16;
     public static final int DEFAULT_NEW_SIZE_COLS = 21;
     
     private boolean pauseRepaint = false;
@@ -188,7 +184,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (border instanceof LineBorder)
                 {
                     LineBorder lineBorder = (LineBorder) border;
-                    if (lineBorder.getLineColor().equals(Color.RED))
+                    if (lineBorder.getLineColor().equals(Color.BLUE))
                     {
                         return true;
                     }
@@ -207,19 +203,26 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             label.setBackground(Color.red);
             
-            String toolTipText = "Right-click for options";
-            
-            if (this.hasToolFlag())
+            if (lastHoveredX == -1)
             {
-                label.setToolTipText("Click to paste / " + toolTipText);
-            }
-            else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
-            {
-                label.setToolTipText("Click to cut / " + toolTipText);     
+                label.setToolTipText("Click to start placing this tile on the layout");
             }
             else
             {
-                label.setToolTipText(toolTipText);
+                String toolTipText = "Right-click for options";
+
+                if (this.hasToolFlag())
+                {
+                    label.setToolTipText("Click to paste / " + toolTipText);
+                }
+                else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
+                {
+                    label.setToolTipText("Click to cut / " + toolTipText);     
+                }
+                else
+                {
+                    label.setToolTipText(toolTipText);
+                }
             }
                 
             if (lastHoveredX != -1 && lastHoveredY != -1)
@@ -250,7 +253,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (getX(label) == -1 && getY(label) == -1)
         {
             this.initCopy(label, label.getComponent(), false);
-            this.highlightLabel(label, java.awt.Color.RED);
+            this.highlightLabel(label, java.awt.Color.BLUE);
             return;
         }
         
@@ -531,7 +534,7 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             layout.addComponent(null, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
-            this.toolFlag = null;
+            this.resetClipboard();
         }
         catch (IOException ex)
         {
@@ -839,15 +842,10 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized private void drawGrid()
     {        
-        //this.ExtLayoutPanel.removeAll();
-        if (grid != null)
+        if (this.layout.getSx() < DEFAULT_NEW_SIZE_COLS || this.layout.getSy() < DEFAULT_NEW_SIZE_ROWS)
         {
-            //grid.getContainer().removeAll();
-        }
-        
-        if (this.layout.getSx() <= 1 && this.layout.getSy() <= 1)
-        {
-            this.addRowsAndColumns(DEFAULT_NEW_SIZE_ROWS, DEFAULT_NEW_SIZE_COLS);            
+            this.addRowsAndColumns(DEFAULT_NEW_SIZE_ROWS - this.layout.getSy(),
+                    DEFAULT_NEW_SIZE_COLS - this.layout.getSx());            
         }
         
         grid = new LayoutGrid(this.layout, size,
@@ -855,31 +853,10 @@ public class LayoutEditor extends PositionAwareJFrame
             this,
             true, parent);
                 
-        setTitle("Layout Editor: " + this.layout.getName() + this.parent.getWindowTitleString());
-
-        // Scale the popup according to the size of the layout
-        if (!this.isLoaded())
-        {
-            this.setPreferredSize(new Dimension(grid.maxWidth + 150, grid.maxHeight + 150));
-            this.setMinimumSize(new Dimension(500, 500));
-            pack();
-        }
-            
-        /*grid.getContainer().revalidate();
+        grid.getContainer().revalidate();
         this.ExtLayoutPanel.revalidate();
         grid.getContainer().repaint();
-        this.ExtLayoutPanel.repaint();*/
-        
-        // Remember window location for different layouts and sizes
-        this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());
-        
-        // Only load location once
-        if (!this.isLoaded())
-        {
-            loadWindowBounds();
-        }
-        
-        saveWindowBounds();
+        this.ExtLayoutPanel.repaint();
     }
     
     public String getLayoutTitle()
@@ -895,6 +872,27 @@ public class LayoutEditor extends PositionAwareJFrame
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
             drawGrid();
 
+            setTitle("Layout Editor: " + this.layout.getName() + this.parent.getWindowTitleString());
+
+            // Scale the popup according to the size of the layout
+            if (!this.isLoaded())
+            {
+                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 130));
+                this.setMinimumSize(new Dimension(550, 550));
+                pack();
+            }
+
+            // Remember window location for different layouts and sizes
+            this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());
+
+            // Only load location once
+            if (!this.isLoaded())
+            {
+                loadWindowBounds();
+            }
+
+            saveWindowBounds();
+            
             setVisible(true);
 
             // Hide the window on close so that LayoutLabels know they can be deleted

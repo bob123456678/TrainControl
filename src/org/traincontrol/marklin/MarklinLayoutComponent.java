@@ -278,58 +278,62 @@ public class MarklinLayoutComponent
     /**
      * Gets the image corresponding to the current state of the accessory
      * @param size
+     * @param ignoreState true to never display the active icon (useful for editing)
      * @return 
      */
-    public String getImageName(int size)
+    public String getImageName(int size, boolean ignoreState)
     {        
         String stateString = "";
-                        
-        if (this.isSwitch() || this.isSignal())
-        {
-            if (this.isThreeWay() && this.getAccessory() != null && this.getAccessory2() != null)
+        
+        if (!ignoreState)
+        {                     
+            if (this.isSwitch() || this.isSignal())
             {
-                if (this.getAccessory().isSwitched())
+                if (this.isThreeWay() && this.getAccessory() != null && this.getAccessory2() != null)
+                {
+                    if (this.getAccessory().isSwitched())
+                    {
+                        stateString = "_active";
+                    }
+                    else if (this.getAccessory2().isSwitched())
+                    {
+                        stateString = "_active2";
+                    }
+                }
+                else if (this.getAccessory() != null)
+                {      
+                    if (this.getAccessory().isSwitched())
+                    {
+                        stateString = "_active";
+                    }
+                }            
+            }
+
+            if (this.isFeedback())
+            {
+                if (this.getFeedback() != null && this.getFeedback().isSet())
                 {
                     stateString = "_active";
                 }
-                else if (this.getAccessory2().isSwitched())
-                {
-                    stateString = "_active2";
-                }
             }
-            else if (this.getAccessory() != null)
-            {      
-                if (this.getAccessory().isSwitched())
+
+            if (this.isRoute())
+            {
+                if (this.getRoute() != null && this.getRoute().isExecuting())
                 {
                     stateString = "_active";
                 }
-            }            
-        }
-        
-        if (this.isFeedback())
-        {
-            if (this.getFeedback() != null && this.getFeedback().isSet())
-            {
-                stateString = "_active";
             }
         }
-        
-        if (this.isRoute())
-        {
-            if (this.getRoute() != null && this.getRoute().isExecuting())
-            {
-                stateString = "_active";
-            }
-        }
-            
+                    
         // TODO - check if folder exists, else use a default
         // TODO - switch to /gbsicons/ 
         return RESOURCE_PATH + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
-    public Image getImage(int size) throws IOException
+    public Image getImage(int size, boolean ignoreState) throws IOException
     {  
-         Image img = ImageIO.read(MarklinLayoutComponent.class.getResource(getImageName(size)));
+         Image img = ImageIO.read(MarklinLayoutComponent.class.getResource(getImageName(size, ignoreState)));
          
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
@@ -585,11 +589,12 @@ public class MarklinLayoutComponent
     /**
      * Returns a unique string for this component's image, suitable for caching
      * @param size
+     * @param ignoreState
      * @return 
      */
-    public String getImageKey(int size)
+    public String getImageKey(int size, boolean ignoreState)
     {
-        return this.getImageName(size) + "_" + Integer.toString(orientation);
+        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation);
     } 
     
     /**
