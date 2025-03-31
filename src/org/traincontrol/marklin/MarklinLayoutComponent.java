@@ -7,6 +7,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType;
 
 /**
  * Representation of each layout component as defined by CS2
@@ -42,6 +43,7 @@ public class MarklinLayoutComponent
     private int address;
     private int rawAddress;
     private String label = "";
+    private accessoryDecoderType protocol;
     
     // Type
     private componentType type;
@@ -61,10 +63,11 @@ public class MarklinLayoutComponent
      * @param state
      * @param address
      * @param rawAddress
+     * @param protocol
      * @throws IOException 
      */
     public MarklinLayoutComponent(componentType type, int x, int y, 
-            int orientation, int state, int address, int rawAddress) throws IOException
+            int orientation, int state, int address, int rawAddress, accessoryDecoderType protocol) throws IOException
     {
         // Sanity checks
         assert x >= 0;
@@ -84,6 +87,7 @@ public class MarklinLayoutComponent
         this.state = state;
         this.address = address;
         this.rawAddress = rawAddress;
+        this.protocol = protocol;
     }
     
     /**
@@ -95,18 +99,8 @@ public class MarklinLayoutComponent
      */
     public MarklinLayoutComponent(MarklinLayoutComponent original) throws IOException
     {
-        if (original == null)
-        {
-            throw new IllegalArgumentException("Original component cannot be null.");
-        }
-
-        this.type = original.type;
-        this.x = original.x;
-        this.y = original.y;
-        this.orientation = original.orientation;
-        this.state = original.state;
-        this.address = original.address;
-        this.rawAddress = original.rawAddress;
+        this(original.type, original.x, original.y, original.orientation, original.state, original.address, original.rawAddress, original.protocol);
+        
         this.label = original.label;
     }
     
@@ -633,7 +627,13 @@ public class MarklinLayoutComponent
         {
             builder.append(" .drehung=").append(this.orientation).append("\n");
         }
-
+        
+        // Custom state
+        if (this.protocol != null && this.protocol != MarklinAccessory.accessoryDecoderType.MM2)
+        {
+            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+        }
+        
         // Add .artikel (raw address)        
         builder.append(" .artikel=").append(this.rawAddress).append("\n");
         
@@ -735,15 +735,16 @@ public class MarklinLayoutComponent
     /**
      * Updates the component's address
      * @param address 
+     * @param protocol 
      * @param isGreen used for uncouplers
      * @throws java.lang.Exception 
      */
-    public void setLogicalAddress(int address, boolean isGreen) throws Exception
+    public void setLogicalAddress(int address, MarklinAccessory.accessoryDecoderType protocol, boolean isGreen) throws Exception
     {               
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
-            if (!MarklinAccessory.isValidDCCAddress(address - 1))
+            if (!MarklinAccessory.isValidAddress(address - 1, protocol))
             {
                 throw new Exception("Invalid address");
             }
@@ -809,5 +810,15 @@ public class MarklinLayoutComponent
                 return (rawAddress - 1) / 2;
             }
         }
+    }
+    
+    public accessoryDecoderType getProtocol()
+    {
+        return protocol;
+    }
+
+    public void setProtocol(accessoryDecoderType protocol)
+    {
+        this.protocol = protocol;
     }
 }

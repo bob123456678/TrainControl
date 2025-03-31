@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 13";
+    public static final String RAW_VERSION = "2.5.0 Beta 14";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -291,7 +291,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (c.isSwitch() || c.isSignal() || c.isUncoupler())
                 {                            
                     int newAddress = c.getAddress() - 1;                    
-                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, MarklinAccessory.determineDecoderType(newAddress));
+                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, c.getProtocol());
                     
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
@@ -314,16 +314,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         
                         if (c.isSwitch() || c.isUncoupler())
                         {
-                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SWITCH, MarklinAccessory.determineDecoderType(newAddress), c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getState() != 1);
 
                             if (c.isThreeWay())
                             {
-                                newAccessory(Integer.toString(c.getAddress() + 1), newAddress + 1, Accessory.accessoryType.SWITCH, MarklinAccessory.determineDecoderType(newAddress), c.getState() == 2);                                            
+                                newAccessory(Integer.toString(c.getAddress() + 1), newAddress + 1, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getState() == 2);                                            
                             }
                         }
                         else if (c.isSignal())
                         {
-                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SIGNAL, MarklinAccessory.determineDecoderType(newAddress), c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getState() != 1);
                         }
 
                         this.log("Adding " + this.accDB.getById(targetAddress).getName());
@@ -1995,6 +1995,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * If the accessory does not exist, a new switch with that access is created
      * @param address greater than 1
      * @param state 
+     * @param decoderType
      */
     @Override
     public void setAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)

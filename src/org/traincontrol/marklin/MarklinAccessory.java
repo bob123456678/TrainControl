@@ -95,6 +95,18 @@ public class MarklinAccessory extends Accessory
         }
     }
     
+    public static boolean isValidAddress(int addr, accessoryDecoderType protocol)
+    {
+        if (protocol == accessoryDecoderType.DCC)
+        {
+            return isValidDCCAddress(addr);
+        }
+        else
+        {
+            return isValidMM2Address(addr);
+        }
+    }
+    
     public static boolean isValidDCCAddress(int addr)
     {
         return addr >= 0 && addr <= MAX_DCC_ADDRESS;
@@ -322,6 +334,24 @@ public class MarklinAccessory extends Accessory
         else
         {
             return accessoryDecoderType.MM2;
+        }
+    }
+    
+    /**
+     * Converts string to accessoryDecoderType
+     * @param type
+     * @return 
+     */
+    public static accessoryDecoderType getAccessoryDecoderType(String type)
+    {
+        try
+        {
+            return accessoryDecoderType.valueOf(type.toUpperCase());
+        } 
+        catch (IllegalArgumentException | NullPointerException e)
+        {
+            // Handle cases where the input doesn't match any enum value
+            return null;
         }
     }
 }

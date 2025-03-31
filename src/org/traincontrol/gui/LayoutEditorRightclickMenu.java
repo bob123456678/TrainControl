@@ -190,7 +190,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             
             if (component.isClickable())
             {
-                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + ")");
+                String prot = "";
+                if (component.getProtocol() != null)
+                {
+                    prot = " " + component.getProtocol().toString();
+                }
+                
+                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + prot + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try

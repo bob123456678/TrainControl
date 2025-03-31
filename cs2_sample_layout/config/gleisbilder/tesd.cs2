@@ -2,6 +2,10 @@
 version
  .major=1
 element
+ .id=0x60e
+ .typ=pfeil
+ .artikel=1
+element
  .id=0x709
  .typ=yweiche
  .artikel=512
@@ -36,7 +40,17 @@ element
 element
  .id=0xa0f
  .typ=yweiche
+ .artikel=640
+element
+ .id=0xa10
+ .typ=yweiche
+ .prot=DCC
  .artikel=4096
+element
+ .id=0xa11
+ .typ=yweiche
+ .prot=DCC
+ .artikel=640
 element
  .id=0xd0d
  .typ=custom_perm_y

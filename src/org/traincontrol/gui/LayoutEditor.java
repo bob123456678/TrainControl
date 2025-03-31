@@ -26,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -147,12 +148,12 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0);
+            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0, MarklinAccessory.accessoryDecoderType.MM2);
             
             // Set a default address, otherwise switches will become unclickable after saving
             if (component.isClickable())
             {
-                component.setLogicalAddress(1, false);
+                component.setLogicalAddress(1, MarklinAccessory.accessoryDecoderType.MM2, false);
             }
             
             if (type == MarklinLayoutComponent.componentType.TEXT)
@@ -705,8 +706,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     // Retrieve the address from LayoutEditorAddressPopup and use it
                     int newAddress = Integer.parseInt(addressPopup.getAddress().getText()); // Assuming there's a method to get the logical address
-                    lc.setLogicalAddress(newAddress, addressPopup.getGreenButton().isSelected());
+                    lc.setLogicalAddress(newAddress, addressPopup.getProtocol(), addressPopup.getGreenButton().isSelected());
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                    lc.setProtocol(addressPopup.getProtocol());
                 }
             }
             catch (Exception ex)

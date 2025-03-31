@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 import javax.swing.Timer;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
@@ -14,6 +15,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     public LayoutEditorAddressPopup(MarklinLayoutComponent lc)
     {
         initComponents();
+        
+        this.mm2Radio.setVisible(false);
+        this.dccRadio.setVisible(false);
+        this.mm2Radio.setSelected(false);
         
         if (lc.isLink())
         {
@@ -30,6 +35,18 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         else if (lc.isSwitch() || lc.isSignal() || lc.isLamp())
         {
             this.helpLabel.setText("Valid accessory addresses range from 1 to 320 (Marklin) or 2048 (DCC).");
+            
+            if (lc.getProtocol() == MarklinAccessory.accessoryDecoderType.MM2)
+            {
+                this.mm2Radio.setSelected(true);
+            }
+            else
+            {
+                this.dccRadio.setSelected(true);
+            }
+            
+            this.mm2Radio.setVisible(true);
+            this.dccRadio.setVisible(true);
         }
         else if (lc.isFeedback())
         {
@@ -45,8 +62,25 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     {
         return address;
     }
+    
+    public MarklinAccessory.accessoryDecoderType getProtocol()
+    {
+        if (this.mm2Radio.isSelected())
+        {
+            return MarklinAccessory.accessoryDecoderType.MM2;
+        }
+        else if (this.dccRadio.isSelected())
+        {
+            return MarklinAccessory.accessoryDecoderType.DCC;
+        }
+        else
+        {
+            return null;
+        }
+    }
 
-    public JCheckBox getGreenButton() {
+    public JCheckBox getGreenButton()
+    {
         return greenButton;
     }
   
@@ -59,9 +93,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         address = new javax.swing.JTextField();
         greenButton = new javax.swing.JCheckBox();
         helpLabel = new javax.swing.JLabel();
+        mm2Radio = new javax.swing.JRadioButton();
+        dccRadio = new javax.swing.JRadioButton();
 
         address.addAncestorListener(new javax.swing.event.AncestorListener() {
             public void ancestorMoved(javax.swing.event.AncestorEvent evt) {
@@ -82,6 +119,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
         helpLabel.setText("help text...");
 
+        buttonGroup1.add(mm2Radio);
+        mm2Radio.setText("MM2");
+
+        buttonGroup1.add(dccRadio);
+        dccRadio.setText("DCC");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -92,7 +135,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                     .addComponent(greenButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(address)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(helpLabel)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(helpLabel)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(mm2Radio)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(dccRadio)))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -105,6 +153,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 .addComponent(address, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(greenButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(mm2Radio)
+                    .addComponent(dccRadio))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -125,7 +177,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;
+    private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JRadioButton dccRadio;
     private javax.swing.JCheckBox greenButton;
     private javax.swing.JLabel helpLabel;
+    private javax.swing.JRadioButton mm2Radio;
     // End of variables declaration//GEN-END:variables
 }

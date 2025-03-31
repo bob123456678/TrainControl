@@ -1424,12 +1424,26 @@ public final class CS2File
                         orient = Math.floorMod(orient - 1, 4);
                     }
                     
+                    MarklinAccessory.accessoryDecoderType protocol = MarklinAccessory.accessoryDecoderType.MM2;
+                    
+                    if (m.get("prot") != null)
+                    {
+                        if (MarklinAccessory.getAccessoryDecoderType(m.get("prot")) != null)
+                        {
+                            protocol = MarklinAccessory.getAccessoryDecoderType(m.get("prot"));
+                        }
+                        else
+                        {
+                            logMessage("Unknown protocol: " + m.get("prot"));
+                        }
+                    }
+                    
                     // This will fail for unknown components.  Catch errors?
                     if (getComponentType(type, address) != null)
                     {
                         layout.addComponent(
                            getComponentType(type, address),
-                           x, y, orient, state, address, rawAddress, m.get("text")
+                           x, y, orient, state, address, rawAddress, protocol, m.get("text")
                         );
                     }
                 }
