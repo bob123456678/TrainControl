@@ -62,8 +62,8 @@ public interface ViewListener
     public Layout getAutoLayout();
     public boolean isAutonomyRunning();
     public boolean isDebug();
-    MarklinAccessory newSignal(int address, boolean state);
-    MarklinAccessory newSwitch(int address, boolean state);
+    MarklinAccessory newSignal(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state);
+    MarklinAccessory newSwitch(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state);
     public boolean getNetworkCommState();
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);

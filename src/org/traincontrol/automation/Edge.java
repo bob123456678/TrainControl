@@ -14,6 +14,7 @@ import java.util.Objects;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  * Graph edge - includes start and end points and occupied state
@@ -113,7 +114,7 @@ public class Edge
                     throw new Exception("Command " + accessory + " conflicts with a switch with the same address and should be renamed.");
                 }
                 
-                control.newSignal(address, false);
+                control.newSignal(address, MarklinAccessory.determineDecoderType(address - 1), false);
                 control.log("Auto layout warning: created " + accessory);
             }
             else if (accessory.contains("Switch "))
@@ -125,7 +126,7 @@ public class Edge
                     throw new Exception("Command " + accessory + " conflicts with a signal with the same address and should be renamed.");
                 }
 
-                control.newSwitch(address, false);
+                control.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
                 control.log("Auto layout warning: created " + accessory);                       
             }
             else

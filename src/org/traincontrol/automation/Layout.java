@@ -3020,7 +3020,7 @@ public class Layout
                                         //layout.invalidate();
                                     }
                                     
-                                    control.newSignal(address, false);
+                                    control.newSignal(address, MarklinAccessory.determineDecoderType(address - 1), false);
                                     control.log("Auto layout warning: created " + accessory);
                                 }
                                 else if (accessory.contains("Switch "))
@@ -3033,7 +3033,7 @@ public class Layout
                                         //layout.invalidate();
                                     }
                                     
-                                    control.newSwitch(address, false);
+                                    control.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
                                     control.log("Auto layout warning: created " + accessory);                       
                                 }
                                 else

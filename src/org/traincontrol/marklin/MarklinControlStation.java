@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 11";
+    public static final String RAW_VERSION = "2.5.0 Beta 12";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -212,6 +212,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 MarklinAccessory newAccessory = newAccessory(Integer.toString(c.getAddress() + 1), c.getAddress(), 
                         c.getType() == MarklinSimpleComponent.Type.SIGNAL ? MarklinAccessory.accessoryType.SIGNAL : MarklinAccessory.accessoryType.SWITCH,
+                        c.getAccessoryDecoderType(),
                         c.getState(), c.getNumActuations());                
             
                 if (!newAccessory.isValidAddress())
@@ -313,16 +314,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         
                         if (c.isSwitch() || c.isUncoupler())
                         {
-                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SWITCH, c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SWITCH, MarklinAccessory.determineDecoderType(newAddress), c.getState() != 1);
 
                             if (c.isThreeWay())
                             {
-                                newAccessory(Integer.toString(c.getAddress() + 1), newAddress + 1, Accessory.accessoryType.SWITCH, c.getState() == 2);                                            
+                                newAccessory(Integer.toString(c.getAddress() + 1), newAddress + 1, Accessory.accessoryType.SWITCH, MarklinAccessory.determineDecoderType(newAddress), c.getState() == 2);                                            
                             }
                         }
                         else if (c.isSignal())
                         {
-                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SIGNAL, c.getState() != 1);
+                            newAccessory(Integer.toString(c.getAddress()), newAddress, Accessory.accessoryType.SIGNAL, MarklinAccessory.determineDecoderType(newAddress), c.getState() != 1);
                         }
 
                         this.log("Adding " + this.accDB.getById(targetAddress).getName());
@@ -1171,27 +1172,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
             
     /**
-     * Creates a new signal (with the acuation count from the existing accessory, otherwise with 0 actuations)
+     * Creates a new signal (with the actuation count from the existing accessory, otherwise with 0 actuations)
      * @param address - the logical address (1 more than mm2 address)
+     * @param decoderType
      * @param state
      * @return 
     */
     @Override
-    public final MarklinAccessory newSignal(int address, boolean state)
+    public final MarklinAccessory newSignal(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
     {        
-        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SIGNAL, state);
+        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SIGNAL, decoderType, state);
     }
     
     /**
-     * Creates a new switch (with the acuation count from the existing accessory, otherwise with 0 actuations)
+     * Creates a new switch (with the actuation count from the existing accessory, otherwise with 0 actuations)
      * @param address - the logical address (1 more than mm2 address)
+     * @param decoderType
      * @param state
      * @return 
      */
     @Override
-    public final MarklinAccessory newSwitch(int address, boolean state)
+    public final MarklinAccessory newSwitch(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
     {
-        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SWITCH, state);
+        return newAccessory(Integer.toString(address), address - 1, Accessory.accessoryType.SWITCH, decoderType, state);
     }
     
     /**
@@ -1782,11 +1785,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state
      * @return 
      */
-    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state)
+    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, 
+            MarklinAccessory.accessoryDecoderType decoderType, boolean state)
     {
         MarklinAccessory current = this.getAccessoryByAddress(address);
         
-        return newAccessory(name, address, type, state, current != null ? current.getNumActuations() : 0);
+        return newAccessory(name, address, type, decoderType, state, current != null ? current.getNumActuations() : 0);
     }
     
     /**
@@ -1798,11 +1802,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param numActuations
      * @return 
      */
-    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, boolean state, int numActuations)
+    private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, 
+            MarklinAccessory.accessoryDecoderType decoderType,
+            boolean state, int numActuations)
     {
         name = Accessory.accessoryTypeToPrettyString(type) + " " + name;
         
-        MarklinAccessory newAccessory = new MarklinAccessory(this, address, type, name, state, numActuations);
+        MarklinAccessory newAccessory = new MarklinAccessory(this, address, type, decoderType, name, state, numActuations);
         
         this.accDB.add(newAccessory, name, newAccessory.getUID());
         
@@ -2009,7 +2015,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            a = this.newSwitch(address, !state);
+            a = this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), !state);
         }
         
         if (state)
@@ -2150,7 +2156,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.newSwitch(address, false);
+            this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
         }
         
         return false;
@@ -2182,7 +2188,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            return this.newSwitch(address, false);
+            return this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
         }        
     }
     

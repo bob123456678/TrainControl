@@ -101,18 +101,26 @@ public class ProgrammaticControlExample
                 
                 // Manually add a new signal to the database so that it can be referenced by name
                 // When creating an accessory, the MM2 address will be 1 less than the logical address
-                data.newSignal(4, false);
+                data.newSignal(4, MarklinAccessory.accessoryDecoderType.MM2, false);
                 MarklinAccessory mySignal4 = data.getAccessoryByName("Signal 4");
                 
                 // Send command to ensure the state is consistent
                 mySignal4.green();
 
                 // Manually add a new switch to the database so that it can be referenced by name
-                data.newSwitch(5, false);
+                data.newSwitch(5, MarklinAccessory.accessoryDecoderType.MM2, false);
                 MarklinAccessory mySwitch5 = data.getAccessoryByName("Switch 5");
                 
                 // Send command to ensure the state is consistent
                 mySwitch5.turn();
+                
+                // DCC addresses are now supported
+                // Note - at the moment, two accessories with the same address will get the same name, regardless of the decoder
+                data.newSwitch(400, MarklinAccessory.accessoryDecoderType.DCC, false);
+                MarklinAccessory mySwitch400 = data.getAccessoryByName("Switch 400");
+                
+                // Send command to ensure the state is consistent
+                mySwitch400.straight();
 
                 //
                 // Accessories that are already on a layout

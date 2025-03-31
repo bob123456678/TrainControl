@@ -308,22 +308,8 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Temporary workaround where we assume the decoder type based on the address
-     * @param network
-     * @param address
-     * @param type
-     * @param name
-     * @param state
-     * @param numActuations 
-     */
-    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state, int numActuations)
-    {
-        this(network, address, type, determineDecoderType(address), name, state, numActuations);
-    }
-    
-    /**
      * Determines the decoder type based on the address alone
-     * TODO - framework needs to switch to constructors that specify the decoder type
+     * TODO - routes and diagrams need to track the accessory decoder type
      * @param address
      * @return 
      */

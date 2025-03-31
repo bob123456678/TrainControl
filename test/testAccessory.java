@@ -27,7 +27,7 @@ public class testAccessory
     public void testAccessoryCreation()
     {   
         // Test with high numbers so the model deletes them automatically on restart
-        model.newSignal(280, true);
+        model.newSignal(280, MarklinAccessory.accessoryDecoderType.MM2, true);
         
         MarklinAccessory signal1 = model.getAccessoryByName("Signal 280");
         MarklinAccessory signal2 = model.getAccessoryByAddress(280);
@@ -36,23 +36,25 @@ public class testAccessory
         assertEquals(signal1.getType(), MarklinAccessory.accessoryType.SIGNAL);
         assertEquals(signal1.isRed(), true);
         assertEquals(signal1.isGreen(), false);
+        assertEquals(signal1.getDecoderType(), MarklinAccessory.accessoryDecoderType.MM2);
 
         // This will overwrite the signal in the database
-        model.newSignal(280, false);
+        model.newSignal(280, MarklinAccessory.accessoryDecoderType.DCC, false);
         signal1 = model.getAccessoryByName("Signal 280");
 
         assertEquals(signal1.isGreen(), true);
         assertEquals(signal1.isRed(), false);
         assertEquals(signal1.isSignal(), true);
         assertEquals(signal1.isSwitch(), false);
-        
+        assertEquals(signal1.getDecoderType(), MarklinAccessory.accessoryDecoderType.DCC);
+
         // Test switching
         signal1.setSwitched(true);
         assertEquals(signal1.isSwitched(), true);
         signal1.setSwitched(false);
         assertEquals(signal1.isSwitched(), false);
         
-        model.newSwitch(281, false);
+        model.newSwitch(281, MarklinAccessory.accessoryDecoderType.MM2, false);
         MarklinAccessory switch1 = model.getAccessoryByAddress(281);
         assertEquals(switch1.getType(), MarklinAccessory.accessoryType.SWITCH);
         assertEquals(switch1.isSwitched(), false);
@@ -78,7 +80,7 @@ public class testAccessory
     @Test
     public void testRouteCommand() throws Exception
     {   
-        model.newSwitch(285, false);
+        model.newSwitch(285, MarklinAccessory.accessoryDecoderType.MM2, false);
         MarklinAccessory createdAccessory = model.getAccessoryByAddress(285);
         
         // Test copying an accessory setting
@@ -148,8 +150,8 @@ public class testAccessory
         model.setAccessoryState(0, true);
         
         // This will be allowed
-        switch0 = model.newSwitch(0, true);
-        switchNeg = model.newSignal(-1, true);
+        switch0 = model.newSwitch(0, MarklinAccessory.accessoryDecoderType.MM2, true);
+        switchNeg = model.newSignal(-1, MarklinAccessory.accessoryDecoderType.MM2, true);
         
         assertNotNull(switchNeg);
         assertNotNull(switch0);
