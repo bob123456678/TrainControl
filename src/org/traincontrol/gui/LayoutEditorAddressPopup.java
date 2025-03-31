@@ -19,22 +19,24 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         this.mm2Radio.setVisible(false);
         this.dccRadio.setVisible(false);
         this.mm2Radio.setSelected(false);
-        
+        this.dccRadio.setSelected(false);
+
         if (lc.isLink())
         {
             this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 1.");
-        }
-        else if (lc.isUncoupler())
-        {
-            this.helpLabel.setText("There can be two uncouplers on the same address.  The checkbox differentiates this.");
         }
         else if (lc.isRoute())
         {
             this.helpLabel.setText("Check the Routes tab for the IDs of your routes.");
         }
-        else if (lc.isSwitch() || lc.isSignal() || lc.isLamp())
+        else if (lc.isSwitch() || lc.isSignal() || lc.isLamp() || lc.isUncoupler())
         {
             this.helpLabel.setText("Valid accessory addresses range from 1 to 320 (Marklin) or 2048 (DCC).");
+            
+            if (lc.isUncoupler())
+            {
+                this.helpLabel.setText("<html>" + this.helpLabel.getText() + "<br>There can be two uncouplers on the same address.  The checkbox differentiates this.</html>");
+            }
             
             if (lc.getProtocol() == MarklinAccessory.accessoryDecoderType.MM2)
             {

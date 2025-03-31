@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -232,15 +233,23 @@ public class LayoutGrid
                     {
                         if (c.isLogicalGreen())
                         {
-                            redOrGreen = " G";
+                            redOrGreen = "g";
                         }
                         else
                         {
-                            redOrGreen = " R";
+                            redOrGreen = "r";
                         }
                     }
                     
-                    text.setText("<html>" + c.getLogicalAddress() + redOrGreen + "</html>");      
+                    // Add the protocol
+                    String protocol = "";
+
+                    if (c.getProtocol() != null && c.getProtocol() != MarklinAccessory.accessoryDecoderType.MM2)
+                    {
+                        protocol = "<br>" + c.getProtocol().toString().toLowerCase() + "";
+                    }
+                    
+                    text.setText("<html>" + c.getLogicalAddress() + redOrGreen + protocol + "</html>");      
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);

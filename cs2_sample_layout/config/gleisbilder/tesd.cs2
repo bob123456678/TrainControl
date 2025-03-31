@@ -55,3 +55,9 @@ element
  .id=0xd0d
  .typ=custom_perm_y
  .artikel=0
+element
+ .id=0xd10
+ .typ=entkuppler
+ .prot=DCC
+ .artikel=4095
+ .text=adsfadsf
