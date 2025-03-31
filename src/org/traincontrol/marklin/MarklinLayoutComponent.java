@@ -759,9 +759,15 @@ public class MarklinLayoutComponent
         }
         else
         {
+            // User doesn't need to know that pages are 0-based
+            if (this.isLink())
+            {
+                address -= 1;
+            }
+            
             if (address < 0)
             {
-                throw new Exception("Invalid address (must not be negative)");
+                throw new Exception("Invalid address (must be positive)");
             }
             
             this.address = address;
@@ -784,9 +790,13 @@ public class MarklinLayoutComponent
      */
     public int getLogicalAddress()
     {
-        if (this.isFeedback() || this.isLink() || this.isRoute())
+        if (this.isFeedback() || this.isRoute())
         {
             return this.rawAddress;
+        }
+        else if (this.isLink())
+        {
+            return this.rawAddress + 1;
         }
         else
         {

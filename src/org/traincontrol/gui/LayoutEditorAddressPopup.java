@@ -17,7 +17,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         
         if (lc.isLink())
         {
-            this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 0.");
+            this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 1.");
         }
         else if (lc.isUncoupler())
         {

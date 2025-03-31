@@ -50,8 +50,6 @@ From v2.5.0, full cross-platfrom track diagram editing support is available in T
 
 Between v2.0.x and v2.4.x, you can also edit local track diagrams via a bundled Windows-only program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor)).
 
-![UI screenshot: old layout editor](assets/track_diagram_editor.png?raw=true)
-
 <details>
 <summary>Instructions for Managing and Importing Layouts</summary>
 
@@ -299,10 +297,11 @@ Requires JDK 1.8+ and the following libraries:
         - The "Show Data Source" option in the Layouts menu will now open a file explorer or browser with the layout source files
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
-        - Added support for DCC accessories.  Accessories with addresses from 256-2048 are implicitly treated as DCC.
+        - MM2 accessories with addresses 257-320 are now supported
+        - Added support for DCC accessories.  Accessories with addresses from 256-2048 are implicitly treated as DCC
     - Accessory Keyboard
         - Added 28 additional keyboards to cover all DCC addresses
-    - The IP of the Central Station is not printed to the log at startup
+    - The IP of the Central Station is now printed to the log at startup
 
 * v2.4.12 [3/24/2025]
     - Graph UI

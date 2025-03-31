@@ -253,14 +253,14 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (this.hasToolFlag())
                 {
                     if (lastComponent != null) componentString = lastComponent.getTypeName();
-                    if (!componentString.isEmpty()) componentString = " " + componentString + " tile";
+                    if (!componentString.isEmpty()) componentString = " \"" + componentString + "\" tile";
                     
                     label.setToolTipText("Click to paste" + componentString + "\n" + toolTipText);
                 }
                 else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
                 {
                     componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getTypeName();                    
-                    if (!componentString.isEmpty()) componentString = " " + componentString + " tile";
+                    if (!componentString.isEmpty()) componentString = " \"" + componentString + "\" tile";
                     
                     label.setToolTipText("Click to cut" + componentString + "\n" + toolTipText);     
                 }
