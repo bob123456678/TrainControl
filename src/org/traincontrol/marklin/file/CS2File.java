@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  * Marklin Central Station 2/3 config file parser
@@ -738,6 +739,21 @@ public final class CS2File
                         {
                             // System.out.println(accessory);
                             int address = accessory.getInt("address");
+                            
+                            /*String protocol = accessory.getString("prot");
+                            
+                            if ("mm".equals(protocol))
+                            {
+                                protocol = MarklinAccessory.accessoryDecoderType.MM2.toString();
+                            }
+                            else if ("dcc".equals(protocol))
+                            {
+                                protocol = MarklinAccessory.accessoryDecoderType.DCC.toString();
+                            }
+                            else
+                            {
+                                protocol = "";
+                            }*/
                             
                             // stellung 0 - key not included
                             // this means red/turn

@@ -349,27 +349,27 @@ public class RouteCommand implements java.io.Serializable
         switch (type)
         {
             case TYPE_ACCESSORY:
-                int address = Integer.parseInt(jsonObject.getJSONObject("state").getString("ADDRESS"));
-                boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                int address = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
+                boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString(KEY_SETTING));
                 routeCommand = RouteCommand.RouteCommandAccessory(address, setting);
                 break;
                 
             case TYPE_FEEDBACK:
-                int fAddress = Integer.parseInt(jsonObject.getJSONObject("state").getString("ADDRESS"));
-                boolean fSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                int fAddress = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
+                boolean fSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString(KEY_SETTING));
                 routeCommand = RouteCommand.RouteCommandFeedback(fAddress, fSetting);
                 break;
 
             case TYPE_FUNCTION:
-                String name = jsonObject.getJSONObject("state").getString("NAME");
-                int function = Integer.parseInt(jsonObject.getJSONObject("state").getString("FUNCTION"));
-                boolean functionSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString("SETTING"));
+                String name = jsonObject.getJSONObject("state").getString(KEY_NAME);
+                int function = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_FUNCTION));
+                boolean functionSetting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString(KEY_SETTING));
                 routeCommand = RouteCommand.RouteCommandFunction(name, function, functionSetting);
                 break;
 
             case TYPE_LOCOMOTIVE:
-                String locoName = jsonObject.getJSONObject("state").getString("NAME");
-                int speed = Integer.parseInt(jsonObject.getJSONObject("state").getString("SPEED"));
+                String locoName = jsonObject.getJSONObject("state").getString(KEY_NAME);
+                int speed = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_SPEED));
                 routeCommand = RouteCommand.RouteCommandLocomotive(locoName, speed);
                 break;
 
@@ -394,9 +394,9 @@ public class RouteCommand implements java.io.Serializable
         }
 
         // Adding delay if present
-        if (jsonObject.getJSONObject("state").has("DELAY"))
+        if (jsonObject.getJSONObject("state").has(KEY_DELAY))
         {
-            int delay = Integer.parseInt(jsonObject.getJSONObject("state").getString("DELAY"));
+            int delay = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_DELAY));
             routeCommand.setDelay(delay);
         }
 

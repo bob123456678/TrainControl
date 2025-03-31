@@ -298,9 +298,9 @@ Requires JDK 1.8+ and the following libraries:
         - The "Show Data Source" option in the Layouts menu will now open a file explorer or browser with the layout source files
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
-        - MM2 accessories with addresses 257-320 are now supported
     - Accessories
         - Added support for DCC accessories up to address 2048.  Limitation: Accessories with addresses of 320 and below are implicitly treated as MM2
+        - MM2 accessories with addresses 257-320 are now supported
         - Added 1 additional keyboard page to cover MM2 addresses up to 320
     - The IP of the Central Station is now printed to the log at startup
 
