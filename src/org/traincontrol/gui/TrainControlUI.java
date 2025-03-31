@@ -13744,13 +13744,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!isLocalLayout())
         {
-            return "Layout from Central Station:\n" + prefs.get(IP_PREF, "(None loaded)");
+            String url = "";
+            
+            if (!this.model.getLayoutList().isEmpty())
+            {
+                url = this.model.getLayout((String) this.LayoutList.getSelectedItem()).getUrl();
+                
+                Util.openUrl(url);
+                
+                url = "\n" + url;
+            }
+            
+            return "Layout from Central Station:\n" + prefs.get(IP_PREF, "(None loaded)") + url;
         }
         else
         {
-            showFileExplorer(new File(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "")));
+            String path = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
             
-            return "Local Layout Files:\n" + prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+            if (!path.isEmpty())
+            {
+                showFileExplorer(new File(path));
+            }
+            
+            return "Local Layout Files:\n" + (path.isEmpty() ? "(None loaded)" : path);
         }
     }
     

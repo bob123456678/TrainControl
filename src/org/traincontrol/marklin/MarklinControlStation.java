@@ -2509,7 +2509,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             initIP = null;
         }
-
+        
+        if (initIP != null)
+        {
+            System.out.println("Connecting to " + initIP);
+        }
+        
         // Delegate the hard part
         NetworkProxy proxy = new NetworkProxy(InetAddress.getByName(initIP));
         

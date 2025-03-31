@@ -158,11 +158,14 @@ public class testAccessory
         MarklinAccessory switch255 = model.getAccessoryByAddress(255);
         MarklinAccessory switch256 = model.getAccessoryByAddress(256);
         MarklinAccessory switch257 = model.getAccessoryByAddress(257);
-        
+        MarklinAccessory switch319 = model.getAccessoryByAddress(319);
+        MarklinAccessory switch320 = model.getAccessoryByAddress(320); 
+        MarklinAccessory switch321 = model.getAccessoryByAddress(321);
+
         MarklinAccessory switch2047 = model.getAccessoryByAddress(2047);
         MarklinAccessory switch2048 = model.getAccessoryByAddress(2048);
         MarklinAccessory switch2049 = model.getAccessoryByAddress(2049);
-        
+
         assertFalse(switchNeg.isValidAddress());
         assertFalse(switch0.isValidAddress());
         assertTrue(switch1.isValidAddress());
@@ -170,10 +173,13 @@ public class testAccessory
         assertTrue(switch256.isValidAddress());
         assertTrue(switch257.isValidAddress());
         assertTrue(switch256.isValidMM2Address());
-        assertFalse(switch257.isValidMM2Address());
+        assertTrue(switch319.isValidMM2Address());
+        assertTrue(switch320.isValidMM2Address());
+        assertFalse(switch321.isValidMM2Address());
         assertTrue(switch2047.isValidAddress());
         assertTrue(switch2048.isValidAddress());
         assertFalse(switch2049.isValidAddress());
+
     }
     
     @BeforeClass

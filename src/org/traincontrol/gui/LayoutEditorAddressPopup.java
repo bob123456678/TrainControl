@@ -29,7 +29,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
         else if (lc.isSwitch() || lc.isSignal() || lc.isLamp())
         {
-            this.helpLabel.setText("Valid accessory addresses range from 1 to 255 (Marklin) or 2047 (DCC).");
+            this.helpLabel.setText("Valid accessory addresses range from 1 to 320 (Marklin) or 2048 (DCC).");
         }
         else if (lc.isFeedback())
         {

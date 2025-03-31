@@ -17,3 +17,27 @@ element
  .id=0x710
  .typ=yweiche
  .artikel=508
+element
+ .id=0x90c
+ .typ=custom_perm_y
+ .artikel=0
+element
+ .id=0x90d
+ .typ=custom_perm_y
+ .artikel=0
+element
+ .id=0xa09
+ .typ=yweiche
+ .artikel=640
+element
+ .id=0xa0c
+ .typ=yweiche
+ .artikel=2
+element
+ .id=0xa0f
+ .typ=yweiche
+ .artikel=4096
+element
+ .id=0xd0d
+ .typ=custom_perm_y
+ .artikel=0

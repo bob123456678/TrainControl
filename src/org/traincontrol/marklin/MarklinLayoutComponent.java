@@ -739,11 +739,11 @@ public class MarklinLayoutComponent
      * @throws java.lang.Exception 
      */
     public void setLogicalAddress(int address, boolean isGreen) throws Exception
-    {        
+    {               
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
-            if (!MarklinAccessory.isValidAddress(address))
+            if (!MarklinAccessory.isValidAddress(address - 1))
             {
                 throw new Exception("Invalid address");
             }

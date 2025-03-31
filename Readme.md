@@ -296,12 +296,13 @@ Requires JDK 1.8+ and the following libraries:
     - Track Diagram Editing
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
         - Added a "Modify Layout" entry to the Layouts menu, enabling the management of track diagram pages
-        - The "Show Data Source" option in the Layouts menu will now open a file explorer with the layout source files
+        - The "Show Data Source" option in the Layouts menu will now open a file explorer or browser with the layout source files
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
         - Added support for DCC accessories.  Accessories with addresses from 256-2048 are implicitly treated as DCC.
     - Accessory Keyboard
         - Added 28 additional keyboards to cover all DCC addresses
+    - The IP of the Central Station is not printed to the log at startup
 
 * v2.4.12 [3/24/2025]
     - Graph UI

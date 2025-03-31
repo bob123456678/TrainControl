@@ -31,8 +31,8 @@ public class MarklinAccessory extends Accessory
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
     
-    // Maximum MM2 address
-    public static final int MAX_MM2_ADDRESS = 255;
+    // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
+    public static final int MAX_MM2_ADDRESS = 319;
     public static final int MAX_DCC_ADDRESS = 2047;
     
     public static final int MM2_BASE = 0x3000;
