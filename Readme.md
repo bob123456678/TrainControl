@@ -301,7 +301,7 @@ Requires JDK 1.8+ and the following libraries:
         - MM2 accessories with addresses 257-320 are now supported
     - Accessories
         - Added support for DCC accessories up to address 2048.  Limitation: Accessories with addresses of 320 and below are implicitly treated as MM2
-        - Added 28 additional keyboards to cover all DCC addresses
+        - Added 1 additional keyboard to cover MM2 addresses up to 320
     - The IP of the Central Station is now printed to the log at startup
 
 * v2.4.12 [3/24/2025]

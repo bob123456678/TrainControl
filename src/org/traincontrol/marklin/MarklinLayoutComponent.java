@@ -743,7 +743,7 @@ public class MarklinLayoutComponent
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
-            if (!MarklinAccessory.isValidAddress(address - 1))
+            if (!MarklinAccessory.isValidDCCAddress(address - 1))
             {
                 throw new Exception("Invalid address");
             }

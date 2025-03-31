@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 9";
+    public static final String RAW_VERSION = "2.5.0 Beta 10";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -290,7 +290,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (c.isSwitch() || c.isSignal() || c.isUncoupler())
                 {                            
                     int newAddress = c.getAddress() - 1;                    
-                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress);
+                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, MarklinAccessory.determineDecoderType(newAddress));
                     
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
@@ -2003,9 +2003,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         MarklinAccessory a;
         
-        if (this.accDB.hasId(MarklinAccessory.UIDfromAddress(address - 1)))
+        if (this.accDB.hasId(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))))
         {
-            a = this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1));
+            a = this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1)));
         }
         else
         {
@@ -2144,9 +2144,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         // Get by name because UID in database != address
-        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)) != null)
+        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))) != null)
         {
-            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)).isSwitched();
+            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))).isSwitched();
         }
         else
         {
@@ -2174,9 +2174,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         // Get by name because UID in database != address
-        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1)) != null)
+        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, 
+                MarklinAccessory.determineDecoderType(address - 1))) != null)
         {
-            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1));
+            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, 
+                    MarklinAccessory.determineDecoderType(address - 1)));
         }
         else
         {

@@ -16,6 +16,12 @@ import org.traincontrol.util.Conversion;
 public class MarklinAccessory extends Accessory
     implements java.io.Serializable, RemoteDevice<Accessory, CS2Message>
 {
+    // List of available decoders
+    public static enum accessoryDecoderType {MM2, DCC};
+
+    // The type of decoder used
+    private final accessoryDecoderType decoderType;
+    
     // Calculated UID
     private final int UID;
     
@@ -37,25 +43,29 @@ public class MarklinAccessory extends Accessory
     
     public static final int MM2_BASE = 0x3000;
     public static final int DCC_BASE = 0x3800;
-    
+        
     /**
      * Constructor
      * @param network
      * @param address
      * @param type
+     * @param decoderType
      * @param name
      * @param state
      * @param numActuations
      */
-    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state, int numActuations)
+    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, accessoryDecoderType decoderType, String name, boolean state, int numActuations)
     {
         super(name, type, false);
         
         // Store raw address
         this.address = address;
         
-        // Add 0x3000 for accessory UID
-        this.UID = UIDfromAddress(address);
+        // Save the decoder type. 
+        this.decoderType = decoderType;
+        
+        // Add 0x3000 or 0x3800 for accessory UID
+        this.UID = UIDfromAddress(address, this.decoderType);
         
         // Set network type
         this.network = network;
@@ -75,27 +85,19 @@ public class MarklinAccessory extends Accessory
      */
     public boolean isValidAddress()
     {
-        return isValidAddress(address);
-    }
-    
-    public boolean isValidMDCCAddress()
-    {
-        return isValidDCCAddress(address);
-    }
-    
-    public boolean isValidMM2Address()
-    {
-        return isValidMM2Address(address);
-    }
-    
-    public static boolean isValidAddress(int addr)
-    {
-        return isValidDCCAddress(addr) || isValidMM2Address(addr);
+        if (this.decoderType == accessoryDecoderType.DCC)
+        {
+            return isValidDCCAddress(this.address);
+        }
+        else
+        {
+            return isValidMM2Address(this.address);
+        }
     }
     
     public static boolean isValidDCCAddress(int addr)
     {
-        return addr > MAX_MM2_ADDRESS && addr <= MAX_DCC_ADDRESS;
+        return addr >= 0 && addr <= MAX_DCC_ADDRESS;
     }
     
     public static boolean isValidMM2Address(int addr)
@@ -106,11 +108,12 @@ public class MarklinAccessory extends Accessory
     /**
      * Returns the UID for the specified integer address
      * @param address
+     * @param type
      * @return 
      */
-    public static int UIDfromAddress(int address)
+    public static int UIDfromAddress(int address, accessoryDecoderType type)
     {
-        if (address > MAX_MM2_ADDRESS)
+        if (type == accessoryDecoderType.DCC)
         {
             return address + DCC_BASE;
         }
@@ -287,11 +290,52 @@ public class MarklinAccessory extends Accessory
         return accessoryTypeToPrettyString(type) + " " + address + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
     }
     
+    /**
+     * Gets the decoder type
+     * @return 
+     */
+    public accessoryDecoderType getDecoderType()
+    {
+        return decoderType;
+    }
+    
     @Override
     public String toString()
     {        
         return super.toString() + "\n" +
             "UID: " + Conversion.intToHex(this.UID) + "\n" +
             "Address: " + Conversion.intToHex(this.address);
+    }
+    
+    /**
+     * Temporary workaround where we assume the decoder type based on the address
+     * @param network
+     * @param address
+     * @param type
+     * @param name
+     * @param state
+     * @param numActuations 
+     */
+    public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, String name, boolean state, int numActuations)
+    {
+        this(network, address, type, determineDecoderType(address), name, state, numActuations);
+    }
+    
+    /**
+     * Determines the decoder type based on the address alone
+     * TODO - framework needs to switch to constructors that specify the decoder type
+     * @param address
+     * @return 
+     */
+    public static accessoryDecoderType determineDecoderType(int address)
+    {
+        if (address > MAX_MM2_ADDRESS)
+        {
+            return accessoryDecoderType.DCC; 
+        }
+        else
+        {
+            return accessoryDecoderType.MM2;
+        }
     }
 }

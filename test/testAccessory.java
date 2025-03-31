@@ -172,14 +172,16 @@ public class testAccessory
         assertTrue(switch255.isValidAddress());
         assertTrue(switch256.isValidAddress());
         assertTrue(switch257.isValidAddress());
-        assertTrue(switch256.isValidMM2Address());
-        assertTrue(switch319.isValidMM2Address());
-        assertTrue(switch320.isValidMM2Address());
-        assertFalse(switch321.isValidMM2Address());
+        assertTrue(MarklinAccessory.isValidDCCAddress(switch256.getAddress()));
+        assertTrue(MarklinAccessory.isValidMM2Address(switch256.getAddress()));
+        assertTrue(MarklinAccessory.isValidMM2Address(switch319.getAddress()));
+        assertTrue(MarklinAccessory.isValidMM2Address(switch320.getAddress()));
+        assertFalse(MarklinAccessory.isValidMM2Address(switch321.getAddress()));
         assertTrue(switch2047.isValidAddress());
         assertTrue(switch2048.isValidAddress());
         assertFalse(switch2049.isValidAddress());
-
+        assertFalse(MarklinAccessory.isValidDCCAddress(switch2049.getAddress()));
+        assertTrue(MarklinAccessory.isValidDCCAddress(switch2048.getAddress()));
     }
     
     @BeforeClass

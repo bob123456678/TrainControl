@@ -229,7 +229,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 32;
+    private static final int NUM_KEYBOARDS = 5;
     
     // Total number of locomotive mappings >= 1
     private static final int NUM_LOC_MAPPINGS = 10;
