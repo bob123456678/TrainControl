@@ -735,6 +735,7 @@ public class MarklinLayoutComponent
     /**
      * Updates the component's address
      * @param address 
+     * @param isGreen used for uncouplers
      * @throws java.lang.Exception 
      */
     public void setLogicalAddress(int address, boolean isGreen) throws Exception
@@ -742,9 +743,9 @@ public class MarklinLayoutComponent
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
-            if (!MarklinAccessory.isValidAddress(address * 2))
+            if (!MarklinAccessory.isValidAddress(address))
             {
-                throw new Exception("Invalid address, must be 0-256");
+                throw new Exception("Invalid address");
             }
             
             this.rawAddress = address * 2;
@@ -760,27 +761,18 @@ public class MarklinLayoutComponent
         {
             if (address < 0)
             {
-                throw new Exception("Invalid address, must not be negative");
+                throw new Exception("Invalid address (must not be negative)");
             }
             
             this.address = address;
             this.rawAddress = address;
         }
-        
-        // Unsure if this is ever used
-        /*if (this.isFeedback())
-        {            
-            if (address % 2 == 0)
-            {
-                this.address = (address / 2);
-            }
-            else
-            {
-                this.address = (address - 1) / 2;
-            }
-        }*/
     }
     
+    /**
+     * Odd addresses are controlled by the green button - used for uncouplers
+     * @return 
+     */
     public boolean isLogicalGreen()
     {
         return rawAddress % 2 != 0;

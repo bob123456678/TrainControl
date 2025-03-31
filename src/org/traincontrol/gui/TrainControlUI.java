@@ -58,8 +58,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -231,7 +229,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 4;
+    private static final int NUM_KEYBOARDS = 32;
     
     // Total number of locomotive mappings >= 1
     private static final int NUM_LOC_MAPPINGS = 10;
@@ -1329,8 +1327,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
 
-                // This is not necessary since we are loading the tooltips dynamically
-                // this.switchMapping.get(i).setToolTipText(this.model.getAccessoryByAddress((Integer.valueOf(i + offset))).getName() + " actuation count: " + this.model.getAccessoryByAddress((Integer.valueOf(i + offset))).getNumActuations());   
+                // Set the font size dynamically 
+                int fontSize = i + offset > 960 ? 11 : 14;
+                this.switchMapping.get(i).setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, fontSize));
             }
 
             repaintSwitches();

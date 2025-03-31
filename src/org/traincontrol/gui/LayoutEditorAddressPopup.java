@@ -19,6 +19,22 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         {
             this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 0.");
         }
+        else if (lc.isUncoupler())
+        {
+            this.helpLabel.setText("There can be two uncouplers on the same address.  The checkbox differentiates this.");
+        }
+        else if (lc.isRoute())
+        {
+            this.helpLabel.setText("Check the Routes tab for the IDs of your routes.");
+        }
+        else if (lc.isSwitch() || lc.isSignal() || lc.isLamp())
+        {
+            this.helpLabel.setText("Valid accessory addresses range from 1 to 255 (Marklin) or 2047 (DCC).");
+        }
+        else if (lc.isFeedback())
+        {
+            this.helpLabel.setText("Check your Central Station for S88 addresses/bus ranges.");
+        }
         else
         {
             this.helpLabel.setVisible(false);
@@ -95,7 +111,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     private void addressKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_addressKeyReleased
         TrainControlUI.validateInt(evt, false);
-        TrainControlUI.limitLength(evt, 5);
+        TrainControlUI.limitLength(evt, 6);
     }//GEN-LAST:event_addressKeyReleased
 
     private void addressAncestorAdded(javax.swing.event.AncestorEvent evt) {//GEN-FIRST:event_addressAncestorAdded

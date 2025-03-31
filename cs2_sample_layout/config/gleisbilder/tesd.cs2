@@ -1,0 +1,19 @@
+[gleisbildseite]
+version
+ .major=1
+element
+ .id=0x709
+ .typ=yweiche
+ .artikel=512
+element
+ .id=0x70b
+ .typ=yweiche
+ .artikel=4094
+element
+ .id=0x70e
+ .typ=yweiche
+ .artikel=510
+element
+ .id=0x710
+ .typ=yweiche
+ .artikel=508

@@ -62,12 +62,12 @@ public class testAccessory
         assertEquals(switch1.isSwitch(), true);
         
         // This switch should not exist
-        MarklinAccessory createdAccessory = model.getAccessoryByName("Switch 282");
+        MarklinAccessory createdAccessory = model.getAccessoryByName("Switch 3000");
         assertEquals(createdAccessory, null);
         
         // This will trigger the creation of the accessory
-        model.getAccessoryState(282);
-        createdAccessory = model.getAccessoryByName("Switch 282");
+        model.getAccessoryState(3000);
+        createdAccessory = model.getAccessoryByName("Switch 3000");
         assertNotEquals(createdAccessory, null);
         assertEquals(createdAccessory.isSwitched(), false);
         assertEquals(createdAccessory.getType(), MarklinAccessory.accessoryType.SWITCH);
@@ -159,12 +159,21 @@ public class testAccessory
         MarklinAccessory switch256 = model.getAccessoryByAddress(256);
         MarklinAccessory switch257 = model.getAccessoryByAddress(257);
         
+        MarklinAccessory switch2047 = model.getAccessoryByAddress(2047);
+        MarklinAccessory switch2048 = model.getAccessoryByAddress(2048);
+        MarklinAccessory switch2049 = model.getAccessoryByAddress(2049);
+        
         assertFalse(switchNeg.isValidAddress());
         assertFalse(switch0.isValidAddress());
         assertTrue(switch1.isValidAddress());
         assertTrue(switch255.isValidAddress());
         assertTrue(switch256.isValidAddress());
-        assertFalse(switch257.isValidAddress());
+        assertTrue(switch257.isValidAddress());
+        assertTrue(switch256.isValidMM2Address());
+        assertFalse(switch257.isValidMM2Address());
+        assertTrue(switch2047.isValidAddress());
+        assertTrue(switch2048.isValidAddress());
+        assertFalse(switch2049.isValidAddress());
     }
     
     @BeforeClass

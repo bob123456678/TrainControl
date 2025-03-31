@@ -32,8 +32,12 @@ public class MarklinAccessory extends Accessory
     public static final int THREEWAY_DELAY_MS = 350;
     
     // Maximum MM2 address
-    public static final int MAX_ADDRESS = 255;
-        
+    public static final int MAX_MM2_ADDRESS = 255;
+    public static final int MAX_DCC_ADDRESS = 2047;
+    
+    public static final int MM2_BASE = 0x3000;
+    public static final int DCC_BASE = 0x3800;
+    
     /**
      * Constructor
      * @param network
@@ -51,7 +55,7 @@ public class MarklinAccessory extends Accessory
         this.address = address;
         
         // Add 0x3000 for accessory UID
-        this.UID = address + 0x3000;
+        this.UID = UIDfromAddress(address);
         
         // Set network type
         this.network = network;
@@ -71,12 +75,32 @@ public class MarklinAccessory extends Accessory
      */
     public boolean isValidAddress()
     {
-        return address >= 0 && address <= MAX_ADDRESS;
+        return isValidAddress(address);
+    }
+    
+    public boolean isValidMDCCAddress()
+    {
+        return isValidDCCAddress(address);
+    }
+    
+    public boolean isValidMM2Address()
+    {
+        return isValidMM2Address(address);
     }
     
     public static boolean isValidAddress(int addr)
     {
-        return addr >= 0 && addr <= MAX_ADDRESS;
+        return isValidDCCAddress(addr) || isValidMM2Address(addr);
+    }
+    
+    public static boolean isValidDCCAddress(int addr)
+    {
+        return addr > MAX_MM2_ADDRESS && addr <= MAX_DCC_ADDRESS;
+    }
+    
+    public static boolean isValidMM2Address(int addr)
+    {
+        return addr >= 0 && addr <= MAX_MM2_ADDRESS;
     }
     
     /**
@@ -86,7 +110,14 @@ public class MarklinAccessory extends Accessory
      */
     public static int UIDfromAddress(int address)
     {
-        return address + 0x3000;
+        if (address > MAX_MM2_ADDRESS)
+        {
+            return address + DCC_BASE;
+        }
+        else
+        {
+            return address + MM2_BASE;
+        }
     }
         
     /**
