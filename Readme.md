@@ -255,8 +255,8 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 **Limitations:**
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
-* Central Station track diagrams require a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
-* Switches/signals with addresses <= 320 are assumed to be MM2, not DCC
+* Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
+* Switches/signals with addresses <= 320 are always assumed to be MM2, not DCC
 
 ## Running TrainControl
 
@@ -301,7 +301,7 @@ Requires JDK 1.8+ and the following libraries:
         - MM2 accessories with addresses 257-320 are now supported
     - Accessories
         - Added support for DCC accessories up to address 2048.  Limitation: Accessories with addresses of 320 and below are implicitly treated as MM2
-        - Added 1 additional keyboard to cover MM2 addresses up to 320
+        - Added 1 additional keyboard page to cover MM2 addresses up to 320
     - The IP of the Central Station is now printed to the log at startup
 
 * v2.4.12 [3/24/2025]
