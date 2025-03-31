@@ -83,6 +83,8 @@ public class ProgrammaticControlExample
                 // Define a MM2 locomotive with a specific address, even if it does not yet exist in the CS2/CS3
                 // This approach is generally not needed unless you absolutely don't want to interact with the CS2/CS3 :) 
                 Locomotive myMM2Loc = data.newMM2Locomotive("BR 86", 60);
+                
+                boolean f4Status = myMM2Loc.getF(4);
 
                 //
                 // Accessories by raw address
@@ -90,10 +92,10 @@ public class ProgrammaticControlExample
                 
                 // These commands are useful if the accessory does not already exist on any layout
                 // Retrieve the current state of an arbitrary accessory by address
-                boolean state = data.getAccessoryState(3);
+                boolean state = data.getAccessoryState(3, MarklinAccessory.accessoryDecoderType.MM2);
                 
                 // Change the state
-                data.setAccessoryState(3, !state);
+                data.setAccessoryState(3, MarklinAccessory.accessoryDecoderType.MM2, !state);
                 
                 // The accessory will now automatically be saved in the database
                 MarklinAccessory mySwitch3 = data.getAccessoryByName("Switch 3");

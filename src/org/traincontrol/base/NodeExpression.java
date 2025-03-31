@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import org.json.JSONObject;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  * This class represents a boolean expression for route conditions
@@ -108,8 +109,11 @@ public abstract class NodeExpression implements Serializable
             RouteCommand command = ((NodeRouteCommand) node).getRouteCommand();
             
             // We need to make this check to prevent invalid lookups of S88 addresses
+            // TODO - the RouteCommand should maintain the decoder type
             Accessory acc = null;
-            if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress());
+            if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress(),
+                MarklinAccessory.determineDecoderType(command.getAddress() - 1)
+            );
             
             sb.append(command.toLine(acc)).append("\n");
         }

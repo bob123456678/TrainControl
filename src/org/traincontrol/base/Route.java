@@ -2,6 +2,7 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -169,7 +170,8 @@ abstract public class Route
     {
         if (rc.isAccessory())
         {
-            return control.getAccessoryState(rc.getAddress()) == rc.getSetting();
+            // TODO rc should maintain the accessory type
+            return control.getAccessoryState(rc.getAddress(), MarklinAccessory.determineDecoderType(rc.getAddress() - 1)) == rc.getSetting();
         }
         else if (rc.isFeedback())
         {

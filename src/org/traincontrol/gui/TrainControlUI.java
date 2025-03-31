@@ -112,6 +112,7 @@ import org.traincontrol.model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.ImageUtil;
@@ -584,7 +585,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
                     
                     ((JToggleButton) e.getSource()).setToolTipText(
-                            model.getAccessoryByAddress(accAddress).getName() + " actuation count: " + model.getAccessoryByAddress(accAddress).getNumActuations()   
+                            model.getAccessoryByAddress(accAddress, MarklinAccessory.determineDecoderType(accAddress - 1)).getName() + " actuation count: " + 
+                                    model.getAccessoryByAddress(accAddress, MarklinAccessory.determineDecoderType(accAddress - 1)).getNumActuations()   
                     );
                 }
             });
@@ -2307,7 +2309,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JToggleButton key = this.switchMapping.get(address - offset);
 
-                if (this.model.getAccessoryState(address))
+                if (this.model.getAccessoryState(address, MarklinAccessory.determineDecoderType(address - 1)))
                 {
                     key.setSelected(true);
                     key.setBackground(COLOR_SWITCH_RED);        
@@ -2329,7 +2331,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
-                String command = this.model.getAccessoryByAddress(address).toAccessorySettingString();
+                String command = this.model.getAccessoryByAddress(address, MarklinAccessory.determineDecoderType(address - 1)).toAccessorySettingString();
 
                 if (!command.isEmpty() && 
                         (!command.equals(lastCapturedAccessoryCommand) || (currentTime - lastCapturedAccessoryCommandTime) > CAPTURE_COMMAND_THROTTLE))
@@ -2396,7 +2398,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 if (key != null)
                 {           
-                    if (this.model.getAccessoryState(i + offset))
+                    if (this.model.getAccessoryState(i + offset, MarklinAccessory.determineDecoderType(i + offset - 1)))
                     {
                         key.setSelected(true);
                         key.setBackground(COLOR_SWITCH_RED);        
@@ -11061,7 +11063,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
             {
-                this.model.setAccessoryState(switchId, b.isSelected());
+                this.model.setAccessoryState(switchId, MarklinAccessory.determineDecoderType(switchId), b.isSelected());
             }).start();
     }//GEN-LAST:event_UpdateSwitchState
 

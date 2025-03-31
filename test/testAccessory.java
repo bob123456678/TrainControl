@@ -30,7 +30,7 @@ public class testAccessory
         model.newSignal(280, MarklinAccessory.accessoryDecoderType.MM2, true);
         
         MarklinAccessory signal1 = model.getAccessoryByName("Signal 280");
-        MarklinAccessory signal2 = model.getAccessoryByAddress(280);
+        MarklinAccessory signal2 = model.getAccessoryByAddress(280, MarklinAccessory.accessoryDecoderType.MM2);
 
         assertEquals(signal1, signal2);
         assertEquals(signal1.getType(), MarklinAccessory.accessoryType.SIGNAL);
@@ -55,7 +55,7 @@ public class testAccessory
         assertEquals(signal1.isSwitched(), false);
         
         model.newSwitch(281, MarklinAccessory.accessoryDecoderType.MM2, false);
-        MarklinAccessory switch1 = model.getAccessoryByAddress(281);
+        MarklinAccessory switch1 = model.getAccessoryByAddress(281, MarklinAccessory.accessoryDecoderType.MM2);
         assertEquals(switch1.getType(), MarklinAccessory.accessoryType.SWITCH);
         assertEquals(switch1.isSwitched(), false);
         assertEquals(switch1.isTurned(), false);
@@ -68,7 +68,7 @@ public class testAccessory
         assertEquals(createdAccessory, null);
         
         // This will trigger the creation of the accessory
-        model.getAccessoryState(3000);
+        model.getAccessoryState(3000, MarklinAccessory.accessoryDecoderType.DCC);
         createdAccessory = model.getAccessoryByName("Switch 3000");
         assertNotEquals(createdAccessory, null);
         assertEquals(createdAccessory.isSwitched(), false);
@@ -81,7 +81,7 @@ public class testAccessory
     public void testRouteCommand() throws Exception
     {   
         model.newSwitch(285, MarklinAccessory.accessoryDecoderType.MM2, false);
-        MarklinAccessory createdAccessory = model.getAccessoryByAddress(285);
+        MarklinAccessory createdAccessory = model.getAccessoryByAddress(285, MarklinAccessory.accessoryDecoderType.MM2);
         
         // Test copying an accessory setting
         RouteCommand rc = RouteCommand.fromLine(createdAccessory.toAccessorySettingString());
@@ -112,42 +112,46 @@ public class testAccessory
     @Test
     public void testSwitchingViaModel() throws Exception
     {  
-        MarklinAccessory switch400 = model.getAccessoryByAddress(400);
+        MarklinAccessory switch400 = model.getAccessoryByAddress(400, MarklinAccessory.accessoryDecoderType.DCC);
         
-        model.setAccessoryState(400, true);
+        model.setAccessoryState(400, MarklinAccessory.accessoryDecoderType.DCC, true);
         assertTrue(switch400.isSwitched());
-        assertTrue(model.getAccessoryState(400));
+        assertTrue(model.getAccessoryState(400, MarklinAccessory.accessoryDecoderType.DCC));
 
-        model.setAccessoryState(400, false);
+        model.setAccessoryState(400, MarklinAccessory.accessoryDecoderType.DCC, false);
         assertFalse(switch400.isSwitched());
-        assertFalse(model.getAccessoryState(400));
+        assertFalse(model.getAccessoryState(400, MarklinAccessory.accessoryDecoderType.DCC));
         
-        MarklinAccessory switch1 = model.getAccessoryByAddress(1);
-        model.setAccessoryState(1, true);
+        MarklinAccessory switch1 = model.getAccessoryByAddress(1, MarklinAccessory.accessoryDecoderType.MM2);
+        model.setAccessoryState(1, MarklinAccessory.accessoryDecoderType.MM2, true);
         assertTrue(switch1.isSwitched());
         
-        switch1 = model.getAccessoryByAddress(1);
+        switch1 = model.getAccessoryByAddress(1, MarklinAccessory.accessoryDecoderType.MM2);
         assertTrue(switch1.isSwitched());
-        switch1 = model.getAccessoryByAddress(1);
+        switch1 = model.getAccessoryByAddress(1, MarklinAccessory.accessoryDecoderType.MM2);
+        System.out.println(switch1);
+
+        // TODO - by name must differentiate between MM and DCC
+        model.newSwitch(1, MarklinAccessory.accessoryDecoderType.MM2, true);
 
         switch1 = model.getAccessoryByName(switch1.isSwitch() ? "Switch 1" : "Signal 1");
         assertTrue(switch1.isSwitched());
-        assertTrue(model.getAccessoryState(1));
+        assertTrue(model.getAccessoryState(1, MarklinAccessory.accessoryDecoderType.MM2));
     }
     
     @Test
     public void testAddressValidation() throws Exception
     {  
-        MarklinAccessory switchNeg = model.getAccessoryByAddress(-1);
-        MarklinAccessory switch0 = model.getAccessoryByAddress(0);
+        MarklinAccessory switchNeg = model.getAccessoryByAddress(-1, MarklinAccessory.accessoryDecoderType.MM2);
+        MarklinAccessory switch0 = model.getAccessoryByAddress(0, MarklinAccessory.accessoryDecoderType.MM2);
         
         // Model will reject switch creation for invalid addresses
         assertNull(switchNeg);
         assertNull(switch0);
         
         // nothing should happen for the same reason as above
-        model.setAccessoryState(-1, true);
-        model.setAccessoryState(0, true);
+        model.setAccessoryState(-1, MarklinAccessory.accessoryDecoderType.MM2, true);
+        model.setAccessoryState(0, MarklinAccessory.accessoryDecoderType.MM2, true);
         
         // This will be allowed
         switch0 = model.newSwitch(0, MarklinAccessory.accessoryDecoderType.MM2, true);
@@ -156,17 +160,17 @@ public class testAccessory
         assertNotNull(switchNeg);
         assertNotNull(switch0);
 
-        MarklinAccessory switch1 = model.getAccessoryByAddress(1);
-        MarklinAccessory switch255 = model.getAccessoryByAddress(255);
-        MarklinAccessory switch256 = model.getAccessoryByAddress(256);
-        MarklinAccessory switch257 = model.getAccessoryByAddress(257);
-        MarklinAccessory switch319 = model.getAccessoryByAddress(319);
-        MarklinAccessory switch320 = model.getAccessoryByAddress(320); 
-        MarklinAccessory switch321 = model.getAccessoryByAddress(321);
+        MarklinAccessory switch1 = model.getAccessoryByAddress(1, MarklinAccessory.accessoryDecoderType.MM2);
+        MarklinAccessory switch255 = model.getAccessoryByAddress(255, MarklinAccessory.accessoryDecoderType.MM2);
+        MarklinAccessory switch256 = model.getAccessoryByAddress(256, MarklinAccessory.accessoryDecoderType.MM2);
+        MarklinAccessory switch257 = model.getAccessoryByAddress(257, MarklinAccessory.accessoryDecoderType.DCC);
+        MarklinAccessory switch319 = model.getAccessoryByAddress(319, MarklinAccessory.accessoryDecoderType.DCC);
+        MarklinAccessory switch320 = model.getAccessoryByAddress(320, MarklinAccessory.accessoryDecoderType.DCC); 
+        MarklinAccessory switch321 = model.getAccessoryByAddress(321, MarklinAccessory.accessoryDecoderType.DCC);
 
-        MarklinAccessory switch2047 = model.getAccessoryByAddress(2047);
-        MarklinAccessory switch2048 = model.getAccessoryByAddress(2048);
-        MarklinAccessory switch2049 = model.getAccessoryByAddress(2049);
+        MarklinAccessory switch2047 = model.getAccessoryByAddress(2047, MarklinAccessory.accessoryDecoderType.DCC);
+        MarklinAccessory switch2048 = model.getAccessoryByAddress(2048, MarklinAccessory.accessoryDecoderType.DCC);
+        MarklinAccessory switch2049 = model.getAccessoryByAddress(2049, MarklinAccessory.accessoryDecoderType.DCC);
 
         assertFalse(switchNeg.isValidAddress());
         assertFalse(switch0.isValidAddress());

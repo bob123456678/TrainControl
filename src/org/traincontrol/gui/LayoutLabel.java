@@ -282,7 +282,15 @@ public final class LayoutLabel extends JLabel
                         // Show a tooltip in the UI
                         if (!edit && !"".equals(this.component.toSimpleString()))
                         {
-                            this.setToolTipText(this.component.toSimpleString());
+                            // Add the protocol
+                            String protocol = "";
+                            
+                            if (this.component.getAccessory() != null)
+                            {
+                                protocol = " (" + this.component.getAccessory().getDecoderType() + ")";
+                            }
+                            
+                            this.setToolTipText(this.component.toSimpleString() + protocol);
                             
                             // Change the cursor to indicate the component is clickable
                             this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));

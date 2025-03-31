@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 12";
+    public static final String RAW_VERSION = "2.5.0 Beta 13";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -1788,7 +1788,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private MarklinAccessory newAccessory(String name, int address, Accessory.accessoryType type, 
             MarklinAccessory.accessoryDecoderType decoderType, boolean state)
     {
-        MarklinAccessory current = this.getAccessoryByAddress(address);
+        MarklinAccessory current = this.getAccessoryByAddress(address, decoderType);
         
         return newAccessory(name, address, type, decoderType, state, current != null ? current.getNumActuations() : 0);
     }
@@ -1997,7 +1997,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state 
      */
     @Override
-    public void setAccessoryState(int address, boolean state)
+    public void setAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
     {      
         // Sanitfy check
         if (address < 1)
@@ -2009,13 +2009,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         MarklinAccessory a;
         
-        if (this.accDB.hasId(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))))
+        if (this.accDB.hasId(MarklinAccessory.UIDfromAddress(address - 1, decoderType)))
         {
-            a = this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1)));
+            a = this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType));
         }
         else
         {
-            a = this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), !state);
+            a = this.newSwitch(address, decoderType, !state);
         }
         
         if (state)
@@ -2133,13 +2133,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Gets the state of the accessory with the specified address.
-     * If it does not exist, a new switch is created.
+     * Gets the state of the accessory with the specified address.If it does not exist, a new switch is created.
      * @param address greater than 1
+     * @param decoderType
      * @return 
      */
     @Override
-    public boolean getAccessoryState(int address)
+    public boolean getAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType)
     { 
         // Sanity check
         if (address < 1)
@@ -2150,26 +2150,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         // Get by name because UID in database != address
-        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))) != null)
+        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType)) != null)
         {
-            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, MarklinAccessory.determineDecoderType(address - 1))).isSwitched();
+            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType)).isSwitched();
         }
         else
         {
-            this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
+            this.newSwitch(address, decoderType, false);
         }
         
         return false;
     }
     
     /**
-     * Returns an accessory based on its numerical address.
-     * If the address does not exist, a new switch is created.
+     * Returns an accessory based on its numerical address.If the address does not exist, a new switch is created.
      * @param address greater than 1
+     * @param decoderType
      * @return 
      */
     @Override
-    public MarklinAccessory getAccessoryByAddress(int address)
+    public MarklinAccessory getAccessoryByAddress(int address, MarklinAccessory.accessoryDecoderType decoderType)
     { 
         // Sanity check
         if (address < 1)
@@ -2180,15 +2180,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         // Get by name because UID in database != address
-        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, 
-                MarklinAccessory.determineDecoderType(address - 1))) != null)
+        if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType)) != null)
         {
-            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, 
-                    MarklinAccessory.determineDecoderType(address - 1)));
+            return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType));
         }
         else
         {
-            return this.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
+            return this.newSwitch(address, decoderType, false);
         }        
     }
     

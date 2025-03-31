@@ -32,11 +32,11 @@ public interface ViewListener
     public boolean deleteLoc(String name);
     public String getLocAddress(String name);
     public boolean renameLoc(String oldName, String newName);
-    public void setAccessoryState(int address, boolean state);
+    public void setAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state);
     public void execRoute(String name);
     public void deleteRoute(String name);
-    public boolean getAccessoryState(int address);
-    public MarklinAccessory getAccessoryByAddress(int address);
+    public boolean getAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType);
+    public MarklinAccessory getAccessoryByAddress(int address, MarklinAccessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
     public void allFunctionsOff();
     public void locFunctionsOff(MarklinLocomotive l);
