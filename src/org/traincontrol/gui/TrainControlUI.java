@@ -11190,27 +11190,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                + "Edit your layout via the CS2, or see the Tools tab to initialize a local track diagram.");
+                + "Edit your layout via the Central Station, or see the Layouts menu to initialize a local track diagram.");
             return;
         }
         
-        // New native editor - work in progress
-        LayoutEditor popup = new LayoutEditor(
-            this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-            this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-            this,
-            this.LayoutList.getSelectedIndex()
-        );
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {    
+            // New native editor
+            LayoutEditor popup = new LayoutEditor(
+                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                this,
+                this.LayoutList.getSelectedIndex()
+            );
 
-        // Force window to not be on top
-        this.setAlwaysOnTop(false);
-        
-        popup.render();
+            // Force window to not be on top
+            this.setAlwaysOnTop(false);
 
-        if (popup != null)
-        {
-            return;
-        }
+            popup.render();
+        }));
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
     private void showLayoutPopup(String layoutName, int size)
@@ -12176,7 +12174,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                + "Edit your layout via the CS2, or see the Layout Menu to initialize a local track diagram.");
+                + "Edit your layout via the Central Station, or see the Layouts menu to initialize a local track diagram.");
             return;
         }
         

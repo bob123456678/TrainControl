@@ -15,15 +15,17 @@ import javax.imageio.ImageIO;
  */
 public class MarklinLayoutComponent
 {
-    public static enum componentType {STRAIGHT,  
-    CURVE, DOUBLE_CURVE, SIGNAL, END, SWITCH_Y, SWITCH_LEFT, 
-        SWITCH_RIGHT, SWITCH_THREE,  
+    public static enum componentType {
+        STRAIGHT, CURVE, DOUBLE_CURVE, 
+        SIGNAL, END, SWITCH_Y, 
+        SWITCH_LEFT, SWITCH_RIGHT, SWITCH_THREE,  
         SWITCH_CROSSING, OVERPASS, CROSSING , 
         FEEDBACK, FEEDBACK_CURVE, FEEDBACK_DOUBLE_CURVE, 
-        UNCOUPLER,
-        TUNNEL, 
-        TURNTABLE,  LAMP, ROUTE, TEXT, CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y, CUSTOM_PERM_THREEWAY, 
-        CUSTOM_SCISSORS, CUSTOM_PERM_SCISSORS, LINK
+        UNCOUPLER, TUNNEL, TURNTABLE, 
+        LAMP, ROUTE, LINK, 
+        CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y, 
+        CUSTOM_PERM_THREEWAY, CUSTOM_SCISSORS, CUSTOM_PERM_SCISSORS, 
+        TEXT
     };
         
     private final static String RESOURCE_PATH = "/org/traincontrol/gui/resources/icons";

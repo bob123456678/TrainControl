@@ -3,20 +3,26 @@ package org.traincontrol.gui;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 import javax.swing.Timer;
+import org.traincontrol.marklin.MarklinLayoutComponent;
 
-/**
- *
- * @author adamo
- */
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
-
     /**
      * Creates new form LayourEditorAddressPopup
+     * @param lc
      */
-    public LayoutEditorAddressPopup()
+    public LayoutEditorAddressPopup(MarklinLayoutComponent lc)
     {
         initComponents();
+        
+        if (lc.isLink())
+        {
+            this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 0.");
+        }
+        else
+        {
+            this.helpLabel.setVisible(false);
+        }
     }
 
     public JTextField getAddress()
@@ -39,6 +45,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
         address = new javax.swing.JTextField();
         greenButton = new javax.swing.JCheckBox();
+        helpLabel = new javax.swing.JLabel();
 
         address.addAncestorListener(new javax.swing.event.AncestorListener() {
             public void ancestorMoved(javax.swing.event.AncestorEvent evt) {
@@ -57,6 +64,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
         greenButton.setText("Controlled by Green Button");
 
+        helpLabel.setText("help text...");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -65,13 +74,18 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(greenButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(address))
+                    .addComponent(address)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(helpLabel)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
+                .addComponent(helpLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(address, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(greenButton)
@@ -96,5 +110,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;
     private javax.swing.JCheckBox greenButton;
+    private javax.swing.JLabel helpLabel;
     // End of variables declaration//GEN-END:variables
 }

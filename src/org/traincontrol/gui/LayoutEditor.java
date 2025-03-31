@@ -59,6 +59,16 @@ public class LayoutEditor extends PositionAwareJFrame
     public static final int DEFAULT_NEW_SIZE_ROWS = 16;
     public static final int DEFAULT_NEW_SIZE_COLS = 21;
     
+    // New tile borders
+    private static final int NEW_COMPONENT_BORDER_WIDTH = 2;
+    private static final Color NEW_COMPONENT_BORDER_ACTIVE_COLOR = Color.RED;
+    
+    // Layout tile borders
+    private static final int COMPONENT_BORDER_WIDTH = 1;
+    private static final Color COMPONENT_BORDER_COPIED_COLOR = Color.RED;
+    private static final Color COMPONENT_BORDER_HOVERED_COLOR = Color.BLUE;
+    private static final Color COMPONENT_BORDER_DEFAULT_COLOR = Color.LIGHT_GRAY;
+    
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
     
@@ -100,7 +110,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // Initialize components we can place
         for (MarklinLayoutComponent.componentType type : MarklinLayoutComponent.componentType.values())
         {
-            this.newComponents.add(this.getLabel(type, "T"), gbc);
+            this.newComponents.add(this.getLabel(type, "text"), gbc);
 
             // Move to the next grid position
             gbc.gridx++;
@@ -165,6 +175,8 @@ public class LayoutEditor extends PositionAwareJFrame
             
             newLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
             
+            newLabel.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, NEW_COMPONENT_BORDER_WIDTH));
+            
             return newLabel;
         }
         catch (Exception e)
@@ -208,7 +220,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (border instanceof LineBorder)
                 {
                     LineBorder lineBorder = (LineBorder) border;
-                    if (lineBorder.getLineColor().equals(Color.BLUE))
+                    if (lineBorder.getLineColor().equals(NEW_COMPONENT_BORDER_ACTIVE_COLOR))
                     {
                         return true;
                     }
@@ -226,7 +238,7 @@ public class LayoutEditor extends PositionAwareJFrame
      
         if (label != null)
         {
-            label.setBackground(Color.red);
+            //label.setBackground(Color.red);
             
             if (lastHoveredX == -1)
             {
@@ -236,15 +248,23 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 String toolTipText = "Right-click for options";
 
+                String componentString = "";
+                
                 if (this.hasToolFlag())
                 {
-                    label.setToolTipText("Click to paste / " + toolTipText);
+                    if (lastComponent != null) componentString = lastComponent.getTypeName();
+                    if (!componentString.isEmpty()) componentString = " " + componentString + " tile";
+                    
+                    label.setToolTipText("Click to paste" + componentString + "\n" + toolTipText);
                 }
                 else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
                 {
-                    label.setToolTipText("Click to cut / " + toolTipText);     
+                    componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getTypeName();                    
+                    if (!componentString.isEmpty()) componentString = " " + componentString + " tile";
+                    
+                    label.setToolTipText("Click to cut" + componentString + "\n" + toolTipText);     
                 }
-                else
+                else if (this.canUndo())
                 {
                     label.setToolTipText(toolTipText);
                 }
@@ -264,7 +284,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     this.clearBordersFromChildren(this.grid.getContainer());
-                    this.highlightLabel(label, java.awt.Color.RED);
+                    this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
                 }));
             }
         }
@@ -278,7 +298,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (getX(label) == -1 && getY(label) == -1)
         {
             this.initCopy(label, label.getComponent(), false);
-            this.highlightLabel(label, java.awt.Color.BLUE);
+            this.highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
             return;
         }
         
@@ -518,7 +538,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         this.toolFlag = move ? tool.MOVE : tool.COPY;
         
-        // For Blue highlight
+        // For colored border highlight
         this.clearBordersFromChildren(this.grid.getContainer());
         
         // Delete after pasting instead
@@ -659,7 +679,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // 91g == addr 183
                 
                 // Create and display the JPanel LayoutEditorAddressPopup
-                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup();
+                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc);
                 
                 addressPopup.getAddress().setText(Integer.toString(lc.getLogicalAddress()));
                 addressPopup.getGreenButton().setSelected(lc.isLogicalGreen());
@@ -703,7 +723,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
-            label.setBorder(BorderFactory.createLineBorder(color, 1));
+            label.setBorder(BorderFactory.createLineBorder(color, this.getX((LayoutLabel) label) == -1 ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH));
         }
     }
     
@@ -720,15 +740,15 @@ public class LayoutEditor extends PositionAwareJFrame
                     // Don't reset components without a border, because they might be something else...
                     if (label.getBorder() != null)
                     {
-                        label.setBorder(BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY, 1));
+                        label.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, newComponents.equals(panel) ? NEW_COMPONENT_BORDER_WIDTH : 1));
                     }
                 }
             }
             
-            // Highlight copied tile in blue
+            // Highlight copied tile border
             if (this.hasToolFlag() && layout.getComponent(lastX, lastY) != null)
             {
-                this.highlightLabel(this.grid.getValueAt(lastX, lastY), Color.BLUE);
+                this.highlightLabel(this.grid.getValueAt(lastX, lastY), COMPONENT_BORDER_COPIED_COLOR);
             }
         }
     }
