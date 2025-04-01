@@ -1162,7 +1162,7 @@ public class LayoutEditor extends PositionAwareJFrame
         showTextCheckbox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         showTextCheckbox.setSelected(true);
         showTextCheckbox.setText("Text Labels");
-        showTextCheckbox.setToolTipText("Control+T");
+        showTextCheckbox.setToolTipText("Control+L");
         showTextCheckbox.setFocusable(false);
         showTextCheckbox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

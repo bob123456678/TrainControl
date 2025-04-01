@@ -169,7 +169,7 @@
         </Property>
         <Property name="selected" type="boolean" value="true"/>
         <Property name="text" type="java.lang.String" value="Text Labels"/>
-        <Property name="toolTipText" type="java.lang.String" value="Control+T"/>
+        <Property name="toolTipText" type="java.lang.String" value="Control+L"/>
         <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>

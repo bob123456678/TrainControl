@@ -196,6 +196,24 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
+* Layout Editor
+    * Control+Z (undo)
+    * Control+C (copy hovered tile)
+    * Control+X (cut hovered tile)
+    * Control+V (paste tile)
+    * Shift+R (paste row)
+    * Shift+C (paste column)
+    * Control+R (rotate hovered tile)
+    * Control+T (edit text of hovered tile)
+    * Control+A (edit address of hovered tile)
+    * Control+L (show text labels)
+    * Control+D (show address labels)
+    * Control+I (increase diagram by 1 row and 1 column)
+    * Delete (delete hovered tile)
+    * Escape (clear clipboard & reset tool)
+    * Left mouse click (cut hovered tile / paste new tile)
+    * Middle-mouse click (rotate hovered tile)
+    * Right moues click (show all options)
 
 ![Key mapping](assets/keyboard.png?raw=true)
 
@@ -256,7 +274,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
 * Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
-* Accessories downloaded from CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
+* Accessories downloaded from CS2/CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
 
 ## Running TrainControl
 
@@ -307,12 +325,13 @@ Requires JDK 1.8+ and the following libraries:
         - `Locomotive` and `Accessory` APIs have been updated to require the protocol for accessory commands
     - Routes
         - Accessory commands and accessory conditions can now reference DCC accessories, e.g. `Switch 1 DCC,turn` vs `Switch 1,turn`
-        - DCC accessories are now recognized from CS3 imported routes
+        - DCC accessories are now recognized in routes imported from the CS3
     - Autonomy
         - Edge configurations can now contain DCC accessories
     - The IP of the Central Station is now printed to the log at startup
-    - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
-    - LocDB.data files from v2.3.x and older are no longre compatible.  Run v2.4.0+ at least once prior to upgrading.
+    - Backward-incompatible changes:
+        - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
+        - LocDB.data files from v2.3.x and older are no longer compatible.  Run v2.4.0+ at least once prior to upgrading.
 
 * v2.4.12 [3/24/2025]
     - Graph UI
