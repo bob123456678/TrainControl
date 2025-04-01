@@ -318,28 +318,10 @@ public class MarklinAccessory extends Accessory
             "UID: " + Conversion.intToHex(this.UID) + "\n" +
             "Address: " + Conversion.intToHex(this.address);
     }
-    
+        
     /**
-     * Determines the decoder type based on the address alone
-     * TODO - routes and diagrams need to track the accessory decoder type
-     * @param address
-     * @return 
-     */
-    /* public static accessoryDecoderType determineDecoderType(int address)
-    {
-        if (address > MAX_MM2_ADDRESS)
-        {
-            return accessoryDecoderType.DCC; 
-        }
-        else
-        {
-            return accessoryDecoderType.MM2;
-        }
-    }*/
-    
-    /**
-     * Converts string to accessoryDecoderType
-     * @param type
+     * Converts a string to accessoryDecoderType
+     * @param type - null if invalid
      * @return 
      */
     public static accessoryDecoderType stringToAccessoryDecoderType(String type)
@@ -356,7 +338,7 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Converts string to accessoryDecoderType - guarantees non-null result
+     * Converts string to accessoryDecoderType - guarantees non-null result defaulting to DEFAULT_IMPLICIT_PROTOCOL
      * @param type
      * @return 
      */
@@ -370,7 +352,7 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Gets the protocol string used for names
+     * Gets the protocol string used for names - blank if default
      * @param protocol
      * @return 
      */
@@ -385,7 +367,7 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Gets the accessory name along with the protocol
+     * Gets the standardized accessory name along with the protocol
      * DCC Signal 1: "Signal 1 DCC"
      * MM2 Signal 1: "Signal 1"
      * @param address
@@ -400,7 +382,7 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Returns the accessory name with the protocol if appropriate
+     * Gets the standardized accessory name along with the protocol
      * @return 
      */
     public String getNameWithProtocol()

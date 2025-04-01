@@ -697,7 +697,7 @@ public class MarklinLocomotive extends Locomotive
                 roundedSpeed = (int) Math.floor(scaledSpeed); 
             }
             
-            entry.getKey().setSpeed(roundedSpeed);;
+            entry.getKey().setSpeed(roundedSpeed);
         }
         
         // Force last known direction if this is the first command to move
