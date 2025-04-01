@@ -57,6 +57,7 @@ public interface ViewListener
     public boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public MarklinRoute getRoute(String name);
+    public MarklinRoute getRoute(int id);
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
     public void parseAuto(String s);

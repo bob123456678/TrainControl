@@ -680,9 +680,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 // 91g == addr 183
                 
                 // Create and display the JPanel LayoutEditorAddressPopup
-                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc);
+                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc, parent);
                 
-                addressPopup.getAddress().setText(Integer.toString(lc.getLogicalAddress()));
+                addressPopup.setAddress(Integer.toString(lc.getLogicalAddress()));
                 addressPopup.getGreenButton().setSelected(lc.isLogicalGreen());
                 
                 if (!lc.isUncoupler())
@@ -694,7 +694,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 int result = JOptionPane.showConfirmDialog(
                         null,
                         addressPopup,
-                        "Edit Address:",
+                        "Edit Address",
                         JOptionPane.OK_CANCEL_OPTION,
                         JOptionPane.PLAIN_MESSAGE
                 );
@@ -705,7 +705,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     this.snapshotLayout();
 
                     // Retrieve the address from LayoutEditorAddressPopup and use it
-                    int newAddress = Integer.parseInt(addressPopup.getAddress().getText()); // Assuming there's a method to get the logical address
+                    int newAddress = Integer.parseInt(addressPopup.getAddress()); // Assuming there's a method to get the logical address
                     lc.setLogicalAddress(newAddress, addressPopup.getProtocol(), addressPopup.getGreenButton().isSelected());
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                     lc.setProtocol(addressPopup.getProtocol());

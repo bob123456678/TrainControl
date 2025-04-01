@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 19";
+    public static final String RAW_VERSION = "2.5.0 Beta 20";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -1029,6 +1029,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public MarklinRoute getRoute(String name)
     {
         return this.routeDB.getByName(name);
+    }
+    
+    @Override
+    public MarklinRoute getRoute(int id)
+    {
+        return this.routeDB.getById(id);
     }
     
     /**

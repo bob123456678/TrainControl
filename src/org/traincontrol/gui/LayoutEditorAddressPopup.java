@@ -1,38 +1,72 @@
 package org.traincontrol.gui;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
-import javax.swing.JTextField;
 import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.marklin.MarklinRoute;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
+    private TrainControlUI tcui;
+    private MarklinLayoutComponent lc;
+    
     /**
      * Creates new form LayourEditorAddressPopup
      * @param lc
+     * @param tcui
      */
-    public LayoutEditorAddressPopup(MarklinLayoutComponent lc)
+    public LayoutEditorAddressPopup(MarklinLayoutComponent lc, TrainControlUI tcui)
     {
         initComponents();
+        
+        this.tcui = tcui;
+        this.lc = lc;
         
         this.mm2Radio.setVisible(false);
         this.dccRadio.setVisible(false);
         this.mm2Radio.setSelected(false);
         this.dccRadio.setSelected(false);
+        this.addressSelector.setVisible(false);
 
         if (lc.isLink())
         {
-            this.helpLabel.setText("Enter the layout page number to link to.  The first page has address 1.");
+            this.helpLabel.setText("Select the page to link to. More can be added through the Layouts menu.");
+            
+            // Set the model for the addressSelector
+            this.addressSelector.setModel(new DefaultComboBoxModel<>(tcui.getModel().getLayoutList().toArray(new String[0])));        
+            this.addressSelector.setVisible(true);
+            this.address.setVisible(false);
         }
         else if (lc.isRoute())
         {
-            this.helpLabel.setText("Check the Routes tab for the IDs of your routes.");
+            this.helpLabel.setText("Check the Routes tab to edit/create routes.");
+            
+            // We set the selection by the string, so showing numbered routes won't work yet...
+            List<String> numberedRoutes = tcui.getModel().getRouteList().stream().map(this.tcui.getModel()::getRoute).map(this::addRouteId).collect(Collectors.toList());
+            
+            if (numberedRoutes.isEmpty())
+            {
+                this.addressSelector.setEnabled(false);
+            }
+            else
+            {
+                this.addressSelector.setModel(new DefaultComboBoxModel<>(numberedRoutes.toArray(new String[0])));
+                //this.addressSelector.setModel(new DefaultComboBoxModel<>(tcui.getModel().getRouteList().toArray(new String[0]))); 
+            }     
+            
+            this.addressSelector.setVisible(true);
+
+            this.address.setVisible(false);
         }
         else if (lc.isSwitch() || lc.isSignal() || lc.isLamp() || lc.isUncoupler())
         {
-            this.helpLabel.setText("Valid accessory addresses range from 1 to 320 (Marklin) or 2048 (DCC).");
+            this.helpLabel.setText("Accessory addresses range from 1 to 320 (Marklin MM2) or 2048 (DCC).");
             
             if (lc.isUncoupler())
             {
@@ -61,9 +95,45 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
     }
 
-    public JTextField getAddress()
+    public void setAddress(String addr)
     {
-        return address;
+        if (this.address.isVisible())
+        {
+            address.setText(addr);
+        }
+        else if (this.addressSelector.isVisible())
+        {
+            if (lc.isRoute())
+            {
+                this.addressSelector.setSelectedItem(addRouteId(tcui.getModel().getRoute(Integer.parseInt(addr))));
+            }
+            else
+            {
+                if (this.addressSelector.getItemCount() > Integer.parseInt(addr) - 1)
+                {
+                    this.addressSelector.setSelectedIndex(Integer.parseInt(addr) - 1);
+                }
+            }
+        }
+    }
+    
+    private String addRouteId(MarklinRoute r)
+    {
+        if (r == null) return "";
+        
+        return r.getId() + ". " + r.getName();
+    }
+    
+    public String getAddress()
+    {
+        if (this.address.isVisible())
+        {
+            return address.getText();
+        }
+        else
+        {
+            return Integer.toString(this.addressSelector.getSelectedIndex() + 1);
+        }
     }
     
     public Accessory.accessoryDecoderType getProtocol()
@@ -102,6 +172,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         helpLabel = new javax.swing.JLabel();
         mm2Radio = new javax.swing.JRadioButton();
         dccRadio = new javax.swing.JRadioButton();
+        addressSelector = new javax.swing.JComboBox<>();
 
         address.addAncestorListener(new javax.swing.event.AncestorListener() {
             public void ancestorMoved(javax.swing.event.AncestorEvent evt) {
@@ -144,7 +215,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                                 .addComponent(mm2Radio)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(dccRadio)))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(addressSelector, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -160,6 +232,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(mm2Radio)
                     .addComponent(dccRadio))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(addressSelector, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -180,6 +254,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;
+    private javax.swing.JComboBox<String> addressSelector;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JRadioButton dccRadio;
     private javax.swing.JCheckBox greenButton;
