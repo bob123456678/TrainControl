@@ -803,7 +803,8 @@ public class MarklinLocomotive extends Locomotive
         return this;        
     }
     
-    synchronized public Locomotive setAccessoryState(int id, MarklinAccessory.accessoryDecoderType type, boolean state)
+    @Override
+    synchronized public Locomotive setAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state)
     {
         // TODO decoder type should be passed in
         this.network.setAccessoryState(id, type, state);

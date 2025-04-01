@@ -342,7 +342,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     {
         if (accessoryDecoderType == null || !(accessoryDecoderType instanceof Accessory.accessoryDecoderType))
         {
-            return MarklinAccessory.accessoryDecoderType.MM2;
+            return Accessory.accessoryDecoderType.MM2;
         }
         
         return accessoryDecoderType;

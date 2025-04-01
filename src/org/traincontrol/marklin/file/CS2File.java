@@ -544,7 +544,7 @@ public final class CS2File
                     {
                         if (setting >= 2)
                         {
-                            r.addAccessory(id + 1, MarklinAccessory.accessoryDecoderType.MM2.toString(), setting == 2);
+                            r.addAccessory(id + 1, Accessory.accessoryDecoderType.MM2.toString(), setting == 2);
                             
                             if (delay > 0)
                             {
@@ -552,7 +552,7 @@ public final class CS2File
                             }
                         }
                         
-                        r.addAccessory(id, MarklinAccessory.accessoryDecoderType.MM2.toString(), setting != 1 && setting != 3);
+                        r.addAccessory(id, Accessory.accessoryDecoderType.MM2.toString(), setting != 1 && setting != 3);
                         
                         // Only set the delay once for three-way switches
                         if (delay > 0 && setting < 2)
@@ -745,15 +745,15 @@ public final class CS2File
                             
                             if ("mm".equals(protocol))
                             {
-                                protocol = MarklinAccessory.accessoryDecoderType.MM2.toString();
+                                protocol = Accessory.accessoryDecoderType.MM2.toString();
                             }
                             else if ("dcc".equals(protocol))
                             {
-                                protocol = MarklinAccessory.accessoryDecoderType.DCC.toString();
+                                protocol = Accessory.accessoryDecoderType.DCC.toString();
                             }
                             else
                             {
-                                protocol = MarklinAccessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
+                                protocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
                             }
                             
                             // stellung 0 - key not included

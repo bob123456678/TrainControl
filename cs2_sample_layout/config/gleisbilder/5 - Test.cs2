@@ -1,428 +1,458 @@
 [gleisbildseite]
-page=1
 version
  .major=1
 element
- .id=0x10011
- .typ=signal_hp012s
+ .id=0x11
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10012
- .typ=signal_hp012s
+ .id=0x12
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10013
- .typ=signal_hp012s
+ .id=0x13
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10110
- .typ=signal_hp012s
+ .id=0x105
+ .typ=yweiche
+ .prot=DCC
+ .artikel=4096
+element
+ .id=0x106
+ .typ=yweiche
+ .artikel=400
+element
+ .id=0x107
+ .typ=yweiche
+ .prot=DCC
+ .artikel=4096
+element
+ .id=0x110
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10114
- .typ=signal_f_hp01
+ .id=0x114
+ .typ=signal
+ .drehung=3
  .artikel=238
 element
- .id=0x1020f
- .typ=signal_hp012
+ .id=0x206
+ .typ=yweiche
+ .prot=DCC
+ .artikel=400
+element
+ .id=0x209
+ .typ=dreiwegweiche
+ .artikel=638
+element
+ .id=0x20b
+ .typ=dreiwegweiche
+ .artikel=510
+element
+ .id=0x20f
+ .typ=signal
  .artikel=230
 element
- .id=0x10215
- .typ=signal_f_hp01
+ .id=0x215
+ .typ=signal
+ .drehung=3
  .artikel=238
 element
- .id=0x10305
+ .id=0x305
  .typ=s88kontakt
  .artikel=1028
- .deviceId=0xc
 element
- .id=0x1030f
- .typ=std_rot
+ .id=0x30a
+ .typ=dreiwegweiche
+ .prot=DCC
+ .artikel=4
+element
+ .id=0x30f
+ .typ=signal
  .artikel=232
 element
- .id=0x10312
+ .id=0x312
  .typ=drehscheibe
  .artikel=216
 element
- .id=0x10315
- .typ=std_rot_gruen_0
+ .id=0x315
+ .typ=signal
  .artikel=224
 element
- .id=0x10403
+ .id=0x403
  .typ=s88kontakt
  .artikel=1029
- .deviceId=0xc
 element
- .id=0x1040f
- .typ=signal_hp012
+ .id=0x40f
+ .typ=signal
  .artikel=230
 element
- .id=0x10415
- .typ=std_rot_gruen_1
+ .id=0x415
+ .typ=signal
  .artikel=225
 element
- .id=0x10504
+ .id=0x504
  .typ=s88kontakt
  .artikel=1032
- .deviceId=0xc
 element
- .id=0x1050a
+ .id=0x50a
  .typ=entkuppler
  .artikel=70
 element
- .id=0x1050d
+ .id=0x50d
  .typ=linksweiche
  .artikel=100
 element
- .id=0x10510
- .typ=signal_hp012
+ .id=0x510
+ .typ=signal
  .artikel=230
 element
- .id=0x10514
+ .id=0x514
  .typ=signal
  .artikel=226
 element
- .id=0x10602
+ .id=0x602
  .typ=rechtsweiche
  .artikel=98
  .zustand=1
 element
- .id=0x10603
+ .id=0x603
  .typ=dreiwegweiche
  .artikel=46
  .zustand=2
 element
- .id=0x10604
+ .id=0x604
  .typ=s88kontakt
  .artikel=1031
- .deviceId=0xc
 element
- .id=0x10611
- .typ=signal_hp02
+ .id=0x611
+ .typ=signal
  .artikel=228
 element
- .id=0x10612
- .typ=signal_hp02
+ .id=0x612
+ .typ=signal
  .artikel=228
 element
- .id=0x10613
+ .id=0x613
  .typ=signal
  .artikel=226
 element
- .id=0x10707
+ .id=0x707
  .typ=rechtsweiche
  .drehung=1
  .artikel=116
  .zustand=1
 element
- .id=0x10708
+ .id=0x708
  .typ=s88kontakt
  .artikel=1009
- .deviceId=0xc
 element
- .id=0x10709
+ .id=0x709
  .typ=linksweiche
  .drehung=1
  .artikel=72
  .zustand=1
 element
- .id=0x1070d
+ .id=0x70d
  .typ=s88kontakt
  .artikel=8
- .deviceId=0xc
 element
- .id=0x10719
+ .id=0x719
  .typ=custom_perm_left
  .drehung=1
  .artikel=-1
  .text=left
 element
- .id=0x1071a
+ .id=0x71a
  .typ=custom_perm_left
  .drehung=3
  .artikel=-1
  .text=left
-
 element
- .id=0x1071d
+ .id=0x71d
  .typ=custom_perm_right
  .drehung=1
  .artikel=-1
  .text=right
 element
- .id=0x1071e
+ .id=0x71e
  .typ=custom_perm_right
  .drehung=3
  .artikel=-1
  .text=right
 element
- .id=0x10803
+ .id=0x803
  .typ=rechtsweiche
  .drehung=3
  .artikel=2
 element
- .id=0x10809
+ .id=0x809
  .typ=linksweiche
  .drehung=3
  .artikel=68
  .zustand=1
 element
- .id=0x1080f
- .typ=sonstige_gbs
+ .id=0x80f
+ .typ=signal
  .artikel=216
 element
- .id=0x10810
+ .id=0x810
  .typ=lampe
  .artikel=-1
 element
- .id=0x10906
+ .id=0x906
  .typ=s88kontakt
  .artikel=1006
- .deviceId=0xc
 element
- .id=0x10919
+ .id=0x919
  .typ=custom_perm_y
  .drehung=1
  .artikel=-1
  .text=y
 element
- .id=0x1091a
+ .id=0x91a
  .typ=custom_perm_y
  .drehung=3
  .artikel=-1
  .text=y
 element
- .id=0x10a03
+ .id=0xa03
  .typ=s88kontakt
  .artikel=1030
- .deviceId=0xc
 element
- .id=0x10a06
+ .id=0xa06
  .typ=s88kontakt
  .artikel=1007
- .deviceId=0xc
 element
- .id=0x10a0b
+ .id=0xa0b
  .typ=s88doppelbogen
  .artikel=1011
- .deviceId=0xc
 element
- .id=0x10a0d
+ .id=0xa0d
  .typ=bogen
  .artikel=-1
 element
- .id=0x10a0e
+ .id=0xa0e
  .typ=gerade
  .artikel=-1
 element
- .id=0x10a0f
+ .id=0xa0f
  .typ=unterfuehrung
  .artikel=-1
 element
- .id=0x10a10
+ .id=0xa10
  .typ=kreuzung
  .artikel=-1
 element
- .id=0x10a11
+ .id=0xa11
  .typ=gerade
  .artikel=-1
 element
- .id=0x10a12
+ .id=0xa12
  .typ=gerade
  .artikel=-1
 element
- .id=0x10b09
+ .id=0xb09
  .typ=yweiche
  .artikel=4
  .zustand=1
 element
- .id=0x10b0d
+ .id=0xb0d
  .typ=gerade
  .drehung=1
  .artikel=-1
 element
- .id=0x10b12
+ .id=0xb12
  .typ=fahrstrasse
  .artikel=1
 element
- .id=0x10c03
+ .id=0xc03
  .typ=signal
  .artikel=226
 element
- .id=0x10c04
- .typ=signal_hp02
+ .id=0xc04
+ .typ=signal
  .artikel=228
 element
- .id=0x10c05
- .typ=signal_hp012
+ .id=0xc05
+ .typ=signal
  .artikel=230
 element
- .id=0x10c06
- .typ=signal_hp012s
+ .id=0xc06
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10c0c
+ .id=0xc0c
  .typ=gerade
  .artikel=-1
 element
- .id=0x10c0d
+ .id=0xc0d
  .typ=rechtsweiche
  .artikel=180
  .zustand=1
 element
- .id=0x10c0e
+ .id=0xc0e
  .typ=gerade
  .artikel=-1
 element
- .id=0x10d0d
+ .id=0xd0d
  .typ=gerade
  .drehung=1
  .artikel=-1
 element
- .id=0x10d11
- .typ=sonstige_gbs
+ .id=0xd11
+ .typ=signal
  .artikel=314
 element
- .id=0x10d14
+ .id=0xd14
  .artikel=-1
  .text=test
 element
- .id=0x10e03
- .typ=signal_hp012s
+ .id=0xe03
+ .typ=signal
  .artikel=234
  .zustand=3
 element
- .id=0x10e04
- .typ=signal_f_hp01
+ .id=0xe04
+ .typ=signal
+ .drehung=3
  .artikel=238
 element
- .id=0x10e05
- .typ=signal_f_hp02
+ .id=0xe05
+ .typ=signal
+ .drehung=3
  .artikel=240
 element
- .id=0x10e06
- .typ=signal_f_hp012
+ .id=0xe06
+ .typ=signal
+ .drehung=3
  .artikel=242
  .zustand=1
 element
- .id=0x10e07
- .typ=signal_f_hp012s
+ .id=0xe07
+ .typ=signal
+ .drehung=3
  .artikel=246
 element
- .id=0x10e08
- .typ=signal_f_hp012s
+ .id=0xe08
+ .typ=signal
+ .drehung=3
  .artikel=246
 element
- .id=0x10e15
- .typ=entkuppler_1
+ .id=0xe15
+ .typ=entkuppler
  .artikel=306
 element
- .id=0x10f03
+ .id=0xf03
  .typ=signal
  .artikel=252
  .zustand=1
 element
- .id=0x10f04
- .typ=signal_p_hp012
+ .id=0xf04
+ .typ=signal
  .artikel=254
  .zustand=1
 element
- .id=0x10f10
+ .id=0xf10
  .typ=lampe
  .artikel=290
 element
- .id=0x10f11
+ .id=0xf11
  .typ=lampe
  .artikel=292
 element
- .id=0x10f12
- .typ=lampe_bl
+ .id=0xf12
+ .typ=lampe
  .artikel=298
 element
- .id=0x10f13
- .typ=lampe_gn
+ .id=0xf13
+ .typ=lampe
  .artikel=300
 element
- .id=0x10f14
- .typ=lampe_ge
+ .id=0xf14
+ .typ=lampe
  .artikel=302
 element
- .id=0x10f15
- .typ=lampe_rt
+ .id=0xf15
+ .typ=lampe
  .artikel=304
 element
- .id=0x11005
+ .id=0x1005
  .typ=signal
  .artikel=252
  .zustand=1
 element
- .id=0x11006
- .typ=signal_p_hp012
+ .id=0x1006
+ .typ=signal
  .artikel=254
  .zustand=1
 element
- .id=0x11007
- .typ=signal_sh01
+ .id=0x1007
+ .typ=signal
  .artikel=262
  .zustand=1
 element
- .id=0x11008
- .typ=signal_hp012
+ .id=0x1008
+ .typ=signal
  .artikel=264
 element
- .id=0x11009
- .typ=signal_f_hp01
+ .id=0x1009
+ .typ=signal
+ .drehung=3
  .artikel=280
  .zustand=1
 element
- .id=0x1100a
- .typ=signal_sh01
+ .id=0x100a
+ .typ=signal
  .artikel=282
 element
- .id=0x1100b
- .typ=signal_f_hp01
+ .id=0x100b
+ .typ=signal
+ .drehung=3
  .artikel=284
 element
- .id=0x1100c
- .typ=signal_f_hp012
+ .id=0x100c
+ .typ=signal
+ .drehung=3
  .artikel=286
  .zustand=1
 element
- .id=0x1100d
+ .id=0x100d
  .typ=signal
  .artikel=308
 element
- .id=0x1100e
+ .id=0x100e
  .typ=signal
  .artikel=310
  .zustand=1
 element
- .id=0x1100f
+ .id=0x100f
  .typ=signal
  .artikel=312
 element
- .id=0x11010
+ .id=0x1010
  .typ=lampe
  .artikel=268
 element
- .id=0x11011
+ .id=0x1011
  .typ=lampe
  .artikel=270
 element
- .id=0x11012
+ .id=0x1012
  .typ=lampe
  .artikel=274
 element
- .id=0x11013
- .typ=andreaskreuz
+ .id=0x1013
+ .typ=dkweiche
  .artikel=276
  .zustand=1
 element
- .id=0x11014
- .typ=bahnschranke
+ .id=0x1014
+ .typ=lampe
  .artikel=278

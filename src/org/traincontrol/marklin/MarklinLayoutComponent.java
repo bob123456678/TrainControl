@@ -7,6 +7,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 
 /**
@@ -629,7 +630,7 @@ public class MarklinLayoutComponent
         }
         
         // Custom state
-        if (this.protocol != null && this.protocol != MarklinAccessory.accessoryDecoderType.MM2)
+        if (this.protocol != null && this.protocol != Accessory.accessoryDecoderType.MM2)
         {
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
@@ -739,12 +740,13 @@ public class MarklinLayoutComponent
      * @param isGreen used for uncouplers
      * @throws java.lang.Exception 
      */
-    public void setLogicalAddress(int address, MarklinAccessory.accessoryDecoderType protocol, boolean isGreen) throws Exception
+    public void setLogicalAddress(int address, Accessory.accessoryDecoderType protocol, boolean isGreen) throws Exception
     {               
         // Logical address is 2x the raw address
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
-            if (!MarklinAccessory.isValidAddress(address - 1, protocol))
+            // 3-way switches have an address 1 above the base, so make the check more strict
+            if (!MarklinAccessory.isValidAddress(this.isThreeWay() ? address : address - 1, protocol))
             {
                 throw new Exception("Invalid address");
             }

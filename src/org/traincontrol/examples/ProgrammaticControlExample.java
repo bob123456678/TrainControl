@@ -93,10 +93,10 @@ public class ProgrammaticControlExample
                 
                 // These commands are useful if the accessory does not already exist on any layout
                 // Retrieve the current state of an arbitrary accessory by address
-                boolean state = data.getAccessoryState(3, MarklinAccessory.accessoryDecoderType.MM2);
+                boolean state = data.getAccessoryState(3, Accessory.accessoryDecoderType.MM2);
                 
                 // Change the state
-                data.setAccessoryState(3, MarklinAccessory.accessoryDecoderType.MM2, !state);
+                data.setAccessoryState(3, Accessory.accessoryDecoderType.MM2, !state);
                 
                 // The accessory will now automatically be saved in the database
                 MarklinAccessory mySwitch3 = data.getAccessoryByName("Switch 3");
@@ -104,7 +104,7 @@ public class ProgrammaticControlExample
                 
                 // Manually add a new signal to the database so that it can be referenced by name
                 // When creating an accessory, the MM2 address will be 1 less than the logical address
-                data.newSignal(4, MarklinAccessory.accessoryDecoderType.MM2, false);
+                data.newSignal(4, Accessory.accessoryDecoderType.MM2, false);
                 MarklinAccessory mySignal4 = data.getAccessoryByName("Signal 4");
                 
                 // Send command to ensure the state is consistent
@@ -142,7 +142,7 @@ public class ProgrammaticControlExample
 
                 // = Set signal 1 to green via the Locomotive API
                 // Why would you do this?  See the "Chaining Commands" section
-                myLoc.setAccessoryState(1, MarklinAccessory.accessoryDecoderType.MM2, false);
+                myLoc.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false);
 
 
                 // Retrieve a switch by its MM2/DCC address
@@ -158,7 +158,7 @@ public class ProgrammaticControlExample
                 mySwitch.setSwitched(true);
 
                 // = Set switch 2 to turnout via the Locomotive API
-                myLoc.setAccessoryState(2, MarklinAccessory.accessoryDecoderType.MM2, true);
+                myLoc.setAccessoryState(2, Accessory.accessoryDecoderType.MM2, true);
                 
    
                 // 

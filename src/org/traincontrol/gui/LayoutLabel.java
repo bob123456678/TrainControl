@@ -15,6 +15,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.util.ImageUtil;
@@ -287,7 +288,7 @@ public final class LayoutLabel extends JLabel
                             String protocol = "";
                             
                             if (this.component.getAccessory() != null && 
-                                    this.component.getAccessory().getDecoderType() != MarklinAccessory.accessoryDecoderType.MM2 )
+                                    this.component.getAccessory().getDecoderType() != Accessory.accessoryDecoderType.MM2 )
                             {
                                 protocol = " (" + this.component.getAccessory().getDecoderType() + ")";
                             }

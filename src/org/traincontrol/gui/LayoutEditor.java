@@ -26,7 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -148,12 +148,12 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0, MarklinAccessory.accessoryDecoderType.MM2);
+            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
             
             // Set a default address, otherwise switches will become unclickable after saving
             if (component.isClickable())
             {
-                component.setLogicalAddress(1, MarklinAccessory.accessoryDecoderType.MM2, false);
+                component.setLogicalAddress(1, Accessory.accessoryDecoderType.MM2, false);
             }
             
             if (type == MarklinLayoutComponent.componentType.TEXT)

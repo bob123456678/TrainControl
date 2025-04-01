@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 import javax.swing.Timer;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -38,7 +39,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 this.helpLabel.setText("<html>" + this.helpLabel.getText() + "<br>There can be two uncouplers on the same address.  The checkbox differentiates this.</html>");
             }
             
-            if (lc.getProtocol() == MarklinAccessory.accessoryDecoderType.MM2)
+            if (lc.getProtocol() == Accessory.accessoryDecoderType.MM2)
             {
                 this.mm2Radio.setSelected(true);
             }
@@ -65,15 +66,15 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         return address;
     }
     
-    public MarklinAccessory.accessoryDecoderType getProtocol()
+    public Accessory.accessoryDecoderType getProtocol()
     {
         if (this.mm2Radio.isSelected())
         {
-            return MarklinAccessory.accessoryDecoderType.MM2;
+            return Accessory.accessoryDecoderType.MM2;
         }
         else if (this.dccRadio.isSelected())
         {
-            return MarklinAccessory.accessoryDecoderType.DCC;
+            return Accessory.accessoryDecoderType.DCC;
         }
         else
         {

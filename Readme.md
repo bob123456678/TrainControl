@@ -120,7 +120,7 @@ Monitor the usage of different locomotives.
 
 ## Features
 
-* Easily control locomotives (MM2, MFX, DCC), multi-units, signals, switches, and routes
+* Easily control locomotives (MM2, MFX, DCC), multi-units, signals/switches (MM2, DCC), and routes
 * Download locomotive, layout, and route information from the CS2/CS3
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Powerful keyboard interface
@@ -256,7 +256,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
 * Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
-* Switches/signals with addresses <= 320 are always assumed to be MM2, not DCC
+* Accessories downloaded from CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
 
 ## Running TrainControl
 
@@ -300,9 +300,16 @@ Requires JDK 1.8+ and the following libraries:
         - When the power is off, route icons can be right-clicked to edit the route
         - Accessory tooltips will now show the decoder type
     - Accessories
-        - Added support for DCC accessories up to address 2048.  Limitation: Accessories with addresses of 320 and below are implicitly treated as MM2
-        - MM2 accessories with addresses 257-320 are now supported
-        - Added 1 additional keyboard page to cover MM2 addresses up to 320
+        - Added support for DCC accessories (up to address 2048)
+        - Added support for MM2 accessories with addresses 257-320
+        - Added 1 additional keyboard page to cover addresses up to 320
+        - The keyboard page now allows both DCC and MM2 accessories to be controlled
+        - `Locomotive` and `Accessory` APIs have been updated to require the protocol for accessory commands
+    - Routes
+        - Accessory commands and accessory conditions can now reference DCC accessories, e.g. `Switch 1 DCC,turn` vs `Switch 1,turn`
+        - DCC accessories are now recognized from CS3 imported routes
+    - Autonomy
+        - Edge configurations can now contain DCC accessories
     - The IP of the Central Station is now printed to the log at startup
     - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
     - LocDB.data files from v2.3.x and older are no longre compatible.  Run v2.4.0+ at least once prior to upgrading.

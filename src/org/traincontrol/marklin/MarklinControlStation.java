@@ -1179,7 +1179,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
     */
     @Override
-    public final MarklinAccessory newSignal(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
+    public final MarklinAccessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state)
     {        
         return newAccessory(address, address - 1, Accessory.accessoryType.SIGNAL, decoderType, state);
     }
@@ -1192,7 +1192,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public final MarklinAccessory newSwitch(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
+    public final MarklinAccessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state)
     {
         return newAccessory(address, address - 1, Accessory.accessoryType.SWITCH, decoderType, state);
     }
@@ -1786,10 +1786,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type, 
-            MarklinAccessory.accessoryDecoderType decoderType, boolean state)
+            Accessory.accessoryDecoderType decoderType, boolean state)
     {
         MarklinAccessory current = this.getAccessoryByAddress(address, decoderType);
-        
+                
         return newAccessory(logicalAddress, address, type, decoderType, state, current != null ? current.getNumActuations() : 0);
     }
     
@@ -1803,7 +1803,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type, 
-            MarklinAccessory.accessoryDecoderType decoderType,
+            Accessory.accessoryDecoderType decoderType,
             boolean state, int numActuations)
     {
         String name = MarklinAccessory.getNameWithProtocol(logicalAddress, type, decoderType);
@@ -1998,9 +1998,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param decoderType
      */
     @Override
-    public void setAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType, boolean state)
+    public void setAccessoryState(int address, Accessory.accessoryDecoderType decoderType, boolean state)
     {      
-        // Sanitfy check
+        // Sanity check
         if (address < 1)
         {
             this.log("Warning: Invalid address passed to setAccessoryState: " + address);   
@@ -2140,7 +2140,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public boolean getAccessoryState(int address, MarklinAccessory.accessoryDecoderType decoderType)
+    public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType)
     { 
         // Sanity check
         if (address < 1)
@@ -2149,7 +2149,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             return false;
         }
-        
+                
         // Get by name because UID in database != address
         if (this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType)) != null)
         {
@@ -2170,7 +2170,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public MarklinAccessory getAccessoryByAddress(int address, MarklinAccessory.accessoryDecoderType decoderType)
+    public MarklinAccessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType)
     { 
         // Sanity check
         if (address < 1)
