@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 17";
+    public static final String RAW_VERSION = "2.5.0 Beta 18";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -88,7 +88,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Do we parse mock packets when not connected to the central station and in debug mode?
     // This will update the UI when locomotive/function/switch commands get sent
-    public static boolean DEBUG_SIMULATE_PACKETS = true;
+    public static boolean DEBUG_SIMULATE_PACKETS = false;
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;

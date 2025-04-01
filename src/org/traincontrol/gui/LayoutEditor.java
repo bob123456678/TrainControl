@@ -1002,7 +1002,7 @@ public class LayoutEditor extends PositionAwareJFrame
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
             drawGrid();
 
-            setTitle("Layout Editor: " + this.layout.getName() + this.parent.getWindowTitleString());
+            setTitle("Layout Editor: " + this.layout.getName());
 
             // Scale the popup according to the size of the layout
             if (!this.isLoaded())

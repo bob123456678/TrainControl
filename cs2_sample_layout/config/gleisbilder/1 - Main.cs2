@@ -346,7 +346,6 @@ element
  .artikel=6
 element
  .id=0x30d
- .artikel=-1
  .text=Inner Loop
 element
  .id=0x311
@@ -524,7 +523,6 @@ element
  .artikel=8
 element
  .id=0x50d
- .artikel=-1
  .text=Lower return
 element
  .id=0x510
@@ -612,7 +610,6 @@ element
  .artikel=9
 element
  .id=0x60d
- .artikel=-1
  .text=Lower circuit
 element
  .id=0x611
@@ -693,7 +690,6 @@ element
  .artikel=7
 element
  .id=0x70e
- .artikel=-1
  .text=Cross over
 element
  .id=0x711
@@ -1077,7 +1073,6 @@ element
  .artikel=20
 element
  .id=0xc02
- .artikel=-1
  .text=Reset
 element
  .id=0xc06
@@ -1158,7 +1153,6 @@ element
  .artikel=51
 element
  .id=0xd03
- .artikel=-1
  .text=Turn off parking
 element
  .id=0xd0b

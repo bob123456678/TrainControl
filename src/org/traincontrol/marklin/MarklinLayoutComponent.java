@@ -608,6 +608,9 @@ public class MarklinLayoutComponent
     {
         StringBuilder builder = new StringBuilder();
 
+        // Empty text labels aren't saved
+        if (this.label == null || this.type == componentType.TEXT && this.label.isEmpty()) return "";
+        
         // Add "element"
         builder.append("element\n");
 
@@ -635,8 +638,11 @@ public class MarklinLayoutComponent
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
         
-        // Add .artikel (raw address)        
-        builder.append(" .artikel=").append(this.rawAddress).append("\n");
+        // Add .artikel (raw address)  
+        if (this.type != componentType.TEXT)
+        {
+            builder.append(" .artikel=").append(this.rawAddress).append("\n");
+        }
         
         // Add state
         if (this.state > 0)
