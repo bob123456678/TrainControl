@@ -16,9 +16,6 @@ import org.traincontrol.util.Conversion;
 public class MarklinAccessory extends Accessory
     implements java.io.Serializable, RemoteDevice<Accessory, CS2Message>
 {
-    // List of available decoders
-    public static final accessoryDecoderType DEFAULT_IMPLICIT_PROTOCOL = accessoryDecoderType.MM2;
-
     // The type of decoder used
     private final accessoryDecoderType decoderType;
     
@@ -215,7 +212,7 @@ public class MarklinAccessory extends Accessory
         if (this.network.getGUI() != null)
         {
             // Dirty workaround to update UI state
-            this.network.getGUI().repaintSwitch(this.getAddress() + 1);
+            this.network.getGUI().repaintSwitch(this.getAddress() + 1, this.getDecoderType());
             
             // Not necessary because we can update a single keyboard button at a time above
             // this.network.getGUI().repaintSwitches();

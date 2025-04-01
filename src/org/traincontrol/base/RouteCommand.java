@@ -63,6 +63,7 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Returns a full accessory command
      * @param address
+     * @param protocol
      * @param setting
      * @return 
      */
@@ -73,7 +74,7 @@ public class RouteCommand implements java.io.Serializable
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
         r.commandConfig.put(KEY_PROTOCOL, protocol);
-        
+                
         return r;
     }
     
@@ -600,6 +601,9 @@ public class RouteCommand implements java.io.Serializable
             // line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "");
 
             int address = Math.abs(Integer.parseInt(accessoryAddress));
+            
+            // Set default protocol
+            if (accessoryProtocol.isEmpty()) accessoryProtocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
             
             boolean state;
             

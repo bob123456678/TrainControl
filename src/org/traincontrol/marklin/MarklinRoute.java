@@ -512,7 +512,7 @@ public class MarklinRoute extends Route
         JSONArray configObj = new JSONArray();
 
         for (RouteCommand rc : this.getRoute())
-        {
+        {            
             configObj.put(rc.toJSON());
         }
                     
@@ -547,32 +547,6 @@ public class MarklinRoute extends Route
         
         NodeExpression conditionExpression = null;
 
-        // Legacy - remove in v2.5.0
-        List<RouteCommand> routeConditions = new ArrayList<>();
-        
-        if (jsonObject.has("conditionS88"))
-        {
-            String conditionS88String = jsonObject.getString("conditionS88");
-            String[] conditionS88Pairs = conditionS88String.split("\n");
-            for (String pair : conditionS88Pairs)
-            {
-                String[] parts = pair.split(",");
-                routeConditions.add(RouteCommand.RouteCommandFeedback(Math.abs(Integer.parseInt(parts[0])), parts[1].equals("1")));
-            }
-        }
-        
-        if (jsonObject.has("conditionAcc"))
-        {
-            JSONArray commandsArray = jsonObject.getJSONArray("conditionAcc");
-            for (int i = 0; i < commandsArray.length(); i++)
-            {
-                routeConditions.add(RouteCommand.fromJSON(commandsArray.getJSONObject(i)));
-            }
-        }
-        
-        conditionExpression = NodeExpression.fromList(routeConditions);
-        // End legacy
-        
         if (jsonObject.has("conditions"))
         {
             conditionExpression = NodeExpression.fromJSON(jsonObject.getJSONObject("conditions"));

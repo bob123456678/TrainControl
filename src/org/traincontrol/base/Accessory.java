@@ -7,7 +7,11 @@ package org.traincontrol.base;
  */
 abstract public class Accessory
 {
+    // List of available decoders
     public static enum accessoryDecoderType {MM2, DCC};
+    
+    public static final accessoryDecoderType DEFAULT_IMPLICIT_PROTOCOL = accessoryDecoderType.MM2;
+    
     public static enum accessoryType {SWITCH, SIGNAL};
     public static enum accessorySetting {GREEN, RED, STRAIGHT, TURN};
 

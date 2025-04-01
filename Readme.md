@@ -304,6 +304,8 @@ Requires JDK 1.8+ and the following libraries:
         - MM2 accessories with addresses 257-320 are now supported
         - Added 1 additional keyboard page to cover MM2 addresses up to 320
     - The IP of the Central Station is now printed to the log at startup
+    - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
+    - LocDB.data files from v2.3.x and older are no longre compatible.  Run v2.4.0+ at least once prior to upgrading.
 
 * v2.4.12 [3/24/2025]
     - Graph UI

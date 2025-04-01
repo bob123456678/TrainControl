@@ -78,6 +78,7 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -174,7 +175,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
     public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
     public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
+    public static final String PREFERRED_KEYBOARD_MM2 = "PreferredKeyboardMM2";
 
+    
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
 
@@ -612,6 +615,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
     
+        if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
+        {
+            this.MM2.setSelected(true);
+        }
+        else
+        {
+            this.DCC.setSelected(true);
+        }
+        
         // Set selected route sort radio button
         this.sortByID.setSelected(!prefs.getBoolean(ROUTE_SORT_PREF, false));
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
@@ -2298,9 +2310,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Repaints a single switch on the keyboard
      * @param address 
+     * @param type 
      */
     @Override
-    synchronized public void repaintSwitch(int address)
+    synchronized public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
@@ -2332,7 +2345,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
-                String command = this.model.getAccessoryByAddress(address, getKeyboardProtocol()).toAccessorySettingString();
+                String command = this.model.getAccessoryByAddress(address, type).toAccessorySettingString();
 
                 if (!command.isEmpty() && 
                         (!command.equals(lastCapturedAccessoryCommand) || (currentTime - lastCapturedAccessoryCommandTime) > CAPTURE_COMMAND_THROTTLE))
@@ -12293,10 +12306,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void MM2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MM2ActionPerformed
         repaintSwitches();
+        prefs.putBoolean(PREFERRED_KEYBOARD_MM2, ((JRadioButton) evt.getSource()).isSelected());
     }//GEN-LAST:event_MM2ActionPerformed
 
     private void DCCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DCCActionPerformed
         repaintSwitches();
+        prefs.putBoolean(PREFERRED_KEYBOARD_MM2, !((JRadioButton) evt.getSource()).isSelected());
     }//GEN-LAST:event_DCCActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)

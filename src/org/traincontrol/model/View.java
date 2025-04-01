@@ -2,6 +2,7 @@ package org.traincontrol.model;
 
 import org.traincontrol.base.Locomotive;
 import java.util.List;
+import org.traincontrol.base.Accessory;
 
 /**
  * Interface for a generic train control GUI
@@ -19,7 +20,7 @@ public interface View
      * Regenerates a switch display
      */
     public void repaintSwitches();
-    public void repaintSwitch(int id);
+    public void repaintSwitch(int id, Accessory.accessoryDecoderType protocol);
     
     /**
      * Regenerates the layout display

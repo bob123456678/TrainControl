@@ -397,7 +397,7 @@ public class testRoutes
         {
             for (MarklinRoute finalr : finalRoutes)
             {
-                if (finalr.getName().equals(current.getName()) && !current.equals(json))
+                if (finalr.getName().equals(current.getName()) && !current.equals(finalr))
                 {
                     System.out.println("EXPECTED: ");
                     System.out.println(current);
@@ -509,7 +509,7 @@ public class testRoutes
 
         // Routes in JSON should equal routes in 
         assertTrue(model.getRoutes().equals(finalRoutes));
-        assertFalse(!model.getRoutes().equals(currentRoutes));
+        assertTrue(!model.getRoutes().equals(currentRoutes));
         
         // Actually import the routes into the model
         model.importRoutes(json);
@@ -528,7 +528,16 @@ public class testRoutes
         {
             for (RouteCommand rc : r.getRoute())
             {
-                assertEquals(rc, RouteCommand.fromLine(rc.toLine(null), false));
+                MarklinAccessory a = null;
+                if (rc.isAccessory())
+                {
+                    a = model.getAccessoryByAddress(rc.getAddress(), 
+                            MarklinAccessory.determineAccessoryDecoderType(rc.getAccessoryType()));
+                }
+                
+                RouteCommand rc2 = RouteCommand.fromLine(rc.toLine(a), false);
+                
+                assertEquals(rc, rc2);
             }
         }
         
