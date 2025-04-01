@@ -287,10 +287,9 @@ public final class LayoutLabel extends JLabel
                             // Add the protocol
                             String protocol = "";
                             
-                            if (this.component.getAccessory() != null && 
-                                    this.component.getAccessory().getDecoderType() != Accessory.accessoryDecoderType.MM2 )
+                            if (this.component.getAccessory() != null)
                             {
-                                protocol = " (" + this.component.getAccessory().getDecoderType() + ")";
+                                protocol = MarklinAccessory.getNameProtocolString(this.component.getAccessory().getDecoderType().toString());
                             }
                             
                             this.setToolTipText(this.component.toSimpleString() + protocol);

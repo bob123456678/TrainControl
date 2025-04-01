@@ -4,6 +4,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
 /**
@@ -190,13 +191,14 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             
             if (component.isClickable())
             {
-                String prot = "";
+                String protocol = "";
+    
                 if (component.getProtocol() != null)
                 {
-                    prot = " " + component.getProtocol().toString();
+                    protocol = MarklinAccessory.getNameProtocolString(component.getProtocol().toString());
                 }
                 
-                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + prot + ")");
+                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + protocol + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try
