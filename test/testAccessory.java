@@ -32,16 +32,19 @@ public class testAccessory
         MarklinAccessory signal1 = model.getAccessoryByName("Signal 280");
         MarklinAccessory signal2 = model.getAccessoryByAddress(280, MarklinAccessory.accessoryDecoderType.MM2);
 
+        assertEquals(signal1.getName(), "Signal 280");
         assertEquals(signal1, signal2);
         assertEquals(signal1.getType(), MarklinAccessory.accessoryType.SIGNAL);
         assertEquals(signal1.isRed(), true);
         assertEquals(signal1.isGreen(), false);
         assertEquals(signal1.getDecoderType(), MarklinAccessory.accessoryDecoderType.MM2);
 
-        // This will overwrite the signal in the database
+        // This should create a new signal in the DB
         model.newSignal(280, MarklinAccessory.accessoryDecoderType.DCC, false);
-        signal1 = model.getAccessoryByName("Signal 280");
+        signal1 = model.getAccessoryByName("Signal 280 DCC");
 
+        assertTrue(model.getAccessoryByName("Signal 280 DCC") != model.getAccessoryByName("Signal 280"));
+        assertEquals(signal1.getName(), "Signal 280 DCC");
         assertEquals(signal1.isGreen(), true);
         assertEquals(signal1.isRed(), false);
         assertEquals(signal1.isSignal(), true);
@@ -69,10 +72,13 @@ public class testAccessory
         
         // This will trigger the creation of the accessory
         model.getAccessoryState(3000, MarklinAccessory.accessoryDecoderType.DCC);
-        createdAccessory = model.getAccessoryByName("Switch 3000");
+        createdAccessory = model.getAccessoryByName("Switch 3000 DCC");
         assertNotEquals(createdAccessory, null);
         assertEquals(createdAccessory.isSwitched(), false);
         assertEquals(createdAccessory.getType(), MarklinAccessory.accessoryType.SWITCH);
+        
+        // Non DCC version should not exist
+        assertEquals(model.getAccessoryByName("Switch 3000"), null);
         
         assertFalse(createdAccessory.isValidAddress());
     }
@@ -84,7 +90,7 @@ public class testAccessory
         MarklinAccessory createdAccessory = model.getAccessoryByAddress(285, MarklinAccessory.accessoryDecoderType.MM2);
         
         // Test copying an accessory setting
-        RouteCommand rc = RouteCommand.fromLine(createdAccessory.toAccessorySettingString());
+        RouteCommand rc = RouteCommand.fromLine(createdAccessory.toAccessorySettingString(), false);
         assertTrue(rc.isAccessory());
         assertFalse(rc.isAutonomyLightsOn());
         assertFalse(rc.isFunction());
@@ -96,16 +102,16 @@ public class testAccessory
         assertFalse(rc.getSetting());
         
         // Test hypothetical setting
-        RouteCommand rc2 = RouteCommand.fromLine(createdAccessory.toAccessorySettingString(true, MarklinAccessory.accessoryDecoderType.MM2.toString()));
+        RouteCommand rc2 = RouteCommand.fromLine(createdAccessory.toAccessorySettingString(true, MarklinAccessory.accessoryDecoderType.MM2.toString()), false);
         assertTrue(rc2.getSetting());
         
         // Test import and export
         String line = rc.toLine(createdAccessory);
-        RouteCommand rc3 = RouteCommand.fromLine(line);
+        RouteCommand rc3 = RouteCommand.fromLine(line, false);
         assertEquals(rc, rc3);
         
         String line2 = rc2.toLine(createdAccessory);
-        RouteCommand rc4 = RouteCommand.fromLine(line2);
+        RouteCommand rc4 = RouteCommand.fromLine(line2, false);
         assertEquals(rc2, rc4);
     }
     

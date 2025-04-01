@@ -18,8 +18,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
-import static org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType.DCC;
-import static org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType.MM2;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 
 /**
  *
@@ -528,7 +528,7 @@ public class testRoutes
         {
             for (RouteCommand rc : r.getRoute())
             {
-                assertEquals(rc, RouteCommand.fromLine(rc.toLine(null)));
+                assertEquals(rc, RouteCommand.fromLine(rc.toLine(null), false));
             }
         }
         

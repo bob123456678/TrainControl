@@ -112,7 +112,7 @@ public abstract class NodeExpression implements Serializable
             // TODO - the RouteCommand should maintain the decoder type
             Accessory acc = null;
             if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress(),
-                MarklinAccessory.determineDecoderType(command.getAddress() - 1)
+                MarklinAccessory.determineAccessoryDecoderType(command.getAccessoryType())
             );
             
             sb.append(command.toLine(acc)).append("\n");
@@ -271,7 +271,7 @@ public abstract class NodeExpression implements Serializable
 
     private static NodeExpression parseLine(String line) throws Exception
     {
-        RouteCommand rc = RouteCommand.fromLine(line);
+        RouteCommand rc = RouteCommand.fromLine(line, false);
         
         if (!rc.isAccessory() && !rc.isFeedback())
         {

@@ -17,7 +17,6 @@ public class MarklinAccessory extends Accessory
     implements java.io.Serializable, RemoteDevice<Accessory, CS2Message>
 {
     // List of available decoders
-    public static enum accessoryDecoderType {MM2, DCC};
     public static final accessoryDecoderType DEFAULT_IMPLICIT_PROTOCOL = accessoryDecoderType.MM2;
 
     // The type of decoder used
@@ -329,7 +328,7 @@ public class MarklinAccessory extends Accessory
      * @param address
      * @return 
      */
-    public static accessoryDecoderType determineDecoderType(int address)
+    /* public static accessoryDecoderType determineDecoderType(int address)
     {
         if (address > MAX_MM2_ADDRESS)
         {
@@ -339,7 +338,7 @@ public class MarklinAccessory extends Accessory
         {
             return accessoryDecoderType.MM2;
         }
-    }
+    }*/
     
     /**
      * Converts string to accessoryDecoderType
@@ -389,14 +388,26 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Returns the accessory name with the protocol if appropriate
-     * MM2 Signal 1: "Signal 1"
+     * Gets the accessory name along with the protocol
      * DCC Signal 1: "Signal 1 DCC"
+     * MM2 Signal 1: "Signal 1"
+     * @param address
+     * @param type
+     * @param decoder
+     * @return 
+     */
+    public static String getNameWithProtocol(int address, accessoryType type, accessoryDecoderType decoder)
+    {
+        return Accessory.accessoryTypeToPrettyString(type) + " " + Integer.toString(address) + 
+                getNameProtocolString(decoder.toString());
+    }
+    
+    /**
+     * Returns the accessory name with the protocol if appropriate
      * @return 
      */
     public String getNameWithProtocol()
     {
-        return Accessory.accessoryTypeToPrettyString(this.getType()) + " " + Integer.toString(this.address) + 
-                getNameProtocolString(this.getDecoderType().toString());
+        return getNameWithProtocol(this.address, this.getType(), this.getDecoderType());
     }
 }

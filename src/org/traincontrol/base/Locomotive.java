@@ -467,9 +467,10 @@ public abstract class Locomotive
      * Returns the state of a given accessory id (int)
      * This can be a switch or a signal
      * @param id
+     * @param type
      * @return 
      */
-    public abstract boolean getAccessoryState(int id);
+    public abstract boolean getAccessoryState(int id, Accessory.accessoryDecoderType type);
     
     /**
      * Executes a route by the given name
@@ -499,20 +500,22 @@ public abstract class Locomotive
     /**
      * Sets an accessory state
      * @param id
+     * @param type
      * @param state
      * @return 
      */
-    public abstract Locomotive setAccessoryState(int id, boolean state);
+    public abstract Locomotive setAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state);
     
     /**
      * Blocks until the specified accessory value is set
      * @param id accessory id
+     * @param type
      * @param state accessory state
      * @return 
      */
-    public Locomotive waitForAccessoryState(int id, boolean state)
+    public Locomotive waitForAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state)
     {        
-        while (this.getAccessoryState(id) != state)
+        while (this.getAccessoryState(id, type) != state)
         {
             this.delay(Locomotive.POLL_INTERVAL);
         }    

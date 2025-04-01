@@ -172,7 +172,7 @@ abstract public class Route
         if (rc.isAccessory())
         {
             // TODO rc should maintain the accessory type
-            return control.getAccessoryState(rc.getAddress(), MarklinAccessory.determineDecoderType(rc.getAddress() - 1)) == rc.getSetting();
+            return control.getAccessoryState(rc.getAddress(), MarklinAccessory.determineAccessoryDecoderType(rc.getProtocol())) == rc.getSetting();
         }
         else if (rc.isFeedback())
         {

@@ -7,6 +7,7 @@ package org.traincontrol.base;
  */
 abstract public class Accessory
 {
+    public static enum accessoryDecoderType {MM2, DCC};
     public static enum accessoryType {SWITCH, SIGNAL};
     public static enum accessorySetting {GREEN, RED, STRAIGHT, TURN};
 

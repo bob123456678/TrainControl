@@ -1593,7 +1593,7 @@ public class RouteEditor extends PositionAwareJFrame
 
             for (String line : routeContent.split("\n"))
             {
-                RouteCommand rc = RouteCommand.fromLine(line);
+                RouteCommand rc = RouteCommand.fromLine(line, false);
                 
                 if (rc != null)
                 {

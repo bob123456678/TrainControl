@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
@@ -1424,7 +1425,7 @@ public final class CS2File
                         orient = Math.floorMod(orient - 1, 4);
                     }
                     
-                    MarklinAccessory.accessoryDecoderType protocol = MarklinAccessory.accessoryDecoderType.MM2;
+                    Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
                     
                     if (m.get("prot") != null)
                     {

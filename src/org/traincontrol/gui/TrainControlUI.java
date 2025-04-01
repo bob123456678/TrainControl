@@ -112,6 +112,7 @@ import org.traincontrol.model.ViewListener;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
@@ -585,8 +586,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
                     
                     ((JToggleButton) e.getSource()).setToolTipText(
-                            model.getAccessoryByAddress(accAddress, MarklinAccessory.determineDecoderType(accAddress - 1)).getName() + " actuation count: " + 
-                                    model.getAccessoryByAddress(accAddress, MarklinAccessory.determineDecoderType(accAddress - 1)).getNumActuations()   
+                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getName() + " actuation count: " + 
+                                    model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getNumActuations()   
                     );
                 }
             });
@@ -2309,7 +2310,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JToggleButton key = this.switchMapping.get(address - offset);
 
-                if (this.model.getAccessoryState(address, MarklinAccessory.determineDecoderType(address - 1)))
+                if (this.model.getAccessoryState(address, getKeyboardProtocol()))
                 {
                     key.setSelected(true);
                     key.setBackground(COLOR_SWITCH_RED);        
@@ -2327,11 +2328,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 key.setFont(font.deriveFont(attributes));
             }
             
-            if (this.routeEditor!= null || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
+            if (this.routeEditor != null || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
-                String command = this.model.getAccessoryByAddress(address, MarklinAccessory.determineDecoderType(address - 1)).toAccessorySettingString();
+                String command = this.model.getAccessoryByAddress(address, getKeyboardProtocol()).toAccessorySettingString();
 
                 if (!command.isEmpty() && 
                         (!command.equals(lastCapturedAccessoryCommand) || (currentTime - lastCapturedAccessoryCommandTime) > CAPTURE_COMMAND_THROTTLE))
@@ -2398,7 +2399,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 if (key != null)
                 {           
-                    if (this.model.getAccessoryState(i + offset, MarklinAccessory.determineDecoderType(i + offset - 1)))
+                    if (this.model.getAccessoryState(i + offset, getKeyboardProtocol()))
                     {
                         key.setSelected(true);
                         key.setBackground(COLOR_SWITCH_RED);        
@@ -3017,6 +3018,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         buttonGroup2 = new javax.swing.ButtonGroup();
         buttonGroup3 = new javax.swing.ButtonGroup();
         buttonGroup4 = new javax.swing.ButtonGroup();
+        buttonGroup5 = new javax.swing.ButtonGroup();
         KeyboardTab = new javax.swing.JTabbedPane();
         LocControlPanel = new javax.swing.JPanel();
         locMappingLabel = new javax.swing.JLabel();
@@ -3272,6 +3274,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KeyboardNumberLabel = new javax.swing.JLabel();
         NextKeyboard = new javax.swing.JButton();
         KeyboardLabel1 = new javax.swing.JLabel();
+        MM2 = new javax.swing.JRadioButton();
+        DCC = new javax.swing.JRadioButton();
         RoutePanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         jScrollPane5 = new javax.swing.JScrollPane();
@@ -6930,7 +6934,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel10Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(KeyboardNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(KeyboardNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(PrevKeyboard)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -6953,18 +6957,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KeyboardLabel1.setText("Change Page");
         KeyboardLabel1.setFocusable(false);
 
+        buttonGroup5.add(MM2);
+        MM2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        MM2.setSelected(true);
+        MM2.setText("MM2");
+        MM2.setFocusable(false);
+        MM2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MM2ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup5.add(DCC);
+        DCC.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        DCC.setText("DCC");
+        DCC.setFocusable(false);
+        DCC.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DCCActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout KeyboardPanelLayout = new javax.swing.GroupLayout(KeyboardPanel);
         KeyboardPanel.setLayout(KeyboardPanelLayout);
         KeyboardPanelLayout.setHorizontalGroup(
             KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(KeyboardPanelLayout.createSequentialGroup()
-                .addGap(9, 9, 9)
-                .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(KeyboardLabel)
-                    .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(KeyboardLabel1)
-                    .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(KeyboardPanelLayout.createSequentialGroup()
+                        .addGap(9, 9, 9)
+                        .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(KeyboardLabel)
+                            .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(KeyboardLabel1)
+                            .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addGroup(KeyboardPanelLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(MM2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(DCC)))
+                .addContainerGap(69, Short.MAX_VALUE))
         );
         KeyboardPanelLayout.setVerticalGroup(
             KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6977,7 +7009,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addComponent(KeyboardLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(MM2)
+                    .addComponent(DCC))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Keyb", KeyboardPanel);
@@ -11063,7 +11099,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
             {
-                this.model.setAccessoryState(switchId, MarklinAccessory.determineDecoderType(switchId), b.isSelected());
+                this.model.setAccessoryState(switchId, getKeyboardProtocol(), b.isSelected());
             }).start();
     }//GEN-LAST:event_UpdateSwitchState
 
@@ -12255,10 +12291,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editLayoutButtonActionPerformed(null);
     }//GEN-LAST:event_editCurrentPageActionPerformedActionPerformed
 
+    private void MM2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MM2ActionPerformed
+        repaintSwitches();
+    }//GEN-LAST:event_MM2ActionPerformed
+
+    private void DCCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DCCActionPerformed
+        repaintSwitches();
+    }//GEN-LAST:event_DCCActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
         this.controlsPanel.setVisible(visibility);
+    }
+    
+    private Accessory.accessoryDecoderType getKeyboardProtocol()
+    {
+        if (this.DCC.isSelected())
+        {
+            return MarklinAccessory.stringToAccessoryDecoderType(this.DCC.getText());
+        }
+        
+        return MarklinAccessory.stringToAccessoryDecoderType(this.MM2.getText());
     }
     
     public void deleteTimetableEntry(MouseEvent evt)
@@ -13301,6 +13355,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider CSlider;
     private javax.swing.JLabel CurrentKeyLabel;
     private javax.swing.JButton DButton;
+    private javax.swing.JRadioButton DCC;
     private javax.swing.JTextField DLabel;
     private javax.swing.JSlider DSlider;
     private javax.swing.JLabel DirectionLabel;
@@ -13384,6 +13439,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel LocMappingNumberLabel;
     private javax.swing.JButton MButton;
     private javax.swing.JTextField MLabel;
+    private javax.swing.JRadioButton MM2;
     private javax.swing.JSlider MSlider;
     private javax.swing.JButton NButton;
     private javax.swing.JTextField NLabel;
@@ -13529,6 +13585,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
+    private javax.swing.ButtonGroup buttonGroup5;
     private javax.swing.JMenuItem changeIPMenuItem;
     private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;

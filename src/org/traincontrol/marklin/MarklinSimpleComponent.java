@@ -3,13 +3,12 @@ package org.traincontrol.marklin;
 import java.util.ArrayList;
 import org.traincontrol.base.RouteCommand;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.NodeExpression;
-import org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType;
 
 /**
  * Serializable class for saving state
@@ -26,7 +25,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     // Switch state or loc directions
     private boolean state;
     private int numActuations = 0;
-    private accessoryDecoderType accessoryDecoderType = null;
+    private Accessory.accessoryDecoderType accessoryDecoderType = null;
     
     // Locomotive function state and types
     private boolean[] functions;
@@ -341,7 +340,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public accessoryDecoderType getAccessoryDecoderType()
     {
-        if (accessoryDecoderType == null)
+        if (accessoryDecoderType == null || !(accessoryDecoderType instanceof Accessory.accessoryDecoderType))
         {
             return MarklinAccessory.accessoryDecoderType.MM2;
         }

@@ -2,6 +2,7 @@ package org.traincontrol.examples;
 
 import java.util.List;
 import java.util.function.Consumer;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -110,16 +111,15 @@ public class ProgrammaticControlExample
                 mySignal4.green();
 
                 // Manually add a new switch to the database so that it can be referenced by name
-                data.newSwitch(5, MarklinAccessory.accessoryDecoderType.MM2, false);
+                data.newSwitch(5, Accessory.accessoryDecoderType.MM2, false);
                 MarklinAccessory mySwitch5 = data.getAccessoryByName("Switch 5");
                 
                 // Send command to ensure the state is consistent
                 mySwitch5.turn();
                 
-                // DCC addresses are now supported
-                // Note - at the moment, two accessories with the same address will get the same name, regardless of the decoder
-                data.newSwitch(400, MarklinAccessory.accessoryDecoderType.DCC, false);
-                MarklinAccessory mySwitch400 = data.getAccessoryByName("Switch 400");
+                // DCC addresses are now supported.  DCC must be added to the end of the item name.
+                data.newSwitch(400, Accessory.accessoryDecoderType.DCC, false);
+                MarklinAccessory mySwitch400 = data.getAccessoryByName("Switch 400 DCC");
                 
                 // Send command to ensure the state is consistent
                 mySwitch400.straight();
@@ -142,7 +142,7 @@ public class ProgrammaticControlExample
 
                 // = Set signal 1 to green via the Locomotive API
                 // Why would you do this?  See the "Chaining Commands" section
-                myLoc.setAccessoryState(1, false);
+                myLoc.setAccessoryState(1, MarklinAccessory.accessoryDecoderType.MM2, false);
 
 
                 // Retrieve a switch by its MM2/DCC address
@@ -158,7 +158,7 @@ public class ProgrammaticControlExample
                 mySwitch.setSwitched(true);
 
                 // = Set switch 2 to turnout via the Locomotive API
-                myLoc.setAccessoryState(2, true);
+                myLoc.setAccessoryState(2, MarklinAccessory.accessoryDecoderType.MM2, true);
                 
    
                 // 
@@ -217,10 +217,10 @@ public class ProgrammaticControlExample
                     // Fetch the locomotive at Station 1
                     data.getLocByName("Loc1")
                             // Flip some signals
-                            .setAccessoryState(1, true)
-                            .setAccessoryState(2, false)
+                            .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, true)
+                            .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
                             // Turnout
-                            .setAccessoryState(10, true)
+                            .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, true)
                             // Wait 2-20 seconds
                             .delay(2,20)
                             // Turn on locomotive sound and lights
@@ -230,7 +230,7 @@ public class ProgrammaticControlExample
                             .setSpeed(40)
                             .waitForOccupiedFeedback("3")
                             // Signal should now be red
-                            .setAccessoryState(1, false)
+                            .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
                             // Slow down
                             .setSpeed(20)
                             // Stop the locomotive when it arrives at the station
@@ -243,10 +243,10 @@ public class ProgrammaticControlExample
                             // Do not proceed unless Loc1 is at its station
                             .waitForOccupiedFeedback("1")
                             // Flip some signals
-                            .setAccessoryState(1, false)
-                            .setAccessoryState(2, true)
+                            .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
+                            .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, true)
                             // Go straight
-                            .setAccessoryState(10, false)
+                            .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, false)
                             // Wait 2-20 seconds
                             .delay(2,20)
                             // Turn on locomotive sound and lights
@@ -256,7 +256,7 @@ public class ProgrammaticControlExample
                             .setSpeed(40)
                             .waitForOccupiedFeedback("3")
                             // Signal should now be red
-                            .setAccessoryState(2, false)
+                            .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
                             // Slow down
                             .setSpeed(20)
                             // Stop the locomotive when it arrives at the station

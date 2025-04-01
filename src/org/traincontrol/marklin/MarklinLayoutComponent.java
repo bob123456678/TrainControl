@@ -7,7 +7,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
 
 /**
  * Representation of each layout component as defined by CS2

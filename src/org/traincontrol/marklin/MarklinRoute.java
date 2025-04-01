@@ -224,7 +224,7 @@ public class MarklinRoute extends Route
                             int idd = rc.getAddress();
                             boolean state = rc.getSetting();
 
-                            this.network.setAccessoryState(idd, MarklinAccessory.determineDecoderType(idd - 1), state);
+                            this.network.setAccessoryState(idd, MarklinAccessory.determineAccessoryDecoderType(rc.getProtocol()), state);
                         }
                         else if (rc.isStop())
                         {                        

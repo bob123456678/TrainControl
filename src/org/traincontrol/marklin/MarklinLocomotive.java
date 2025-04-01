@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.base.Locomotive;
@@ -470,9 +471,9 @@ public class MarklinLocomotive extends Locomotive
     }
     
     @Override
-    public boolean getAccessoryState(int id)
+    public boolean getAccessoryState(int id, Accessory.accessoryDecoderType type)
     {
-        return this.network.getAccessoryState(id, MarklinAccessory.determineDecoderType(id - 1));
+        return this.network.getAccessoryState(id, type);
     }
 
     @Override
@@ -802,11 +803,10 @@ public class MarklinLocomotive extends Locomotive
         return this;        
     }
     
-    @Override
-    synchronized public Locomotive setAccessoryState(int id, boolean state)
+    synchronized public Locomotive setAccessoryState(int id, MarklinAccessory.accessoryDecoderType type, boolean state)
     {
         // TODO decoder type should be passed in
-        this.network.setAccessoryState(id, MarklinAccessory.determineDecoderType(id - 1), state);
+        this.network.setAccessoryState(id, type, state);
         
         return this;
     }

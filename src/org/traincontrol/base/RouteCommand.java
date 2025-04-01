@@ -37,6 +37,7 @@ public class RouteCommand implements java.io.Serializable
     public static String KEY_SPEED = "SPEED";
     public static String KEY_DELAY = "DELAY";
     public static String KEY_PROTOCOL = "PROTOCOL";
+    public static String KEY_ACCESSORY_TYPE = "ACCESSORY_TYPE";
 
     // Settings
     
@@ -231,6 +232,11 @@ public class RouteCommand implements java.io.Serializable
     public int getSpeed()
     {
         return Integer.parseInt(this.commandConfig.get(KEY_SPEED));
+    }
+    
+    public String getAccessoryType()
+    {
+        return this.commandConfig.get(KEY_ACCESSORY_TYPE);
     }
     
     public int getDelay()
@@ -478,10 +484,11 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Parses a simple string representation of the route (equivalent to Route.toCSV)
      * @param line
+     * @param extractAccessoryType
      * @return 
      * @throws java.lang.Exception 
      */
-    public static RouteCommand fromLine(String line) throws Exception
+    public static RouteCommand fromLine(String line, boolean extractAccessoryType) throws Exception
     {
         line = line.trim();
         
@@ -620,6 +627,11 @@ public class RouteCommand implements java.io.Serializable
                 rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[2].trim())));     
             }
 
+            if (extractAccessoryType)
+            {
+                rc.getCommandConfig().put(KEY_ACCESSORY_TYPE, accessoryTypePrefix);
+            }
+            
             return rc;
         }
         

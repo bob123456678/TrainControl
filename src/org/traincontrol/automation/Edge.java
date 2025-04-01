@@ -14,6 +14,7 @@ import java.util.Objects;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
@@ -96,48 +97,11 @@ public class Edge
      * @return 
      * @throws Exception 
      */
-    public Accessory.accessorySetting validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
+    public static Accessory.accessorySetting validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
     {
         if (null == accessory || null == action)
         {
             throw new Exception("Missing/invalid command.");
-        }
-        
-        if (null == control.getAccessoryByName(accessory))
-        {
-            if (accessory.contains("Signal "))
-            {
-                Integer address = Integer.valueOf(accessory.replace("Signal ", "").trim());
-                
-                if (control.getAccessoryByName("Switch " + address) != null)
-                {
-                    throw new Exception("Command " + accessory + " conflicts with a switch with the same address and should be renamed.");
-                }
-                
-                control.newSignal(address, MarklinAccessory.determineDecoderType(address - 1), false);
-                control.log("Auto layout warning: created " + accessory);
-            }
-            else if (accessory.contains("Switch "))
-            {
-                Integer address = Integer.valueOf(accessory.replace("Switch ", "").trim());
-                
-                if (control.getAccessoryByName("Signal " + address) != null)
-                {
-                    throw new Exception("Command " + accessory + " conflicts with a signal with the same address and should be renamed.");
-                }
-
-                control.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
-                control.log("Auto layout warning: created " + accessory);                       
-            }
-            else
-            {
-                throw new Exception("Auto layout error: unrecognized accessory type \"" + accessory + "\". Must be Signal or Switch, e.g. \"Signal 1\".");
-            }
-        }
-        
-        if (null == control.getAccessoryByName(accessory))
-        {
-            throw new Exception("Accessory " + accessory + " does not exist in the layout or cannot be added");
         }
         
         Accessory.accessorySetting output = Accessory.stringToAccessorySetting(action);
@@ -147,6 +111,44 @@ public class Edge
             throw new Exception("Command " + action + " must be one of: " + Arrays.toString(Accessory.accessorySetting.values()).toLowerCase());
         }
         
+        if (null == control.getAccessoryByName(accessory))
+        {
+            // rc expects Switch 1,state
+            RouteCommand rc = RouteCommand.fromLine(accessory + "," + action, true);
+            
+            // Parsd data
+            Integer address = rc.getAddress();
+            String protocol = rc.getProtocol();
+            Accessory.accessoryType type = Accessory.stringToAccessoryType(rc.getAccessoryType());
+            
+            Accessory existing = control.getAccessoryByAddress(address, MarklinAccessory.determineAccessoryDecoderType(protocol));
+            
+            if (existing != null && existing.getType() != type)
+            {
+                throw new Exception("Command " + accessory + " conflicts with a " + existing.getType().toString() + " with the same address and should be renamed.");
+            }
+            
+            if (type == Accessory.accessoryType.SIGNAL)
+            {
+                control.newSignal(address, MarklinAccessory.determineAccessoryDecoderType(protocol), false);
+            }
+            else if (type == Accessory.accessoryType.SWITCH)
+            {
+                control.newSwitch(address, MarklinAccessory.determineAccessoryDecoderType(protocol), false);
+            }
+            else
+            {
+                throw new Exception("Auto layout error: unrecognized accessory type \"" + accessory + "\". Must be Signal or Switch, e.g. \"Signal 1\" or \"Switch 2 DCC\".");
+            }
+            
+            control.log("Auto layout warning: created " + accessory); 
+        }
+        
+        if (null == control.getAccessoryByName(accessory))
+        {
+            throw new Exception("Auto layout error: Accessory " + accessory + " does not exist in the layout or cannot be added");
+        }
+                
         return output;
     }
         

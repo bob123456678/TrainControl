@@ -3007,8 +3007,17 @@ public class Layout
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
+                                try 
+                                {
+                                    Edge.validateConfigCommand(accessory, Accessory.accessorySetting.GREEN.toString(), control);
+                                }
+                                catch (Exception e)
+                                {
+
+                                }
+                                
                                 // TODO - use Edge.validateConfigCommand
-                                control.log("Auto layout warning: accessory \"" + accessory + "\" does not exist in CS2 layout");
+                                /* control.log("Auto layout warning: accessory \"" + accessory + "\" does not exist in CS2 layout");
                                 
                                 if (accessory.contains("Signal "))
                                 {
@@ -3039,7 +3048,7 @@ public class Layout
                                 else
                                 {
                                     layout.invalidate("Auto layout error: unrecognized accessory type in " + accessory);
-                                }
+                                }*/
                             }
                         }
                         else
