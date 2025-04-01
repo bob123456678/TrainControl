@@ -543,7 +543,7 @@ public final class CS2File
                     {
                         if (setting >= 2)
                         {
-                            r.addAccessory(id + 1, setting == 2);
+                            r.addAccessory(id + 1, MarklinAccessory.accessoryDecoderType.MM2.toString(), setting == 2);
                             
                             if (delay > 0)
                             {
@@ -551,7 +551,7 @@ public final class CS2File
                             }
                         }
                         
-                        r.addAccessory(id, setting != 1 && setting != 3);
+                        r.addAccessory(id, MarklinAccessory.accessoryDecoderType.MM2.toString(), setting != 1 && setting != 3);
                         
                         // Only set the delay once for three-way switches
                         if (delay > 0 && setting < 2)
@@ -740,7 +740,7 @@ public final class CS2File
                             // System.out.println(accessory);
                             int address = accessory.getInt("address");
                             
-                            /*String protocol = accessory.getString("prot");
+                            String protocol = accessory.getString("prot");
                             
                             if ("mm".equals(protocol))
                             {
@@ -752,52 +752,52 @@ public final class CS2File
                             }
                             else
                             {
-                                protocol = "";
-                            }*/
+                                protocol = MarklinAccessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
+                            }
                             
                             // stellung 0 - key not included
                             // this means red/turn
                             if (!item.has("stellung") || "0".equals(item.getString("stellung")))
                             {
-                                r.addAccessory(address, true);
+                                r.addAccessory(address, protocol, true);
                                 
                                 // This is invalid for 3-way signals
                                 // if (3 == accessory.getInt("states"))
                                 if ("dreiwegweiche".equals(accessory.getString("typ")))
                                 {
-                                    r.addAccessory(address + 1, false);
+                                    r.addAccessory(address + 1, protocol, false);
                                 }
                             }
                             // stellung 1 means isSwitched is false   
                             // this means green/straight
                             else if ("1".equals(item.getString("stellung")))
                             {                                
-                                r.addAccessory(address, false);
+                                r.addAccessory(address, protocol, false);
                                 
                                 // This is invalid for 3-way signals
                                 // if (3 == accessory.getInt("states"))
                                 if ("dreiwegweiche".equals(accessory.getString("typ")))
                                 {
-                                    r.addAccessory(address + 1, false);
+                                    r.addAccessory(address + 1, protocol, false);
                                 }
                             }
                             else if ("2".equals(item.getString("stellung")))
                             {           
-                                r.addAccessory(address, false);
+                                r.addAccessory(address, protocol, false);
                                 
                                 if (3 == accessory.getInt("states"))
                                 {
-                                    r.addAccessory(address + 1, true);
+                                    r.addAccessory(address + 1, protocol, true);
                                 }
                             }
                             // Unclear how this differs from 1, seems to only be used by certain signals
                             else if ("3".equals(item.getString("stellung")))
                             {           
-                                r.addAccessory(address, false);
+                                r.addAccessory(address, protocol, false);
                                 
                                 if (3 == accessory.getInt("states"))
                                 {
-                                    r.addAccessory(address + 1, false);
+                                    r.addAccessory(address + 1, protocol, false);
                                 }
                             }
                             
@@ -1428,9 +1428,9 @@ public final class CS2File
                     
                     if (m.get("prot") != null)
                     {
-                        if (MarklinAccessory.getAccessoryDecoderType(m.get("prot")) != null)
+                        if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
                         {
-                            protocol = MarklinAccessory.getAccessoryDecoderType(m.get("prot"));
+                            protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
                         }
                         else
                         {

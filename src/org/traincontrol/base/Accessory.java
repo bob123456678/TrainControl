@@ -343,10 +343,11 @@ abstract public class Accessory
     /**
      * Prints the accessory name and state in a standardized string, for this specific Accessory but with a hypothetical setting
      * @param state
+     * @param protocol
      * @return 
      */
-    public abstract String toAccessorySettingString(boolean state);
-
+    public abstract String toAccessorySettingString(boolean state, String protocol);
+    
     @Override
     public String toString()
     {

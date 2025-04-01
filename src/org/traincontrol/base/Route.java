@@ -45,11 +45,12 @@ abstract public class Route
     /**
      * Adds to the route
      * @param address
+     * @param protocol
      * @param setting
      */
-    public void addAccessory(int address, boolean setting)
+    public void addAccessory(int address, String protocol, boolean setting)
     {
-        this.route.add(RouteCommand.RouteCommandAccessory(address, setting));
+        this.route.add(RouteCommand.RouteCommandAccessory(address, protocol, setting));
     }
     
     /**

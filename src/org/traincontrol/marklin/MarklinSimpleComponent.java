@@ -182,33 +182,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public List<RouteCommand> getRoute()
     {
-        if (this.route instanceof LinkedHashMap)
-        {
-            List<RouteCommand> rcs = new LinkedList<>();
-            
-            LinkedHashMap<Integer, Boolean> tempRoute = (LinkedHashMap<Integer, Boolean>) this.route;
-            for (Integer key : tempRoute.keySet())
-            {
-                rcs.add(RouteCommand.RouteCommandAccessory(key, tempRoute.get(key)));
-            }
-            
-            this.route = rcs;
-
-        }
-        // Handle conversion from old map
-        else if (this.route instanceof HashMap)
-        {
-            List<RouteCommand> rcs = new LinkedList<>();
-            
-            HashMap<Integer, Boolean> tempRoute = (HashMap<Integer, Boolean>) this.route;
-            for (Integer key : tempRoute.keySet() )
-            {
-                rcs.add(RouteCommand.RouteCommandAccessory(key, tempRoute.get(key)));
-            }
-            
-            this.route = rcs;
-        }
-
+        // Old formats are no longer supported
         return (List<RouteCommand>) this.route;
     }
     

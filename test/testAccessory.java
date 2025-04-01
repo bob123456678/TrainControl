@@ -96,7 +96,7 @@ public class testAccessory
         assertFalse(rc.getSetting());
         
         // Test hypothetical setting
-        RouteCommand rc2 = RouteCommand.fromLine(createdAccessory.toAccessorySettingString(true));
+        RouteCommand rc2 = RouteCommand.fromLine(createdAccessory.toAccessorySettingString(true, MarklinAccessory.accessoryDecoderType.MM2.toString()));
         assertTrue(rc2.getSetting());
         
         // Test import and export

@@ -11,6 +11,8 @@ import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.json.JSONObject;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 
@@ -34,6 +36,7 @@ public class RouteCommand implements java.io.Serializable
     public static String KEY_SETTING = "SETTING";
     public static String KEY_SPEED = "SPEED";
     public static String KEY_DELAY = "DELAY";
+    public static String KEY_PROTOCOL = "PROTOCOL";
 
     // Settings
     
@@ -62,12 +65,13 @@ public class RouteCommand implements java.io.Serializable
      * @param setting
      * @return 
      */
-    public static RouteCommand RouteCommandAccessory(int address, boolean setting)
+    public static RouteCommand RouteCommandAccessory(int address, String protocol, boolean setting)
     {
         RouteCommand r = new RouteCommand(TYPE_ACCESSORY);
         
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
+        r.commandConfig.put(KEY_PROTOCOL, protocol);
         
         return r;
     }
@@ -207,6 +211,11 @@ public class RouteCommand implements java.io.Serializable
     public String getName()
     {
         return this.commandConfig.get(KEY_NAME);
+    }
+    
+    public String getProtocol()
+    {
+        return this.commandConfig.get(KEY_PROTOCOL);
     }
     
     public boolean getSetting()
@@ -351,7 +360,8 @@ public class RouteCommand implements java.io.Serializable
             case TYPE_ACCESSORY:
                 int address = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
                 boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString(KEY_SETTING));
-                routeCommand = RouteCommand.RouteCommandAccessory(address, setting);
+                String protocol = jsonObject.getJSONObject("state").optString(KEY_PROTOCOL, "");
+                routeCommand = RouteCommand.RouteCommandAccessory(address, protocol, setting);
                 break;
                 
             case TYPE_FEEDBACK:
@@ -392,9 +402,9 @@ public class RouteCommand implements java.io.Serializable
             default:
                 throw new IllegalArgumentException("Invalid command type in route command JSON.");
         }
-
+        
         // Adding delay if present
-        if (jsonObject.getJSONObject("state").has(KEY_DELAY))
+        if (jsonObject.getJSONObject("state").has(KEY_DELAY) && !jsonObject.getJSONObject("state").getString(KEY_DELAY).isEmpty())
         {
             int delay = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_DELAY));
             routeCommand.setDelay(delay);
@@ -402,7 +412,6 @@ public class RouteCommand implements java.io.Serializable
 
         return routeCommand;
     }
-    
     
     /**
      * Returns a simple string representation of this command
@@ -421,11 +430,17 @@ public class RouteCommand implements java.io.Serializable
             
             if (linkedAccessory != null)
             {
-                return linkedAccessory.toAccessorySettingString(this.getSetting()) + delayString;
+                return linkedAccessory.toAccessorySettingString(this.getSetting(), this.getProtocol()) + delayString;
             }
             else
             {
-                return Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + delayString;
+                String protocol = "";
+                if (this.getProtocol() != null && this.getProtocol().isEmpty())
+                {
+                    protocol = " " + this.getProtocol();
+                }
+                
+                return Integer.toString(this.getAddress()) + protocol + "," + (this.getSetting() ? "1" : "0") + delayString;
             }
         }
         else if (this.isStop() || this.isFunctionsOff() || this.isLightsOn() || this.isAutonomyLightsOn())
@@ -542,13 +557,42 @@ public class RouteCommand implements java.io.Serializable
             // Filter text - pretend it's just numbers
             String originalLine = line;
             
-            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "");
-            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL), "");
-            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH).toLowerCase(), "");
-            line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL).toLowerCase(), "");
+            // Input here could be any of: 
+            // switch 1,1 
+            // switch 1,turn
+            // switch 1 dcc,turn,200
+            // 1,1
+            // 1,turn
+            
             line = line.trim();
+            
+            // Switch 1 dcc
+            // Switch 1
+            // 1 dcc
+            // 1
+            String regex = "^([A-Za-z]*)\\s*([0-9]+)\\s*([A-Za-z0-9]*)$";
 
-            int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
+            // Compile the pattern
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(line.split(",")[0].trim());
+            
+            String accessoryTypePrefix = "";
+            String accessoryAddress = "";
+            String accessoryProtocol = "";
+
+            // Check if the input matches the pattern
+            if (matcher.matches())
+            {
+                // Extract and print the capturing groups
+                accessoryTypePrefix = matcher.group(1); // First capturing group
+                accessoryAddress = matcher.group(2); // Second capturing group
+                accessoryProtocol = matcher.group(3); // Third capturing group
+            }
+            
+            // Not needed because this info gets discarded
+            // line = line.replace(Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "");
+
+            int address = Math.abs(Integer.parseInt(accessoryAddress));
             
             boolean state;
             
@@ -569,7 +613,7 @@ public class RouteCommand implements java.io.Serializable
                 }
             }
             
-            RouteCommand rc = RouteCommand.RouteCommandAccessory(address, state);
+            RouteCommand rc = RouteCommand.RouteCommandAccessory(address, accessoryProtocol, state);
 
             if (line.split(",").length > 2)
             {

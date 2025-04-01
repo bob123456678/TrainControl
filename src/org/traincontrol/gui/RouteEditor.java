@@ -277,6 +277,7 @@ public class RouteEditor extends PositionAwareJFrame
         buttonGroup3 = new javax.swing.ButtonGroup();
         buttonGroup4 = new javax.swing.ButtonGroup();
         buttonGroup5 = new javax.swing.ButtonGroup();
+        buttonGroup6 = new javax.swing.ButtonGroup();
         routeName = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -320,6 +321,9 @@ public class RouteEditor extends PositionAwareJFrame
         delay = new javax.swing.JTextField();
         addToRouteButton1 = new javax.swing.JButton();
         jSeparator3 = new javax.swing.JSeparator();
+        MM2 = new javax.swing.JRadioButton();
+        DCC = new javax.swing.JRadioButton();
+        jLabel17 = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         s88Panel1 = new javax.swing.JPanel();
         jLabel18 = new javax.swing.JLabel();
@@ -625,7 +629,7 @@ public class RouteEditor extends PositionAwareJFrame
 
         jLabel11.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel11.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel11.setText("Accessory State");
+        jLabel11.setText("State");
 
         accState.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         accState.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Turnout", "Signal", "3-way Turnout" }));
@@ -683,6 +687,19 @@ public class RouteEditor extends PositionAwareJFrame
 
         jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
+        buttonGroup6.add(MM2);
+        MM2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        MM2.setSelected(true);
+        MM2.setText("MM2");
+
+        buttonGroup6.add(DCC);
+        DCC.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        DCC.setText("DCC");
+
+        jLabel17.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel17.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel17.setText("Protocol");
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -703,11 +720,16 @@ public class RouteEditor extends PositionAwareJFrame
                         .addComponent(accType3Way)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel11))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel11)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(accState, 0, 283, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(MM2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(DCC))
+                    .addComponent(jLabel17))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 12, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -736,14 +758,17 @@ public class RouteEditor extends PositionAwareJFrame
                         .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel8)
                             .addComponent(jLabel10)
-                            .addComponent(jLabel11))
+                            .addComponent(jLabel11)
+                            .addComponent(jLabel17))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(accAddr, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(accTypeTurnout)
                             .addComponent(accType3Way)
                             .addComponent(accTypeSignal)
-                            .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(accState, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(MM2)
+                            .addComponent(DCC)))
                     .addComponent(jSeparator3))
                 .addGap(36, 36, 36))
         );
@@ -1139,6 +1164,16 @@ public class RouteEditor extends PositionAwareJFrame
         JOptionPane.showMessageDialog(this, this.helpMessage);
     }//GEN-LAST:event_HelpActionPerformed
 
+    private String getProtocol()
+    {
+        if (this.DCC.isSelected())
+        {
+            return this.DCC.getText();
+        }
+        
+        return this.MM2.getText();
+    }
+    
     private void addAcc(boolean isConditional)
     {
         String newEntry = "\n";
@@ -1166,44 +1201,46 @@ public class RouteEditor extends PositionAwareJFrame
                     if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, false
+                            Accessory.accessoryType.SWITCH, address, getProtocol(), false
                         ) + delayString + "\n";
                         
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, false
+                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
                         );
                     }
                     else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, true
+                            Accessory.accessoryType.SWITCH, address, getProtocol(), true
                         ) + delayString + "\n";
                         
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, false
+                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
                         );               
                     }
                     else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, false
+                            Accessory.accessoryType.SWITCH, address, getProtocol(), false
                         ) + delayString + "\n";
                         
                         newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, true
+                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), true
                         );
                     }
                 }
                 else if (this.accTypeTurnout.isSelected())
                 {
                     newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, this.accState.getSelectedItem().toString().equals(TURNOUT)
+                            Accessory.accessoryType.SWITCH, address, getProtocol(),
+                            this.accState.getSelectedItem().toString().equals(TURNOUT)
                     ) + delayString;   
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
                     newEntry += MarklinAccessory.toAccessorySettingString(
-                            Accessory.accessoryType.SIGNAL, address, this.accState.getSelectedItem().toString().equals(RED)
+                            Accessory.accessoryType.SIGNAL, address, getProtocol(), 
+                            this.accState.getSelectedItem().toString().equals(RED)
                     ) + delayString;
                 }
                 
@@ -1220,6 +1257,7 @@ public class RouteEditor extends PositionAwareJFrame
             }
             catch (Exception e)
             {
+                this.parent.getModel().log(e);
                 JOptionPane.showMessageDialog(this, "Invalid address specified - must be an integer");
                 this.accAddr.setText("");
             }
@@ -1656,8 +1694,10 @@ public class RouteEditor extends PositionAwareJFrame
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JRadioButton DCC;
     private javax.swing.JButton Help;
     private javax.swing.JTabbedPane Logic;
+    private javax.swing.JRadioButton MM2;
     private javax.swing.JTextField accAddr;
     private javax.swing.JComboBox<String> accState;
     private javax.swing.JRadioButton accType3Way;
@@ -1675,6 +1715,7 @@ public class RouteEditor extends PositionAwareJFrame
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.ButtonGroup buttonGroup5;
+    private javax.swing.ButtonGroup buttonGroup6;
     private javax.swing.JButton cancelButton;
     private javax.swing.JCheckBox captureCommands;
     private javax.swing.JComboBox<String> commandTypeList;
@@ -1690,6 +1731,7 @@ public class RouteEditor extends PositionAwareJFrame
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;

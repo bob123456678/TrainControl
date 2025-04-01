@@ -18,6 +18,7 @@ public class MarklinAccessory extends Accessory
 {
     // List of available decoders
     public static enum accessoryDecoderType {MM2, DCC};
+    public static final accessoryDecoderType DEFAULT_IMPLICIT_PROTOCOL = accessoryDecoderType.MM2;
 
     // The type of decoder used
     private final accessoryDecoderType decoderType;
@@ -276,7 +277,7 @@ public class MarklinAccessory extends Accessory
     public String toAccessorySettingString()
     {
         // Add 1 because internal addresses start at 0
-        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, this.isSwitched());
+        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, this.decoderType.toString(), this.isSwitched());
     }
     
     /**
@@ -285,21 +286,24 @@ public class MarklinAccessory extends Accessory
      * @return 
      */
     @Override
-    public String toAccessorySettingString(boolean setting)
+    public String toAccessorySettingString(boolean setting, String protocol)
     {
-        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, setting);
+        return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, protocol, setting);
     }
     
     /**
      * Returns an accessory setting string for the given accessory type, address, and setting.
      * @param type
      * @param address
+     * @param protocol
      * @param setting
      * @return 
      */
-    public static String toAccessorySettingString(accessoryType type, int address, boolean setting)
-    {        
-        return accessoryTypeToPrettyString(type) + " " + address + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
+    public static String toAccessorySettingString(accessoryType type, int address, String protocol, boolean setting)
+    {                       
+        return accessoryTypeToPrettyString(type) + " " + address + 
+                getNameProtocolString(protocol)  
+                + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
     }
     
     /**
@@ -342,7 +346,7 @@ public class MarklinAccessory extends Accessory
      * @param type
      * @return 
      */
-    public static accessoryDecoderType getAccessoryDecoderType(String type)
+    public static accessoryDecoderType stringToAccessoryDecoderType(String type)
     {
         try
         {
@@ -353,5 +357,46 @@ public class MarklinAccessory extends Accessory
             // Handle cases where the input doesn't match any enum value
             return null;
         }
+    }
+    
+    /**
+     * Converts string to accessoryDecoderType - guarantees non-null result
+     * @param type
+     * @return 
+     */
+    public static accessoryDecoderType determineAccessoryDecoderType(String type)
+    {
+        accessoryDecoderType result = stringToAccessoryDecoderType(type);
+        
+        if (result == null) result = DEFAULT_IMPLICIT_PROTOCOL;
+        
+        return result;
+    }
+    
+    /**
+     * Gets the protocol string used for names
+     * @param protocol
+     * @return 
+     */
+    public static String getNameProtocolString(String protocol)
+    {
+        String protocolString = "";
+        accessoryDecoderType decoder = determineAccessoryDecoderType(protocol);
+        
+        if (decoder != DEFAULT_IMPLICIT_PROTOCOL) protocolString = " " + decoder.toString();
+        
+        return protocolString;
+    }
+    
+    /**
+     * Returns the accessory name with the protocol if appropriate
+     * MM2 Signal 1: "Signal 1"
+     * DCC Signal 1: "Signal 1 DCC"
+     * @return 
+     */
+    public String getNameWithProtocol()
+    {
+        return Accessory.accessoryTypeToPrettyString(this.getType()) + " " + Integer.toString(this.address) + 
+                getNameProtocolString(this.getDecoderType().toString());
     }
 }

@@ -18,6 +18,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
+import static org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType.DCC;
+import static org.traincontrol.marklin.MarklinAccessory.accessoryDecoderType.MM2;
 
 /**
  *
@@ -62,11 +64,14 @@ public class testRoutes
             RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE};
             RouteCommand.commandType randomType = types[random.nextInt(4)];
             
+            MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
+            MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
+            
             switch (randomType) {
                 case TYPE_ACCESSORY:
                     int address = random.nextInt(100);
                     boolean setting = random.nextBoolean();
-                    RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, setting);
+                    RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol.toString(), setting);
                     
                     if (random.nextBoolean())
                     {
@@ -114,7 +119,11 @@ public class testRoutes
         {
             int address = random.nextInt(100);
             boolean setting = random.nextBoolean();
-            RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, setting);
+            
+            MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
+            MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
+            
+            RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol.toString(), setting);
             conditions.add(accessoryCommand);
         }
         
@@ -140,18 +149,18 @@ public class testRoutes
         accessory4.setSwitched(true);
 
         // Generate command strings
-        String command1 = RouteCommand.RouteCommandAccessory(60, true).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
+        String command1 = RouteCommand.RouteCommandAccessory(60, MM2.toString(), true).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
         String command2 = RouteCommand.RouteCommandFeedback(10, true).toLine(null);
         String command3 = RouteCommand.RouteCommandFeedback(6, false).toLine(null);
-        String command4 = RouteCommand.RouteCommandAccessory(55, false).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
+        String command4 = RouteCommand.RouteCommandAccessory(55, MM2.toString(), false).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
         String command5 = RouteCommand.RouteCommandFeedback(4, true).toLine(null);
-        String command6 = RouteCommand.RouteCommandAccessory(50, true).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
-        String command7 = RouteCommand.RouteCommandAccessory(65, true).toLine(model.getAccessoryByAddress(65, MarklinAccessory.accessoryDecoderType.MM2));
-        String commandOpposite1 = RouteCommand.RouteCommandAccessory(60, false).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
+        String command6 = RouteCommand.RouteCommandAccessory(50, MM2.toString(), true).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
+        String command7 = RouteCommand.RouteCommandAccessory(65, MM2.toString(), true).toLine(model.getAccessoryByAddress(65, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite1 = RouteCommand.RouteCommandAccessory(60, MM2.toString(), false).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
         String commandOpposite2 = RouteCommand.RouteCommandFeedback(10, false).toLine(null); // False feedback
         String commandOpposite3 = RouteCommand.RouteCommandFeedback(6, true).toLine(null); // False feedback
-        String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, true).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
-        String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, MM2.toString(), true).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, MM2.toString(), false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
 
         // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 11,1
         String expr1 = "(" + command1 + "\n" + command2 + ")\nOR\n" + commandOpposite2;
@@ -291,7 +300,7 @@ public class testRoutes
             {
                 int address = 50 + RANDOM.nextInt(10);
                 boolean setting = RANDOM.nextBoolean();
-                String command = RouteCommand.RouteCommandAccessory(address, setting).toLine(model.getAccessoryByAddress(address, MarklinAccessory.accessoryDecoderType.MM2));
+                String command = RouteCommand.RouteCommandAccessory(address, MM2.toString(), setting).toLine(model.getAccessoryByAddress(address, MarklinAccessory.accessoryDecoderType.MM2));
                 sb.append(command);
             }
             else
@@ -383,8 +392,23 @@ public class testRoutes
         String json = model.exportRoutes();
         
         List<MarklinRoute> finalRoutes = model.parseRoutesFromJson(json);
+                
+        for (MarklinRoute current : currentRoutes)
+        {
+            for (MarklinRoute finalr : finalRoutes)
+            {
+                if (finalr.getName().equals(current.getName()) && !current.equals(json))
+                {
+                    System.out.println("EXPECTED: ");
+                    System.out.println(current);
+                    System.out.println("GOT: ");
+                    System.out.println(finalr);
+                    System.out.println("=========================");
+                }
+            }  
+        }
 
-        assert currentRoutes.equals(finalRoutes);
+        assertTrue(currentRoutes.equals(finalRoutes));
     }
     
     @Test
@@ -426,10 +450,16 @@ public class testRoutes
         assertEquals(MarklinAccessory.stringAccessorySettingToSetting("Green "), false);
         assertEquals(MarklinAccessory.stringAccessorySettingToSetting("Straight "), false);
         
-        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 1, true), "Switch 1,turn");
-        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 3, false), "Switch 3,straight");
-        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 2, false), "Signal 2,green");
-        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 4, true), "Signal 4,red");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 1, MM2.toString(), true), "Switch 1,turn");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 3, MM2.toString(), false), "Switch 3,straight");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 2, MM2.toString(), false), "Signal 2,green");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 4, MM2.toString(), true), "Signal 4,red");
+        
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 1, DCC.toString(), false), "Switch 1 DCC,straight");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, 3, DCC.toString(), true), "Switch 3 DCC,turn");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 5, DCC.toString(), false), "Signal 5 DCC,green");
+        assertEquals(MarklinAccessory.toAccessorySettingString(Accessory.accessoryType.SIGNAL, 6, DCC.toString(), true), "Signal 6 DCC,red");
+        
         
         assertEquals(MarklinAccessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH), "Switch");
         assertEquals(MarklinAccessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL), "Signal");
@@ -478,8 +508,8 @@ public class testRoutes
         List<MarklinRoute> finalRoutes = model.parseRoutesFromJson(json);
 
         // Routes in JSON should equal routes in 
-        assert model.getRoutes().equals(finalRoutes);
-        assert !model.getRoutes().equals(currentRoutes);
+        assertTrue(model.getRoutes().equals(finalRoutes));
+        assertFalse(!model.getRoutes().equals(currentRoutes));
         
         // Actually import the routes into the model
         model.importRoutes(json);

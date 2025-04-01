@@ -339,13 +339,14 @@ public class MarklinRoute extends Route
     /**
      * Adds an accessory condition to the route - legacy - all conditions will be ANDed
      * @param address
+     * @param protocol
      * @param setting
      */
-    public final void addConditionAccessory(int address, boolean setting)
+    public final void addConditionAccessory(int address, String protocol, boolean setting)
     {
         List<RouteCommand> routeConditions = NodeExpression.toList(conditions);
         
-        routeConditions.add(RouteCommand.RouteCommandAccessory(address, setting));
+        routeConditions.add(RouteCommand.RouteCommandAccessory(address, protocol, setting));
         
         conditions = NodeExpression.fromList(routeConditions);
     }
@@ -625,7 +626,7 @@ public class MarklinRoute extends Route
             if (r.isAccessory())
             {
                 // Pass through the accessory so we can pretty print its type
-                out += r.toLine(network.getAccessoryByAddress(r.getAddress(), MarklinAccessory.determineDecoderType(r.getAddress() - 1)));
+                out += r.toLine(network.getAccessoryByAddress(r.getAddress(), MarklinAccessory.determineAccessoryDecoderType(r.getProtocol())));
             }
             else
             {
