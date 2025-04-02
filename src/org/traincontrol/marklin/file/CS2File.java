@@ -58,7 +58,16 @@ public final class CS2File
      */
     public void setDefaultLayoutDataLoc()
     {
-        this.layoutDataLoc = "http://" + this.IP;
+        this.layoutDataLoc = getDefaultLayoutDataLoc();
+    }
+    
+    /**
+     * Gets the default data location
+     * @return 
+     */
+    public String getDefaultLayoutDataLoc()
+    {
+        return "http://" + this.IP;
     }
     
     /**
@@ -483,7 +492,7 @@ public final class CS2File
                         Accessory.accessoryType.SWITCH :
                         Accessory.accessoryType.SIGNAL, 
                     m.get("dectyp") != null ?
-                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase()) :
+                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
                         Accessory.accessoryDecoderType.MM2,
                     m.get("name"), 
                     !"0".equals(m.get("stellung")), 
@@ -1382,6 +1391,21 @@ public final class CS2File
             
             List<Map<String, String> > l = parseFile(fetchURL(url));
             
+            // Read accessory info for CS accessories
+            List<MarklinAccessory> accDB = new ArrayList<>();
+            
+            if (this.getDefaultLayoutDataLoc().equals(this.layoutDataLoc) && control.isCS3())
+            {
+                accDB = parseMags(parseFile(fetchURL(getMagURL())));
+            }
+            
+            Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+                .collect(Collectors.toMap(
+                        MarklinAccessory::getAddress, 
+                        accessory -> accessory,
+                        (existing, replacement) -> existing // uncouplers will have the same ID
+                ));
+            
             int maxX = 0;
             int maxY = 0;
             
@@ -1456,7 +1480,10 @@ public final class CS2File
                     }
                     catch (NumberFormatException e)
                     {
-                        logMessage(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
+                        if (!type.equals("text"))
+                        {
+                            logMessage(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
+                        }
                     }
                     
                     Integer address = rawAddress;
@@ -1491,6 +1518,13 @@ public final class CS2File
                     
                     Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
                     
+                    // Read protocol from mags file - only works on CS2
+                    if (addressMap.get(rawAddress) != null)
+                    {
+                        protocol = addressMap.get(rawAddress).getDecoderType();
+                    }
+                    
+                    // Custom - read protocol from the local layout files
                     if (m.get("prot") != null)
                     {
                         if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)

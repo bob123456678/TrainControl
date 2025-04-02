@@ -162,7 +162,7 @@ public class testRoutes
         String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, MM2, true).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
         String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, MM2, false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
 
-        // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 11,1
+        // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 10,0
         String expr1 = "(" + command1 + "\n" + command2 + ")\nOR\n" + commandOpposite2;
         NodeExpression node1 = NodeExpression.fromTextRepresentation(expr1, model);
         assertTrue(node1.evaluate(model));

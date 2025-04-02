@@ -274,7 +274,7 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
 * Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
-* Accessories downloaded from CS2/CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
+* Accessories downloaded from CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
 
 ## Running TrainControl
 
@@ -317,6 +317,7 @@ Requires JDK 1.8+ and the following libraries:
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
         - Accessory tooltips will now show the decoder type
+        - Layouts downloaded from the CS2 will now recognize DCC accessories
     - Accessories
         - Added support for DCC accessories (up to address 2048)
         - Added support for MM2 accessories with addresses 257-320
@@ -326,6 +327,7 @@ Requires JDK 1.8+ and the following libraries:
     - Routes
         - Accessory commands and accessory conditions can now reference DCC accessories, e.g. `Switch 1 DCC,turn` vs `Switch 1,turn`
         - DCC accessories are now recognized in routes imported from the CS3
+        - Routes downloaded from the CS2 will now recognize DCC accessories
     - Autonomy
         - Edge configurations can now contain DCC accessories
     - The IP of the Central Station is now printed to the log at startup
