@@ -702,11 +702,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Process the input when OK is clicked
                 if (result == JOptionPane.OK_OPTION)
                 {
+                    this.snapshotLayout();
+                    
                     // Retrieve the address from LayoutEditorAddressPopup and use it
                     int newAddress = Integer.parseInt(addressPopup.getAddress());
                     lc.setLogicalAddress(newAddress, addressPopup.getProtocol(), addressPopup.getGreenButton().isSelected());
-                    
-                    this.snapshotLayout();
                     
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                     lc.setProtocol(addressPopup.getProtocol());
