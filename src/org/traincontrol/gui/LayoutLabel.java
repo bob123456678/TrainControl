@@ -289,7 +289,7 @@ public final class LayoutLabel extends JLabel
                             
                             if (this.component.getAccessory() != null)
                             {
-                                protocol = MarklinAccessory.getNameProtocolString(this.component.getAccessory().getDecoderType().toString());
+                                protocol = MarklinAccessory.getProtocolStringForName(this.component.getAccessory().getDecoderType().toString());
                             }
                             
                             this.setToolTipText(this.component.toSimpleString() + protocol);

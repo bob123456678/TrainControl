@@ -116,12 +116,12 @@ public class Edge
             // rc expects Switch 1,state
             RouteCommand rc = RouteCommand.fromLine(accessory + "," + action, true);
             
-            // Parsd data
+            // Parsed data
             Integer address = rc.getAddress();
-            String protocol = rc.getProtocol();
+            Accessory.accessoryDecoderType protocol = rc.getProtocol();
             Accessory.accessoryType type = Accessory.stringToAccessoryType(rc.getAccessoryType());
             
-            Accessory existing = control.getAccessoryByAddress(address, MarklinAccessory.determineAccessoryDecoderType(protocol));
+            Accessory existing = control.getAccessoryByAddress(address, protocol);
             
             if (existing != null && existing.getType() != type)
             {
@@ -130,11 +130,11 @@ public class Edge
             
             if (type == Accessory.accessoryType.SIGNAL)
             {
-                control.newSignal(address, MarklinAccessory.determineAccessoryDecoderType(protocol), false);
+                control.newSignal(address, protocol, false);
             }
             else if (type == Accessory.accessoryType.SWITCH)
             {
-                control.newSwitch(address, MarklinAccessory.determineAccessoryDecoderType(protocol), false);
+                control.newSwitch(address, protocol, false);
             }
             else
             {

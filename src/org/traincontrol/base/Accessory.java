@@ -353,6 +353,53 @@ abstract public class Accessory
      */
     public abstract String toAccessorySettingString(boolean state, String protocol);
     
+        /**
+     * Converts a string to accessoryDecoderType
+     * @param type - null if invalid
+     * @return 
+     */
+    public static accessoryDecoderType stringToAccessoryDecoderType(String type)
+    {
+        try
+        {
+            return accessoryDecoderType.valueOf(type.toUpperCase());
+        } 
+        catch (IllegalArgumentException | NullPointerException e)
+        {
+            // Handle cases where the input doesn't match any enum value
+            return null;
+        }
+    }
+    
+    /**
+     * Converts string to accessoryDecoderType - guarantees non-null result defaulting to DEFAULT_IMPLICIT_PROTOCOL
+     * @param type
+     * @return 
+     */
+    public static accessoryDecoderType determineAccessoryDecoderType(String type)
+    {
+        accessoryDecoderType result = stringToAccessoryDecoderType(type);
+        
+        if (result == null) result = DEFAULT_IMPLICIT_PROTOCOL;
+        
+        return result;
+    }
+    
+    /**
+     * Gets the protocol string used for names - blank if default
+     * @param protocol
+     * @return 
+     */
+    public static String getProtocolStringForName(String protocol)
+    {
+        String protocolString = "";
+        accessoryDecoderType decoder = determineAccessoryDecoderType(protocol);
+        
+        if (decoder != DEFAULT_IMPLICIT_PROTOCOL) protocolString = " " + decoder.toString();
+        
+        return protocolString;
+    }
+    
     @Override
     public String toString()
     {

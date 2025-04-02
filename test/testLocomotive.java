@@ -12,6 +12,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Accessory;
 import static org.traincontrol.marklin.MarklinLocomotive.getMaxNumF;
 
 /**
@@ -117,6 +118,23 @@ public class testLocomotive
         assertEquals(true, l.getF(0));
         l.lightsOff();
         assertEquals(false, l.getF(0));
+        
+        // Switches
+        l.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, true);
+        
+        assertTrue(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
+        
+        l.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false);
+        
+        assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
+        
+        l.setAccessoryState(1, Accessory.accessoryDecoderType.DCC, true);
+
+        assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
+        assertTrue(model.getAccessoryState(1, Accessory.accessoryDecoderType.DCC));
+
+        l.setAccessoryState(1, Accessory.accessoryDecoderType.DCC, false);
+        assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.DCC));
     }
        
     /**

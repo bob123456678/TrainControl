@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
 
 /**
@@ -224,7 +225,7 @@ public class MarklinRoute extends Route
                             int idd = rc.getAddress();
                             boolean state = rc.getSetting();
 
-                            this.network.setAccessoryState(idd, MarklinAccessory.determineAccessoryDecoderType(rc.getProtocol()), state);
+                            this.network.setAccessoryState(idd, rc.getProtocol(), state);
                         }
                         else if (rc.isStop())
                         {                        
@@ -342,7 +343,7 @@ public class MarklinRoute extends Route
      * @param protocol
      * @param setting
      */
-    public final void addConditionAccessory(int address, String protocol, boolean setting)
+    public final void addConditionAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
         List<RouteCommand> routeConditions = NodeExpression.toList(conditions);
         
@@ -600,7 +601,7 @@ public class MarklinRoute extends Route
             if (r.isAccessory())
             {
                 // Pass through the accessory so we can pretty print its type
-                out += r.toLine(network.getAccessoryByAddress(r.getAddress(), MarklinAccessory.determineAccessoryDecoderType(r.getProtocol())));
+                out += r.toLine(network.getAccessoryByAddress(r.getAddress(), r.getProtocol()));
             }
             else
             {

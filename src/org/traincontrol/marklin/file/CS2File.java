@@ -473,7 +473,7 @@ public final class CS2File
             {
                 if (m.get("id") == null || m.get("typ") == null)
                 {
-                    control.log("Invalid CS2 accessory:" + m.toString());
+                    control.log("Invalid CS2 accessory: " + m.toString());
                     continue;
                 }
                 
@@ -602,16 +602,6 @@ public final class CS2File
                     // Handle 3-way switches and signals
                     if (id > 0)
                     {
-                        if (setting >= 2)
-                        {
-                            r.addAccessory(id + 1, Accessory.accessoryDecoderType.MM2.toString(), setting == 2);
-                            
-                            if (delay > 0)
-                            {
-                                r.setDelay(id + 1, delay);
-                            }
-                        }
-                        
                         // Determine the decoder type
                         Accessory.accessoryDecoderType accType = Accessory.accessoryDecoderType.MM2;
                         
@@ -620,7 +610,17 @@ public final class CS2File
                             accType = addressMap.get(id).getDecoderType();
                         }
                         
-                        r.addAccessory(id, accType.toString(), setting != 1 && setting != 3);
+                        if (setting >= 2)
+                        {
+                            r.addAccessory(id + 1, accType, setting == 2);
+                            
+                            if (delay > 0)
+                            {
+                                r.setDelay(id + 1, delay);
+                            }
+                        }
+                        
+                        r.addAccessory(id, accType, setting != 1 && setting != 3);
                         
                         // Only set the delay once for three-way switches
                         if (delay > 0 && setting < 2)
@@ -809,19 +809,15 @@ public final class CS2File
                             // System.out.println(accessory);
                             int address = accessory.getInt("address");
                             
-                            String protocol = accessory.getString("prot");
+                            Accessory.accessoryDecoderType protocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL;
                             
-                            if ("mm".equals(protocol))
+                            if ("mm".equals(accessory.getString("prot")))
                             {
-                                protocol = Accessory.accessoryDecoderType.MM2.toString();
+                                protocol = Accessory.accessoryDecoderType.MM2;
                             }
-                            else if ("dcc".equals(protocol))
+                            else if ("dcc".equals(accessory.getString("prot")))
                             {
-                                protocol = Accessory.accessoryDecoderType.DCC.toString();
-                            }
-                            else
-                            {
-                                protocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
+                                protocol = Accessory.accessoryDecoderType.DCC;
                             }
                             
                             // stellung 0 - key not included

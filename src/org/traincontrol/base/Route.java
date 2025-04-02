@@ -48,7 +48,7 @@ abstract public class Route
      * @param protocol
      * @param setting
      */
-    public void addAccessory(int address, String protocol, boolean setting)
+    public void addAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
         this.route.add(RouteCommand.RouteCommandAccessory(address, protocol, setting));
     }
@@ -172,7 +172,7 @@ abstract public class Route
         if (rc.isAccessory())
         {
             // TODO rc should maintain the accessory type
-            return control.getAccessoryState(rc.getAddress(), MarklinAccessory.determineAccessoryDecoderType(rc.getProtocol())) == rc.getSetting();
+            return control.getAccessoryState(rc.getAddress(), rc.getProtocol()) == rc.getSetting();
         }
         else if (rc.isFeedback())
         {

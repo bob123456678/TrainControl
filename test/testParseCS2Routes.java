@@ -98,19 +98,16 @@ public class testParseCS2Routes
     public void testDCCRoute()
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
-        
-        System.out.println(r);
-                System.out.println(r.getRoute());
 
         for (RouteCommand rc: r.getRoute())
         {
             if (rc.getAddress() == 119)
             {
-                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2.toString());
+                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
             }
             else if (rc.getAddress() == 121)
             {
-                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC.toString());
+                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
             }
         }
     }
@@ -121,7 +118,17 @@ public class testParseCS2Routes
         
         for (RouteCommand rc: r.getRoute())
         {
-            assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2.toString());
+            assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+        }
+    }
+    
+     public void testMM2RouteMags()
+    {
+        MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
+        
+        for (RouteCommand rc: r.getRoute())
+        {
+            assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
         }
     }
     

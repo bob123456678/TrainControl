@@ -67,13 +67,13 @@ public class RouteCommand implements java.io.Serializable
      * @param setting
      * @return 
      */
-    public static RouteCommand RouteCommandAccessory(int address, String protocol, boolean setting)
+    public static RouteCommand RouteCommandAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
         RouteCommand r = new RouteCommand(TYPE_ACCESSORY);
         
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
-        r.commandConfig.put(KEY_PROTOCOL, protocol);
+        r.commandConfig.put(KEY_PROTOCOL, protocol.toString());
                 
         return r;
     }
@@ -215,9 +215,9 @@ public class RouteCommand implements java.io.Serializable
         return this.commandConfig.get(KEY_NAME);
     }
     
-    public String getProtocol()
+    public Accessory.accessoryDecoderType getProtocol()
     {
-        return this.commandConfig.get(KEY_PROTOCOL);
+        return Accessory.determineAccessoryDecoderType(this.commandConfig.get(KEY_PROTOCOL));
     }
     
     public boolean getSetting()
@@ -368,7 +368,7 @@ public class RouteCommand implements java.io.Serializable
                 int address = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
                 boolean setting = Boolean.parseBoolean(jsonObject.getJSONObject("state").getString(KEY_SETTING));
                 String protocol = jsonObject.getJSONObject("state").optString(KEY_PROTOCOL, "");
-                routeCommand = RouteCommand.RouteCommandAccessory(address, protocol, setting);
+                routeCommand = RouteCommand.RouteCommandAccessory(address, Accessory.determineAccessoryDecoderType(protocol), setting);
                 break;
                 
             case TYPE_FEEDBACK:
@@ -437,14 +437,15 @@ public class RouteCommand implements java.io.Serializable
             
             if (linkedAccessory != null)
             {
-                return linkedAccessory.toAccessorySettingString(this.getSetting(), this.getProtocol()) + delayString;
+                return linkedAccessory.toAccessorySettingString(this.getSetting(), this.getProtocol().toString()) + delayString;
             }
             else
             {
                 String protocol = "";
-                if (this.getProtocol() != null && this.getProtocol().isEmpty())
+                
+                if (this.getProtocol() != null && this.getProtocol() != Accessory.DEFAULT_IMPLICIT_PROTOCOL)
                 {
-                    protocol = " " + this.getProtocol();
+                    protocol = " " + this.getProtocol().toString();
                 }
                 
                 return Integer.toString(this.getAddress()) + protocol + "," + (this.getSetting() ? "1" : "0") + delayString;
@@ -602,9 +603,9 @@ public class RouteCommand implements java.io.Serializable
 
             int address = Math.abs(Integer.parseInt(accessoryAddress));
             
-            // Set default protocol
-            if (accessoryProtocol.isEmpty()) accessoryProtocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL.toString();
-            
+            // Validate & default protocol
+            Accessory.accessoryDecoderType decoderType = Accessory.determineAccessoryDecoderType(accessoryProtocol);
+                        
             boolean state;
             
             // If parsing the string fails, treat it as a number
@@ -624,7 +625,7 @@ public class RouteCommand implements java.io.Serializable
                 }
             }
             
-            RouteCommand rc = RouteCommand.RouteCommandAccessory(address, accessoryProtocol, state);
+            RouteCommand rc = RouteCommand.RouteCommandAccessory(address, decoderType, state);
 
             if (line.split(",").length > 2)
             {

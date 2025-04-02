@@ -71,7 +71,7 @@ public class testRoutes
                 case TYPE_ACCESSORY:
                     int address = random.nextInt(100);
                     boolean setting = random.nextBoolean();
-                    RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol.toString(), setting);
+                    RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol, setting);
                     
                     if (random.nextBoolean())
                     {
@@ -123,7 +123,7 @@ public class testRoutes
             MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
             
-            RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol.toString(), setting);
+            RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol, setting);
             conditions.add(accessoryCommand);
         }
         
@@ -149,18 +149,18 @@ public class testRoutes
         accessory4.setSwitched(true);
 
         // Generate command strings
-        String command1 = RouteCommand.RouteCommandAccessory(60, MM2.toString(), true).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
+        String command1 = RouteCommand.RouteCommandAccessory(60, MM2, true).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
         String command2 = RouteCommand.RouteCommandFeedback(10, true).toLine(null);
         String command3 = RouteCommand.RouteCommandFeedback(6, false).toLine(null);
-        String command4 = RouteCommand.RouteCommandAccessory(55, MM2.toString(), false).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
+        String command4 = RouteCommand.RouteCommandAccessory(55, MM2, false).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
         String command5 = RouteCommand.RouteCommandFeedback(4, true).toLine(null);
-        String command6 = RouteCommand.RouteCommandAccessory(50, MM2.toString(), true).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
-        String command7 = RouteCommand.RouteCommandAccessory(65, MM2.toString(), true).toLine(model.getAccessoryByAddress(65, MarklinAccessory.accessoryDecoderType.MM2));
-        String commandOpposite1 = RouteCommand.RouteCommandAccessory(60, MM2.toString(), false).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
+        String command6 = RouteCommand.RouteCommandAccessory(50, MM2, true).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
+        String command7 = RouteCommand.RouteCommandAccessory(65, MM2, true).toLine(model.getAccessoryByAddress(65, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite1 = RouteCommand.RouteCommandAccessory(60, MM2, false).toLine(model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2));
         String commandOpposite2 = RouteCommand.RouteCommandFeedback(10, false).toLine(null); // False feedback
         String commandOpposite3 = RouteCommand.RouteCommandFeedback(6, true).toLine(null); // False feedback
-        String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, MM2.toString(), true).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
-        String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, MM2.toString(), false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite4 = RouteCommand.RouteCommandAccessory(55, MM2, true).toLine(model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2));
+        String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, MM2, false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
 
         // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 11,1
         String expr1 = "(" + command1 + "\n" + command2 + ")\nOR\n" + commandOpposite2;
@@ -300,7 +300,7 @@ public class testRoutes
             {
                 int address = 50 + RANDOM.nextInt(10);
                 boolean setting = RANDOM.nextBoolean();
-                String command = RouteCommand.RouteCommandAccessory(address, MM2.toString(), setting).toLine(model.getAccessoryByAddress(address, MarklinAccessory.accessoryDecoderType.MM2));
+                String command = RouteCommand.RouteCommandAccessory(address, MM2, setting).toLine(model.getAccessoryByAddress(address, MarklinAccessory.accessoryDecoderType.MM2));
                 sb.append(command);
             }
             else

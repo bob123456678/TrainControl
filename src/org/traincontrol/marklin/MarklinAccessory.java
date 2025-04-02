@@ -298,7 +298,7 @@ public class MarklinAccessory extends Accessory
     public static String toAccessorySettingString(accessoryType type, int address, String protocol, boolean setting)
     {                       
         return accessoryTypeToPrettyString(type) + " " + address + 
-                getNameProtocolString(protocol)  
+                getProtocolStringForName(protocol)  
                 + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
     }
     
@@ -318,53 +318,6 @@ public class MarklinAccessory extends Accessory
             "UID: " + Conversion.intToHex(this.UID) + "\n" +
             "Address: " + Conversion.intToHex(this.address);
     }
-        
-    /**
-     * Converts a string to accessoryDecoderType
-     * @param type - null if invalid
-     * @return 
-     */
-    public static accessoryDecoderType stringToAccessoryDecoderType(String type)
-    {
-        try
-        {
-            return accessoryDecoderType.valueOf(type.toUpperCase());
-        } 
-        catch (IllegalArgumentException | NullPointerException e)
-        {
-            // Handle cases where the input doesn't match any enum value
-            return null;
-        }
-    }
-    
-    /**
-     * Converts string to accessoryDecoderType - guarantees non-null result defaulting to DEFAULT_IMPLICIT_PROTOCOL
-     * @param type
-     * @return 
-     */
-    public static accessoryDecoderType determineAccessoryDecoderType(String type)
-    {
-        accessoryDecoderType result = stringToAccessoryDecoderType(type);
-        
-        if (result == null) result = DEFAULT_IMPLICIT_PROTOCOL;
-        
-        return result;
-    }
-    
-    /**
-     * Gets the protocol string used for names - blank if default
-     * @param protocol
-     * @return 
-     */
-    public static String getNameProtocolString(String protocol)
-    {
-        String protocolString = "";
-        accessoryDecoderType decoder = determineAccessoryDecoderType(protocol);
-        
-        if (decoder != DEFAULT_IMPLICIT_PROTOCOL) protocolString = " " + decoder.toString();
-        
-        return protocolString;
-    }
     
     /**
      * Gets the standardized accessory name along with the protocol
@@ -378,7 +331,7 @@ public class MarklinAccessory extends Accessory
     public static String getNameWithProtocol(int address, accessoryType type, accessoryDecoderType decoder)
     {
         return Accessory.accessoryTypeToPrettyString(type) + " " + Integer.toString(address) + 
-                getNameProtocolString(decoder.toString());
+                getProtocolStringForName(decoder.toString());
     }
     
     /**
