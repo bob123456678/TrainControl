@@ -14,7 +14,7 @@ The `MarklinControlStation` class is your gateway to the CS2/CS3's database of l
 
 Note that as of v2.3.2, all TrainControl code has been moved into the org.traincontrol package.  Custom code using older versions would therefore need to be updated.
 
-Refer to the [Java docs](assets/javadoc/index.html) for class and method details.
+Refer to the Java docs for class and method details.
 
 ## Sample Layout
 
@@ -34,13 +34,12 @@ The code below implements this logic, along with some additional commands to tur
     while (true)
     {
         // Fetch the locomotive at Station 1
-        // Replace "Loc1" with the CS2/CS3 name of your locomotive
         data.getLocByName("Loc1")
                 // Flip some signals
-                .setAccessoryState(1, true)
-                .setAccessoryState(2, false)
-                // Turnout on the way back in
-                .setAccessoryState(10, true)
+                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, true)
+                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
+                // Turnout
+                .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, true)
                 // Wait 2-20 seconds
                 .delay(2,20)
                 // Turn on locomotive sound and lights
@@ -49,8 +48,8 @@ The code below implements this logic, along with some additional commands to tur
                 // Start rolling
                 .setSpeed(40)
                 .waitForOccupiedFeedback("3")
-                // Destination signal should now be red
-                .setAccessoryState(1, false)
+                // Signal should now be red
+                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
                 // Slow down
                 .setSpeed(20)
                 // Stop the locomotive when it arrives at the station
@@ -58,15 +57,15 @@ The code below implements this logic, along with some additional commands to tur
                 .waitForOccupiedFeedback("1")
                 .setSpeed(0);
 
-        // Once Loc1 is done, fetch the locomotive at Station 2
+        // Fetch the locomotive at Station 2
         data.getLocByName("Loc2")
-                // Sanity check - do not proceed unless Loc1 is at its station
+                // Do not proceed unless Loc1 is at its station
                 .waitForOccupiedFeedback("1")
                 // Flip some signals
-                .setAccessoryState(1, false)
-                .setAccessoryState(2, true)
-                // Go straight on the way back in
-                .setAccessoryState(10, false)
+                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
+                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, true)
+                // Go straight
+                .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, false)
                 // Wait 2-20 seconds
                 .delay(2,20)
                 // Turn on locomotive sound and lights
@@ -75,8 +74,8 @@ The code below implements this logic, along with some additional commands to tur
                 // Start rolling
                 .setSpeed(40)
                 .waitForOccupiedFeedback("3")
-                // Destination signal should now be red
-                .setAccessoryState(2, false)
+                // Signal should now be red
+                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
                 // Slow down
                 .setSpeed(20)
                 // Stop the locomotive when it arrives at the station
@@ -431,6 +430,20 @@ Unless the `speed` is specified within the `loc` array, each locomotive's prefer
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking on any point within the graph UI.
 
+## Speed adjustments
+
+From v2.4.8, the `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
+
+The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
+
+## Ensuring network stability 
+
+From v2.4.7, the `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
+
+If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
+
+The lowest allowed nonzero threshold is 100ms.
+
 # Timetables
 
 From v2.1.0, TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
@@ -445,3 +458,11 @@ From v2.1.5, you can prevent locomotives from stopping at a given station by add
 `excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
 
 However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
+
+# Displaying locomotive locations on track diagrams
+
+From v2.4.9, if you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
+
+# Locomotive concurrency
+
+From v2.4.11, use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
