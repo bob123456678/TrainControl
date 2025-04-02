@@ -65,7 +65,7 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
 
 - If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
-    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure
+    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure.  You can open this location from "Show Current Data Source" in the Layouts menu.
     - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
     - The static local layout will now be shown in the Layout tab
 - Otherwise, to create a new layout:
@@ -111,6 +111,10 @@ The graph UI will show you which routes are active, which edges are locked, and 
 In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list of paths, subject to the constraints and protections of the graph model.
 
 <img src="assets/timetable.png?raw=true" alt="UI screenshot: timetable" width="500">
+
+From v2.4.12, autonomy / point-to-point operation can also be controlled directly from track diagrams through specially named labels.
+
+<img src="assets/easyauto.png?raw=true" alt="UI screenshot: easy autonomy" width="500">
 
 **Statistics**
 
