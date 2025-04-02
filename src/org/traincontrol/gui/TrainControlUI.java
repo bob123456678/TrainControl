@@ -5174,7 +5174,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         editLayoutButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         editLayoutButton.setText("Edit");
-        editLayoutButton.setToolTipText("Launch the layout editor (Windows only)");
+        editLayoutButton.setToolTipText("Launch the layout editor");
         editLayoutButton.setFocusable(false);
         editLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

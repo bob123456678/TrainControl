@@ -1394,7 +1394,7 @@ public final class CS2File
             // Read accessory info for CS accessories
             List<MarklinAccessory> accDB = new ArrayList<>();
             
-            if (this.getDefaultLayoutDataLoc().equals(this.layoutDataLoc) && control.isCS3())
+            if (this.getDefaultLayoutDataLoc().equals(this.layoutDataLoc) && !control.isCS3())
             {
                 accDB = parseMags(parseFile(fetchURL(getMagURL())));
             }

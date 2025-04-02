@@ -3391,7 +3391,7 @@
                   <Font name="Segoe UI" size="12" style="1"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Edit"/>
-                <Property name="toolTipText" type="java.lang.String" value="Launch the layout editor (Windows only)"/>
+                <Property name="toolTipText" type="java.lang.String" value="Launch the layout editor"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
               <Events>
