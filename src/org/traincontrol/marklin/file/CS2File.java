@@ -172,6 +172,15 @@ public final class CS2File
     }
     
     /**
+     * CS2 accessory config file
+     * @return 
+     */
+    public String getMagURL()
+    {
+        return "http://" + this.IP + "/config/magnetartikel.cs2";
+    }
+    
+    /**
      * Layout index file
      * @return 
      */
@@ -427,7 +436,9 @@ public final class CS2File
     
     public List<MarklinRoute> parseRoutes() throws Exception
     {
-        return parseRoutes(parseFile(fetchURL(getRouteURL())));
+        return parseRoutes(parseFile(fetchURL(getRouteURL())), 
+            parseMags(parseFile(fetchURL(getMagURL())))
+        );
     }
     
     public List<MarklinRoute> parseRoutesCS3() throws Exception
@@ -446,14 +457,63 @@ public final class CS2File
     }
     
     /**
-     * Reads a route database
+     * Reads a CS2 accessory database
+     * Unsure if this is complete - we only care about checking if an address is DCC
      * @param l parsed data
      * @return list of routes
      * @throws Exception 
      */
-    public List<MarklinRoute> parseRoutes(List<Map<String, String> > l) throws Exception
+    public List<MarklinAccessory> parseMags(List<Map<String, String> > l) throws Exception
+    {        
+        List<MarklinAccessory> out = new ArrayList<>();
+        
+        for (Map<String, String> m : l)
+        {
+            if ("artikel".equals(m.get("_type")))
+            {
+                if (m.get("id") == null || m.get("typ") == null)
+                {
+                    control.log("Invalid CS2 accessory:" + m.toString());
+                    continue;
+                }
+                
+                MarklinAccessory acc = new MarklinAccessory(control, 
+                    Integer.parseInt(m.get("id")),
+                    m.get("typ").contains("weiche") ? 
+                        Accessory.accessoryType.SWITCH :
+                        Accessory.accessoryType.SIGNAL, 
+                    m.get("dectyp") != null ?
+                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase()) :
+                        Accessory.accessoryDecoderType.MM2,
+                    m.get("name"), 
+                    !"0".equals(m.get("stellung")), 
+                    0);
+                            
+                out.add(acc);       
+             }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * Reads a CS2 route database
+     * @param l parsed data
+     * @param accDB
+     * @return list of routes
+     * @throws Exception 
+     */
+    public List<MarklinRoute> parseRoutes(List<Map<String, String> > l, List<MarklinAccessory> accDB) throws Exception
     {        
         List<MarklinRoute> out = new ArrayList<>();
+        
+        // Easily map to ID
+        Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+            .collect(Collectors.toMap(
+                    MarklinAccessory::getAddress, 
+                    accessory -> accessory,
+                    (existing, replacement) -> existing // uncouplers will have the same ID
+            ));
         
         for (Map<String, String> m : l)
         {
@@ -552,7 +612,15 @@ public final class CS2File
                             }
                         }
                         
-                        r.addAccessory(id, Accessory.accessoryDecoderType.MM2.toString(), setting != 1 && setting != 3);
+                        // Determine the decoder type
+                        Accessory.accessoryDecoderType accType = Accessory.accessoryDecoderType.MM2;
+                        
+                        if (addressMap.get(id) != null)
+                        {
+                            accType = addressMap.get(id).getDecoderType();
+                        }
+                        
+                        r.addAccessory(id, accType.toString(), setting != 1 && setting != 3);
                         
                         // Only set the delay once for three-way switches
                         if (delay > 0 && setting < 2)
