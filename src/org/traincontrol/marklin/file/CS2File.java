@@ -1480,7 +1480,7 @@ public final class CS2File
                     }
                     catch (NumberFormatException e)
                     {
-                        if (!type.equals("text"))
+                        if (!"text".equals(type))
                         {
                             logMessage(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
                         }
