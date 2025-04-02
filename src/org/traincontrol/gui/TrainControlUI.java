@@ -11214,6 +11214,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void layoutEditingComplete()
     {
+        this.editLayoutButton.setEnabled(false);
+
         this.model.syncWithCS2();
         
         // Store previously selected page

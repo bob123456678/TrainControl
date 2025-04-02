@@ -1059,8 +1059,11 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
-        parent.layoutEditingComplete();
-
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            parent.layoutEditingComplete();
+        }));
+        
         this.dispose();    
     }
           
@@ -1304,7 +1307,12 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             layout.saveChanges(null, false);
-            parent.layoutEditingComplete();
+            
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                parent.layoutEditingComplete();
+            }));
+            
             dispose();
         }
         catch (Exception ex)

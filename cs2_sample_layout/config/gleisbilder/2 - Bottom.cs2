@@ -98,7 +98,6 @@ element
  .artikel=-1
 element
  .id=0x105
- .artikel=-1
  .text=<- 17
 element
  .id=0x106
@@ -150,7 +149,6 @@ element
  .artikel=9
 element
  .id=0x113
- .artikel=-1
  .text=Circuit
 element
  .id=0x116
@@ -203,7 +201,6 @@ element
  .artikel=8
 element
  .id=0x214
- .artikel=-1
  .text=Loop
 element
  .id=0x216
@@ -329,7 +326,6 @@ element
  .artikel=17
 element
  .id=0x412
- .artikel=-1
  .text= 8
 element
  .id=0x416
@@ -395,7 +391,6 @@ element
  .artikel=16
 element
  .id=0x513
- .artikel=-1
  .text= 7
 element
  .id=0x516
@@ -433,7 +428,6 @@ element
  .artikel=20
 element
  .id=0x60b
- .artikel=-1
  .text=Reset
 element
  .id=0x60c
@@ -476,7 +470,6 @@ element
  .artikel=15
 element
  .id=0x615
- .artikel=-1
  .text= 6
 element
  .id=0x616
@@ -600,7 +593,6 @@ element
  .artikel=14
 element
  .id=0x815
- .artikel=-1
  .text= 5
 element
  .id=0x816
@@ -663,7 +655,6 @@ element
  .artikel=13
 element
  .id=0x913
- .artikel=-1
  .text= 4
 element
  .id=0x915
@@ -831,7 +822,6 @@ element
  .artikel=12
 element
  .id=0xb15
- .artikel=-1
  .text= 3
 element
  .id=0xb16
@@ -914,7 +904,6 @@ element
  .artikel=11
 element
  .id=0xc15
- .artikel=-1
  .text= 2
 element
  .id=0xc16
@@ -933,7 +922,6 @@ element
  .artikel=-1
 element
  .id=0xd05
- .artikel=-1
  .text=15
 element
  .id=0xd06
@@ -997,7 +985,6 @@ element
  .artikel=10
 element
  .id=0xd13
- .artikel=-1
  .text= 1
 element
  .id=0xd16
