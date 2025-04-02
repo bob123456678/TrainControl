@@ -321,7 +321,7 @@ Requires JDK 1.8+ and the following libraries:
     - Accessories
         - Added support for DCC accessories (up to address 2048)
         - Added support for MM2 accessories with addresses 257-320
-        - Added 1 additional keyboard page to cover addresses up to 320
+        - Added additional keyboard pages to cover addresses up to 2048
         - The keyboard page now allows both DCC and MM2 accessories to be controlled
         - `Locomotive` and `Accessory` APIs have been updated to require the protocol for accessory commands
     - Routes

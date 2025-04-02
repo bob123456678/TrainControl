@@ -234,7 +234,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 5;
+    private static final int NUM_KEYBOARDS = 32;
     
     // Total number of locomotive mappings >= 1
     private static final int NUM_LOC_MAPPINGS = 10;
@@ -2405,6 +2405,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             int offset = this.getKeyboardOffset();
+            
+            // DCC-only addresses
+            if (this.keyboardNumber >= 6)
+            {
+                this.DCC.setSelected(true);                  
+            }
+            else
+            {
+                this.MM2.setSelected(prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true));
+            }  
 
             for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
