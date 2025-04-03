@@ -1193,10 +1193,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control (Page " + this.locMappingNumber + ")");
            
             // Add page number to icon
-            BufferedImage textImage = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.WHITE, AButton.getFont(), 
+            BufferedImage textImage = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.WHITE, new Font("Segoe UI", Font.BOLD, 16), 
                 30, 30, 0, 0);
 
-            BufferedImage textImage2 = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.BLACK, AButton.getFont(), 
+            BufferedImage textImage2 = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.BLACK, new Font("Segoe UI", Font.BOLD, 16), 
                 30, 30, 1, 1);
 
             ImageIcon ic = new javax.swing.ImageIcon(
@@ -3774,6 +3774,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         LocMappingNumberLabel.setText("Page");
+        LocMappingNumberLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         LocMappingNumberLabel.setFocusable(false);
         LocMappingNumberLabel.setMaximumSize(new java.awt.Dimension(135, 18));
 

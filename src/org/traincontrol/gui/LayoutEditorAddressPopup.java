@@ -240,7 +240,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     private void addressKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_addressKeyReleased
         TrainControlUI.validateInt(evt, false);
-        TrainControlUI.limitLength(evt, 4);
+        TrainControlUI.limitLength(evt, 5);
     }//GEN-LAST:event_addressKeyReleased
 
     private void addressAncestorAdded(javax.swing.event.AncestorEvent evt) {//GEN-FIRST:event_addressAncestorAdded

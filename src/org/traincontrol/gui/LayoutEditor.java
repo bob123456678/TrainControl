@@ -305,7 +305,20 @@ public class LayoutEditor extends PositionAwareJFrame
         
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
-        if (e.getButton() == MouseEvent.BUTTON3)
+        // Support double clicks
+        if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1)
+        {
+            this.resetClipboard();
+            if (lc != null && lc.isClickable())
+            {
+                this.editAddress(label);
+            }
+            else if (lc != null && lc.isText())
+            {
+                this.editText(label);
+            }
+        }
+        else if (e.getButton() == MouseEvent.BUTTON3)
         {        
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
