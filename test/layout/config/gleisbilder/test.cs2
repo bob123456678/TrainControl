@@ -1,0 +1,207 @@
+[gleisbildseite]
+page=1
+version
+ .major=1
+element
+ .id=0x1020a
+ .artikel=-1
+ .text=spor 23
+element
+ .id=0x10300
+ .typ=pfeil
+ .drehung=2
+element
+ .id=0x10301
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10302
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10303
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10304
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10305
+ .typ=s88kontakt
+ .artikel=3
+element
+ .id=0x10306
+ .typ=signal
+ .drehung=2
+ .artikel=194
+ .zustand=1
+element
+ .id=0x10307
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=108
+element
+ .id=0x10308
+ .typ=signal
+ .artikel=94
+ .zustand=1
+element
+ .id=0x10309
+ .typ=s88kontakt
+ .artikel=28
+element
+ .id=0x1030a
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1030b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1030c
+ .typ=s88kontakt
+ .artikel=40
+element
+ .id=0x1030d
+ .typ=signal
+ .drehung=2
+ .artikel=158
+ .zustand=1
+element
+ .id=0x1030e
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10403
+ .typ=prellbock
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10404
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10405
+ .typ=signal
+ .drehung=2
+ .artikel=82
+element
+ .id=0x10406
+ .typ=linksweiche
+ .drehung=1
+ .artikel=136
+ .zustand=1
+element
+ .id=0x10407
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=42
+element
+ .id=0x10408
+ .typ=signal
+ .artikel=96
+ .zustand=1
+element
+ .id=0x10409
+ .typ=s88kontakt
+ .artikel=46
+element
+ .id=0x1040a
+ .typ=gerade
+ .artikel=-1
+ .text=spor 24
+element
+ .id=0x1040b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040c
+ .typ=s88kontakt
+ .artikel=34
+element
+ .id=0x1040d
+ .typ=signal
+ .drehung=2
+ .artikel=160
+ .zustand=1
+element
+ .id=0x1040e
+ .typ=linksweiche
+ .artikel=186
+ .zustand=1
+element
+ .id=0x10502
+ .typ=prellbock
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10503
+ .typ=gerade
+ .artikel=-1
+ .text=spor 25
+element
+ .id=0x10504
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10505
+ .typ=entkuppler
+ .artikel=181
+element
+ .id=0x10506
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x10509
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1050a
+ .typ=signal
+ .drehung=2
+ .artikel=86
+element
+ .id=0x1050b
+ .artikel=-1
+ .text=MO
+element
+ .id=0x1050e
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x1060e
+ .typ=linksweiche
+ .artikel=80
+ .zustand=1
+element
+ .id=0x1070e
+ .typ=pfeil
+ .drehung=3
+element
+ .id=0x10808
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10809
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080a
+ .typ=linksweiche
+ .drehung=1
+ .artikel=130
+ .zustand=1
+element
+ .id=0x1080b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1090a
+ .typ=linksweiche
+ .drehung=3
+ .artikel=134
+ .zustand=1

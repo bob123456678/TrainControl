@@ -22,11 +22,11 @@ import static org.traincontrol.gui.TrainControlUI.RESOURCE_PATH;
 /**
  *
  */
-public class testLayout
+public class testAutoLayout
 {    
     public static MarklinControlStation model;
     
-    public testLayout()
+    public testAutoLayout()
     {
     }
     
@@ -200,7 +200,7 @@ public class testLayout
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLayout.model = init(null, true, false, false, true); 
+        testAutoLayout.model = init(null, true, false, false, true); 
         model.stop();
         
         String s = 

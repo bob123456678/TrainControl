@@ -50,6 +50,8 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.file.CS2File;
+import static org.traincontrol.marklin.file.CS2File.fetchURL;
+import static org.traincontrol.marklin.file.CS2File.parseFile;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
 import org.traincontrol.marklin.udp.NetworkProxy;
@@ -69,7 +71,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.0 Beta 23";
+    public static final String RAW_VERSION = "2.5.0 Beta 24";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -279,8 +281,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         // Prune stale feedbacks
         List<Integer> feedbackAddresses = new LinkedList<>();
+        
+        // Get accessory definition info for the layout
+        List<MarklinAccessory> accs = new LinkedList<>();
+        
+        try
+        {
+            // true to prefer the local file
+            accs = fileParser.getMagList(true);
+        }
+        catch (Exception e)
+        {
+            if (isDebug())
+            {
+                this.log("Layout: no magnetartikel.cs2 found. DCC definitions unavailable.");
+            }
+        }
 
-        for (MarklinLayout l : fileParser.parseLayout())
+        for (MarklinLayout l : fileParser.parseLayout(accs))
         {
             this.layoutDB.add(l, l.getName(), l.getName());
 

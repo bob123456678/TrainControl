@@ -1,0 +1,9 @@
+[gleisbild]
+version
+ .major=1
+groesse
+zuletztBenutzt
+ .name=1 gods
+seite
+ .id=1
+ .name=test

@@ -182,11 +182,20 @@ public final class CS2File
     
     /**
      * CS2 accessory config file
+     * @param local - do we prefer to fetch the local file, i.e. if the layoutDataLoc is local?
+     *                We need this because it's possible to read routes from CS2 and layouts locally.
      * @return 
      */
-    public String getMagURL()
+    public String getMagURL(boolean local)
     {
-        return "http://" + this.IP + "/config/magnetartikel.cs2";
+        if (local)
+        {
+            return this.layoutDataLoc + "/config/magnetartikel.cs2";
+        }
+        else
+        {
+            return "http://" + this.IP + "/config/magnetartikel.cs2";
+        }
     }
     
     /**
@@ -446,7 +455,7 @@ public final class CS2File
     public List<MarklinRoute> parseRoutes() throws Exception
     {
         return parseRoutes(parseFile(fetchURL(getRouteURL())), 
-            parseMags(parseFile(fetchURL(getMagURL())))
+            getMagList(false)
         );
     }
     
@@ -1369,12 +1378,18 @@ public final class CS2File
         //throw new Exception("Unsupported component: " + name);        
     }
     
+    public List<MarklinAccessory> getMagList(boolean local) throws Exception
+    {
+        return parseMags(parseFile(fetchURL(getMagURL(local))));
+    }
+    
     /**
      * Processes a layout
+     * @param accDB
      * @return
      * @throws Exception 
      */
-    public List<MarklinLayout> parseLayout() throws Exception
+    public List<MarklinLayout> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
         List<String> names = this.parseLayoutList();
         
@@ -1390,15 +1405,7 @@ public final class CS2File
             }
             
             List<Map<String, String> > l = parseFile(fetchURL(url));
-            
-            // Read accessory info for CS accessories
-            List<MarklinAccessory> accDB = new ArrayList<>();
-            
-            if (this.getDefaultLayoutDataLoc().equals(this.layoutDataLoc) && !control.isCS3())
-            {
-                accDB = parseMags(parseFile(fetchURL(getMagURL())));
-            }
-            
+                        
             Map<Integer, MarklinAccessory> addressMap = accDB.stream()
                 .collect(Collectors.toMap(
                         MarklinAccessory::getAddress, 
@@ -1518,10 +1525,10 @@ public final class CS2File
                     
                     Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
                     
-                    // Read protocol from mags file - only works on CS2
-                    if (addressMap.get(rawAddress) != null)
+                    // Read protocol from mags file
+                    if (addressMap.get(address) != null)
                     {
-                        protocol = addressMap.get(rawAddress).getDecoderType();
+                        protocol = addressMap.get(address).getDecoderType();
                     }
                     
                     // Custom - read protocol from the local layout files

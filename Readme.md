@@ -65,7 +65,7 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
 
 - If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
-    - From your CS2/CS3, export `/config/gleisbild.cs2` and `/config/gleisbilder/*` to the new folder, maintaining the same subdirectory structure.  You can open this location from "Show Current Data Source" in the Layouts menu.
+    - From your CS2/CS3, export `/config/gleisbild.cs2`, `/config/gleisbilder/*`, and optionally `/config/magnetartikel.cs2`, to the new folder, maintaining the same subdirectory structure starting with the `config` folder.  You can open this location from "Show Current Data Source" in the Layouts menu.
     - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
     - The static local layout will now be shown in the Layout tab
 - Otherwise, to create a new layout:
@@ -278,7 +278,6 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 * Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
 * Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
-* Accessories downloaded from CS3 track diagrams are assumed to be MM2, not DCC (use a local layout to change the decoder type)
 
 ## Running TrainControl
 
@@ -321,13 +320,13 @@ Requires JDK 1.8+ and the following libraries:
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
         - Accessory tooltips will now show the decoder type
-        - Layouts downloaded from the CS2 will now recognize DCC accessories
+        - Layouts downloaded from the CS2 and CS3 will now recognize DCC accessories
     - Accessories
         - Added support for DCC accessories (up to address 2048)
         - Added support for MM2 accessories with addresses 257-320
         - Added additional keyboard pages to cover addresses up to 2048
         - The keyboard page now allows both DCC and MM2 accessories to be controlled
-        - `Locomotive` and `Accessory` APIs have been updated to require the protocol for accessory commands
+        - `Locomotive`, `Accessory`, and `RouteCommand` APIs have been updated to require the protocol for accessory commands
     - Routes
         - Accessory commands and accessory conditions can now reference DCC accessories, e.g. `Switch 1 DCC,turn` vs `Switch 1,turn`
         - DCC accessories are now recognized in routes imported from the CS3

@@ -1,0 +1,953 @@
+[magnetartikel]
+version
+ .minor=1
+artikel
+ .id=1
+ .name=1
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=2
+ .name=2
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=3
+ .name=3
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=4
+ .name=4
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=5
+ .name=5
+ .typ=dreiwegweiche
+ .stellung=2
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=7
+ .name=7
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=8
+ .name=8
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=9
+ .name=9
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=10
+ .name=10
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=11
+ .name=11
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=12
+ .name=12
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=13
+ .name=13
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=14
+ .name=14
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=15
+ .name=15
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=16
+ .name=16
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=17
+ .name=17
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=18
+ .name=18
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=19
+ .name=19
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=20
+ .name=20
+ .typ=std_rot_gruen
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=21
+ .name=21
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=22
+ .name=22
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=23
+ .name=23
+ .typ=std_rot_gruen
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=25
+ .name=25
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=26
+ .name=26
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=27
+ .name=27
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=250
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=28
+ .name=28
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=29
+ .name=29
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=29
+ .name=29b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=30
+ .name=30
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=30
+ .name=30b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=31
+ .name=31
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=31
+ .name=31b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=32
+ .name=32
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=32
+ .name=32b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=33
+ .name=33
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=34
+ .name=34
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=35
+ .name=35
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=36
+ .name=36
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=37
+ .name=37
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=38
+ .name=38
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=39
+ .name=39
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=40
+ .name=40
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=41
+ .name=41
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=42
+ .name=42
+ .typ=lichtsignal_HP01
+ .schaltzeit=300
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=43
+ .name=43
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=44
+ .name=44
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=45
+ .name=45
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=46
+ .name=46
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=47
+ .name=47
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=48
+ .name=48
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=49
+ .name=49
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=50
+ .name=50
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=51
+ .name=51
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=52
+ .name=52
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=53
+ .name=53
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=54
+ .name=54
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=55
+ .name=55
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=56
+ .name=56
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=57
+ .name=57
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=58
+ .name=58
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=59
+ .name=59
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=60
+ .name=60
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=61
+ .name=61
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=62
+ .name=62
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=63
+ .name=63
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=64
+ .name=64
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=65
+ .name=65
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=dcc
+artikel
+ .id=66
+ .name=66
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=dcc
+artikel
+ .id=67
+ .name=67
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=dcc
+artikel
+ .id=68
+ .name=68
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=dcc
+artikel
+ .id=69
+ .name=69
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=70
+ .name=70
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=71
+ .name=71
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=72
+ .name=72
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=73
+ .name=73
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=74
+ .name=74
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=75
+ .name=75
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=76
+ .name=76
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=77
+ .name=77
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=78
+ .name=78
+ .typ=urc_lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=79
+ .name=79
+ .typ=urc_lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=80
+ .name=80
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=81
+ .name=81
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=82
+ .name=82
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=83
+ .name=83
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=84
+ .name=84
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=85
+ .name=85
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=86
+ .name=86
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=87
+ .name=87
+ .typ=linksweiche
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=88
+ .name=88
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=89
+ .name=89
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=89
+ .name=89b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=90
+ .name=90
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=90
+ .name=90b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=91
+ .name=91
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=91
+ .name=91b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=92
+ .name=92
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=92
+ .name=92b
+ .typ=entkupplungsgleis
+ .schaltzeit=200
+ .ungerade=1
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=93
+ .name=93
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=94
+ .name=94
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=95
+ .name=95
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=96
+ .name=96
+ .typ=lichtsignal_HP01
+ .schaltzeit=350
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=97
+ .name=97
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=98
+ .name=98
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=99
+ .name=99
+ .typ=lichtsignal_HP01
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=100
+ .name=100
+ .typ=lichtsignal_SH01
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=101
+ .name=101
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=102
+ .name=102
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=103
+ .name=103
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=104
+ .name=104
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_alt
+ .dectyp=mm2
+artikel
+ .id=105
+ .name=105
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=106
+ .name=106
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=107
+ .name=107
+ .typ=formsignal_HP012
+ .stellung=3
+ .schaltzeit=350
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=108
+ .typ=std_rot
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=109
+ .name=109
+ .typ=formsignal_HP012
+ .stellung=3
+ .schaltzeit=350
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=110
+ .typ=std_rot
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=111
+ .name=111
+ .typ=lichtsignal_SH01
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=112
+ .name=112
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=mm2
+artikel
+ .id=113
+ .name=113
+ .typ=lichtsignal_HP01
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=114
+ .name=114
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=115
+ .name=115
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=116
+ .name=116
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=117
+ .name=117
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=118
+ .name=118
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=119
+ .name=119
+ .typ=rechtsweiche
+ .schaltzeit=200
+ .decoder=ein_neu
+ .dectyp=mm2
+artikel
+ .id=121
+ .name=121
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .decoder=mehr_neu
+ .dectyp=dcc
+artikel
+ .id=225
+ .name=225
+ .typ=digitaldrehscheibe
+ .schaltzeit=250
+ .decoder=mehr_alt
+ .dectyp=mm2

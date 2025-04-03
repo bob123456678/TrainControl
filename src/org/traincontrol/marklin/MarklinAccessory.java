@@ -2,6 +2,7 @@ package org.traincontrol.marklin;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RemoteDevice;
@@ -341,5 +342,47 @@ public class MarklinAccessory extends Accessory
     public String getNameWithProtocol()
     {
         return getNameWithProtocol(this.address, this.getType(), this.getDecoderType());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 53 * hash + Objects.hashCode(this.decoderType);
+        hash = 53 * hash + this.UID;
+        hash = 53 * hash + this.address;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        
+        if (obj == null)
+        {
+            return false;
+        }
+        
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        
+        final MarklinAccessory other = (MarklinAccessory) obj;
+        if (this.UID != other.UID)
+        {
+            return false;
+        }
+        
+        if (this.address != other.address)
+        {
+            return false;
+        }
+        
+        return this.decoderType == other.decoderType;
     }
 }
