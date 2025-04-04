@@ -31,6 +31,7 @@ import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
+import static org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_PREFIX;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
@@ -677,7 +678,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     .collect(Collectors.toList());
 
             JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
-            comboBox.setSelectedItem(lc.getLabel());
+            comboBox.setSelectedItem(lc.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
 
             int result = JOptionPane.showConfirmDialog(
                 this,
@@ -695,7 +696,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                    this.snapshotLayout();
 
-                   lc.setLabel("Point:" + selectedOption);
+                   lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
 
                     try
                     {
