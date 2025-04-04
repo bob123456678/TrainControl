@@ -1,9 +1,7 @@
 package org.traincontrol.gui;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.Timer;

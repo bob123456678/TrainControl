@@ -200,7 +200,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
-* Layout Editor
+* Layout editor
     * Control+Z (undo)
     * Control+C (copy hovered tile)
     * Control+X (cut hovered tile)
@@ -213,6 +213,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+L (show text labels)
     * Control+D (show address labels)
     * Control+I (increase diagram by 1 row and 1 column)
+    * Control+S (place autonomy station label)
     * Delete (delete hovered tile)
     * Escape (clear clipboard & reset tool)
     * Left mouse click (cut hovered tile / paste new tile)
@@ -317,6 +318,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
         - Added a "Modify Layout" entry to the Layouts menu, enabling the management of track diagram pages
         - The "Show Data Source" option in the Layouts menu will now open a file explorer or browser with the layout source files
+        - Added shortcuts to edit links, routes, and autonomy station labels based on the respective configuration
     - Track Diagrams
         - When the power is off, route icons can be right-clicked to edit the route
         - Accessory tooltips will now show the decoder type
@@ -329,8 +331,7 @@ Requires JDK 1.8+ and the following libraries:
         - `Locomotive`, `Accessory`, and `RouteCommand` APIs have been updated to require the protocol for accessory commands
     - Routes
         - Accessory commands and accessory conditions can now reference DCC accessories, e.g. `Switch 1 DCC,turn` vs `Switch 1,turn`
-        - DCC accessories are now recognized in routes imported from the CS3
-        - Routes downloaded from the CS2 will now recognize DCC accessories
+        - DCC accessories are now recognized in routes imported from the CS3 and CS2
     - Autonomy
         - Edge configurations can now contain DCC accessories
     - The IP of the Central Station is now printed to the log at startup
