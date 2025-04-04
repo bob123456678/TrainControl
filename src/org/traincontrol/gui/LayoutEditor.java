@@ -17,15 +17,19 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
+import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
@@ -622,7 +626,7 @@ public class LayoutEditor extends PositionAwareJFrame
     public void editText(LayoutLabel label)
     {       
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
-                    
+                            
         if (lc != null)
         {       
             String newText = (String) javax.swing.JOptionPane.showInputDialog(
@@ -652,6 +656,59 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             refreshGrid();
+        }
+    }
+    
+    /**
+     * Changes the text using dropdown options, used for autonomy stations
+     * @param label
+    */
+    public void editTextWithDropdown(LayoutLabel label)
+    {
+        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+
+        if (lc != null && this.parent.getModel().getAutoLayout() != null && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
+        {
+            // Retrieve the points, sort them by name, and construct dropdown options
+            Collection<Point> points = this.parent.getModel().getAutoLayout().getPoints();
+            List<String> options = points.stream()
+                    .map(Point::getName)
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
+            comboBox.setSelectedItem(lc.getLabel());
+
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                comboBox,
+                "Which station should be shown here?",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (result == JOptionPane.OK_OPTION)
+            {
+                String selectedOption = (String) comboBox.getSelectedItem();
+
+                if (selectedOption != null)
+                {
+                   this.snapshotLayout();
+
+                   lc.setLabel("Point:" + selectedOption);
+
+                    try
+                    {
+                       layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                    }
+                    catch (IOException ex)
+                    {
+
+                    }
+
+                    refreshGrid();
+                }
+            }
         }
     }
     
@@ -1263,7 +1320,10 @@ public class LayoutEditor extends PositionAwareJFrame
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
             {
                 this.initCopy(getLastHoveredLabel(), null, true);
-
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
+            {
+                this.editTextWithDropdown(getLastHoveredLabel());
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
             {

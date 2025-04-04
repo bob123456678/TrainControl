@@ -13,8 +13,8 @@ import org.traincontrol.marklin.MarklinRoute;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
-    private TrainControlUI tcui;
-    private MarklinLayoutComponent lc;
+    private final TrainControlUI tcui;
+    private final MarklinLayoutComponent lc;
     
     /**
      * Creates new form LayourEditorAddressPopup

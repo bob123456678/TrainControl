@@ -186,6 +186,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
             });
             menuItem.setToolTipText("Control+T");
+            add(menuItem);
+            
+            if (ui.getModel().getAutoLayout() != null && !ui.getModel().getAutoLayout().getPoints().isEmpty())
+            {     
+                menuItem = new JMenuItem("Place Autonomy Station Label");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        edit.editTextWithDropdown(label);
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });
+                menuItem.setToolTipText("Control+S");
+            }
 
             add(menuItem);
             
