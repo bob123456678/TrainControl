@@ -2486,6 +2486,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             System.exit(1);
                         }
                     }
+                            
+                    System.out.println("Connecting to " + initIP);
 
                     if (!CS2File.ping(initIP))
                     {
@@ -2537,11 +2539,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         else
         {
             initIP = null;
-        }
-        
-        if (initIP != null)
-        {
-            System.out.println("Connecting to " + initIP);
         }
         
         // Delegate the hard part
