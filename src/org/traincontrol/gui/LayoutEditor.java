@@ -650,6 +650,7 @@ public class LayoutEditor extends PositionAwareJFrame
             try
             {
                 layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                this.resetClipboard();
             }
             catch (IOException ex)
             {
@@ -701,6 +702,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     try
                     {
                        layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                       this.resetClipboard();
                     }
                     catch (IOException ex)
                     {
@@ -781,6 +783,8 @@ public class LayoutEditor extends PositionAwareJFrame
                     
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                     lc.setProtocol(addressPopup.getProtocol());
+                    
+                    this.resetClipboard();
                 }
             }
             catch (Exception ex)

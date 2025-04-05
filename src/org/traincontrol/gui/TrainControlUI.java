@@ -666,14 +666,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.rememberLocationMenuItem.setSelected(prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false));
         
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
-
-        // TrackDiagramEditor Layout editing only supported on windows
-        if (!this.isWindows())
-        {
-            this.openLegacyTrackDiagramEditor.setVisible(false);
-            // this.editLayoutButton.setEnabled(false);
-            // this.editLayoutButton.setToolTipText("Layout editing is currently only supported on Windows");
-        }
         
         // Support for changing page names
         RightClickPageMenu rcm = new RightClickPageMenu(this);
@@ -1679,6 +1671,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         else if (this.powerOffStartup.isSelected())
         {
             stop();
+        }
+        
+        // TrackDiagramEditor Layout editing only supported on windows
+        if (!this.isWindows())// || !model.isDebug())
+        {
+            this.openLegacyTrackDiagramEditor.setVisible(false);
         }
                 
         restoreLayoutTitles();
@@ -8491,8 +8489,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(showCurrentLayoutFolderMenuItem);
         layoutMenu.add(jSeparator5);
 
-        chooseLocalDataFolderMenuItem.setText("Choose Local Data Folder");
-        chooseLocalDataFolderMenuItem.setToolTipText("Select the location of layout files on the filesystem.  Lets you switch between diagrams.");
+        chooseLocalDataFolderMenuItem.setText("Open Layout");
+        chooseLocalDataFolderMenuItem.setToolTipText("Select the location of existing layout files on your computer.  Lets you switch between diagrams.");
         chooseLocalDataFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 chooseLocalDataFolderMenuItemActionPerformed(evt);
@@ -8510,7 +8508,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(initializeLocalLayoutMenuItem);
 
         modifyLocalLayoutMenu.setText("Modify Layout");
-        modifyLocalLayoutMenu.setToolTipText("Lets you change the track diagram.");
+        modifyLocalLayoutMenu.setToolTipText("Lets you change the local track diagram.");
 
         addBlankPageMenuItem.setText("Add Blank Page");
         addBlankPageMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -12076,7 +12074,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int result = JOptionPane.showConfirmDialog(
                 null,
                 textField,
-                "Enter new layout name:",
+                "Enter new layout page name:",
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE
         );
@@ -12232,6 +12230,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
 
+    /**
+     * Old way to edit track diagrams
+     */
     private void openLegacyTrackDiagramEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLegacyTrackDiagramEditorActionPerformed
         
         if (!this.isLocalLayout())

@@ -301,6 +301,10 @@ element
  .typ=gerade
  .artikel=-1
 element
+ .id=0xc19
+ .typ=hosentraeger
+ .artikel=2
+element
  .id=0xd0d
  .typ=gerade
  .drehung=1

@@ -66,10 +66,10 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
 - If you have a CS2/CS3 with a layout, import your layout:
     - Create an empty folder on your PC
     - From your CS2/CS3, export `/config/gleisbild.cs2`, `/config/gleisbilder/*`, and optionally `/config/magnetartikel.cs2`, to the new folder, maintaining the same subdirectory structure starting with the `config` folder.  You can open this location from "Show Current Data Source" in the Layouts menu.
-    - Start TrainControl, then from the Layout menu, click on "Choose Local Data Folder", then select the path to your folder
-    - The static local layout will now be shown in the Layout tab
+    - Start TrainControl, then from the Layouts menu, click on "Open Layout", then select the path to your folder
+    - The local layout will now be shown in the Layout tab and can be edited if desired
 - Otherwise, to create a new layout:
-    - Start TrainControl, then from the Layout menu, click on "Initialize Local Layout"
+    - Start TrainControl, then from the Layout menu, click on "Initialize New Layout"
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
 
 Complete editing support is accessible via the "Edit" button within the Layout tab. Pages can be managed from the Layouts menu item.  This will let you fully customize your layout.
@@ -135,7 +135,7 @@ Monitor the usage of different locomotives.
     * View unlimited layout diagrams, with support for multiple windows
     * Toggle signals, switches, lights, uncouplers, and routes
     * View S88 feedback
-    * Full UI for editing track diagrams (Windows only)
+    * Full UI for editing track diagrams
 * Basic automation
     * Set up automatic and conditional routes triggered by S88 feedback modules
     * Automate bulk tasks such as turning off all functions
@@ -144,7 +144,9 @@ Monitor the usage of different locomotives.
     * [Graph model](Automation.md) w/ JSON configuration for location tracking and fully autonomous train operation
     * Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
     * Full UI for editing autonomy graph models
-    * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, and maximum train idle time
+    * View station information and control trains via track digrams
+    * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, speed multipliers, and maximum train idle time
+    * Record and play back timetables
 * Progammatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
 * Monitor locomotive usage stats
 
@@ -810,7 +812,7 @@ Requires JDK 1.8+ and the following libraries:
     - Double-clicking a station node is now a shortcut to opening the locomotive assignment window
     - Clicking "mark as terminus station" on a non-station will now automatically convert the point to a station first
     - When adding or editing locomotives on the graph, the locomotive list is now automatically focused for easier selection
-    - Added a pop-up error message if an invalid layout file path is chosen via the "Choose Local Data Folder" button within Tools
+    - Added a pop-up error message if an invalid layout file path is chosen via the "Open Layout" button within Tools
     - Fixed a bug in the layout UI where wide text labels in the last column would sometimes lead to misaligned tracks
 
 * v1.10.10 [10/9/23]
