@@ -643,6 +643,10 @@ public class MarklinLayoutComponent
         {
             builder.append(" .artikel=").append(this.rawAddress).append("\n");
         }
+        else
+        {
+            builder.append(" .artikel=-1").append("\n");
+        }
         
         // Add state
         if (this.state > 0)
