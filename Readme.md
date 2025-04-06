@@ -315,8 +315,6 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.1
-
 * v2.5.0 [4/5/2025]
     - Track Diagram Editing
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
@@ -327,6 +325,7 @@ Requires JDK 1.8+ and the following libraries:
         - When the power is off, route icons can be right-clicked to edit the route
         - Accessory tooltips will now show the decoder type
         - Layouts downloaded from the CS2 and CS3 will now recognize DCC accessories
+        - You can now place the active locomotive at an autonomy station by right-clicking the label in the track diagram
     - Accessories
         - Added support for DCC accessories (up to address 2048)
         - Added support for MM2 accessories with addresses 257-320

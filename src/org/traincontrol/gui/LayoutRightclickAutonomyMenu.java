@@ -14,12 +14,12 @@ import org.traincontrol.base.Locomotive;
  */
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
-    public static final int MAX_PATHS = 14;
+    public static final int MAX_PATHS = 13;
     
     public LayoutRightclickAutonomyMenu(TrainControlUI ui, String stationName)
     {        
         JMenuItem menuItem;
-        
+                
         if (!ui.getModel().getAutoLayout().isAutoRunning())
         {
             menuItem = new JMenuItem("Start Autonomous Operation");
@@ -45,8 +45,24 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // Get the locomotive at this station
                 Locomotive locomotive = current.getCurrentLocomotive();
                 
-                // Locomotive must not be running
-                if (!ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
+                // Place a different locomotive at this station
+                if (ui.getActiveLoc() != null && !ui.getModel().getAutoLayout().isRunning() &&
+                        !ui.getActiveLoc().equals(locomotive)
+                )
+                {
+                    menuItem = new JMenuItem("Place " + ui.getActiveLoc().getName());
+                    menuItem.addActionListener(event -> 
+                    {
+                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), current.getName(), false);
+                        ui.repaintAutoLocList(false);
+                    });
+                    
+                    addSeparator();
+                    add(menuItem);
+                }
+                
+                // If we want to view paths, locomotive must not be running
+                if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
                 {
                     List<List<Edge>> paths = ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true);
                     
