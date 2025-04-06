@@ -336,6 +336,8 @@ Requires JDK 1.8+ and the following libraries:
         - DCC accessories are now recognized in routes imported from the CS3 and CS2
     - Autonomy
         - Edge configurations can now contain DCC accessories
+    - Graph UI
+        - Enhanced Edge editing / copying
     - The IP of the Central Station is now printed to the log at startup
     - Backward-incompatible changes:
         - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.

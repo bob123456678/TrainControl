@@ -271,6 +271,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
 
         edgeLength.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         edgeLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
+        edgeLength.setToolTipText("Specify the maximum train length that can fit on this edge.");
         edgeLength.setFocusable(false);
 
         okButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N

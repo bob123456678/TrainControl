@@ -15,11 +15,11 @@
             "name": "BottomExitVIrt",
             "station": false,
             "excludedLocs": [
+                "ER 2035 DSB",
                 "MZ 1425 DSB",
                 "EU07-314",
-                "MF 5028 DSB",
-                "ER 2035 DSB",
-                "MY 1150 DSB"
+                "MY 1150 DSB",
+                "MF 5028 DSB"
             ],
             "x": 455,
             "y": 110
@@ -31,10 +31,10 @@
             "maxTrainLength": 0,
             "priority": -3,
             "excludedLocs": [
-                "MZ 1425 DSB",
-                "MF 5028 DSB",
                 "ER 2035 DSB",
-                "MY 1150 DSB"
+                "MZ 1425 DSB",
+                "MY 1150 DSB",
+                "MF 5028 DSB"
             ],
             "x": 567,
             "y": 182
@@ -46,10 +46,10 @@
             "maxTrainLength": 3,
             "priority": -2,
             "excludedLocs": [
-                "MZ 1425 DSB",
-                "MF 5028 DSB",
                 "ER 2035 DSB",
-                "MY 1150 DSB"
+                "MZ 1425 DSB",
+                "MY 1150 DSB",
+                "MF 5028 DSB"
             ],
             "x": 612,
             "y": 298
@@ -136,6 +136,13 @@
             "station": false,
             "x": 735,
             "y": 124
+        },
+        {
+            "name": "CrossBottomSecondary",
+            "station": false,
+            "s88": 14,
+            "x": 794,
+            "y": 105
         },
         {
             "name": "LowerBack",
@@ -725,12 +732,12 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Switch 100",
-                    "state": "straight"
+                    "acc": "Signal 116",
+                    "state": "green"
                 },
                 {
-                    "acc": "Signal 89",
-                    "state": "green"
+                    "acc": "Switch 100",
+                    "state": "straight"
                 },
                 {
                     "acc": "Signal 86",
@@ -763,7 +770,7 @@
         },
         {
             "start": "BottomMainAPre",
-            "end": "LowerDownPre",
+            "end": "CrossBottomSecondary",
             "length": 0,
             "commands": [
                 {
@@ -997,7 +1004,7 @@
             "length": 0,
             "commands": [
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "red"
                 },
                 {
@@ -1081,6 +1088,11 @@
                     "state": "red"
                 }
             ]
+        },
+        {
+            "start": "CrossBottomSecondary",
+            "end": "LowerDownPre",
+            "length": 0
         },
         {
             "start": "LowerBack",
@@ -1190,10 +1202,6 @@
                 }
             ],
             "lockedges": [
-                {
-                    "start": "BottomMainAPre",
-                    "end": "LowerDownPre"
-                },
                 {
                     "start": "LowerBack",
                     "end": "LowerFrontPre"
@@ -1488,7 +1496,7 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 },
                 {
@@ -1515,7 +1523,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 },
                 {
@@ -1603,10 +1611,6 @@
                     "end": "BottomInner"
                 },
                 {
-                    "start": "BottomMainAPre",
-                    "end": "LowerDownPre"
-                },
-                {
                     "start": "BottomSecondary",
                     "end": "TunnelPre"
                 },
@@ -1691,7 +1695,7 @@
             "end": "LowerFrontPre",
             "length": 0,
             "commands": [{
-                "acc": "Signal 89",
+                "acc": "Signal 116",
                 "state": "green"
             }],
             "lockedges": [{
@@ -1709,7 +1713,7 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 }
             ],
@@ -2203,7 +2207,7 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "red"
                 },
                 {
@@ -2238,7 +2242,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 }
             ]
@@ -2253,7 +2257,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 }
             ]
@@ -2330,7 +2334,7 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 },
                 {
@@ -2396,7 +2400,7 @@
                     "state": "straight"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 },
                 {
@@ -2482,7 +2486,7 @@
                     "state": "turn"
                 },
                 {
-                    "acc": "Signal 89",
+                    "acc": "Signal 116",
                     "state": "green"
                 }
             ]

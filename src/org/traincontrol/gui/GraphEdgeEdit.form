@@ -230,6 +230,7 @@
             <StringItem index="20" value="20"/>
           </StringArray>
         </Property>
+        <Property name="toolTipText" type="java.lang.String" value="Specify the maximum train length that can fit on this edge."/>
         <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <AuxValues>

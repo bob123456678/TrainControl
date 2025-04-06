@@ -524,7 +524,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     // Only prompt if there are multiple outgoing edges
                     if (edgeNames.size() > 1)
                     {
-                        dialogResult = showEdgeSelectionDialog(parent, edgeNames);
+                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Select an edge to edit");
                     }
                     else
                     {
@@ -584,11 +584,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     // Only prompt if there are multiple outgoing edges
                     if (edgeNames.size() > 1)
                     {
-                        dialogResult = (String) JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                            "Which edge do you want to copy?",
-                            "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                            edgeNames.toArray(), // Array of choices
-                            edgeNames.get(0));
+                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Select an edge to copy");
                     }
                     else
                     {
@@ -610,7 +606,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                                 
                                 ui.highlightLockedEdges(original, new LinkedList<>());
 
-                                String[] options = { "Start", "End" };
+                                String[] options = {"Start", "End"};
                                 int res = JOptionPane.showOptionDialog((Component) parent.getSwingView(), "Change which point?", "Copy Type",
                                     JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, 
                                     options, options[0]);
@@ -713,11 +709,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     // Only prompt if there are multiple outgoing edges
                     if (edgeNames.size() > 1)
                     {
-                        dialogResult = (String) JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                            "Which edge do you want to permanently delete?",
-                            "Delete Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                            edgeNames.toArray(), // Array of choices
-                            edgeNames.get(0));
+                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Which edge do you want to delete?");
                     }
                     else
                     {
@@ -736,7 +728,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             ui.highlightLockedEdges(null, highlight);
 
                             int confirmation = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), 
-                                "This will entirely remove edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
+                                "This will permanently remove the edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
                                 "Edge Deletion", JOptionPane.YES_NO_OPTION
                             );
                                            
@@ -827,7 +819,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
         add(menuItem);    
     }
     
-    private String showEdgeSelectionDialog(Component parent, java.util.List<String> edgeNames)
+    private String showEdgeSelectionDialog(Component parent, java.util.List<String> edgeNames, String message)
     {
         JComboBox<String> edgeDropdown = new JComboBox<>(edgeNames.toArray(new String[0]));
 
@@ -847,7 +839,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
         // Show the JComboBox in a JOptionPane
         int result = JOptionPane.showConfirmDialog(parent, 
             edgeDropdown, 
-            "Select an Edge", 
+            message, 
             JOptionPane.OK_CANCEL_OPTION, 
             JOptionPane.QUESTION_MESSAGE);
         

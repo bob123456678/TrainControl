@@ -921,7 +921,7 @@ public class Layout
 
             if (acc == null)
             {
-                String errorMessage = "Accessory does not exist: " + name + " " + state;
+                String errorMessage = "Accessory does not exist - " + name + " (" + state + ")";
                 control.log(errorMessage);
 
                 if (preConfigure == null)

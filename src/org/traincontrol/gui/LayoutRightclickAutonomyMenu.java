@@ -55,6 +55,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     if (!paths.isEmpty())
                     {
                         addSeparator();
+                        
+                        // Show the locomotive name for reference
+                        menuItem = new JMenuItem(locomotive.getName());
+                        menuItem.setEnabled(false);
+                        add(menuItem);
                     }
                     
                     for (List<Edge> path : paths)
