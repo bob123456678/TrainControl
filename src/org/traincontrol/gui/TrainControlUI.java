@@ -8490,7 +8490,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(jSeparator5);
 
         chooseLocalDataFolderMenuItem.setText("Open Layout");
-        chooseLocalDataFolderMenuItem.setToolTipText("Select the location of existing layout files on your computer.  Lets you switch between diagrams.");
+        chooseLocalDataFolderMenuItem.setToolTipText("Select the location of your existing layout files on your computer.  Lets you switch between diagrams.");
         chooseLocalDataFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 chooseLocalDataFolderMenuItemActionPerformed(evt);
@@ -8508,7 +8508,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(initializeLocalLayoutMenuItem);
 
         modifyLocalLayoutMenu.setText("Modify Layout");
-        modifyLocalLayoutMenu.setToolTipText("Lets you change the local track diagram.");
+        modifyLocalLayoutMenu.setToolTipText("Lets you change the track diagram.");
 
         addBlankPageMenuItem.setText("Add Blank Page");
         addBlankPageMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -10811,6 +10811,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void showStationLengthsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_showStationLengthsMouseReleased
         if (!this.isAutoLayoutRunning())
         {
+            this.ensureGraphUIVisible();
             this.updateVisiblePoints();
             prefs.putBoolean(SHOW_STATION_LENGTH, this.showStationLengths.isSelected());
         }
@@ -10823,6 +10824,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void hideInactiveMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideInactiveMouseReleased
         if (!this.isAutoLayoutRunning())
         {
+            this.ensureGraphUIVisible();
             this.updateVisiblePoints();
             prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
         }
@@ -10835,6 +10837,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void hideReversingMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideReversingMouseReleased
         if (!this.isAutoLayoutRunning())
         {
+            this.ensureGraphUIVisible();
             this.updateVisiblePoints();
             prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
         }
@@ -12748,7 +12751,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Update locomotive autonomy location labels on the main layout
-        if (!this.getLayoutStations(p.getName()).isEmpty())
+        if (!this.getLayoutStations(p.getName()).isEmpty() 
+                && this.graphViewer != null && this.graphViewer.isVisible() // to prevent them from becoming visible again if the window was closed
+        )
         {
             Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
             Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());

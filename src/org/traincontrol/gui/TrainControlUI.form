@@ -189,7 +189,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="chooseLocalDataFolderMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Open Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Select the location of existing layout files on your computer.  Lets you switch between diagrams."/>
+                <Property name="toolTipText" type="java.lang.String" value="Select the location of your existing layout files on your computer.  Lets you switch between diagrams."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="chooseLocalDataFolderMenuItemActionPerformed"/>
@@ -207,7 +207,7 @@
             <Menu class="javax.swing.JMenu" name="modifyLocalLayoutMenu">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Modify Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Lets you change the local track diagram."/>
+                <Property name="toolTipText" type="java.lang.String" value="Lets you change the track diagram."/>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JMenuItem" name="addBlankPageMenuItem">

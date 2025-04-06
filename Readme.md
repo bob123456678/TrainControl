@@ -315,6 +315,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.1
+
 * v2.5.0 [4/5/2025]
     - Track Diagram Editing
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
@@ -338,6 +340,7 @@ Requires JDK 1.8+ and the following libraries:
         - Edge configurations can now contain DCC accessories
     - Graph UI
         - Enhanced Edge editing / copying
+        - When changing the Graph UI options, the graph window will be reopened if it was closed
     - The IP of the Central Station is now printed to the log at startup
     - Backward-incompatible changes:
         - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.

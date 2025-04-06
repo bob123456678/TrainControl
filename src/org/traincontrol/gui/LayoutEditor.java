@@ -632,7 +632,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {       
             String newText = (String) javax.swing.JOptionPane.showInputDialog(
                 this, 
-                "Enter new label text:", 
+                "Enter label text:", 
                 "Edit Label", 
                 javax.swing.JOptionPane.PLAIN_MESSAGE,
                 null,
@@ -674,42 +674,51 @@ public class LayoutEditor extends PositionAwareJFrame
             // Retrieve the points, sort them by name, and construct dropdown options
             Collection<Point> points = this.parent.getModel().getAutoLayout().getPoints();
             List<String> options = points.stream()
+                    .filter(Point::isDestination)
                     .map(Point::getName)
                     .sorted()
                     .collect(Collectors.toList());
-
-            JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
-            comboBox.setSelectedItem(lc.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
-
-            int result = JOptionPane.showConfirmDialog(
-                this,
-                comboBox,
-                "Which station should be shown here?",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-            );
-
-            if (result == JOptionPane.OK_OPTION)
+            
+            if (options.isEmpty())
             {
-                String selectedOption = (String) comboBox.getSelectedItem();
+                JOptionPane.showMessageDialog(this, "There are no stations on the autonomy graph yet. Open the graph UI to add some first.");
+                parent.ensureGraphUIVisible();
+            }
+            else
+            {
+                JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
+                comboBox.setSelectedItem(lc.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
 
-                if (selectedOption != null)
+                int result = JOptionPane.showConfirmDialog(
+                    this,
+                    comboBox,
+                    "Which station should be shown here?",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+                );
+
+                if (result == JOptionPane.OK_OPTION)
                 {
-                   this.snapshotLayout();
+                    String selectedOption = (String) comboBox.getSelectedItem();
 
-                   lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
-
-                    try
+                    if (selectedOption != null)
                     {
-                       layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
-                       this.resetClipboard();
-                    }
-                    catch (IOException ex)
-                    {
+                       this.snapshotLayout();
 
-                    }
+                       lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
 
-                    refreshGrid();
+                        try
+                        {
+                           layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
+                           this.resetClipboard();
+                        }
+                        catch (IOException ex)
+                        {
+
+                        }
+
+                        refreshGrid();
+                    }
                 }
             }
         }
