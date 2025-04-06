@@ -315,7 +315,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.0 [Beta]
+* v2.5.0 [4/5/2025]
     - Track Diagram Editing
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
         - Added a "Modify Layout" entry to the Layouts menu, enabling the management of track diagram pages
