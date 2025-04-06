@@ -141,8 +141,8 @@
             "name": "CrossBottomSecondary",
             "station": false,
             "s88": 14,
-            "x": 794,
-            "y": 105
+            "x": 642,
+            "y": 202
         },
         {
             "name": "LowerBack",
@@ -163,15 +163,15 @@
             "name": "LowerDown",
             "station": false,
             "s88": 2001,
-            "x": 797,
-            "y": 201
+            "x": 779,
+            "y": 234
         },
         {
             "name": "LowerDownPre",
             "station": false,
             "s88": 1001,
-            "x": 798,
-            "y": 161
+            "x": 780,
+            "y": 196
         },
         {
             "name": "LowerFront",
@@ -185,8 +185,8 @@
             "name": "LowerFrontPre",
             "station": false,
             "s88": 1002,
-            "x": 862,
-            "y": 223
+            "x": 858,
+            "y": 230
         },
         {
             "name": "LowerParkingInner",
