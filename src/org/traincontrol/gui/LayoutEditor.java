@@ -632,7 +632,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {       
             String newText = (String) javax.swing.JOptionPane.showInputDialog(
                 this, 
-                "Enter label text:", 
+                "Enter text to be shown at this tile:", 
                 "Edit Label", 
                 javax.swing.JOptionPane.PLAIN_MESSAGE,
                 null,

@@ -6,6 +6,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.marklin.MarklinRoute;
 
 /**
  * This class represents a right-click menu on the track editor
@@ -173,7 +174,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             addSeparator();
 
-            menuItem = new JMenuItem("Edit Text");
+            menuItem = new JMenuItem("Edit Text Label");
             menuItem.addActionListener(event -> 
             {
                 try
@@ -216,7 +217,18 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     protocol = MarklinAccessory.getProtocolStringForName(component.getProtocol().toString());
                 }
                 
-                menuItem = new JMenuItem("Edit Address (" + component.getLogicalAddress() + protocol + ")");
+                String addressLabel = component.getTypeName().substring(0,1).toUpperCase() + component.getTypeName().substring(1) + " Address";
+                
+                if (component.isLink())
+                {
+                    addressLabel = "Page ID";
+                }
+                else if (component.isRoute())
+                {
+                    addressLabel = "Route ID";
+                }
+                
+                menuItem = new JMenuItem("Edit " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -231,6 +243,36 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 menuItem.setToolTipText("Control+A");
 
                 add(menuItem);
+                
+                // Shortcut to edit routes
+                if (component.isRoute())
+                {
+                    // Get the route by address, otherwise it will not change as we edit
+                    MarklinRoute route = ui.getModel().getRoute(component.getAddress());
+                    
+                    if (route != null)
+                    {         
+                        addSeparator();
+                        menuItem = new JMenuItem("Edit Linked Route");
+                        menuItem.addActionListener(event -> 
+                        {
+                            try
+                            {
+                                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                {
+                                    ui.editRoute(route.getName());
+                                }));
+                            }
+                            catch (Exception e)
+                            {
+                                JOptionPane.showMessageDialog(this, e.getMessage());
+                            }
+                        });
+                        menuItem.setToolTipText("Shortcut to edit: " + route.getName());
+
+                        add(menuItem);
+                    }
+                }
             }            
         }
         

@@ -239,7 +239,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
         arrivalFuncLabel.setText("Signal/Switch Commands");
-        arrivalFuncLabel.setToolTipText("The commands needed to make this edge match a real segment of track.");
+        arrivalFuncLabel.setToolTipText("The combination of commands needed to connect the start and end of this track segment.  This is effectively a route.");
 
         departureFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));

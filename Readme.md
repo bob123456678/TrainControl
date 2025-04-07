@@ -315,6 +315,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.1 [Beta]
+    - Track Diagram Editing
+        - Added a right-click shortcut to route tiles to enable easy editing of the corresponding route
+        - Improved the clarity of different address options in the right-click menu
+    - Fixed bug where non-sequential route IDs could not be selected in the track diagram editor
+
 * v2.5.0 [4/5/2025]
     - Track Diagram Editing
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows

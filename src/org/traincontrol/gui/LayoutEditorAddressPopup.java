@@ -115,11 +115,26 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
     }
     
+    /**
+     * Used to add/extract the route ID from a string containing the route name
+     * @param r
+     * @return 
+     */
     private String addRouteId(MarklinRoute r)
     {
         if (r == null) return "";
         
         return r.getId() + ". " + r.getName();
+    }
+    
+    private String extractRouteId(String input)
+    {
+        if (input == null || input.isEmpty())
+        {
+            return "0";
+        }
+
+        return input.split("\\.")[0].trim();
     }
     
     public String getAddress()
@@ -130,7 +145,14 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
         else
         {
-            return Integer.toString(this.addressSelector.getSelectedIndex() + 1);
+            if (lc.isRoute() && this.addressSelector.getSelectedItem() != null)
+            {
+                return extractRouteId(this.addressSelector.getSelectedItem().toString());
+            }
+            else
+            {
+                return Integer.toString(this.addressSelector.getSelectedIndex() + 1);
+            }
         }
     }
     
@@ -246,7 +268,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         Timer focusTimer = new Timer(50, e -> address.requestFocusInWindow());
         focusTimer.setRepeats(false); // Ensure the timer only fires once
         focusTimer.start();
-
     }//GEN-LAST:event_addressAncestorAdded
 
 

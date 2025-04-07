@@ -10120,7 +10120,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {          
                 if (routeEditor != null && routeEditor.isVisible())
                 {
-                    JOptionPane.showMessageDialog(this, "You can only edit one route at a time.");
+                    JOptionPane.showMessageDialog(this, "You can only edit one route at a time.  Close the editor window first.");
+                    routeEditor.requestFocus();
                 }
                 else
                 {
