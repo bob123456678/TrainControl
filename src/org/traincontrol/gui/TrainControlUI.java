@@ -114,6 +114,7 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
@@ -13221,6 +13222,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
             this.autoLocPanel.repaint();
             this.locCommandPanels.repaint();
+        }));
+    }
+
+    @Override
+    public void emergencyStopTriggered(Route r)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            JOptionPane.showMessageDialog(this, "The power has been automatically turned off because route " + r.getName() + " was triggered.");
         }));
     }
          

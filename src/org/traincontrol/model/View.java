@@ -3,6 +3,7 @@ package org.traincontrol.model;
 import org.traincontrol.base.Locomotive;
 import java.util.List;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Route;
 
 /**
  * Interface for a generic train control GUI
@@ -43,4 +44,10 @@ public interface View
      * @param latency 
      */
     public void updateLatency(double latency);
+    
+    /**
+     * Alerts that an emergency stop condition was triggered
+     * @param r 
+     */
+    public void emergencyStopTriggered(Route r);
 }

@@ -320,6 +320,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added a right-click shortcut to route tiles to enable easy editing of the corresponding route
         - Improved the clarity of different address options in the right-click menu
         - Improved the clarity of tile names in tooltips
+    - If an emergency stop route automatically fires, a pop-up notification will now be shown in the UI
     - Fixed bug where non-sequential route IDs could not be selected in the track diagram editor
 
 * v2.5.0 [4/5/2025]

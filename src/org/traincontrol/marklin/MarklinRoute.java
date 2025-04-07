@@ -154,7 +154,7 @@ public class MarklinRoute extends Route
             
                     this.network.log("Route " + this.getName() + " S88 triggered");
 
-                    this.execRoute(); 
+                    this.execRoute(true);                    
                 }
             }).start();
             
@@ -203,8 +203,9 @@ public class MarklinRoute extends Route
     
     /**
      * Executes the route
+     * @param auto - was the route triggered automatically?
      */
-    public void execRoute()
+    public void execRoute(boolean auto)
     {
         // Must be a thread for the UI to update correctly
         new Thread(() -> 
@@ -234,6 +235,11 @@ public class MarklinRoute extends Route
                             {
                                 this.network.log("Power turned off due to route condition");
                                 this.network.stop();
+                                
+                                if (auto && this.network.getGUI() != null)
+                                {
+                                    this.network.getGUI().emergencyStopTriggered(this);
+                                }
                             }
                             else
                             {

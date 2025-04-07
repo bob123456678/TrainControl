@@ -2069,7 +2069,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         //this.log("Executing " + this.routeDB.getByName(name).toString());
         
-        this.routeDB.getByName(name).execRoute();
+        this.routeDB.getByName(name).execRoute(false);
     }
     
     /**
