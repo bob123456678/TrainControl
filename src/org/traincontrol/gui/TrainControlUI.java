@@ -10116,7 +10116,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(()->
         {  
-            if (routeName != null)
+            if (routeName != null && this.model.getRoute(routeName) != null)
             {          
                 if (routeEditor != null && routeEditor.isVisible())
                 {
