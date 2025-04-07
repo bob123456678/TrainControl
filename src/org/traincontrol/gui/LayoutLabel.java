@@ -162,18 +162,19 @@ public final class LayoutLabel extends JLabel
                                         {
                                             case 0: // Power on
                                                 tcUI.getModel().go();
-                                                // return;
 
                                                 if (tcUI.getModel().getNetworkCommState())
-                                                try
                                                 {
-                                                    tcUI.getModel().waitForPowerState(true);
+                                                    try
+                                                    {
+                                                        tcUI.getModel().waitForPowerState(true);
 
-                                                    // We need a significant delay because the power might take some time to come on
-                                                    Thread.sleep(1000);
-                                                } 
-                                                catch (InterruptedException ex) { }    
-
+                                                        // We need a significant delay because the power might take some time to come on
+                                                        Thread.sleep(1000);
+                                                    } 
+                                                    catch (InterruptedException ex) { }    
+                                                }
+                                                
                                                 break;
                                             case 2: // No
                                                 return;
@@ -184,7 +185,6 @@ public final class LayoutLabel extends JLabel
 
                                     lastClicked = System.currentTimeMillis();
                                     component.execSwitching();
-
                                 }));
                             }  
                         });    
