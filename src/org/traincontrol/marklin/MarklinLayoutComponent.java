@@ -26,7 +26,7 @@ public class MarklinLayoutComponent
         UNCOUPLER, TUNNEL, TURNTABLE, 
         LAMP, ROUTE, LINK, 
         CUSTOM_PERM_LEFT, CUSTOM_PERM_RIGHT, CUSTOM_PERM_Y, 
-        CUSTOM_PERM_THREEWAY, CUSTOM_SCISSORS, CUSTOM_PERM_SCISSORS, 
+        CUSTOM_PERM_THREEWAY, CUSTOM_PERM_SCISSORS, CUSTOM_SCISSORS, 
         TEXT
     };
         
@@ -357,7 +357,7 @@ public class MarklinLayoutComponent
     }
     
     /**
-     * Currently used to determine the icon name
+     * The name of the icon file used for this component
      * @return 
      */
     public String getTypeName()
@@ -414,6 +414,75 @@ public class MarklinLayoutComponent
             case CUSTOM_PERM_SCISSORS:
             case CUSTOM_SCISSORS:
                 return this.type.toString().toLowerCase();
+        }
+        
+        return "";
+    }
+    
+    /**
+     * A user-friendly description of the component
+     * @return 
+     */
+    public String getUserFriendlyTypeName()
+    {
+        switch (this.type)
+        {
+            case UNCOUPLER:
+                return "Uncoupler";
+            case END:
+                return "Bumper";                
+            case FEEDBACK:
+                return "S88 Feedback";
+            case FEEDBACK_CURVE:
+                return "S88 Feedback (Curved)";
+            case FEEDBACK_DOUBLE_CURVE:
+                return "S88 Feedback (Parallel)";
+            case STRAIGHT:
+                return "Straight Track";
+            case SIGNAL:
+                return "Signal";
+            case DOUBLE_CURVE:
+                return "Parallel Track";
+            case CURVE:
+                return "Curved Track";
+            case SWITCH_LEFT:
+                return "Left Switch";
+            case SWITCH_RIGHT:
+                return "Right Switch";
+            case SWITCH_THREE:
+                return "Three-way Switch";
+            case TUNNEL:
+                return "Tunnel";
+            case CROSSING:
+                return "Crossing";
+            case OVERPASS:
+                return "Overpass";
+            case SWITCH_CROSSING:
+                return "Double Slip Switch";
+            case TURNTABLE:
+                return "Turntable";
+            case LAMP:
+                return "Lamp/Accessory";
+            case SWITCH_Y:
+                return "Y Switch";
+            case ROUTE:
+                return "Route Shortcut";
+            case LINK:
+                return "Page Link";
+            case CUSTOM_PERM_LEFT:
+                return "Left Switch (Static)";
+            case CUSTOM_PERM_RIGHT:
+                return "Right Switch (Static)";
+            case CUSTOM_PERM_Y:
+                return "Y Switch (Static)";
+            case CUSTOM_PERM_THREEWAY:
+                return "Three-way Switch (Static)";
+            case CUSTOM_PERM_SCISSORS:
+                return "Scissor Switch (Static)";
+            case CUSTOM_SCISSORS:
+                return "Scissor Switch";
+            case TEXT:
+                return "Text Label";
         }
         
         return "";
@@ -740,7 +809,7 @@ public class MarklinLayoutComponent
      */
     public void rotate()
     {
-        this.orientation = (this.orientation + 1) % (this.type != componentType.STRAIGHT ? 4 : 2);
+        this.orientation = (this.orientation + 1) % ((this.type != componentType.STRAIGHT && this.type != componentType.FEEDBACK) ? 4 : 2);
     }
     
     /**

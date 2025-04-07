@@ -248,7 +248,7 @@ public class LayoutEditor extends PositionAwareJFrame
             
             if (lastHoveredX == -1)
             {
-                label.setToolTipText("Click to start placing a new \"" + label.getComponent().getType().toString().toLowerCase() + "\" tile");
+                label.setToolTipText("Click to place a new " + label.getComponent().getUserFriendlyTypeName());
             }
             else
             {
@@ -258,17 +258,17 @@ public class LayoutEditor extends PositionAwareJFrame
                 
                 if (this.hasToolFlag())
                 {
-                    if (lastComponent != null) componentString = lastComponent.getTypeName();
-                    if (!componentString.isEmpty()) componentString = " \"" + componentString + "\" tile";
+                    if (lastComponent != null) componentString = lastComponent.getUserFriendlyTypeName();
+                    if (!componentString.isEmpty()) componentString = " " + componentString;
                     
-                    label.setToolTipText("Click to paste" + componentString + "\n" + toolTipText);
+                    label.setToolTipText("Click to paste" + componentString + " tile\n" + toolTipText);
                 }
                 else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
                 {
-                    componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getTypeName();                    
-                    if (!componentString.isEmpty()) componentString = " \"" + componentString + "\" tile";
+                    componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getUserFriendlyTypeName();                    
+                    if (!componentString.isEmpty()) componentString = " " + componentString;
                     
-                    label.setToolTipText("Click to cut" + componentString + "\n" + toolTipText);     
+                    label.setToolTipText("Click to cut" + componentString + " tile\n" + toolTipText);     
                 }
                 else if (this.canUndo())
                 {

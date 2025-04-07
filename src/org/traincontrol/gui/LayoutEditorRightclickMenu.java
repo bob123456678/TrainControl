@@ -217,7 +217,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     protocol = MarklinAccessory.getProtocolStringForName(component.getProtocol().toString());
                 }
                 
-                String addressLabel = component.getTypeName().substring(0,1).toUpperCase() + component.getTypeName().substring(1) + " Address";
+                String addressLabel = component.getUserFriendlyTypeName() + " Address";
                 
                 if (component.isLink())
                 {
