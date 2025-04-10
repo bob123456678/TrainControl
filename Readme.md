@@ -13,12 +13,14 @@ and MFX locomotive database.  If your existing controller is taking the fun out 
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to programmatically control the entire layout ([see API](Automation.md)).  Layout and locomotive information is automatically
-downloaded from the CS2/CS3, currently with some layout limitations on the CS3 (see below).
+downloaded from the CS2/CS3 (with minor limitations on the CS3). Track diagrams can also be designed entirely in TrainControl.
+
+For easy scripting or interactive control, you can write [Python (Jython) scripts to call the TrainControl API](src/org/traincontrol/examples/traincontrol_python_example.py).
 
 TrainControl also provides a UI for creating a graph model of your layout, 
 which when paired with S88 sensors, enables tracking train locations for *fully autonomous* operation at the push of a single button,
 as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
-automate switches while operating trains manually.
+automate switch and signal commands while operating trains manually.
 
 ## Overview
 
