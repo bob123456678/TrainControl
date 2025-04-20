@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -79,8 +81,15 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean pauseRepaint = false;
     
     // Undo history
-    Deque<List<MarklinLayoutComponent>> previousLayoutComponents = new ArrayDeque<>();
-    public static final int MAX_UNDO_HISTORY = 50;
+    Deque<List<MarklinLayoutComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
+    Deque<List<MarklinLayoutComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
+
+    public static final int MAX_UNDO_HISTORY = 100;
+    
+    // Repaint state
+    private final ReentrantLock lock = new ReentrantLock();
+    private boolean isRunning = false;
+    private boolean needsRerun = false;
 
     /**
      * Popup window showing editable train layouts
@@ -926,16 +935,51 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void refreshGrid()
     {
-        // Check if we are doing bulk actions
         if (!pauseRepaint)
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            lock.lock();
+            try
             {
-                drawGrid();
-                
-                // Makes sure the right things get highlighted
-                this.clearBordersFromChildren(this.grid.getContainer());
-            }));
+                // If the method is already running, set the rerun flag and return
+                if (isRunning)
+                {
+                    needsRerun = true;
+                    return;
+                }
+
+                isRunning = true; // Mark as running
+
+                // Execute the method logic
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    try
+                    {
+                        drawGrid();
+                        this.clearBordersFromChildren(this.grid.getContainer());
+                    }
+                    finally
+                    {
+                        lock.lock();
+                        try
+                        {
+                            isRunning = false; // Reset running state
+                            if (needsRerun) // Check if another execution is needed
+                            {
+                                needsRerun = false;
+                                refreshGrid(); // Execute again
+                            }
+                        }
+                        finally
+                        {
+                            lock.unlock();
+                        }
+                    }
+                });
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
     }
     
@@ -1020,9 +1064,19 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Saves a previous version of the layout
+     * Checks if there is any history to redo
+     * @return 
      */
-    synchronized private void snapshotLayout()
+    public boolean canRedo()
+    {
+        return !this.previousLayoutComponentsRedo.isEmpty();
+    }
+    
+    /**
+     * Creates a copy of the current layout
+     * @return 
+     */
+    private List<MarklinLayoutComponent> deepCopyLayout()
     {
         List<MarklinLayoutComponent> history = new ArrayList<>();
         
@@ -1038,13 +1092,22 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
+        return history;
+    }
+    
+    /**
+     * Saves a previous version of the layout
+     */
+    synchronized private void snapshotLayout()
+    {        
         // Enforce size limit
         if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
         {
             this.previousLayoutComponents.removeLast();
         }
-        
-        this.previousLayoutComponents.push(history);
+                
+        this.previousLayoutComponents.push(deepCopyLayout());
+        this.previousLayoutComponentsRedo.clear();
     }
     
     /**
@@ -1057,6 +1120,46 @@ public class LayoutEditor extends PositionAwareJFrame
             if (!this.previousLayoutComponents.isEmpty())
             {         
                 List<MarklinLayoutComponent> history = this.previousLayoutComponents.pop();
+                this.previousLayoutComponentsRedo.push(deepCopyLayout());
+                
+                // Delete all existing components
+                for (MarklinLayoutComponent lc : this.layout.getAll())
+                {
+                    layout.addComponent(null, lc.getX(), lc.getY());
+                }
+
+                // Placed previous components
+                for (MarklinLayoutComponent lc : history)
+                {
+                    layout.addComponent(lc, lc.getX(), lc.getY());
+                }
+                                
+                this.refreshGrid();
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+        }
+    }
+    
+    /**
+     * Restores previous layout state
+     */
+    synchronized public void redo()
+    {
+        try
+        {     
+            if (!this.previousLayoutComponentsRedo.isEmpty())
+            {         
+                List<MarklinLayoutComponent> history = this.previousLayoutComponentsRedo.pop();
+                this.previousLayoutComponents.push(deepCopyLayout());
+                
+                // Enforce undo limit
+                if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
+                {
+                    this.previousLayoutComponents.removeLast();
+                }
                 
                 // Delete all existing components
                 for (MarklinLayoutComponent lc : this.layout.getAll())
@@ -1378,6 +1481,10 @@ public class LayoutEditor extends PositionAwareJFrame
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
             {
                 this.undo();
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Y)
+            {
+                this.redo();
             }
             else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
             {

@@ -320,6 +320,9 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.5.2 [4/19/2025]
+    - Track Diagram Editing
+        - Added a "Redo" option
+        - Increased undo history to 100 actions
     - Track Diagrams
         - Added a "Download Central Station Layout" menu option to easily download all layout files for local editing
         - The "Show Current Data Source" option will prompt whether you want to view the files (was previously always done)

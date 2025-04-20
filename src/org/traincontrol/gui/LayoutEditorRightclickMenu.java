@@ -103,6 +103,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         add(menuItem);
         
+        menuItem = new JMenuItem("Redo");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.redo();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        
+        if (!edit.canRedo()) menuItem.setEnabled(false);
+        menuItem.setToolTipText("Control+Y");
+        
+        add(menuItem);
+        
         if (component != null)
         {
             addSeparator();
