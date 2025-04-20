@@ -29,7 +29,12 @@ public class RouteCommand implements java.io.Serializable
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
     public static final String FEEDBACK_PREFIX = "Feedback";
-
+    
+    public static final String COMMAND_EMERGENCY_STOP = "Emergency Stop";
+    public static final String COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY = "All Lights On (Autonomy Locomotives Only)";
+    public static final String COMMAND_ALL_LIGHTS_ON = "All Lights On";
+    public static final String COMMAND_ALL_FUNCTIONS_OFF = "All Functions Off";
+        
     public static String KEY_NAME = "NAME";
     public static String KEY_ADDRESS = "ADDRESS";
     public static String KEY_FUNCTION = "FUNCTION";
@@ -312,19 +317,19 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (this.isStop())
         {
-            return "Emergency Stop";
+            return COMMAND_EMERGENCY_STOP;
         }
         else if (this.isAutonomyLightsOn())
         {
-            return "All Lights On (Autonomy Locomotives Only)";
+            return COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY;
         }
         else if (this.isLightsOn())
         {
-            return "All Lights On";
+            return COMMAND_ALL_LIGHTS_ON;
         }
         else if (this.isFunctionsOff())
         {
-            return "All Functions Off";
+            return COMMAND_ALL_FUNCTIONS_OFF;
         }
         
         return typeString + ": " + this.commandConfig.toString();
@@ -494,19 +499,19 @@ public class RouteCommand implements java.io.Serializable
     {
         line = line.trim();
         
-        if ("Emergency Stop".equals(line))
+        if (COMMAND_EMERGENCY_STOP.equals(line))
         {
             return RouteCommand.RouteCommandStop();
         }
-        else if ("All Lights On".equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON.equals(line))
         {
             return RouteCommand.RouteCommandLightsOn();
         }
-        else if ("All Lights On (Autonomy Locomotives Only)".equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY.equals(line))
         {
             return RouteCommand.RouteCommandAutonomyLightsOn();
         }
-        else if ("All Functions Off".equals(line))
+        else if (COMMAND_ALL_FUNCTIONS_OFF.equals(line))
         {
             return RouteCommand.RouteCommandFunctionsOff();
         }
