@@ -1679,6 +1679,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.openLegacyTrackDiagramEditor.setVisible(false);
         }
+        
+        // Debug mode indicator
+        if (this.model.isDebug())
+        {
+            setTitle(this.getTitle() + " [Debug]");
+        }
                 
         restoreLayoutTitles();
     }
@@ -10773,20 +10779,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.model.syncWithCS2();
             
-            if (!this.model.getLayoutList().isEmpty())
+            if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())
             {   
                 this.initializeTrackDiagram(true);
             }
             else
             {
                 this.repaintLoc();
+                this.repaintLayout();
                 JOptionPane.showMessageDialog(this, "Invalid path or corrupt data. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
             }    
         }).start();
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
-        JOptionPane.showMessageDialog(this, this.getLayoutPath());
+        
+        String info = this.getLayoutPath(false);
+        
+        if (!info.contains("None"))
+        {
+            int result = JOptionPane.showConfirmDialog(this, info + "\n\nDo you want to view the files?", "Layout Source Info", JOptionPane.YES_NO_OPTION);
+            
+            if (result == JOptionPane.YES_OPTION)
+            {
+                this.getLayoutPath(true);
+            }
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(this, info); 
+        }
     }//GEN-LAST:event_showCurrentLayoutFolderMenuItemActionPerformed
 
     private void mainMenuBarKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_mainMenuBarKeyPressed
@@ -13901,15 +13923,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the active layout path
+     * @param showFolder
      * @return 
      */
-    public String getLayoutPath()
+    public String getLayoutPath(boolean showFolder)
     {
         if (!isLocalLayout())
         {
             String url = "";
             
-            if (!this.model.getLayoutList().isEmpty())
+            if (!this.model.getLayoutList().isEmpty() && showFolder)
             {
                 url = this.model.getLayout((String) this.LayoutList.getSelectedItem()).getUrl();
                 
@@ -13924,7 +13947,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             String path = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
             
-            if (!path.isEmpty())
+            if (!path.isEmpty() && showFolder)
             {
                 showFileExplorer(new File(path));
             }

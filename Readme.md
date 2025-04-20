@@ -322,6 +322,9 @@ Requires JDK 1.8+ and the following libraries:
 * v2.5.2 [4/19/2025]
     - Track Diagrams
         - Added a "Download Central Station Layout" menu option to easily download all layout files for local editing
+        - The "Show Current Data Source" option will prompt whether you want to view the files (was previously always done)
+        - Improved error handling/messages when opening an invalid track diagram
+    - Added a "Debug" indicator to the window title when in debug mode
 
 * v2.5.1 [4/6/2025]
     - Track Diagram Editing
