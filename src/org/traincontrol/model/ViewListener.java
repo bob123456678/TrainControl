@@ -1,5 +1,6 @@
 package org.traincontrol.model;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,4 +82,5 @@ public interface ViewListener
     public int getTotalLocStats(int days, long offset);
     public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l);
     public void waitForPowerState(boolean state) throws InterruptedException;
+    public void downloadLayout(File path) throws Exception;
 }

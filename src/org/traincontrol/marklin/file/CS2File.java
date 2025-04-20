@@ -1204,6 +1204,73 @@ public final class CS2File
     }
     
     /**
+     * Download the remote CS2 layout to the filesystem
+     * @param localPath
+     * @throws Exception 
+     */
+    public void downloadCS2Layout(File localPath) throws Exception
+    {
+        String gleisbild = getLayoutMasterURL();
+
+        // Write this file to localPath/config/gleisbild.cs2
+        File configDir = new File(localPath, "config");
+        if (!configDir.exists())
+        {
+            configDir.mkdirs();
+        }
+        
+        File masterLayoutFile = new File(configDir, "gleisbild.cs2");
+        try (BufferedReader reader = fetchURL(gleisbild);
+        
+        BufferedWriter writer = new BufferedWriter(new FileWriter(masterLayoutFile)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                writer.write(line);
+                writer.newLine();
+            }
+        }
+        
+        // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
+        File layoutsDir = new File(configDir, "gleisbilder");
+        if (!layoutsDir.exists())
+        {
+            layoutsDir.mkdirs();
+        }
+        
+        for (String layoutName : parseLayoutList())
+        {
+            File layoutFile = new File(layoutsDir, layoutName + ".cs2");
+            try (BufferedReader reader = fetchURL(getLayoutURL(layoutName));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(layoutFile)))
+            {
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        }
+        
+        // Download the accessory file      
+        File magsFile = new File(configDir, "magnetartikel.cs2");
+
+        try (BufferedReader reader = fetchURL(this.getMagURL(false));
+        
+        BufferedWriter writer = new BufferedWriter(new FileWriter(magsFile)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                writer.write(line);
+                writer.newLine();
+            }
+        }
+    }
+    
+    /**
      * Reads the list of layouts
      * @return
      * @throws Exception 

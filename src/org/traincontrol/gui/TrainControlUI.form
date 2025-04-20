@@ -195,18 +195,9 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="chooseLocalDataFolderMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="initializeLocalLayoutMenuItem">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Initialize New Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Creates a blank track diagram that you can edit visually."/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="initializeLocalLayoutMenuItemActionPerformed"/>
-              </Events>
-            </MenuItem>
             <Menu class="javax.swing.JMenu" name="modifyLocalLayoutMenu">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Modify Layout"/>
+                <Property name="text" type="java.lang.String" value="Modify Current Layout"/>
                 <Property name="toolTipText" type="java.lang.String" value="Lets you change the track diagram."/>
               </Properties>
               <SubComponents>
@@ -264,6 +255,15 @@
                 </MenuItem>
               </SubComponents>
             </Menu>
+            <MenuItem class="javax.swing.JMenuItem" name="initializeLocalLayoutMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Create New Layout"/>
+                <Property name="toolTipText" type="java.lang.String" value="Creates a blank track diagram that you can edit visually."/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="initializeLocalLayoutMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator8">
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="switchCSLayoutMenuItem">
@@ -273,6 +273,15 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="switchCSLayoutMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="downloadCSLayoutMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Download Central Station Layout"/>
+                <Property name="toolTipText" type="java.lang.String" value="Save the Central Station&apos;s layout to the local filesystem."/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="downloadCSLayoutMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="openCS3AppMenuItem">

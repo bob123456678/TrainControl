@@ -3410,7 +3410,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         showCurrentLayoutFolderMenuItem = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
         chooseLocalDataFolderMenuItem = new javax.swing.JMenuItem();
-        initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
         modifyLocalLayoutMenu = new javax.swing.JMenu();
         addBlankPageMenuItem = new javax.swing.JMenuItem();
         renameLayoutMenuItem = new javax.swing.JMenuItem();
@@ -3420,8 +3419,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLegacyTrackDiagramEditor = new javax.swing.JMenuItem();
         jSeparator21 = new javax.swing.JPopupMenu.Separator();
         deleteLayoutMenuItem = new javax.swing.JMenuItem();
+        initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JPopupMenu.Separator();
         switchCSLayoutMenuItem = new javax.swing.JMenuItem();
+        downloadCSLayoutMenuItem = new javax.swing.JMenuItem();
         openCS3AppMenuItem = new javax.swing.JMenuItem();
         routesMenu = new javax.swing.JMenu();
         exportRoutesMenuItem = new javax.swing.JMenuItem();
@@ -8499,16 +8500,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         layoutMenu.add(chooseLocalDataFolderMenuItem);
 
-        initializeLocalLayoutMenuItem.setText("Initialize New Layout");
-        initializeLocalLayoutMenuItem.setToolTipText("Creates a blank track diagram that you can edit visually.");
-        initializeLocalLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                initializeLocalLayoutMenuItemActionPerformed(evt);
-            }
-        });
-        layoutMenu.add(initializeLocalLayoutMenuItem);
-
-        modifyLocalLayoutMenu.setText("Modify Layout");
+        modifyLocalLayoutMenu.setText("Modify Current Layout");
         modifyLocalLayoutMenu.setToolTipText("Lets you change the track diagram.");
 
         addBlankPageMenuItem.setText("Add Blank Page");
@@ -8562,6 +8554,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         modifyLocalLayoutMenu.add(deleteLayoutMenuItem);
 
         layoutMenu.add(modifyLocalLayoutMenu);
+
+        initializeLocalLayoutMenuItem.setText("Create New Layout");
+        initializeLocalLayoutMenuItem.setToolTipText("Creates a blank track diagram that you can edit visually.");
+        initializeLocalLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                initializeLocalLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(initializeLocalLayoutMenuItem);
         layoutMenu.add(jSeparator8);
 
         switchCSLayoutMenuItem.setText("Switch to Central Station Layout");
@@ -8572,6 +8573,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         layoutMenu.add(switchCSLayoutMenuItem);
+
+        downloadCSLayoutMenuItem.setText("Download Central Station Layout");
+        downloadCSLayoutMenuItem.setToolTipText("Save the Central Station's layout to the local filesystem.");
+        downloadCSLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                downloadCSLayoutMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(downloadCSLayoutMenuItem);
 
         openCS3AppMenuItem.setText("Open CS3 Web App");
         openCS3AppMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -11256,7 +11266,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                + "Edit your layout via the Central Station, or see the Layouts menu to initialize a local track diagram.");
+                + "Edit your layout via the Central Station, or see the Layouts menu to download this layout or initialize a new one.");
             return;
         }
         
@@ -12332,6 +12342,54 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         repaintSwitches();
         prefs.putBoolean(PREFERRED_KEYBOARD_MM2, !((JRadioButton) evt.getSource()).isSelected());
     }//GEN-LAST:event_DCCActionPerformed
+
+    private void downloadCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadCSLayoutMenuItemActionPerformed
+
+        if (!isLocalLayout() && !this.model.getLayoutList().isEmpty())
+        {
+            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+            {
+                JOptionPane.showMessageDialog(this, "In the next window, choose the folder where you want to download the Central Station layout.  TrainControl will then switch to it as the local data source.");
+
+                try
+                {
+                    // Prompt the user to choose a folder
+                    JFileChooser fc = new JFileChooser(
+                        prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
+                    );
+
+                    fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+                    int i = fc.showOpenDialog(this);
+
+                    if (i == JFileChooser.APPROVE_OPTION)
+                    {
+                        File path = fc.getSelectedFile();
+
+                        this.model.downloadLayout(path);
+
+                        // Load the layout
+                        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
+                        this.model.syncWithCS2();
+                        this.repaintLayout();
+                        this.KeyboardTab.setSelectedIndex(1);
+
+                        JOptionPane.showMessageDialog(this, "Download complete.  Layout saved in:\n" + path.getAbsolutePath());
+                    }
+                }
+                catch (Exception e)
+                {
+                    this.model.log("Error downloading Central Station layout.");
+                    this.model.log(e);
+                    JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+                }
+            }));
+        } 
+        else
+        {
+            JOptionPane.showMessageDialog(this, "No Central Station layout is currently available.");
+        }
+    }//GEN-LAST:event_downloadCSLayoutMenuItemActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -13638,6 +13696,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
     private javax.swing.JMenuItem deleteLayoutMenuItem;
+    private javax.swing.JMenuItem downloadCSLayoutMenuItem;
     private javax.swing.JMenuItem downloadUpdateMenuItem;
     private javax.swing.JMenuItem duplicateLayoutMenuItem;
     private javax.swing.JMenuItem editCurrentPageActionPerformed;
@@ -13887,12 +13946,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
                 this.modifyLocalLayoutMenu.setEnabled(false);
+                this.downloadCSLayoutMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
             }
             else
             {
                 // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
                 this.switchCSLayoutMenuItem.setEnabled(true);
                 this.modifyLocalLayoutMenu.setEnabled(true);
+                this.downloadCSLayoutMenuItem.setEnabled(false);
             }
         }));
     }

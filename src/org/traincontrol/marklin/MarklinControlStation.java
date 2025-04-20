@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.1";
+    public static final String RAW_VERSION = "2.5.2";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -269,6 +269,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public String getCS3AppUrl()
     {
         return this.fileParser.getCS3AppUrl();
+    }
+    
+    /**
+     * Saves the CS2 layout to the local filesystem
+     * @param path
+     * @throws Exception 
+     */
+    @Override
+    public void downloadLayout(File path) throws Exception
+    {
+        this.fileParser.downloadCS2Layout(path);
     }
        
     /**

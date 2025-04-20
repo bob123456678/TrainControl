@@ -66,12 +66,14 @@ In some cases, you may need to use a double slip switch or a Y-switch from the "
 If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can import and edit layouts in TrainControl as follows:
 
 - If you have a CS2/CS3 with a layout, import your layout:
+    - From the Layouts menu in TrainControl, switch to the Central Station layout, then select "Download Central Station Layout".
+- Or, import your layout manually:
     - Create an empty folder on your PC
-    - From your CS2/CS3, export `/config/gleisbild.cs2`, `/config/gleisbilder/*`, and optionally `/config/magnetartikel.cs2`, to the new folder, maintaining the same subdirectory structure starting with the `config` folder.  You can open this location from "Show Current Data Source" in the Layouts menu.
+    - From your CS2/CS3, export `/config/gleisbild.cs2`, `/config/gleisbilder/*`, and optionally `/config/magnetartikel.cs2`, to the new folder, maintaining the same subdirectory structure starting with the `config` folder.  You can open this location from "Show Current Data Source" in the Layouts menu, or by accessing the Central Station's IP in your web browser.
     - Start TrainControl, then from the Layouts menu, click on "Open Layout", then select the path to your folder
     - The local layout will now be shown in the Layout tab and can be edited if desired
 - Otherwise, to create a new layout:
-    - Start TrainControl, then from the Layout menu, click on "Initialize New Layout"
+    - Start TrainControl, then from the Layout menu, click on "Create New Layout"
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
 
 Complete editing support is accessible via the "Edit" button within the Layout tab. Pages can be managed from the Layouts menu item.  This will let you fully customize your layout.
@@ -316,6 +318,10 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.5.2 [4/19/2025]
+    - Track Diagrams
+        - Added a "Download Central Station Layout" menu option to easily download all layout files for local editing
 
 * v2.5.1 [4/6/2025]
     - Track Diagram Editing
