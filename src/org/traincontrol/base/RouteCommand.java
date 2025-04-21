@@ -336,6 +336,10 @@ public class RouteCommand implements java.io.Serializable
         {
             typeString = "Feedback";
         }
+        else if (this.isRoute())
+        {
+            typeString = COMMAND_ROUTE_PREFIX;
+        }
         else if (this.isStop())
         {
             return COMMAND_EMERGENCY_STOP;

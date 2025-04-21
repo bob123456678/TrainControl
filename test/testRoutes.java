@@ -63,12 +63,12 @@ public class testRoutes
         List<RouteCommand> routeCommands = new ArrayList<>();
 
         // Populate the list with random RouteCommand objects
-        for (int i = 0; i < random.nextInt(20); i++)
+        for (int i = 0; i < random.nextInt(40); i++)
         {    
             RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE, 
                  TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_ROUTE
             };
-            RouteCommand.commandType randomType = types[random.nextInt(4)];
+            RouteCommand.commandType randomType = types[random.nextInt(8)];
             
             MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
@@ -94,7 +94,7 @@ public class testRoutes
                     break;
                 
                 case TYPE_ACCESSORY:
-                    int address = random.nextInt(100);
+                    int address = random.nextInt(100) + 1;
                     boolean setting = random.nextBoolean();
                     RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol, setting);
                     
