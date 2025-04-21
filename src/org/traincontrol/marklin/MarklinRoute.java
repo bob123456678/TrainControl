@@ -202,11 +202,27 @@ public class MarklinRoute extends Route
     }
     
     /**
-     * Executes the route
-     * @param auto - was the route triggered automatically?
+     * Wrapper for a standard execution call
+     * @param auto 
      */
     public void execRoute(boolean auto)
     {
+        execRoute(auto, 1);
+    }
+    
+    /**
+     * Executes the route
+     * @param auto - was the route triggered automatically?
+     * @param recursionLimit - the maximum number of other routes that can be triggered from this route
+     */
+    private void execRoute(boolean auto, int recursionLimit)
+    {
+        if (recursionLimit < 0)
+        {
+            this.network.log("Route " + this.getName() + " not firing; recursion limit reached.");
+            return;
+        }
+        
         // Must be a thread for the UI to update correctly
         new Thread(() -> 
         {
@@ -297,7 +313,28 @@ public class MarklinRoute extends Route
                             }
                             else
                             {
-                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                                this.network.log("Route warning: locomotive " + rc.getName() + " does not exist (called from " + this.getName() + ")");
+                            }
+                        }
+                        else if (rc.isRoute())
+                        {
+                            MarklinRoute r = this.network.getRoute(rc.getAddress());
+                            
+                            if (r != null)
+                            {
+                                if (!this.equals(r))
+                                {
+                                     // We allow the route to recurse at most once
+                                    r.execRoute(false, recursionLimit - 1);
+                                }
+                                else
+                                {
+                                    this.network.log("Route warning: cannot invoke route ID " + rc.getAddress() + " from itself");
+                                }
+                            }
+                            else
+                            {
+                                this.network.log("Route warning: route ID " + rc.getAddress() + " does not exist (called from " + this.getName() + ")");
                             }
                         }
 

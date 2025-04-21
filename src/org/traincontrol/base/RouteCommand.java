@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONObject;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 
 /**
  * Individual route command
@@ -24,12 +25,13 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 public class RouteCommand implements java.io.Serializable
 {    
     public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, 
-    TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK};
+    TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK, TYPE_ROUTE};
 
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
     public static final String FEEDBACK_PREFIX = "Feedback";
     
+    public static final String COMMAND_ROUTE_PREFIX = "Route";
     public static final String COMMAND_EMERGENCY_STOP = "Emergency Stop";
     public static final String COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY = "All Lights On (Autonomy Locomotives Only)";
     public static final String COMMAND_ALL_LIGHTS_ON = "All Lights On";
@@ -95,6 +97,20 @@ public class RouteCommand implements java.io.Serializable
         
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         r.commandConfig.put(KEY_SETTING, Boolean.toString(setting));
+        
+        return r;
+    }
+    
+    /**
+     * Returns a full route command
+     * @param address
+     * @return
+     */
+    public static RouteCommand RouteCommandRoute(int address)
+    {
+        RouteCommand r = new RouteCommand(TYPE_ROUTE);
+        
+        r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
         
         return r;
     }
@@ -183,6 +199,11 @@ public class RouteCommand implements java.io.Serializable
     public boolean isStop()
     {
         return this.type == TYPE_STOP;
+    }
+    
+    public boolean isRoute()
+    {
+        return this.type == TYPE_ROUTE;
     }
     
     public boolean isLocomotive()
@@ -410,6 +431,11 @@ public class RouteCommand implements java.io.Serializable
             case TYPE_FUNCTIONS_OFF:
                 routeCommand = RouteCommand.RouteCommandFunctionsOff();
                 break;
+                
+            case TYPE_ROUTE:
+                int rAddress = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
+                routeCommand = RouteCommand.RouteCommandRoute(rAddress);
+                break;
 
             default:
                 throw new IllegalArgumentException("Invalid command type in route command JSON.");
@@ -435,6 +461,10 @@ public class RouteCommand implements java.io.Serializable
         if (this.isFeedback())
         {
             return RouteCommand.FEEDBACK_PREFIX + " " + Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0");
+        }
+        else if (this.isRoute())
+        {
+            return RouteCommand.COMMAND_ROUTE_PREFIX + " " + Integer.toString(this.getAddress());
         }
         else if (this.isAccessory())
         {
@@ -514,6 +544,10 @@ public class RouteCommand implements java.io.Serializable
         else if (COMMAND_ALL_FUNCTIONS_OFF.equals(line))
         {
             return RouteCommand.RouteCommandFunctionsOff();
+        }
+        else if (line.startsWith(COMMAND_ROUTE_PREFIX))
+        {
+            return RouteCommand.RouteCommandRoute(Integer.parseInt(line.replace(COMMAND_ROUTE_PREFIX, "").trim()));
         }
         else if (line.startsWith(LOC_SPEED_PREFIX + ","))
         {

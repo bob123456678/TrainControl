@@ -117,8 +117,8 @@ public class RouteEditor extends PositionAwareJFrame
             routeContents.setLineWrap(true);
             routeContents.setText("");
 
-            routeContents.addMouseListener(new MouseListener() {
-
+            routeContents.addMouseListener(new MouseListener()
+            {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                 }
@@ -1300,9 +1300,10 @@ public class RouteEditor extends PositionAwareJFrame
         String[] options = { RouteCommand.RouteCommandLightsOn().toString(),
             RouteCommand.RouteCommandAutonomyLightsOn().toString(),
             RouteCommand.RouteCommandFunctionsOff().toString(), 
-            RouteCommand.RouteCommandStop().toString()
+            RouteCommand.RouteCommandStop().toString(),
+            RouteCommand.COMMAND_ROUTE_PREFIX
         };
-
+        
         String selectedValue = (String) JOptionPane.showInputDialog(
                 this,
                 "Add to route: ",
@@ -1312,6 +1313,52 @@ public class RouteEditor extends PositionAwareJFrame
                 options,
                 options[0]
         );
+        
+        // Prompt the user to choose the route to invoke
+        if (RouteCommand.COMMAND_ROUTE_PREFIX.equals(selectedValue))
+        {
+            // Get list of routes
+            List<String> routes = this.parent.getModel().getRouteList();
+            
+            if (routes.isEmpty())
+            {
+                JOptionPane.showMessageDialog(this, "There are no other routes in the database.  Add one first.");
+                return;
+            }
+
+            // Show second dialog to select a route
+            String selectedRoute = (String) JOptionPane.showInputDialog(
+                    this,
+                    "Choose a route:",
+                    "Select Route",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    routes.toArray(new String[0]), // Convert List<String> to String[]
+                    routes.isEmpty() ? null : routes.get(0) // Default selection (first route if available)
+            );
+
+            if (selectedRoute != null)
+            {
+                // Get route ID and append to selectedValue
+                int routeId = this.parent.getModel().getRoute(selectedRoute).getId();
+                selectedValue = selectedValue + " " + routeId;
+                
+                if (isEdit())
+                {
+                    MarklinRoute thisRoute = this.parent.getModel().getRoute(this.getOriginalRouteName());
+                    
+                    if (thisRoute != null && thisRoute.getId() == routeId)
+                    {
+                        JOptionPane.showMessageDialog(this, "A route cannot trigger itself. Pick a different route.");
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
         
         if (selectedValue != null)
         {              

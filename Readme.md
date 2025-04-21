@@ -319,6 +319,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.3 [4/21/2025]
+    - Routes
+        - Routes can now trigger other routes
+        - When a route triggers another route, no further routes will be triggered from the second route
+
 * v2.5.2 [4/19/2025]
     - Track Diagram Editing
         - Added a "Redo" option

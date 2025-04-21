@@ -20,6 +20,10 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTONOMY_LIGHTS_ON;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_LIGHTS_ON;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 
 /**
  *
@@ -61,13 +65,34 @@ public class testRoutes
         // Populate the list with random RouteCommand objects
         for (int i = 0; i < random.nextInt(20); i++)
         {    
-            RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE};
+            RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE, 
+                 TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_ROUTE
+            };
             RouteCommand.commandType randomType = types[random.nextInt(4)];
             
             MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
             
-            switch (randomType) {
+            switch (randomType)
+            {
+                case TYPE_AUTONOMY_LIGHTS_ON:
+                    routeCommands.add(RouteCommand.RouteCommandAutonomyLightsOn());
+                    break;
+                    
+                case TYPE_FUNCTIONS_OFF:
+                    routeCommands.add(RouteCommand.RouteCommandFunctionsOff());
+                    break;
+                    
+                case TYPE_LIGHTS_ON:
+                    routeCommands.add(RouteCommand.RouteCommandLightsOn());
+                    break;
+                    
+                case TYPE_ROUTE:
+                    String selectedRoute = model.getRouteList().get(random.nextInt(model.getRouteList().size()));
+                    int routeId = model.getRoute(selectedRoute).getId();
+                    routeCommands.add(RouteCommand.RouteCommandRoute(routeId));
+                    break;
+                
                 case TYPE_ACCESSORY:
                     int address = random.nextInt(100);
                     boolean setting = random.nextBoolean();
@@ -80,6 +105,7 @@ public class testRoutes
                     
                     routeCommands.add(accessoryCommand);                    
                     break;
+                
                 case TYPE_STOP:
                     RouteCommand stopCommand = RouteCommand.RouteCommandStop();
                     routeCommands.add(stopCommand);
