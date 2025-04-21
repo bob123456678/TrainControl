@@ -89,8 +89,8 @@ public class testRoutes
                     
                 case TYPE_ROUTE:
                     String selectedRoute = model.getRouteList().get(random.nextInt(model.getRouteList().size()));
-                    int routeId = model.getRoute(selectedRoute).getId();
-                    routeCommands.add(RouteCommand.RouteCommandRoute(routeId));
+                    String routeName = model.getRoute(selectedRoute).getName();
+                    routeCommands.add(RouteCommand.RouteCommandRoute(routeName));
                     break;
                 
                 case TYPE_ACCESSORY:

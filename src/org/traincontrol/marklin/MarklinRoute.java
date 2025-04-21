@@ -318,7 +318,7 @@ public class MarklinRoute extends Route
                         }
                         else if (rc.isRoute())
                         {
-                            MarklinRoute r = this.network.getRoute(rc.getAddress());
+                            MarklinRoute r = this.network.getRoute(rc.getName());
                             
                             if (r != null)
                             {
@@ -329,12 +329,12 @@ public class MarklinRoute extends Route
                                 }
                                 else
                                 {
-                                    this.network.log("Route warning: cannot invoke route ID " + rc.getAddress() + " from itself");
+                                    this.network.log("Route warning: cannot invoke route " + rc.getName()+ " from itself");
                                 }
                             }
                             else
                             {
-                                this.network.log("Route warning: route ID " + rc.getAddress() + " does not exist (called from " + this.getName() + ")");
+                                this.network.log("Route warning: route " + rc.getName()+ " does not exist (called from " + this.getName() + ")");
                             }
                         }
 

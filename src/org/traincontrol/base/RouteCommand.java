@@ -103,14 +103,14 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full route command
-     * @param address
+     * @param name
      * @return
      */
-    public static RouteCommand RouteCommandRoute(int address)
+    public static RouteCommand RouteCommandRoute(String name)
     {
         RouteCommand r = new RouteCommand(TYPE_ROUTE);
         
-        r.commandConfig.put(KEY_ADDRESS, Integer.toString(address));
+        r.commandConfig.put(KEY_NAME, name);
         
         return r;
     }
@@ -433,8 +433,8 @@ public class RouteCommand implements java.io.Serializable
                 break;
                 
             case TYPE_ROUTE:
-                int rAddress = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
-                routeCommand = RouteCommand.RouteCommandRoute(rAddress);
+                String rName = jsonObject.getJSONObject("state").getString(KEY_NAME);
+                routeCommand = RouteCommand.RouteCommandRoute(rName);
                 break;
 
             default:
@@ -464,7 +464,7 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (this.isRoute())
         {
-            return RouteCommand.COMMAND_ROUTE_PREFIX + " " + Integer.toString(this.getAddress());
+            return RouteCommand.COMMAND_ROUTE_PREFIX + " " + this.getName() + "\n";
         }
         else if (this.isAccessory())
         {
@@ -547,7 +547,7 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (line.startsWith(COMMAND_ROUTE_PREFIX))
         {
-            return RouteCommand.RouteCommandRoute(Integer.parseInt(line.replace(COMMAND_ROUTE_PREFIX, "").trim()));
+            return RouteCommand.RouteCommandRoute(line.replace(COMMAND_ROUTE_PREFIX, "").trim());
         }
         else if (line.startsWith(LOC_SPEED_PREFIX + ","))
         {

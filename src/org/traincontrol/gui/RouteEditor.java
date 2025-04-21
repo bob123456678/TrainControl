@@ -1340,16 +1340,16 @@ public class RouteEditor extends PositionAwareJFrame
             if (selectedRoute != null)
             {
                 // Get route ID and append to selectedValue
-                int routeId = this.parent.getModel().getRoute(selectedRoute).getId();
-                selectedValue = selectedValue + " " + routeId;
+                String otherRouteName = this.parent.getModel().getRoute(selectedRoute).getName();
+                selectedValue = selectedValue + " " + otherRouteName;
                 
                 if (isEdit())
                 {
                     MarklinRoute thisRoute = this.parent.getModel().getRoute(this.getOriginalRouteName());
                     
-                    if (thisRoute != null && thisRoute.getId() == routeId)
+                    if (thisRoute != null && thisRoute.getName().equals(otherRouteName))
                     {
-                        JOptionPane.showMessageDialog(this, "A route cannot trigger itself. Pick a different route.");
+                        JOptionPane.showMessageDialog(this, "A route cannot trigger itself. Please pick a different route.");
                         return;
                     }
                 }
