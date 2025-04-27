@@ -292,7 +292,11 @@ public final class LayoutLabel extends JLabel
                                 protocol = MarklinAccessory.getProtocolStringForName(this.component.getAccessory().getDecoderType().toString());
                             }
                             
-                            this.setToolTipText(this.component.toSimpleString() + protocol);
+                            // We don't need tooltips if address labels are on
+                            //if (!tcUI.showLayoutAddresses())
+                            //{
+                                this.setToolTipText(this.component.toSimpleString() + protocol);
+                            //}
                             
                             // Change the cursor to indicate the component is clickable
                             this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
