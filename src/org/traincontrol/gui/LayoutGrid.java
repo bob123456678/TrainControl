@@ -216,7 +216,7 @@ public class LayoutGrid
                 }
                 
                 // Show address labels
-                if (c != null && // && 
+                if (c != null &&
                         ((layout.getEdit() && layout.getEditShowAddress()) || (!layout.getEdit() && ui.showLayoutAddresses())) &&
                         !c.isText() && c.isClickable())
                 {
