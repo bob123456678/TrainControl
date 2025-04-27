@@ -319,6 +319,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.4 [Beta]
+    - Track Diagrams
+        - Added a setting (in the Preferences -> Layout menu) to show address labels in track diagrams
+
 * v2.5.3 [4/21/2025]
     - Routes
         - Routes can now trigger other routes

@@ -10,6 +10,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -215,9 +216,33 @@ public class LayoutGrid
                 }
                 
                 // Show address labels
-                if (c != null && layout.getEdit() && layout.getEditShowAddress() && !c.isText() && c.isClickable())
+                if (c != null && // && 
+                        ((layout.getEdit() && layout.getEditShowAddress()) || (!layout.getEdit() && ui.showLayoutAddresses())) &&
+                        !c.isText() && c.isClickable())
                 {
                     JLabel text = new JLabel();
+                    
+                    // Cascade click event
+                    final JLabel outer = grid[x][y];
+                    
+                    if (!layout.getEdit())
+                    {
+                        text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    }
+                   
+                    text.addMouseListener(new MouseAdapter()
+                    {
+                        @Override
+                        public void mouseClicked(MouseEvent e)
+                        {
+                            // Manually trigger the mouseClicked event of grid[x][y]
+                            for (MouseListener listener : outer.getMouseListeners())
+                            {
+                                listener.mouseClicked(e);
+                            }
+                        }
+                    });
+
                     text.setForeground(Color.RED);
                     text.setOpaque(true);
                     text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow

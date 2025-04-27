@@ -177,7 +177,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
     public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
     public static final String PREFERRED_KEYBOARD_MM2 = "PreferredKeyboardMM2";
-
+    public static final String LAYOUT_SHOW_ADDRESSES = "LayoutShowAddresses";
     
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
@@ -615,7 +615,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
-    
+        this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
+        
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
             this.MM2.setSelected(true);
@@ -3453,6 +3454,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         AutoLoadAutonomyMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         checkForUpdates = new javax.swing.JCheckBoxMenuItem();
+        jMenu2 = new javax.swing.JMenu();
+        menuItemShowLayoutAddresses = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         viewReleasesMenuItem = new javax.swing.JMenuItem();
         downloadUpdateMenuItem = new javax.swing.JMenuItem();
@@ -8768,6 +8771,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         interfaceMenu.add(jMenu1);
 
+        jMenu2.setText("Layouts");
+
+        menuItemShowLayoutAddresses.setSelected(true);
+        menuItemShowLayoutAddresses.setText("Show Addresses");
+        menuItemShowLayoutAddresses.setToolTipText("Show accessory address labels in the track diagram?");
+        menuItemShowLayoutAddresses.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuItemShowLayoutAddressesActionPerformed(evt);
+            }
+        });
+        jMenu2.add(menuItemShowLayoutAddresses);
+
+        interfaceMenu.add(jMenu2);
+
         mainMenuBar.add(interfaceMenu);
 
         helpMenu.setText("Help");
@@ -12413,6 +12430,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_downloadCSLayoutMenuItemActionPerformed
 
+    /**
+     * Returns whether addresses should be shown in track diagrams
+     * @return 
+     */
+    public boolean showLayoutAddresses()
+    {
+        return prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false);
+    }
+    
+    private void menuItemShowLayoutAddressesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemShowLayoutAddressesActionPerformed
+        prefs.putBoolean(LAYOUT_SHOW_ADDRESSES, this.menuItemShowLayoutAddresses.isSelected());
+        
+        // Repaint diagrams
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            this.repaintLayout(false, false);
+            this.updatePopups(true);
+        }));
+    }//GEN-LAST:event_menuItemShowLayoutAddressesActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -13787,6 +13824,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
     private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -13842,6 +13880,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider maxDelay;
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider maximumLatency;
+    private javax.swing.JCheckBoxMenuItem menuItemShowLayoutAddresses;
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenu modifyLocalLayoutMenu;
     private javax.swing.JMenuItem openCS3AppMenuItem;

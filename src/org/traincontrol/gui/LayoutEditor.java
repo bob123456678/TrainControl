@@ -107,6 +107,12 @@ public class LayoutEditor extends PositionAwareJFrame
         this.size = size;
         this.layout = l;
         
+        if (ui.showLayoutAddresses())
+        {
+            this.showAddressCheckbox.setSelected(true);
+            l.setEditShowAddress(true);
+        }
+        
         this.setFocusable(true);
         this.requestFocusInWindow();
         
