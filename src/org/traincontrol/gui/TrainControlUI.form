@@ -491,7 +491,7 @@
                 </MenuItem>
               </SubComponents>
             </Menu>
-            <Menu class="javax.swing.JMenu" name="jMenu2">
+            <Menu class="javax.swing.JMenu" name="layoutMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Layouts"/>
               </Properties>

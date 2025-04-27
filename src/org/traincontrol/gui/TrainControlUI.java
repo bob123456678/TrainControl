@@ -3454,7 +3454,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         AutoLoadAutonomyMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         checkForUpdates = new javax.swing.JCheckBoxMenuItem();
-        jMenu2 = new javax.swing.JMenu();
+        layoutMenuItem = new javax.swing.JMenu();
         menuItemShowLayoutAddresses = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         viewReleasesMenuItem = new javax.swing.JMenuItem();
@@ -8771,7 +8771,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         interfaceMenu.add(jMenu1);
 
-        jMenu2.setText("Layouts");
+        layoutMenuItem.setText("Layouts");
 
         menuItemShowLayoutAddresses.setSelected(true);
         menuItemShowLayoutAddresses.setText("Show Addresses");
@@ -8781,9 +8781,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 menuItemShowLayoutAddressesActionPerformed(evt);
             }
         });
-        jMenu2.add(menuItemShowLayoutAddresses);
+        layoutMenuItem.add(menuItemShowLayoutAddresses);
 
-        interfaceMenu.add(jMenu2);
+        interfaceMenu.add(layoutMenuItem);
 
         mainMenuBar.add(interfaceMenu);
 
@@ -13824,7 +13824,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
     private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -13864,6 +13863,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel latencyLabel;
     private javax.swing.JLabel layoutListLabel;
     private javax.swing.JMenu layoutMenu;
+    private javax.swing.JMenu layoutMenuItem;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
     private javax.swing.JButton loadDefaultBlankGraph;
