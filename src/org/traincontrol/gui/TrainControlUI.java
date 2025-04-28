@@ -12434,13 +12434,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Returns whether addresses should be shown in track diagrams
      * @return 
      */
-    public boolean showLayoutAddresses()
+    private boolean showLayoutAddresses()
     {
-        return prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false);
+        return this.menuItemShowLayoutAddresses.isSelected();
     }
     
     private void menuItemShowLayoutAddressesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemShowLayoutAddressesActionPerformed
         prefs.putBoolean(LAYOUT_SHOW_ADDRESSES, this.menuItemShowLayoutAddresses.isSelected());
+        
+        // Set the preference here to avoid race condition
+        for (String layoutName : this.model.getLayoutList())
+        {
+            this.model.getLayout(layoutName).setShowAddress(this.menuItemShowLayoutAddresses.isSelected());
+        }
         
         // Repaint diagrams
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -14086,6 +14092,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else
                     {
+                        // Set address label preference
+                        this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.showLayoutAddresses());
+                        
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
                             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 

@@ -40,7 +40,8 @@ public class LayoutGrid
     public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
     public static final int LAYOUT_STATION_OPACITY = 210;
-    
+    public static final int LAYOUT_ADDRESS_OPACITY = 200;
+
     // Component that holds the layout
     private JPanel container;
     
@@ -217,7 +218,7 @@ public class LayoutGrid
                 
                 // Show address labels
                 if (c != null &&
-                        ((layout.getEdit() && layout.getEditShowAddress()) || (!layout.getEdit() && ui.showLayoutAddresses())) &&
+                        layout.getShowAddress() &&
                         !c.isText() && c.isClickable())
                 {
                     JLabel text = new JLabel();
@@ -245,11 +246,12 @@ public class LayoutGrid
 
                     text.setForeground(Color.RED);
                     text.setOpaque(true);
-                    text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                    text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_ADDRESS_OPACITY)); // yellow
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3));
                     
                     //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                     gbc.gridheight = 0;
+                    gbc.anchor = GridBagConstraints.NORTHWEST;
                     
                     // For uncouplers, show the precise address
                     String redOrGreen = "";

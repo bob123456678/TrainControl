@@ -65,7 +65,7 @@ public class MarklinLayout
     // Are we in edit mode?
     private boolean edit = false;
     private boolean editHideText = false;
-    private boolean editShowAddress = false;
+    private boolean showAddress = false;
 
     /**
      * Constructor
@@ -398,14 +398,14 @@ public class MarklinLayout
         this.editHideText = editHideText;
     }
     
-    public boolean getEditShowAddress()
+    public boolean getShowAddress()
     {
-        return editShowAddress;
+        return showAddress;
     }
 
-    public void setEditShowAddress(boolean editShowAddress)
+    public void setShowAddress(boolean showAddress)
     {
-        this.editShowAddress = editShowAddress;
+        this.showAddress = showAddress;
     }
     
     /**

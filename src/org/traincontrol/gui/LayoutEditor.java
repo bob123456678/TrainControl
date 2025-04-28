@@ -15,7 +15,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
@@ -107,10 +106,9 @@ public class LayoutEditor extends PositionAwareJFrame
         this.size = size;
         this.layout = l;
         
-        if (ui.showLayoutAddresses())
+        if (l.getShowAddress())
         {
             this.showAddressCheckbox.setSelected(true);
-            l.setEditShowAddress(true);
         }
         
         this.setFocusable(true);
@@ -996,9 +994,9 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            this.layout.setEditShowAddress(!this.layout.getEditShowAddress());
+            this.layout.setShowAddress(!this.layout.getShowAddress());
             
-            this.showAddressCheckbox.setSelected(this.layout.getEditShowAddress());
+            this.showAddressCheckbox.setSelected(this.layout.getShowAddress());
             
             refreshGrid();
         }
