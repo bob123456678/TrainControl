@@ -99,7 +99,7 @@ element
 element
  .id=0x105
  .artikel=-1
- .text=<- 17
+ .text=←17
 element
  .id=0x106
  .typ=bogen

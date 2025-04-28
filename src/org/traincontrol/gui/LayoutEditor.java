@@ -106,10 +106,8 @@ public class LayoutEditor extends PositionAwareJFrame
         this.size = size;
         this.layout = l;
         
-        if (l.getShowAddress())
-        {
-            this.showAddressCheckbox.setSelected(true);
-        }
+        // Mirror address preference
+        this.showAddressCheckbox.setSelected(l.getShowAddress());
         
         this.setFocusable(true);
         this.requestFocusInWindow();
@@ -1336,6 +1334,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         saveButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
         saveButton.setText("Save Changes");
+        saveButton.setFocusable(false);
         saveButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 saveButtonActionPerformed(evt);
@@ -1344,6 +1343,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         cancelButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
         cancelButton.setText("Cancel");
+        cancelButton.setFocusable(false);
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelButtonActionPerformed(evt);
@@ -1520,7 +1520,6 @@ public class LayoutEditor extends PositionAwareJFrame
     }//GEN-LAST:event_saveButtonActionPerformed
 
     private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed
-        
         confirmExit();
     }//GEN-LAST:event_cancelButtonActionPerformed
 

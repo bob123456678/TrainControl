@@ -322,6 +322,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.5.4 [Beta]
     - Track Diagrams
         - Added a setting (in the Preferences -> Layout menu) to show address labels in track diagrams
+    - Fixed bug where clicking on Cancel in the layout editor would prevent future keyboard commands from working
 
 * v2.5.3 [4/21/2025]
     - Routes

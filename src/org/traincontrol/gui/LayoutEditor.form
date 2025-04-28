@@ -135,6 +135,7 @@
           <Font name="Segoe UI" size="11" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Save Changes"/>
+        <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="saveButtonActionPerformed"/>
@@ -146,6 +147,7 @@
           <Font name="Segoe UI" size="11" style="1"/>
         </Property>
         <Property name="text" type="java.lang.String" value="Cancel"/>
+        <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="cancelButtonActionPerformed"/>

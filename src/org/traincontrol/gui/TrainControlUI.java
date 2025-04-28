@@ -1652,6 +1652,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Remember window location.  Because isResizable is already false, this will not restore the size
         this.loadWindowBounds();
         
+        // Ensure the preference is properly set across the layouts
+        this.ensureShowLayoutPreference(); 
+        
         // Ensure the locomotive pane is updated
         this.repaintLoc(true, null);
         
@@ -12431,29 +12434,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_downloadCSLayoutMenuItemActionPerformed
 
     /**
-     * Returns whether addresses should be shown in track diagrams
+     * Returns whether addresses should be shown in track diagrams, and ensures the setting is propagated to all layouts
      * @return 
      */
-    private boolean showLayoutAddresses()
+    private boolean getShowLayoutAddresses()
     {
         return this.menuItemShowLayoutAddresses.isSelected();
     }
     
-    private void menuItemShowLayoutAddressesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemShowLayoutAddressesActionPerformed
-        prefs.putBoolean(LAYOUT_SHOW_ADDRESSES, this.menuItemShowLayoutAddresses.isSelected());
-        
-        // Set the preference here to avoid race condition
+    /**
+     * Tells each layout to display address labels
+     */
+    private void ensureShowLayoutPreference()
+    {
         for (String layoutName : this.model.getLayoutList())
         {
             this.model.getLayout(layoutName).setShowAddress(this.menuItemShowLayoutAddresses.isSelected());
         }
-        
-        // Repaint diagrams
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-        {
-            this.repaintLayout(false, false);
-            this.updatePopups(true);
-        }));
+    }
+    
+    private void menuItemShowLayoutAddressesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemShowLayoutAddressesActionPerformed
+        prefs.putBoolean(LAYOUT_SHOW_ADDRESSES, this.menuItemShowLayoutAddresses.isSelected());
+                
+        if (!this.model.getLayoutList().isEmpty())
+        {      
+            this.ensureShowLayoutPreference();
+            
+            // Repaint diagrams
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                this.repaintLayout(false, false);
+                this.updatePopups(true);
+            }));
+        }
     }//GEN-LAST:event_menuItemShowLayoutAddressesActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
@@ -14093,7 +14106,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     else
                     {
                         // Set address label preference
-                        this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.showLayoutAddresses());
+                        this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.getShowLayoutAddresses());
                         
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
