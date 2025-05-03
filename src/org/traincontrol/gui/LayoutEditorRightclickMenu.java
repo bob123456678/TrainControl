@@ -172,60 +172,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             menuItem.setToolTipText("Control+R");
 
             add(menuItem);
-            
-            addSeparator();
-            
-            menuItem = new JMenuItem("Delete");
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.delete(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Delete");
-            add(menuItem);
-
-            addSeparator();
-
-            menuItem = new JMenuItem("Edit Text Label");
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.editText(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+T");
-            add(menuItem);
-            
-            if (ui.getModel().getAutoLayout() != null && !ui.getModel().getAutoLayout().getPoints().isEmpty())
-            {     
-                menuItem = new JMenuItem("Place Autonomy Station Label");
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        edit.editTextWithDropdown(label);
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
-                    }
-                });
-                menuItem.setToolTipText("Control+S");
-            }
-
-            add(menuItem);
-            
+                        
             if (component.isClickable())
             {
                 addSeparator();
@@ -246,6 +193,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 else if (component.isRoute())
                 {
                     addressLabel = "Route ID";
+                }
+                else if (component.isFeedback())
+                {
+                    addressLabel = "Feedback Address";
                 }
                 
                 menuItem = new JMenuItem("Change " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
@@ -292,7 +243,43 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                         add(menuItem);
                     }
                 }
-            }            
+            }  
+
+            addSeparator();
+
+            menuItem = new JMenuItem("Edit Text Label");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.editText(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            menuItem.setToolTipText("Control+T");
+            add(menuItem);
+            
+            if (ui.getModel().getAutoLayout() != null && !ui.getModel().getAutoLayout().getPoints().isEmpty())
+            {     
+                menuItem = new JMenuItem("Place Autonomy Station Label");
+                menuItem.addActionListener(event -> 
+                {
+                    try
+                    {
+                        edit.editTextWithDropdown(label);
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });
+                menuItem.setToolTipText("Control+S");
+            }
+
+            add(menuItem);      
         }
         
         addSeparator();
@@ -334,6 +321,23 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         add(menuItem);
         
         addSeparator(); */
+             
+        menuItem = new JMenuItem("Delete");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.delete(label);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        menuItem.setToolTipText("Delete");
+        add(menuItem);
+        
+        addSeparator();
 
         menuItem = new JMenuItem("Increase Diagram Dimensions");
         menuItem.addActionListener(event -> 

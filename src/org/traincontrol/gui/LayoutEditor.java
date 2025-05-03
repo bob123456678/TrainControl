@@ -1045,15 +1045,23 @@ public class LayoutEditor extends PositionAwareJFrame
                     DEFAULT_NEW_SIZE_COLS - this.layout.getSx());            
         }
         
-        grid = new LayoutGrid(this.layout, size,
-            this.ExtLayoutPanel, 
-            this,
-            true, parent);
-                
-        grid.getContainer().revalidate();
-        this.ExtLayoutPanel.revalidate();
-        grid.getContainer().repaint();
-        this.ExtLayoutPanel.repaint();
+        try
+        {       
+            grid = new LayoutGrid(this.layout, size,
+                this.ExtLayoutPanel, 
+                this,
+                true, parent);
+            
+            grid.getContainer().revalidate();
+            this.ExtLayoutPanel.revalidate();
+            grid.getContainer().repaint();
+            this.ExtLayoutPanel.repaint();
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
     }
     
     /**

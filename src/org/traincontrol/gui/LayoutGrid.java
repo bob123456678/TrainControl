@@ -242,14 +242,29 @@ public class LayoutGrid
                                 listener.mouseClicked(e);
                             }
                         }
+                        
+                        @Override
+                        public void mouseEntered(MouseEvent e)
+                        {
+                            // Manually trigger the mouseClicked event of grid[x][y]
+                            for (MouseListener listener : outer.getMouseListeners())
+                            {
+                                listener.mouseEntered(e);
+                            }
+                        }
                     });
 
                     text.setForeground(Color.RED);
                     text.setOpaque(true);
                     text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_ADDRESS_OPACITY)); // yellow
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
-                    text.setToolTipText(c.toSimpleString());
-                   
+                    
+                    // To avoid a bug where feedback doesn't yet exist, turn off tooltips in the editor
+                    if (!layout.getEdit())
+                    {
+                        text.setToolTipText(c.toSimpleString());
+                    }
+                    
                     //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                     gbc.gridheight = 0;
                     gbc.anchor = GridBagConstraints.NORTHWEST;
