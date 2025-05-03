@@ -319,7 +319,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.5 [Beta]
+* v2.5.5 [5/3/2025]
     - Track Diagrams
         - In autonomy mode, the origin station is now highlighted in green for the duration of the route
         - Address labels now also have tooltips
