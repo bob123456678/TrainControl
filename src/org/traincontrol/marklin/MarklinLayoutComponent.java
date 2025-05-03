@@ -622,17 +622,25 @@ public class MarklinLayoutComponent
      */
     public String toSimpleString()
     {        
+        // Add the protocol
+        String protocol = "";
+
+        if (this.getAccessory() != null)
+        {
+            protocol = MarklinAccessory.getProtocolStringForName(this.getAccessory().getDecoderType().toString());
+        }
+        
         if (this.isThreeWay())
         {
-            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1);
+            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1) + protocol;
         }
         else if (this.isSwitch())
         {
-            return "Switch " + this.getAddress();
+            return "Switch " + this.getAddress() + protocol;
         }
         else if (this.isUncoupler())
         {
-            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green");
+            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green") + protocol;
         }
         else if (this.isFeedback())
         {
@@ -640,7 +648,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isSignal())
         {
-            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress();
+            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress() + protocol;
         }
         else if (this.isRoute() && this.getRoute() != null)
         {

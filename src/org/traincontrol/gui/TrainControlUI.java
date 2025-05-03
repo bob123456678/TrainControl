@@ -12933,9 +12933,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 if (!p.equals(start))
                                 {
                                     j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
+                                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
                                 }
-                                
-                                j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                // Originating station highlighted in green
+                                else
+                                {
+                                    j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                }  
                             }
                         }
                         else

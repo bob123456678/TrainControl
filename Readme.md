@@ -319,6 +319,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.5 [Beta]
+    - Track Diagrams
+        - In autonomy mode, the origin station is now highlighted in green for the duration of the route
+        - Address labels now also have tooltips
+    - Track Diagram Editor
+        - Improved the phrasing of right-click menu options
+
 * v2.5.4 [4/27/2025]
     - Track Diagrams
         - Added a setting (in the Preferences -> Layout menu) to show address labels in track diagrams

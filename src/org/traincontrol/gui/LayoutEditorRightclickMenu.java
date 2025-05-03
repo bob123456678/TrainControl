@@ -228,6 +228,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             
             if (component.isClickable())
             {
+                addSeparator();
+                
                 String protocol = "";
     
                 if (component.getProtocol() != null)
@@ -239,14 +241,14 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 
                 if (component.isLink())
                 {
-                    addressLabel = "Page ID";
+                    addressLabel = "Linked Page";
                 }
                 else if (component.isRoute())
                 {
                     addressLabel = "Route ID";
                 }
                 
-                menuItem = new JMenuItem("Edit " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
+                menuItem = new JMenuItem("Change " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -270,7 +272,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     
                     if (route != null)
                     {         
-                        addSeparator();
                         menuItem = new JMenuItem("Edit Linked Route");
                         menuItem.addActionListener(event -> 
                         {

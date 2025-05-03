@@ -247,8 +247,9 @@ public class LayoutGrid
                     text.setForeground(Color.RED);
                     text.setOpaque(true);
                     text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_ADDRESS_OPACITY)); // yellow
-                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3));
-                    
+                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
+                    text.setToolTipText(c.toSimpleString());
+                   
                     //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                     gbc.gridheight = 0;
                     gbc.anchor = GridBagConstraints.NORTHWEST;
