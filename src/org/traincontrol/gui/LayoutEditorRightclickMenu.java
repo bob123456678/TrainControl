@@ -238,8 +238,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                                 JOptionPane.showMessageDialog(this, e.getMessage());
                             }
                         });
+                        
                         menuItem.setToolTipText("Shortcut to edit: " + route.getName());
-
                         add(menuItem);
                     }
                 }
@@ -277,9 +277,26 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     }
                 });
                 menuItem.setToolTipText("Control+S");
+                add(menuItem);
             }
 
-            add(menuItem);      
+            addSeparator();
+            
+            menuItem = new JMenuItem("Delete");
+            menuItem.addActionListener(event -> 
+            {
+                try
+                {
+                    edit.delete(label);
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(this, e.getMessage());
+                }
+            });
+            
+            menuItem.setToolTipText("Delete");
+            add(menuItem);
         }
         
         addSeparator();
@@ -322,23 +339,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator(); */
              
-        menuItem = new JMenuItem("Delete");
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.delete(label);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        menuItem.setToolTipText("Delete");
-        add(menuItem);
-        
-        addSeparator();
-
         menuItem = new JMenuItem("Increase Diagram Dimensions");
         menuItem.addActionListener(event -> 
         {
