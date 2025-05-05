@@ -584,24 +584,29 @@ public class LayoutEditor extends PositionAwareJFrame
      * Deletes this label from the layout
      * @param x 
      */
-    synchronized public void delete(LayoutLabel x)
+    synchronized public void delete(LayoutLabel label)
     {
-        try
-        {
-            if (!this.pauseRepaint)
-            {
-                this.snapshotLayout();
-            }
-            
-            layout.addComponent(null, grid.getCoordinates(x)[0], grid.getCoordinates(x)[1]);
-            this.resetClipboard();
-        }
-        catch (IOException ex)
-        {
+        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
 
+        if (lc != null)
+        {       
+            try
+            {
+                if (!this.pauseRepaint)
+                {
+                    this.snapshotLayout();
+                }
+
+                layout.addComponent(null, getX(label), getY(label));
+                this.resetClipboard();
+            }
+            catch (IOException ex)
+            {
+
+            }
+
+            refreshGrid();
         }
-        
-        refreshGrid();
     }
         
     /**

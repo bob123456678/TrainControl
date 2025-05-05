@@ -44,23 +44,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 // Get the locomotive at this station
                 Locomotive locomotive = current.getCurrentLocomotive();
-                
-                // Place a different locomotive at this station
-                if (ui.getActiveLoc() != null && !ui.getModel().getAutoLayout().isRunning() &&
-                        !ui.getActiveLoc().equals(locomotive)
-                )
-                {
-                    menuItem = new JMenuItem("Place " + ui.getActiveLoc().getName());
-                    menuItem.addActionListener(event -> 
-                    {
-                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), current.getName(), false);
-                        ui.repaintAutoLocList(false);
-                    });
-                    
-                    addSeparator();
-                    add(menuItem);
-                }
-                
+                                
                 // If we want to view paths, locomotive must not be running
                 if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
                 {
@@ -128,6 +112,28 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             break;
                         }
                     }
+                }
+                
+                // Place a different locomotive at this station
+                if (ui.getActiveLoc() != null && !ui.getModel().getAutoLayout().isRunning() &&
+                        !ui.getActiveLoc().equals(locomotive)
+                )
+                {
+                    addSeparator();
+
+                    // Station name label
+                    menuItem = new JMenuItem(stationName);
+                    menuItem.setEnabled(false);
+                    add(menuItem);
+                    
+                    menuItem = new JMenuItem("Place " + ui.getActiveLoc().getName());
+                    menuItem.addActionListener(event -> 
+                    {
+                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), current.getName(), false);
+                        ui.repaintAutoLocList(false);
+                    });
+                    
+                    add(menuItem);
                 }
             }
         }

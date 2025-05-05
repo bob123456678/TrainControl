@@ -339,7 +339,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator(); */
              
-        menuItem = new JMenuItem("Increase Diagram Dimensions");
+        menuItem = new JMenuItem("Increase Diagram Size (" + edit.getMarklinLayout().getSx() + " x " + edit.getMarklinLayout().getSy() + ")");
         menuItem.addActionListener(event -> 
         {
             try
