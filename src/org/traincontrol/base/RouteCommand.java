@@ -241,6 +241,16 @@ public class RouteCommand implements java.io.Serializable
         return this.commandConfig.get(KEY_NAME);
     }
     
+    /**
+     * Changes the stored name of the route command
+     * Used primarily when renaming routes
+     * @param name 
+     */
+    public void setName(String name)
+    {
+        this.commandConfig.put(KEY_NAME, name);
+    }
+    
     public Accessory.accessoryDecoderType getProtocol()
     {
         return Accessory.determineAccessoryDecoderType(this.commandConfig.get(KEY_PROTOCOL));
@@ -551,7 +561,14 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (line.startsWith(COMMAND_ROUTE_PREFIX))
         {
-            return RouteCommand.RouteCommandRoute(line.replace(COMMAND_ROUTE_PREFIX, "").trim());
+            String routeName = line.replace(COMMAND_ROUTE_PREFIX, "").trim();
+            
+            if ("".equals(routeName))
+            {
+                throw new Exception("Command \"" + line + "\" is missing the route name");
+            }
+            
+            return RouteCommand.RouteCommandRoute(routeName);
         }
         else if (line.startsWith(LOC_SPEED_PREFIX + ","))
         {

@@ -2,7 +2,6 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -15,7 +14,7 @@ abstract public class Route
     // Name of this route
     private final String name;
     
-    // Route map
+    // Route commands
     protected List<RouteCommand> route;
     
     // Execution state
@@ -118,6 +117,26 @@ abstract public class Route
         this.isExecuting = true;
         
         return true;
+    }
+    
+    /**
+     * This will update route commands that reference other routes to ensure the name changes are propagated
+     * @param oldName
+     * @param newName 
+     */
+    public void otherRouteRenamed(String oldName, String newName)
+    {
+        if (oldName != null && newName != null && !oldName.equals(newName))
+        {
+            for (RouteCommand rc : this.route)
+            {
+                // Route command references old route name
+                if (rc.isRoute() && oldName.equals(rc.getName()))
+                {
+                    rc.setName(newName);
+                }
+            }
+        }
     }
     
     /**

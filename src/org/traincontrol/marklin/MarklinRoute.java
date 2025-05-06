@@ -320,21 +320,28 @@ public class MarklinRoute extends Route
                         {
                             MarklinRoute r = this.network.getRoute(rc.getName());
                             
-                            if (r != null)
+                            if (r == this)
                             {
-                                if (!this.equals(r))
+                                this.network.log("Route warning: route command " + rc.getName()+ " references itself and will not fire");
+                            }
+                            else
+                            {                      
+                                if (r != null)
                                 {
-                                     // We allow the route to recurse at most once
-                                    r.execRoute(false, recursionLimit - 1);
+                                    if (!this.equals(r))
+                                    {
+                                         // We allow the route to recurse at most once
+                                        r.execRoute(false, recursionLimit - 1);
+                                    }
+                                    else
+                                    {
+                                        this.network.log("Route warning: cannot invoke route " + rc.getName()+ " from itself");
+                                    }
                                 }
                                 else
                                 {
-                                    this.network.log("Route warning: cannot invoke route " + rc.getName()+ " from itself");
+                                    this.network.log("Route warning: route " + rc.getName()+ " does not exist (called from " + this.getName() + ")");
                                 }
-                            }
-                            else
-                            {
-                                this.network.log("Route warning: route " + rc.getName()+ " does not exist (called from " + this.getName() + ")");
                             }
                         }
 

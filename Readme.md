@@ -320,6 +320,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.6 [Beta]
+    - Routes
+        - When renaming a route, references from other routes will also be updated
+        - Route references with empty route names will now throw an error
+        - Routes that reference themselves will no longer fire
+
 * v2.5.5 [5/3/2025]
     - Track Diagrams
         - In autonomy mode, the origin station is now highlighted in green for the duration of the route
