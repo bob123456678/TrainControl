@@ -314,6 +314,7 @@ Requires JDK 1.8+ and the following libraries:
 * org.json (json-20240303.jar) (from v1.6.0)
 * org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
 * com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.4.jar) (from v2.3.0)
+* jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
