@@ -320,11 +320,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.6 [Beta]
+* v2.5.6 [5/6/2025]
     - Routes
         - When renaming a route, references from other routes will also be updated
         - Route references with empty route names will now throw an error
         - Routes that reference themselves will no longer fire
+    - Track Diagram editor
+        - When autonomy is enabled, the editor will no longer appear underneath the graph window
 
 * v2.5.5 [5/3/2025]
     - Track Diagrams

@@ -449,9 +449,9 @@ public class testRoutes
         
         try
         {
-            MarklinAccessory.accessoryType t = MarklinAccessory.stringToAccessoryType(" blah ");
+            MarklinAccessory.stringToAccessoryType(" blah ");
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             excepted = true;
         }

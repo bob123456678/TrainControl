@@ -790,11 +790,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 int result = JOptionPane.showConfirmDialog(
-                        null,
-                        addressPopup,
-                        "Edit Address",
-                        JOptionPane.OK_CANCEL_OPTION,
-                        JOptionPane.PLAIN_MESSAGE
+                    this,
+                    addressPopup,
+                    "Edit Address",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
                 );
 
                 // Process the input when OK is clicked
@@ -1219,7 +1219,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Remember window location for different layouts and sizes
-            this.setWindowIndex(this.layout.getName()+ "_editor_" + this.getLayoutSize());
+            this.setWindowIndex(this.layout.getName() + "_editor_" + this.getLayoutSize());
 
             // Only load location once
             if (!this.isLoaded())
@@ -1268,7 +1268,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         this.dispose();    
     }
-          
+    
     public int getLayoutSize()
     {
         return this.size;

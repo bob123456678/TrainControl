@@ -10148,7 +10148,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             field.setText(field.getText().substring(0, maxLength));
         }
     }
-     
+         
     public void editRoute(String routeName)
     {
         new Thread(()->
@@ -11297,6 +11297,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Revert preference
         windowAlwaysOnTopMenuItemActionPerformed(null);
+        
+        // Revert preference for graph UI
+        if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(this.isAlwaysOnTop());
     }
     
     /**
@@ -11324,6 +11327,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Force window to not be on top
             this.setAlwaysOnTop(false);
+            
+            if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
             popup.render();
         }));
@@ -12311,6 +12316,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Force window to not be on top
         this.setAlwaysOnTop(false);
+        
+        if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
         new Thread(() ->
             {
@@ -12364,6 +12371,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Revert preference
                 windowAlwaysOnTopMenuItemActionPerformed(null);
+                
+                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(this.isAlwaysOnTop());
 
             }).start();
     }//GEN-LAST:event_openLegacyTrackDiagramEditorActionPerformed
