@@ -172,8 +172,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             // Text can't be rotated
             if (!component.isText()
                 // These elements are symmetrical
-                && component.getType() != MarklinLayoutComponent.componentType.CROSSING
-                && component.getType() != MarklinLayoutComponent.componentType.TURNTABLE
+                && component.getNumOrientations() > 1
             )
             {
                 menuItem = new JMenuItem("Rotate");

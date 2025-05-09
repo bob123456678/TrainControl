@@ -813,30 +813,35 @@ public class MarklinLayoutComponent
     }
     
     /**
-     * Rotates the component
+     * Gets the number of possible orientations for this tile type
+     * @return 
      */
-    public void rotate()
-    {
-        int possibleOrientations;
-        
+    public int getNumOrientations()
+    {        
         // y axis symmetry - limit rotation options
         if (this.type == componentType.STRAIGHT || this.type == componentType.FEEDBACK 
                 || this.type == componentType.ROUTE || this.type == componentType.SWITCH_CROSSING
                 || this.type == componentType.OVERPASS)
         {
-            possibleOrientations = 2;
+            return 2;
         }
         // x and y symmetry - rotation not needed
         else if (this.type == componentType.TURNTABLE || this.type == componentType.CROSSING)
         {
-            possibleOrientations = 1;
+            return 1;
         }
         else
         {
-            possibleOrientations = 4;
+            return 4;
         }
-        
-        this.orientation = (this.orientation + 1) % possibleOrientations;
+    }
+    
+    /**
+     * Rotates the component
+     */
+    public void rotate()
+    {
+        this.orientation = (this.orientation + 1) % getNumOrientations();
     }
     
     /**

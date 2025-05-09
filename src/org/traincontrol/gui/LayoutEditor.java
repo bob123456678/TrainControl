@@ -316,7 +316,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
-    {
+    {    
         // New label to place
         if (getX(label) == -1 && getY(label) == -1)
         {
@@ -324,11 +324,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
             return;
         }
-        
+               
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
-        
-        // Propagate the hover event.  Should be done for BUTTON3 at minimum
-        receiveMoveEvent(e, label);
         
         // Support double clicks
         if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1)
@@ -342,9 +339,15 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.editText(label);
             }
+            
+            // Propagate the hover event.  Should be done for BUTTON3 at minimum
+            receiveMoveEvent(e, label);
         }
         else if (e.getButton() == MouseEvent.BUTTON3)
         {
+            // Propagate the hover event.  Should be done for BUTTON3 at minimum
+            receiveMoveEvent(e, label);
+        
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 popup = new LayoutEditorRightclickMenu(this, parent, label, lc);
@@ -355,12 +358,18 @@ public class LayoutEditor extends PositionAwareJFrame
         else if (e.getButton() == MouseEvent.BUTTON2)
         {
             this.rotate(label);
+            
+            // Propagate the hover event.  Should be done for BUTTON3 at minimum
+            receiveMoveEvent(e, label);
         }
         else 
         {
             if (this.hasToolFlag())
             {
                 executeTool(label, null);
+                
+                // Propagate the hover event.  Should be done for BUTTON3 at minimum
+                receiveMoveEvent(e, label);
             }
             else
             {
@@ -368,6 +377,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (label != null && label.getComponent() != null)
                 {
                     this.initCopy(label, null, true);
+                }
+                else
+                {
+                    // Propagate the hover event.  Should be done for BUTTON3 at minimum
+                    receiveMoveEvent(e, label);
                 }
             }
         }
