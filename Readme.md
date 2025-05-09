@@ -327,7 +327,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added Shift Left and Shift Up options to move the entire track diagram
         - While the right-click menu is open, the selected tile will no longer inadvertently change
     - Fixed UI bug where layout page name prompt popups might have appeared below the main window
-    - 
+    - Upgraded to json-20250107
 
 * v2.5.6 [5/6/2025]
     - Routes
