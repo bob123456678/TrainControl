@@ -356,7 +356,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         menuItem.setToolTipText("Shifts the entire diagram right from the highlighted column");
         diagramSubmenu.add(menuItem);
-        
+                
         menuItem = new JMenuItem("Shift Down");
         menuItem.addActionListener(event -> 
         {
@@ -371,6 +371,38 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         });
         
         menuItem.setToolTipText("Shifts the entire diagram down from the highlighted row");
+        diagramSubmenu.add(menuItem);
+        
+                menuItem = new JMenuItem("Shift Left");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.shiftLeft();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        
+        menuItem.setToolTipText("Shifts the entire diagram left from the highlighted column");
+        diagramSubmenu.add(menuItem);
+        
+        menuItem = new JMenuItem("Shift Up");
+        menuItem.addActionListener(event -> 
+        {
+            try
+            {
+                edit.shiftUp();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+        
+        menuItem.setToolTipText("Shifts the entire diagram up from the highlighted row");
         diagramSubmenu.add(menuItem);
         
         diagramSubmenu.addSeparator();

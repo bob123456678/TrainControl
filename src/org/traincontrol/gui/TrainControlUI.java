@@ -12134,11 +12134,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Display the input dialog
         int result = JOptionPane.showConfirmDialog(
-                null,
-                textField,
-                "Enter new layout page name:",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
+            this,
+            textField,
+            "Enter new layout page name:",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE
         );
         
         if (result == JOptionPane.OK_OPTION && textField.getText() != null && textField.getText().trim().length() > 0)

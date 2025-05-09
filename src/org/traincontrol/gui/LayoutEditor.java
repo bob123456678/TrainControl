@@ -90,6 +90,9 @@ public class LayoutEditor extends PositionAwareJFrame
     private final ReentrantLock lock = new ReentrantLock();
     private boolean isRunning = false;
     private boolean needsRerun = false;
+    
+    // Reference to the right click menu
+    LayoutEditorRightclickMenu popup;
 
     /**
      * Popup window showing editable train layouts
@@ -251,6 +254,8 @@ public class LayoutEditor extends PositionAwareJFrame
    
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {        
+        if (this.popup != null && this.popup.isVisible()) return;
+        
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
      
@@ -322,6 +327,9 @@ public class LayoutEditor extends PositionAwareJFrame
         
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
+        // Propagate the hover event.  Should be done for BUTTON3 at minimum
+        receiveMoveEvent(e, label);
+        
         // Support double clicks
         if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1)
         {
@@ -336,12 +344,12 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         else if (e.getButton() == MouseEvent.BUTTON3)
-        {        
+        {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
+                popup = new LayoutEditorRightclickMenu(this, parent, label, lc);
 
-                menu.show(e.getComponent(), e.getX(), e.getY());      
+                popup.show(e.getComponent(), e.getX(), e.getY());      
             }));
         }
         else if (e.getButton() == MouseEvent.BUTTON2)
@@ -862,6 +870,26 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    public void shiftUp()
+    {
+        this.snapshotLayout();
+        
+        try
+        {
+            if (lastHoveredY > -1)
+            {
+                layout.shiftUp(lastHoveredY);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
     public void shiftDown()
     {
         this.snapshotLayout();
@@ -871,6 +899,26 @@ public class LayoutEditor extends PositionAwareJFrame
             if (lastHoveredY > -1)
             {
                 layout.shiftDown(lastHoveredY);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
+    public void shiftLeft()
+    {
+        this.snapshotLayout();
+
+        try
+        {
+            if (lastHoveredX > -1)
+            {
+                layout.shiftLeft(lastHoveredX);
 
                 refreshGrid();
             }

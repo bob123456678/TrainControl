@@ -320,10 +320,13 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.7 [Beta]
+* v2.5.7 [5/9/2025]
     - Track Diagram editor
         - Improved the organization of right-click menu options
         - The option to rotate text labels and symmetrical components will no longer be shown
+        - Added Shift Left and Shift Up options to move the entire track diagram
+        - While the right-click menu is open, the selected tile will no longer inadvertently change
+    - Fixed UI bug where layout page name prompt popups might have appeared below the main window
 
 * v2.5.6 [5/6/2025]
     - Routes

@@ -43,7 +43,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
         else if (lc.isRoute())
         {
-            this.helpLabel.setText("Check the Routes tab to edit/create routes.");
+            this.helpLabel.setText("Select the route this tile will trigger.  More can be added in the Routes tab.");
             
             // We set the selection by the string, so showing numbered routes won't work yet...
             List<String> numberedRoutes = tcui.getModel().getRouteList().stream().map(this.tcui.getModel()::getRoute).map(this::addRouteId).collect(Collectors.toList());

@@ -491,30 +491,90 @@ public class MarklinLayout
     */
     public void shiftDown(int startRow) throws IOException
     {
-       // Add a new row to the layout
-       this.addRowsAndColumns(1, 0);
+        // Add a new row to the layout
+        this.addRowsAndColumns(1, 0);
 
-       if (startRow == 0 || startRow > sy - 2)
-       {
-           startRow = miny;
-       }
+        if (startRow == 0 || startRow > sy - 2)
+        {
+            startRow = miny;
+        }
 
-       // Shift all existing components one row downward
-       if (sy >= 2)
-       {
-           for (int y = maxy - 1; y >= startRow; y--)
-           { // Start from the last row and move upward
-               for (int x = 0; x <= maxx; x++)
-               {
+        // Shift all existing components one row downward
+        if (sy >= 2)
+        {
+            for (int y = maxy - 1; y >= startRow; y--)
+            { // Start from the last row and move upward
+                for (int x = 0; x <= maxx; x++)
+                {
                    MarklinLayoutComponent component = getComponent(x, y);
 
                    if (component != null) component.setY(y + 1); // Update the component's row position
                    addComponent(null, x, y); // Clear the original cell
                    addComponent(component, x, y + 1); // Move the component downward
-               }
-           }
+                }
+            }
 
            this.checkBounds();
-       }
-   }
+        }
+    }
+    
+    /**
+    * Removes a row from the layout at the specified index and shifts all existing components one row upward.
+    * @param startRow
+    * @throws IOException
+    */
+    public void shiftUp(int startRow) throws IOException 
+    {
+        if (sy < 2) return; // Ensure there's enough rows to shift up
+
+        if (startRow == 0 || startRow > sy - 2) 
+        {
+            startRow = miny; // Normalize startRow
+        }
+
+        // Shift all existing components one row upward
+        for (int y = startRow; y < maxy; y++) 
+        { 
+            for (int x = 0; x <= maxx; x++) 
+            {
+                MarklinLayoutComponent component = getComponent(x, y + 1);
+
+                if (component != null) component.setY(y); // Update the component's row position
+                addComponent(null, x, y + 1); // Clear the original cell
+                addComponent(component, x, y); // Move the component upward
+            }
+        }
+
+        this.checkBounds();
+    }
+    
+    /**
+    * Removes a column from the layout at the specified index and shifts all existing components one column to the left.
+    * @param startCol
+    * @throws IOException
+    */
+    public void shiftLeft(int startCol) throws IOException 
+    {    
+        if (sx < 2) return; // Ensure there are enough columns to shift left
+
+        if (startCol == 0 || startCol > sx - 2) 
+        {
+            startCol = minx; // Normalize startCol
+        }
+
+        // Shift all existing components one column to the left
+        for (int x = startCol; x < maxx; x++) 
+        { 
+            for (int y = 0; y <= maxy; y++) 
+            {
+                MarklinLayoutComponent component = getComponent(x + 1, y);
+
+                if (component != null) component.setX(x); // Update the component's column position
+                addComponent(null, x + 1, y); // Clear the original cell
+                addComponent(component, x, y); // Move the component left
+            }
+        }
+
+        this.checkBounds();
+    }
 }
