@@ -1,5 +1,7 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
+import java.awt.Font;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -18,7 +20,17 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     {        
         JMenuItem menuItem;
         
-        JMenu pasteSubMenu = new JMenu("Paste..."); // Create the submenu
+        // Show the name of the component
+        if (component != null)
+        {
+            JMenuItem titleItem = new JMenuItem(component.getUserFriendlyTypeName());
+            titleItem.setEnabled(false);
+            titleItem.setFont(titleItem.getFont().deriveFont(Font.BOLD));
+            add(titleItem);
+            addSeparator();
+        }
+        
+        JMenu pasteSubMenu = new JMenu("Paste"); // Create the submenu
 
         JMenuItem pasteMenuItem = new JMenuItem("Tile");
         pasteMenuItem.addActionListener(event -> 
@@ -157,19 +169,23 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             add(menuItem);
             
-            menuItem = new JMenuItem("Rotate");
-            menuItem.addActionListener(event -> 
+            // Text can't be rotated
+            if (!component.isText())
             {
-                try
+                menuItem = new JMenuItem("Rotate");
+                menuItem.addActionListener(event -> 
                 {
-                    edit.rotate(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+R");
+                    try
+                    {
+                        edit.rotate(label);
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });
+                menuItem.setToolTipText("Control+R");
+            }
 
             add(menuItem);
                         
@@ -184,7 +200,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     protocol = MarklinAccessory.getProtocolStringForName(component.getProtocol().toString());
                 }
                 
-                String addressLabel = component.getUserFriendlyTypeName() + " Address";
+                String addressLabel = "Address"; // component.getUserFriendlyTypeName() + " Address";
                 
                 if (component.isLink())
                 {
@@ -199,7 +215,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     addressLabel = "Feedback Address";
                 }
                 
-                menuItem = new JMenuItem("Change " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
+                menuItem = new JMenuItem("Edit " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -223,7 +239,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     
                     if (route != null)
                     {         
-                        menuItem = new JMenuItem("Edit Linked Route");
+                        menuItem = new JMenuItem("Open in Route Editor...");
                         menuItem.addActionListener(event -> 
                         {
                             try
@@ -301,45 +317,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator();
         
-        /*menuItem = new JCheckBoxMenuItem("Show Text Labels");
-        menuItem.setSelected(!edit.getMarklinLayout().getEditHideText());
-
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.toggleText();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        menuItem.setToolTipText("Control+L");
-
-        add(menuItem);
-
-        menuItem = new JCheckBoxMenuItem("Show Address Labels");
-        menuItem.setSelected(edit.getMarklinLayout().getEditShowAddress());
-
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.toggleAddresses();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        menuItem.setToolTipText("Control+D");
-
-        add(menuItem);
-        
-        addSeparator(); */
+        JMenu diagramSubmenu = new JMenu("Diagram"); // Create the submenu
              
-        menuItem = new JMenuItem("Increase Diagram Size (" + edit.getMarklinLayout().getSx() + " x " + edit.getMarklinLayout().getSy() + ")");
+        menuItem = new JMenuItem("Increase Size (" + edit.getMarklinLayout().getSx() + " x " + edit.getMarklinLayout().getSy() + ")");
         menuItem.addActionListener(event -> 
         {
             try
@@ -351,10 +331,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        menuItem.setToolTipText("Control+I");
-        add(menuItem);
         
-        addSeparator();
+        menuItem.setToolTipText("Control+I");
+        diagramSubmenu.add(menuItem);
+        
+        diagramSubmenu.addSeparator();
         
         menuItem = new JMenuItem("Shift Right");
         menuItem.addActionListener(event -> 
@@ -368,8 +349,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
+        
         menuItem.setToolTipText("Shifts the entire diagram right from the highlighted column");
-        add(menuItem);
+        diagramSubmenu.add(menuItem);
         
         menuItem = new JMenuItem("Shift Down");
         menuItem.addActionListener(event -> 
@@ -383,10 +365,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        menuItem.setToolTipText("Shifts the entire diagram down from the highlighted row");
-        add(menuItem);
         
-        addSeparator();
+        menuItem.setToolTipText("Shifts the entire diagram down from the highlighted row");
+        diagramSubmenu.add(menuItem);
+        
+        diagramSubmenu.addSeparator();
         
         menuItem = new JMenuItem("Clear Diagram");
         menuItem.addActionListener(event -> 
@@ -400,7 +383,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        add(menuItem);
+        
+        diagramSubmenu.add(menuItem);
+        
+        add(diagramSubmenu);
     }
 }
    

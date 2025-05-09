@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -702,12 +703,17 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else
             {
+                JPanel panel = new JPanel(new BorderLayout());
+                JLabel stationLabel = new JLabel("These labels will show train locations while in autonomy mode.");
                 JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
                 comboBox.setSelectedItem(lc.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
 
+                panel.add(stationLabel, BorderLayout.NORTH);
+                panel.add(comboBox, BorderLayout.CENTER);
+
                 int result = JOptionPane.showConfirmDialog(
                     this,
-                    comboBox,
+                    panel,
                     "Which station should be shown here?",
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE

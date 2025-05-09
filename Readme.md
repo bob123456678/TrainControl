@@ -320,6 +320,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.7 [Beta]
+    - Track Diagram editor
+        - Improved the organization of right-click menu options
+        - The option to rotate text labels will no longer be shown
+
 * v2.5.6 [5/6/2025]
     - Routes
         - When renaming a route, references from other routes will also be updated
