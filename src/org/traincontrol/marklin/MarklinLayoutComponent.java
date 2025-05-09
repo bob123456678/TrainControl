@@ -623,24 +623,24 @@ public class MarklinLayoutComponent
     public String toSimpleString()
     {        
         // Add the protocol
-        String protocol = "";
+        String digitalProtocol = "";
 
         if (this.getAccessory() != null)
         {
-            protocol = MarklinAccessory.getProtocolStringForName(this.getAccessory().getDecoderType().toString());
+            digitalProtocol = MarklinAccessory.getProtocolStringForName(this.getAccessory().getDecoderType().toString());
         }
         
         if (this.isThreeWay())
         {
-            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1) + protocol;
+            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1) + digitalProtocol;
         }
         else if (this.isSwitch())
         {
-            return "Switch " + this.getAddress() + protocol;
+            return "Switch " + this.getAddress() + digitalProtocol;
         }
         else if (this.isUncoupler())
         {
-            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green") + protocol;
+            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green") + digitalProtocol;
         }
         else if (this.isFeedback())
         {
@@ -648,7 +648,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isSignal())
         {
-            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress() + protocol;
+            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress() + digitalProtocol;
         }
         else if (this.isRoute() && this.getRoute() != null)
         {
@@ -817,7 +817,26 @@ public class MarklinLayoutComponent
      */
     public void rotate()
     {
-        this.orientation = (this.orientation + 1) % ((this.type != componentType.STRAIGHT && this.type != componentType.FEEDBACK) ? 4 : 2);
+        int possibleOrientations;
+        
+        // y axis symmetry - limit rotation options
+        if (this.type == componentType.STRAIGHT || this.type == componentType.FEEDBACK 
+                || this.type == componentType.ROUTE || this.type == componentType.SWITCH_CROSSING
+                || this.type == componentType.OVERPASS)
+        {
+            possibleOrientations = 2;
+        }
+        // x and y symmetry - rotation not needed
+        else if (this.type == componentType.TURNTABLE || this.type == componentType.CROSSING)
+        {
+            possibleOrientations = 1;
+        }
+        else
+        {
+            possibleOrientations = 4;
+        }
+        
+        this.orientation = (this.orientation + 1) % possibleOrientations;
     }
     
     /**

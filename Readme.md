@@ -323,7 +323,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.5.7 [Beta]
     - Track Diagram editor
         - Improved the organization of right-click menu options
-        - The option to rotate text labels will no longer be shown
+        - The option to rotate text labels and symmetrical components will no longer be shown
 
 * v2.5.6 [5/6/2025]
     - Routes
