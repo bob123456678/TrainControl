@@ -183,7 +183,7 @@ public class MarklinRoute extends Route
         while (i.hasNext())
         {
             LayoutLabel nxtTile = i.next();
-            nxtTile.updateImage();
+            nxtTile.updateImage(false);
 
             if (!nxtTile.isParentVisible())
             {

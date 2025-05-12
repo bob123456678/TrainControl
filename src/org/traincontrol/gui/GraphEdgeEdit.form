@@ -265,6 +265,9 @@
         <Property name="toolTipText" type="java.lang.String" value="Select this to automatically capture commands from the track diagram and keyboard."/>
         <Property name="focusable" type="boolean" value="false"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="captureCommandsActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="testCommands">
       <Properties>

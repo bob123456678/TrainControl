@@ -320,6 +320,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.8 [Beta]
+    - Autonomy Graph
+        - When editing edges, added a button to highlight all linked tiles in the track diagram
+
 * v2.5.7 [5/9/2025]
     - Track Diagram editor
         - Improved the organization of right-click menu options

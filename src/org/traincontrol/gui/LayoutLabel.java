@@ -15,8 +15,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
-import org.traincontrol.base.Accessory;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.util.ImageUtil;
 
@@ -35,7 +33,7 @@ public final class LayoutLabel extends JLabel
     
     // Temporarily highlight changed tiles
     private static final int HIGHLIGHT_DURATION = 2000;
-    private static final int CLICK_TIMEOUT = 2500;
+    private static final int CLICK_TIMEOUT = HIGHLIGHT_DURATION + 500;
     private long lastClicked = 0;
     
     private Icon lastIcon;
@@ -318,14 +316,16 @@ public final class LayoutLabel extends JLabel
     
     /**
      * Refreshes the tile's image
+     * @param highlight
      */
-    public void updateImage()
+    public void updateImage(boolean highlight)
     {
+        // TODO improve the way highlighting is done, delete global variables
         new Thread(() -> 
         {
             if (this.component != null)
             {
-                if (!this.component.getImageName(size, edit).equals(this.imageName))
+                if (!this.component.getImageName(size, edit).equals(this.imageName) || highlight)
                 {
                     this.setImage(true);  
                 }

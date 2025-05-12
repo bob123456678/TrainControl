@@ -145,14 +145,15 @@ public class MarklinAccessory extends Accessory
     /**
      * Refreshes tile images on all tiles in the list
      * Deletes tiles that are no longer visible (e.g., from closed windows)
+     * @param forceHighlight
      */
-    public void updateTiles()
+    public void updateTiles(boolean forceHighlight)
     {        
         Iterator<LayoutLabel> i = this.tiles.iterator();
         while (i.hasNext())
         {
             LayoutLabel nxtTile = i.next();
-            nxtTile.updateImage();
+            nxtTile.updateImage(forceHighlight);
 
             if (!nxtTile.isParentVisible())
             {
@@ -194,7 +195,7 @@ public class MarklinAccessory extends Accessory
                     this.numActuations += 1;
                 }
                 
-                this.updateTiles();
+                this.updateTiles(false);
                                                 
                 this.network.log("Setting " + this.getName() + " " +
                     switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase()
@@ -208,7 +209,7 @@ public class MarklinAccessory extends Accessory
     {
         this._setSwitched(state);
         
-        this.updateTiles();
+        this.updateTiles(false);
 
         if (this.network.getGUI() != null)
         {

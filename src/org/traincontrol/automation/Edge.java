@@ -15,7 +15,6 @@ import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  * Graph edge - includes start and end points and occupied state

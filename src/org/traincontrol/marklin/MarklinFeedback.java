@@ -59,7 +59,7 @@ public class MarklinFeedback extends Feedback
             while (i.hasNext())
             {
                 LayoutLabel nxtTile = i.next();
-                nxtTile.updateImage();
+                nxtTile.updateImage(false);
 
                 if (!nxtTile.isParentVisible())
                 {

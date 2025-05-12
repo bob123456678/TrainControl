@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Toolkit;
+import java.util.ArrayList;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.Accessory;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.graphstream.graph.Graph;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /**
  *
@@ -173,7 +175,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                 String command = s.split(",")[0].trim();
                 String setting = s.split(",")[1].trim();
                 
-                e.validateConfigCommand(command, setting, parent.getModel());
+                Edge.validateConfigCommand(command, setting, parent.getModel());
             }
             else if (s.trim().length() > 0)
             {
@@ -202,6 +204,39 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                 }
             }
         }   
+    }
+    
+    /**
+     * Gets all accessories in the command list
+     * @return 
+     */
+    public List<MarklinAccessory> getCommandAccessories()
+    {
+        String[] commands = this.configCommands.getText().trim().split("\n");
+        
+        List<MarklinAccessory> output = new ArrayList<>();
+                
+        for (String s : commands)
+        {
+            try
+            {
+                if (s.split(",").length == 2)
+                {
+                    String command = s.split(",")[0].trim();
+                    String setting = s.split(",")[1].trim();
+
+                    Edge.validateConfigCommand(command, setting, parent.getModel());
+                    
+                    output.add(this.parent.getModel().getAccessoryByName(command));
+                }
+            }
+            catch (Exception e)
+            {
+                // Invalid command, skip it
+            }
+        }
+ 
+        return output;
     }
 
     /**
@@ -293,6 +328,11 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         captureCommands.setText("Capture Commands");
         captureCommands.setToolTipText("Select this to automatically capture commands from the track diagram and keyboard.");
         captureCommands.setFocusable(false);
+        captureCommands.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                captureCommandsActionPerformed(evt);
+            }
+        });
 
         testCommands.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         testCommands.setText("Test");
@@ -428,6 +468,22 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             }
         }));
     }//GEN-LAST:event_testCommandsActionPerformed
+
+    /**
+     * Highlights tiles on the layout
+     */
+    private void highlightTiles()
+    {
+        // The "true" will highlight the tiles
+        for (MarklinAccessory a : this.getCommandAccessories())
+        {
+            a.updateTiles(true);
+        } 
+    }
+    
+    private void captureCommandsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_captureCommandsActionPerformed
+        highlightTiles();      
+    }//GEN-LAST:event_captureCommandsActionPerformed
 
     /**
      * Updates the lock edges shown on the graph for easier editing
