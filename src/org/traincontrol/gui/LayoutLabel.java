@@ -32,8 +32,8 @@ public final class LayoutLabel extends JLabel
     private final TrainControlUI tcUI;
     
     // Temporarily highlight changed tiles
-    private static final int HIGHLIGHT_DURATION = 2000;
-    private static final int CLICK_TIMEOUT = HIGHLIGHT_DURATION + 500;
+    private static final int HIGHLIGHT_DURATION = 2250;
+    private static final int CLICK_TIMEOUT = HIGHLIGHT_DURATION + 250;
     private long lastClicked = 0;
     
     private Icon lastIcon;

@@ -11541,6 +11541,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.KeyboardTab.requestFocus();
     }
     
+    /**
+     * Jumps to the layout tab
+     */
+    public void jumpToLayoutTab()
+    {
+        int currentIndex = this.KeyboardTab.getSelectedIndex();
+        
+        this.KeyboardTab.setSelectedIndex(1);
+        
+        if (currentIndex != 1)
+        {
+            this.KeyboardTab.requestFocus();
+        }
+    }
+    
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->

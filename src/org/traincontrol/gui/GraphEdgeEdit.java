@@ -260,11 +260,14 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         cancelButton = new javax.swing.JButton();
         captureCommands = new javax.swing.JCheckBox();
         testCommands = new javax.swing.JButton();
+        departureFuncLabel2 = new javax.swing.JLabel();
+        testCommands1 = new javax.swing.JButton();
+        jSeparator1 = new javax.swing.JSeparator();
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(520, 611));
-        setMinimumSize(new java.awt.Dimension(520, 611));
-        setPreferredSize(new java.awt.Dimension(520, 611));
+        setMaximumSize(new java.awt.Dimension(1024, 611));
+        setMinimumSize(new java.awt.Dimension(560, 611));
+        setPreferredSize(new java.awt.Dimension(560, 611));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
@@ -328,11 +331,6 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         captureCommands.setText("Capture Commands");
         captureCommands.setToolTipText("Select this to automatically capture commands from the track diagram and keyboard.");
         captureCommands.setFocusable(false);
-        captureCommands.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                captureCommandsActionPerformed(evt);
-            }
-        });
 
         testCommands.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         testCommands.setText("Test");
@@ -344,61 +342,88 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             }
         });
 
+        departureFuncLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        departureFuncLabel2.setForeground(new java.awt.Color(0, 0, 115));
+        departureFuncLabel2.setText("Command Options");
+        departureFuncLabel2.setToolTipText("Select all other edges that should be locked when this one is occupied.");
+
+        testCommands1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        testCommands1.setText("Highlight");
+        testCommands1.setToolTipText("Highlights the selected accessories on the track diagram.");
+        testCommands1.setFocusable(false);
+        testCommands1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testCommands1ActionPerformed(evt);
+            }
+        });
+
+        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(arrivalFuncLabel)
-                        .addGap(58, 58, 58)
-                        .addComponent(departureFuncLabel1)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)
-                            .addComponent(testCommands, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane1)
-                        .addContainerGap())))
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addComponent(captureCommands, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(9, 9, 9)
-                        .addComponent(departureFuncLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(10, 10, 10)
-                        .addComponent(edgeLength, 0, 180, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(okButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(cancelButton)))
+                        .addComponent(cancelButton))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(arrivalFuncLabel)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(departureFuncLabel2)
+                                    .addComponent(testCommands, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(testCommands1, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(captureCommands, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(4, 4, 4)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(departureFuncLabel1)
+                            .addComponent(departureFuncLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(edgeLength, 0, 332, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(arrivalFuncLabel)
                     .addComponent(departureFuncLabel1))
-                .addGap(6, 6, 6)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane2)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 483, Short.MAX_VALUE)
+                            .addComponent(jScrollPane2))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(testCommands))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 507, Short.MAX_VALUE))
-                .addGap(10, 10, 10)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(edgeLength, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(departureFuncLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(captureCommands, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(departureFuncLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(edgeLength, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(departureFuncLabel2)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(testCommands)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(testCommands1)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(captureCommands))
+                    .addComponent(jSeparator1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(cancelButton)
@@ -475,15 +500,23 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     private void highlightTiles()
     {
         // The "true" will highlight the tiles
-        for (MarklinAccessory a : this.getCommandAccessories())
-        {
-            a.updateTiles(true);
-        } 
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        { 
+            if (!parent.getModel().getLayoutList().isEmpty())
+            {
+                parent.jumpToLayoutTab();
+                
+                for (MarklinAccessory a : this.getCommandAccessories())
+                {
+                    a.updateTiles(true);
+                } 
+            }
+        }));
     }
     
-    private void captureCommandsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_captureCommandsActionPerformed
-        highlightTiles();      
-    }//GEN-LAST:event_captureCommandsActionPerformed
+    private void testCommands1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testCommands1ActionPerformed
+        highlightTiles();
+    }//GEN-LAST:event_testCommands1ActionPerformed
 
     /**
      * Updates the lock edges shown on the graph for easier editing
@@ -507,11 +540,14 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     private javax.swing.JTextArea configCommands;
     private javax.swing.JLabel departureFuncLabel;
     private javax.swing.JLabel departureFuncLabel1;
+    private javax.swing.JLabel departureFuncLabel2;
     private javax.swing.JComboBox<String> edgeLength;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JList<String> lockEdges;
     private javax.swing.JButton okButton;
     private javax.swing.JButton testCommands;
+    private javax.swing.JButton testCommands1;
     // End of variables declaration//GEN-END:variables
 }
