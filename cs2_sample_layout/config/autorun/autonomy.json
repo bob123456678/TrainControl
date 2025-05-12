@@ -623,6 +623,10 @@
                     "state": "turn"
                 },
                 {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                },
+                {
                     "acc": "Switch 103",
                     "state": "straight"
                 }
