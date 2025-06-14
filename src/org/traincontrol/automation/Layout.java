@@ -1874,7 +1874,6 @@ public class Layout
                     
                     if (this.simulate)
                     {            
-                        // TODO - possible race condition here
                         new Thread(() -> 
                         {
                             loc.delay(this.getMinDelay(), this.getMaxDelay());
