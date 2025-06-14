@@ -320,6 +320,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.9 [6/14/2025]
+    - Routes
+        - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
+    - Fixed bug where route commands from 2.5.3 would fail for routes containing the word "Route"
+    - Fixed bug where locomotives being run in autonomy mode might yield to inactive locomotives that were paused by the user
+
 * v2.5.8 [5/11/2025]
     - Autonomy Graph
         - When editing edges, added a button to highlight all linked tiles in the track diagram

@@ -599,7 +599,7 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (line.startsWith(COMMAND_ROUTE_PREFIX))
         {
-            String routeName = line.replace(COMMAND_ROUTE_PREFIX, "").trim();
+            String routeName = line.replaceFirst(COMMAND_ROUTE_PREFIX, "").trim();
             
             if ("".equals(routeName))
             {
@@ -748,5 +748,14 @@ public class RouteCommand implements java.io.Serializable
         }
         
         return null;
+    }
+    
+    /**
+     * Returns whether this RouteCommand can be a condition, rather than a directly executed command
+     * @return 
+     */
+    public boolean isConditionCommand()
+    {
+        return this.isAccessory() || this.isFeedback() || this.isAutoLocomotive();
     }
 }

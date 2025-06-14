@@ -273,9 +273,9 @@ public abstract class NodeExpression implements Serializable
     {
         RouteCommand rc = RouteCommand.fromLine(line, false);
         
-        if (!rc.isAccessory() && !rc.isFeedback() && !rc.isAutoLocomotive())
+        if (!rc.isConditionCommand())
         {
-            throw new Exception("Conditions can only contain accessory, feedback, or auto locomotive settings.");
+            throw new Exception("Invalid condition (conditions can only be accessory, feedback, or auto locomotive location values).");
         }
         
         return new NodeRouteCommand(rc);

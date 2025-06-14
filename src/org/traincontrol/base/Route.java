@@ -2,6 +2,8 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -201,11 +203,29 @@ abstract public class Route
         {
             if (control.getAutoLayout() != null && control.getLocByName(rc.getName()) != null)
             {
-                return Integer.toString(rc.getAddress()).equals(
+                // Scrappy way to avoid race condition and ensure the autonomy resolution finishes first
+                try
+                {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) { }
+                
+                return 
+                    // Last milestone if loc is active
+                    Integer.toString(rc.getAddress()).equals(
                     control.getAutoLayout().getLatestMilestoneS88(
                         control.getLocByName(rc.getName())
-                    )
-                );
+                    )) 
+                    || 
+                    // Loc location otherwise
+                    (
+                        !control.getAutoLayout().getActiveLocomotives().containsKey(control.getLocByName(rc.getName()))
+                        &&
+                        Integer.toString(rc.getAddress()).equals(
+                            control.getAutoLayout().getLocomotiveLocation(
+                                control.getLocByName(rc.getName())
+                            ).getS88()
+                        )
+                    );
             }
             
             return false;

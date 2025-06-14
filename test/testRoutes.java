@@ -44,24 +44,34 @@ public class testRoutes
     {
         // Generate random values for parameters
         Random random = new Random();
-        String name = "Route: " + random.nextInt(100);
+        String name = "Route: " + random.nextInt(1000);
         int id = random.nextInt(1000);
         int s88 = random.nextInt(10000);
         boolean enabled = random.nextBoolean();
+        
+        MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
 
         // Randomly select s88Triggers value
         MarklinRoute.s88Triggers triggerType = (random.nextBoolean()) ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR;
 
         List<RouteCommand> conditions = new ArrayList<>();
-        for (int i = 0; i < random.nextInt(4); i++)
+        
+        for (int i = 0; i < random.nextInt(10); i++)
         {
-            conditions.add(RouteCommand.RouteCommandFeedback(random.nextInt(100), random.nextBoolean()));
-            
-            // TODO add accessory and auto loc conditions
+            switch (random.nextInt(3))
+            {
+                case 0:
+                    conditions.add(RouteCommand.RouteCommandFeedback(random.nextInt(100), random.nextBoolean()));
+                    break;
+                case 1:
+                    conditions.add(RouteCommand.RouteCommandAccessory(random.nextInt(100), protocols[random.nextInt(2)], random.nextInt(2) == 1));
+                    break;
+                case 2:
+                    conditions.add(RouteCommand.RouteCommandAutoLocomotive(model.getLocList().get(random.nextInt(model.getLocList().size())), random.nextInt(4000)));
+                    break;
+            }
         }
-        //Map<Integer, Boolean> conditionS88s = new HashMap<>(); // Generate random values for conditionS88s
-        //conditionS88s.put(random.nextInt(100), random.nextBoolean());
-                
+           
         List<RouteCommand> routeCommands = new ArrayList<>();
 
         // Populate the list with random RouteCommand objects
@@ -72,7 +82,6 @@ public class testRoutes
             };
             RouteCommand.commandType randomType = types[random.nextInt(8)];
             
-            MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
             
             switch (randomType)
@@ -112,6 +121,7 @@ public class testRoutes
                     RouteCommand stopCommand = RouteCommand.RouteCommandStop();
                     routeCommands.add(stopCommand);
                     break;
+                    
                 case TYPE_LOCOMOTIVE:
                     String locName = model.getLocList().get(random.nextInt(model.getLocList().size()));
                     int speed = random.nextInt(101);
@@ -125,6 +135,7 @@ public class testRoutes
                     
                     routeCommands.add(locCommand);
                     break;
+                    
                 case TYPE_FUNCTION:
                     String flocName = model.getLocList().get(random.nextInt(model.getLocList().size()));
                     boolean state = random.nextBoolean();
@@ -142,13 +153,11 @@ public class testRoutes
             }
         }
         
-        
         for (int i = 0; i < random.nextInt(20); i++)
         {
             int address = random.nextInt(100);
             boolean setting = random.nextBoolean();
             
-            MarklinAccessory.accessoryDecoderType[] protocols = new MarklinAccessory.accessoryDecoderType[]{MM2, DCC};
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
             
             RouteCommand accessoryCommand = RouteCommand.RouteCommandAccessory(address, randomProtocol, setting);
@@ -518,7 +527,7 @@ public class testRoutes
         
         List<MarklinRoute> newRoutes = new ArrayList();
         
-        while (newRoutes.size() < (new Random()).nextInt(10) + 1) 
+        while (newRoutes.size() < (new Random()).nextInt(20) + 1) 
         {
             MarklinRoute newRouteCandidate = generateRandomRoute();
             
@@ -535,7 +544,7 @@ public class testRoutes
         
         List<MarklinRoute> finalRoutes = model.parseRoutesFromJson(json);
 
-        // Routes in JSON should equal routes in 
+        // Routes in JSON should equal routes in model
         assertTrue(model.getRoutes().equals(finalRoutes));
         assertTrue(!model.getRoutes().equals(currentRoutes));
         
@@ -564,7 +573,7 @@ public class testRoutes
                 }
                 
                 RouteCommand rc2 = RouteCommand.fromLine(rc.toLine(a), false);
-                
+                                
                 assertEquals(rc, rc2);
             }
         }

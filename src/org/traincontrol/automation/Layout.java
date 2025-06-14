@@ -1355,6 +1355,8 @@ public class Layout
         
         for (Locomotive l : this.locomotivesToRun)
         {
+            if (l.isAutonomyPaused()) continue;
+            
             if (minLoc == null || l.getLastPathTime() < minLoc.getLastPathTime())
             {
                 minLoc = l;
