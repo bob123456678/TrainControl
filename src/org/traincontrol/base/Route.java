@@ -197,6 +197,19 @@ abstract public class Route
         {
             return control.getFeedbackState(Integer.toString(rc.getAddress())) == rc.getSetting();
         }
+        else if (rc.isAutoLocomotive())
+        {
+            if (control.getAutoLayout() != null && control.getLocByName(rc.getName()) != null)
+            {
+                return Integer.toString(rc.getAddress()).equals(
+                    control.getAutoLayout().getLatestMilestoneS88(
+                        control.getLocByName(rc.getName())
+                    )
+                );
+            }
+            
+            return false;
+        }
         
         return false;
     }

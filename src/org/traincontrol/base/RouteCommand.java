@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONObject;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTO_LOCOMOTIVE;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 
@@ -25,8 +26,10 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 public class RouteCommand implements java.io.Serializable
 {    
     public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, 
-    TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK, TYPE_ROUTE};
+    TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK, TYPE_ROUTE,
+    TYPE_AUTO_LOCOMOTIVE};
 
+    public static final String LOC_AUTO_PREFIX = "autoloc";
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
     public static final String FEEDBACK_PREFIX = "Feedback";
@@ -150,6 +153,22 @@ public class RouteCommand implements java.io.Serializable
     }
     
     /**
+     * Returns a full auto locomotive command
+     * @param name
+     * @param s88
+     * @return 
+     */
+    public static RouteCommand RouteCommandAutoLocomotive(String name, int s88)
+    {
+        RouteCommand r = new RouteCommand(TYPE_AUTO_LOCOMOTIVE);
+        
+        r.commandConfig.put(KEY_NAME, name);
+        r.commandConfig.put(KEY_ADDRESS, Integer.toString(s88));
+        
+        return r;
+    }
+    
+    /**
      * Returns a stop command
      * @return 
      */
@@ -209,6 +228,11 @@ public class RouteCommand implements java.io.Serializable
     public boolean isLocomotive()
     {
         return this.type == TYPE_LOCOMOTIVE;
+    }
+    
+    public boolean isAutoLocomotive()
+    {
+        return this.type == TYPE_AUTO_LOCOMOTIVE;
     }
     
     public boolean isAccessory()
@@ -366,6 +390,10 @@ public class RouteCommand implements java.io.Serializable
         {
             return COMMAND_ALL_FUNCTIONS_OFF;
         }
+        else if (this.isAutoLocomotive())
+        {
+            return LOC_AUTO_PREFIX;
+        }
         
         return typeString + ": " + this.commandConfig.toString();
     }
@@ -450,6 +478,12 @@ public class RouteCommand implements java.io.Serializable
                 String rName = jsonObject.getJSONObject("state").getString(KEY_NAME);
                 routeCommand = RouteCommand.RouteCommandRoute(rName);
                 break;
+                
+            case TYPE_AUTO_LOCOMOTIVE:
+                String locName = jsonObject.getJSONObject("state").getString(KEY_NAME);
+                int s88Addr = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
+                routeCommand = RouteCommand.RouteCommandAutoLocomotive(locName, s88Addr);
+                break;
 
             default:
                 throw new IllegalArgumentException("Invalid command type in route command JSON.");
@@ -511,6 +545,10 @@ public class RouteCommand implements java.io.Serializable
         else if (this.isFunction())
         {
             return LOC_FUNC_PREFIX + "," + this.getName() + "," + this.getFunction() + "," + (this.getSetting() ? "1" : "0") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+        }
+        else if (this.isAutoLocomotive())
+        {
+            return LOC_AUTO_PREFIX + "," + this.getName() + "," + this.getAddress() + "\n";
         }
         
         return "invalid command";
@@ -600,6 +638,15 @@ public class RouteCommand implements java.io.Serializable
             {
                 rc.setDelay(Math.abs(Integer.parseInt(line.split(",")[4].trim())));     
             }
+
+            return rc;
+        }
+        else if (line.startsWith(LOC_AUTO_PREFIX + ","))
+        {
+            String name = line.split(",")[1].trim();
+            int s88 = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
+
+            RouteCommand rc = RouteCommand.RouteCommandAutoLocomotive(name, s88);
 
             return rc;
         }

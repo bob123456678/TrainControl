@@ -56,6 +56,8 @@ public class testRoutes
         for (int i = 0; i < random.nextInt(4); i++)
         {
             conditions.add(RouteCommand.RouteCommandFeedback(random.nextInt(100), random.nextBoolean()));
+            
+            // TODO add accessory and auto loc conditions
         }
         //Map<Integer, Boolean> conditionS88s = new HashMap<>(); // Generate random values for conditionS88s
         //conditionS88s.put(random.nextInt(100), random.nextBoolean());

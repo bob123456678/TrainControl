@@ -313,6 +313,31 @@ public class Layout
     }
     
     /**
+     * Gets the S88 of the latest milestone reached by a locomotive
+     * @param loc the locomotive to check.
+     * @return the S88 sensor of the latest milestone, or null if none found.
+     */
+    public String getLatestMilestoneS88(Locomotive loc)
+    {
+       List<Point> milestones = this.locomotiveMilestones.get(loc);
+       
+       if (milestones == null || milestones.isEmpty()) return null;
+
+       // Iterate backwards through the list
+       for (int i = milestones.size() - 1; i >= 0; i--)
+       {
+            Point point = milestones.get(i);
+            
+            if (point.hasS88())
+            {
+                return point.getS88();
+            }
+       }
+
+       return null;
+    }
+    
+    /**
      * Marks the layout state as invalid
      * Used to show error message in UI
      */
