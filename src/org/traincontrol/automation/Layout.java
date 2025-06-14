@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -64,6 +66,7 @@ public class Layout
     private final Set<Locomotive> locomotivesToRun;
     private final Map<Locomotive, List<Edge>> activeLocomotives;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
+    private final Map<Locomotive, String> locomotivePendingS88;
     
     // Execution history
     private final List<TimetablePath> timetable;
@@ -134,6 +137,7 @@ public class Layout
         this.activeLocomotives = new HashMap<>();
         this.locomotiveMilestones = new HashMap<>();
         this.timetable = new LinkedList<>();
+        this.locomotivePendingS88 = new HashMap<>();
         
         Layout.layoutVersion += 1;
         Layout.lastError = "";
@@ -1748,6 +1752,22 @@ public class Layout
     }
     
     /**
+     * If targetS88 is the nextS88 for the given locomotive, this method will wait until it isn't
+     * @param l
+     * @param targetS88 
+     */
+    public void waitForS88Reached(Locomotive l, String targetS88)
+    {
+        while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
+        {
+            try
+            {
+                Thread.sleep(Locomotive.POLL_INTERVAL);
+            } catch (InterruptedException ex) { }
+        }
+    }
+    
+    /**
      * Locks a path and runs the locomotive from the start to the end
      * @param path
      * @param loc
@@ -1870,6 +1890,7 @@ public class Layout
                         this.control.setFeedbackState(current.getS88(), true);
                     }
                     
+                    this.locomotivePendingS88.put(loc, current.getS88());
                     loc.waitForOccupiedFeedback(current.getS88());    
                     
                     if (this.simulate)
@@ -1955,6 +1976,7 @@ public class Layout
                         this.control.setFeedbackState(current.getS88(), true);
                     }
                     
+                    this.locomotivePendingS88.put(loc, current.getS88());
                     loc.waitForOccupiedFeedback(current.getS88());    
                     
                     if (this.simulate)
@@ -2010,6 +2032,8 @@ public class Layout
                     }
                 }   
             }
+            
+            this.locomotivePendingS88.remove(loc);
         }
         
         // Reverse at terminus station

@@ -203,11 +203,8 @@ abstract public class Route
         {
             if (control.getAutoLayout() != null && control.getLocByName(rc.getName()) != null)
             {
-                // Scrappy way to avoid race condition and ensure the autonomy resolution finishes first
-                try
-                {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) { }
+                // Avoid race condition and ensure the autonomy resolution finishes first
+                control.getAutoLayout().waitForS88Reached(control.getLocByName(rc.getName()), Integer.toString(rc.getAddress()));
                 
                 return 
                     // Last milestone if loc is active
@@ -216,10 +213,11 @@ abstract public class Route
                         control.getLocByName(rc.getName())
                     )) 
                     || 
-                    // Loc location otherwise
+                    // Also check Loc location if route was completed
                     (
-                        !control.getAutoLayout().getActiveLocomotives().containsKey(control.getLocByName(rc.getName()))
-                        &&
+                        // This would require the locomotive to be inactive
+                        // !control.getAutoLayout().getActiveLocomotives().containsKey(control.getLocByName(rc.getName()))
+                        // &&
                         Integer.toString(rc.getAddress()).equals(
                             control.getAutoLayout().getLocomotiveLocation(
                                 control.getLocByName(rc.getName())
