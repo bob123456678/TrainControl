@@ -1,7 +1,7 @@
 # This is an example of how to use TrainControl libraries in Python via Jython
 # Download Jython from https://www.jython.org/ first
 # Example command line usage:
-# java -cp "/path/to/jython.jar;/path/to/TrainControl.jar" org.python.util.jython tc.py
+# java -cp "/path/to/jython.jar;/path/to/TrainControl.jar" org.python.util.jython traincontrol_python_example.py
 # 
 # Or to open an interactive session, run this command and then execute the below import commands
 # java -cp "/path/to/jython.jar;/path/to/TrainControl.jar" org.python.util.jython 

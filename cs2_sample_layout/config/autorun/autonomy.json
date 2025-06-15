@@ -12,7 +12,7 @@
             "y": 255
         },
         {
-            "name": "BottomExitVIrt",
+            "name": "BottomExitVirt",
             "station": false,
             "excludedLocs": [
                 "MZ 1425 DSB",
@@ -609,7 +609,7 @@
             ]
         },
         {
-            "start": "BottomExitVIrt",
+            "start": "BottomExitVirt",
             "end": "Tunnel",
             "length": 0
         },
@@ -648,7 +648,7 @@
         },
         {
             "start": "BottomInner",
-            "end": "BottomExitVIrt",
+            "end": "BottomExitVirt",
             "length": 6,
             "commands": [
                 {
@@ -2512,16 +2512,20 @@
             ],
             "lockedges": [
                 {
+                    "start": "BottomExitVirt",
+                    "end": "Tunnel"
+                },
+                {
                     "start": "BottomInner",
                     "end": "BottomCrossover"
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomInnerOtherside"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
+                    "start": "BottomInner",
+                    "end": "BottomInnerOtherside"
                 }
             ]
         },
@@ -2568,10 +2572,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 }
             ]
@@ -2852,10 +2856,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -2898,10 +2902,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -2956,10 +2960,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -3150,10 +3154,10 @@
             "path": [
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 }
             ]

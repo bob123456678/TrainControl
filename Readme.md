@@ -320,22 +320,22 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.9 [Beta]
+* v2.5.9 [6/15/2025]
     - Routes
         - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
     - Track Diagrams
         - In autonomy mode, added a right-click option to remove the current locomotive from the selected station
-    - Improved the performance of S88 events
-    - Fixed bug where commands that reference other routes (from 2.5.3) would fail for routes containing the word "Route"
+    - Improved the performance (reduced latency) of S88 events
+    - Fixed bug where commands that referenced other routes (from 2.5.3) would fail for routes containing the word "Route"
     - Fixed bug where locomotives being run in autonomy mode might start yielding to inactive locomotives that were paused by the user
 
 * v2.5.8 [5/11/2025]
-    - Autonomy Graph
+    - Graph UI
         - When editing edges, added a button to highlight all linked tiles in the track diagram
         - Improved the appearance of the graph edge editor
 
 * v2.5.7 [5/9/2025]
-    - Track Diagram editor
+    - Track Diagram Editor
         - Improved the organization of right-click menu options
         - The option to rotate text labels and symmetrical components will no longer be shown
         - Added Shift Left and Shift Up options to move the entire track diagram
@@ -348,7 +348,7 @@ Requires JDK 1.8+ and the following libraries:
         - When renaming a route, references from other routes will also be updated
         - Route references with empty route names will now throw an error
         - Routes that reference themselves will no longer fire
-    - Track Diagram editor
+    - Track Diagram Editor
         - When autonomy is enabled, the editor will no longer appear underneath the graph window
 
 * v2.5.5 [5/3/2025]
@@ -369,7 +369,7 @@ Requires JDK 1.8+ and the following libraries:
         - When a route triggers another route, no further routes will be triggered from the second route
 
 * v2.5.2 [4/19/2025]
-    - Track Diagram Editing
+    - Track Diagram Editor
         - Added a "Redo" option
         - Increased undo history to 100 actions
     - Track Diagrams
@@ -379,7 +379,7 @@ Requires JDK 1.8+ and the following libraries:
     - Added a "Debug" indicator to the window title when in debug mode
 
 * v2.5.1 [4/6/2025]
-    - Track Diagram Editing
+    - Track Diagram Editor
         - Added a right-click shortcut to route tiles to enable easy editing of the corresponding route
         - Improved the clarity of different address options in the right-click menu
         - Improved the clarity of tile names in tooltips
@@ -387,7 +387,7 @@ Requires JDK 1.8+ and the following libraries:
     - Fixed bug where non-sequential route IDs could not be selected in the track diagram editor
 
 * v2.5.0 [4/5/2025]
-    - Track Diagram Editing
+    - Track Diagram Editor
         - Added a native track diagram editor, allowing the editing of track diagrams on Mac/Linux in addition to Windows
         - Added a "Modify Layout" entry to the Layouts menu, enabling the management of track diagram pages
         - The "Show Data Source" option in the Layouts menu will now open a file explorer or browser with the layout source files
