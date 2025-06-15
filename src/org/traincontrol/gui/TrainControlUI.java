@@ -707,7 +707,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void resetLayoutStationLabels()
     {
-        if (this.model.getAutoLayout() != null && !this.model.getAutoLayout().isRunning())
+        if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isRunning())
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {  
@@ -914,7 +914,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.log("Could not save UI state. " + iOException.getMessage());
         }
         
-        if (this.autosave.isSelected() && null != this.model.getAutoLayout() 
+        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -9253,7 +9253,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
         // Auto-save confirmation
-        if (this.autosave.isSelected() && null != this.model.getAutoLayout() 
+        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -9606,7 +9606,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     selector.refreshLocSelectorList();
                     
                     // Update locomotive on graph
-                    if (this.model.getAutoLayout() != null)
+                    if (this.model.hasAutoLayout())
                     {
                         this.model.getAutoLayout().sanitizeMultiUnits(l);
                         this.model.getAutoLayout().refreshUI();
@@ -9935,7 +9935,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.repaintLoc(true, null);
 
             // Ensure there are no conflicts on the graph
-            if (this.model.getAutoLayout() != null)
+            if (this.model.hasAutoLayout())
             {
                 this.model.getAutoLayout().sanitizeMultiUnits(l);
                 this.repaintAutoLocListFull();
@@ -10020,7 +10020,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 selector.refreshLocSelectorList();
                 
                 // Remove locomotive from graph
-                if (this.model.getAutoLayout() != null)
+                if (this.model.hasAutoLayout())
                 {
                     this.model.getAutoLayout().locDeleted(l);
                     this.repaintAutoLocListFull();
@@ -11563,7 +11563,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             resetLayoutStationLabels();
             
             // If valid, confirm before we overwrite
-            if (this.model.getAutoLayout() != null && this.model.getAutoLayout().isValid()
+            if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
             {
                 try
@@ -11601,7 +11601,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.model.parseAuto(this.autonomyJSON.getText());
 
-            if (null == this.model.getAutoLayout() || !this.model.getAutoLayout().isValid())
+            if (!this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
             {
                 locCommandPanels.remove(this.locCommandTab);
                 locCommandPanels.remove(this.timetablePanel);
@@ -12783,7 +12783,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
-        if (this.graphViewer == null || this.model.getAutoLayout() == null) return;
+        if (this.graphViewer == null || !this.model.hasAutoLayout()) return;
         
         Graph g = this.graphViewer.getMainGraph();
         
@@ -13271,8 +13271,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     synchronized public void repaintAutoLocList(boolean external)
     {
-        if (null != this.model.getAutoLayout() 
-                && this.model.getAutoLayout().isValid())
+        if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid())
         {
             // If called from another UI component, no need to refresh if there are no trains or if autonomy is on
             if (external)

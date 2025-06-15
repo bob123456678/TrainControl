@@ -270,7 +270,7 @@ public class MarklinRoute extends Route
                         }
                         else if (rc.isAutonomyLightsOn())
                         {
-                            if (this.network.getAutoLayout() != null)
+                            if (this.network.hasAutoLayout())
                             {
                                 this.network.log("Route turning on lights of autonomy locomotives.");
 

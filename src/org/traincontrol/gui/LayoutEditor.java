@@ -708,7 +708,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
 
-        if (lc != null && this.parent.getModel().getAutoLayout() != null && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
+        if (lc != null && this.parent.getModel().hasAutoLayout() && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
         {
             // Retrieve the points, sort them by name, and construct dropdown options
             Collection<Point> points = this.parent.getModel().getAutoLayout().getPoints();

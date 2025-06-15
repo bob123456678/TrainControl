@@ -281,7 +281,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             menuItem.setToolTipText("Control+T");
             add(menuItem);
             
-            if (ui.getModel().getAutoLayout() != null && !ui.getModel().getAutoLayout().getPoints().isEmpty())
+            if (ui.getModel().hasAutoLayout() && !ui.getModel().getAutoLayout().getPoints().isEmpty())
             {     
                 menuItem = new JMenuItem("Place Autonomy Station Label");
                 menuItem.addActionListener(event -> 

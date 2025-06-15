@@ -1935,7 +1935,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public boolean isAutonomyRunning()
     {
-        return this.getAutoLayout() != null && this.getAutoLayout().isRunning();
+        return this.hasAutoLayout() && this.getAutoLayout().isRunning();
     }
     
     /**
