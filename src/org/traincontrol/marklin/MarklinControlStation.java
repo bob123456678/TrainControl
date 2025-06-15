@@ -464,7 +464,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             Thread.sleep(Locomotive.POLL_INTERVAL);
         }
     }
-        
+       
+    @Override
+    public boolean hasAutoLayout()
+    {
+        return this.autoLayout != null;
+    }
+    
     /**
      * Returns the auto layout class (and creates it if it does not yet exist)
      * @return 

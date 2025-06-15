@@ -199,7 +199,7 @@ abstract public class Route
         }
         else if (rc.isAutoLocomotive())
         {
-            if (control.getAutoLayout() != null && control.getLocByName(rc.getName()) != null)
+            if (control.hasAutoLayout() && control.getLocByName(rc.getName()) != null)
             {
                 // Avoid race condition and ensure the autonomy resolution finishes first
                 control.getAutoLayout().waitForS88Reached(control.getLocByName(rc.getName()), Integer.toString(rc.getAddress()));
