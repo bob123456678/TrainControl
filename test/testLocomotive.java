@@ -3,8 +3,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -15,7 +13,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.gui.AutoLocomotiveStatus;
 import static org.traincontrol.marklin.MarklinLocomotive.getMaxNumF;
 
 /**
