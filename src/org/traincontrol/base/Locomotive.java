@@ -20,6 +20,7 @@ public abstract class Locomotive
     
     // The number of ms to wait while polling
     public static final long POLL_INTERVAL = 20;
+    public static final Object monitor = new Object();
 
     // Minimum time feedback state must remain unchanged to register a s88 state change
     // Should be > the CS2 polling interval.  Can be overriden when calling waitForOccupiedFeedback / waitForClearFeedback directly
@@ -571,11 +572,21 @@ public abstract class Locomotive
      * @return 
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration)
-    {        
-        while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
+    {       
+        synchronized(monitor)
         {
-            this.delay(Locomotive.POLL_INTERVAL);
-        }    
+            while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
+            {
+                try
+                {
+                    monitor.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }  
+        }
         
         if (minDuration > 0)
         {
@@ -600,10 +611,20 @@ public abstract class Locomotive
      */
     public Locomotive waitForClearFeedback(String name, int minDuration)
     {        
-        while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
+        synchronized (monitor)
         {
-            this.delay(Locomotive.POLL_INTERVAL);
-        }    
+            while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
+            {
+                try
+                {
+                    monitor.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }  
+        }
         
         if (minDuration > 0)
         {

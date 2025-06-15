@@ -320,9 +320,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.9 [6/14/2025]
+* v2.5.9 [Beta]
     - Routes
         - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
+    - Improved the performance of S88 events
     - Fixed bug where route commands from 2.5.3 would fail for routes containing the word "Route"
     - Fixed bug where locomotives being run in autonomy mode might yield to inactive locomotives that were paused by the user
 

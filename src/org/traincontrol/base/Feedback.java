@@ -57,12 +57,17 @@ public abstract class Feedback
      * Sets the state of the feedback
      * @param set
      */
-    synchronized protected void _setState(boolean set)
+    protected void _setState(boolean set)
     {
-        if (set != this.set)
+        synchronized (Locomotive.monitor)
         {
-            this.set = set;
-            this.lastEvent = System.currentTimeMillis();
+            if (set != this.set)
+            {
+                this.set = set;
+                this.lastEvent = System.currentTimeMillis();
+            }        
+        
+            Locomotive.monitor.notifyAll();
         }
     }
     
