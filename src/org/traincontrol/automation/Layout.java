@@ -1760,11 +1760,40 @@ public class Layout
     {
         while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
         {
-            try
+            synchronized (this)
             {
-                Thread.sleep(Locomotive.POLL_INTERVAL);
-            } catch (InterruptedException ex) { }
+                while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
+                {
+                    try
+                    {
+                        wait();
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
         }
+    }
+    
+    /**
+     * Updates the pending S88 state so we can track what s88 each locomotive is waiting for
+     * @param loc
+     * @param s88 
+     */
+    private synchronized void updatePendingS88(Locomotive loc, String s88)
+    {
+        if (s88 == null)
+        {
+            this.locomotivePendingS88.remove(loc);
+        }
+        else
+        {
+            this.locomotivePendingS88.put(loc, s88);
+        }
+
+        notifyAll();
     }
     
     /**
@@ -1890,7 +1919,7 @@ public class Layout
                         this.control.setFeedbackState(current.getS88(), true);
                     }
                     
-                    this.locomotivePendingS88.put(loc, current.getS88());
+                    this.updatePendingS88(loc, current.getS88());
                     loc.waitForOccupiedFeedback(current.getS88());    
                     
                     if (this.simulate)
@@ -1976,9 +2005,10 @@ public class Layout
                         this.control.setFeedbackState(current.getS88(), true);
                     }
                     
-                    this.locomotivePendingS88.put(loc, current.getS88());
-                    loc.waitForOccupiedFeedback(current.getS88());    
+                    this.updatePendingS88(loc, current.getS88());
                     
+                    loc.waitForOccupiedFeedback(current.getS88()); 
+                       
                     if (this.simulate)
                     {            
                         new Thread( () -> 
@@ -2033,7 +2063,7 @@ public class Layout
                 }   
             }
             
-            this.locomotivePendingS88.remove(loc);
+            this.updatePendingS88(loc, null);
         }
         
         // Reverse at terminus station
