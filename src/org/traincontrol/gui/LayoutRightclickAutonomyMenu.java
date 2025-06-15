@@ -114,18 +114,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                 }
                 
+                addSeparator();
+
+                // Station name label
+                menuItem = new JMenuItem(stationName);
+                menuItem.setEnabled(false);
+                add(menuItem);
+                
                 // Place a different locomotive at this station
                 if (ui.getActiveLoc() != null && !ui.getModel().getAutoLayout().isRunning() &&
                         !ui.getActiveLoc().equals(locomotive)
                 )
                 {
-                    addSeparator();
-
-                    // Station name label
-                    menuItem = new JMenuItem(stationName);
-                    menuItem.setEnabled(false);
-                    add(menuItem);
-                    
                     menuItem = new JMenuItem("Place " + ui.getActiveLoc().getName());
                     menuItem.addActionListener(event -> 
                     {
@@ -133,6 +133,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         ui.repaintAutoLocList(false);
                     });
                     
+                    add(menuItem);
+                }
+                       
+                if (current.getCurrentLocomotive() != null)
+                {
+                    menuItem = new JMenuItem("Remove " + current.getCurrentLocomotive().getName());
+                    menuItem.addActionListener(event -> 
+                    {
+                        ui.getModel().getAutoLayout().moveLocomotive(null, current.getName(), false);
+                        ui.repaintAutoLocList(false);
+                    });
+
                     add(menuItem);
                 }
             }

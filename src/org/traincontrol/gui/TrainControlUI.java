@@ -8752,7 +8752,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jMenu1.add(jSeparator18);
 
         AutoLoadAutonomyMenuItem.setSelected(true);
-        AutoLoadAutonomyMenuItem.setText("Auto Load Autonomy");
+        AutoLoadAutonomyMenuItem.setText("Load Autonomy");
         AutoLoadAutonomyMenuItem.setToolTipText("Attempts to parse the autonomy graph at startup.");
         AutoLoadAutonomyMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -8763,7 +8763,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jMenu1.add(jSeparator3);
 
         checkForUpdates.setSelected(true);
-        checkForUpdates.setText("Auto Check for Updates");
+        checkForUpdates.setText("Check for Updates");
         checkForUpdates.setToolTipText("At startup, should we check for a new release of TrainControl?");
         checkForUpdates.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
