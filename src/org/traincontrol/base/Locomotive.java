@@ -18,10 +18,13 @@ public abstract class Locomotive
 {
     public static enum locDirection {DIR_FORWARD, DIR_BACKWARD};
     
-    // The number of ms to wait while polling
-    public static final long POLL_INTERVAL = 20;
     public static final Object monitor = new Object();
+    public static final Object speedMonitor = new Object();
+    public static final Object accessoryMonitor = new Object();
 
+    // The number of ms between successive function commands
+    public static final long FUNCTION_DELAY_MS = 20;
+    
     // Minimum time feedback state must remain unchanged to register a s88 state change
     // Should be > the CS2 polling interval.  Can be overriden when calling waitForOccupiedFeedback / waitForClearFeedback directly
     // TODO - make configurable
@@ -191,7 +194,7 @@ public abstract class Locomotive
         {
             for (int i = 0; i < preferredFunctions.length && i < this.functionTypes.length; i++)
             { 
-                this.setF(i, this.preferredFunctions[i]).delay(POLL_INTERVAL);
+                this.setF(i, this.preferredFunctions[i]).delay(FUNCTION_DELAY_MS);
             }
         }
         
@@ -208,7 +211,7 @@ public abstract class Locomotive
         {
             if (this.getF(i))
             {
-                this.setF(i, false).delay(POLL_INTERVAL);
+                this.setF(i, false).delay(FUNCTION_DELAY_MS);
             }
         }
         
@@ -369,36 +372,41 @@ public abstract class Locomotive
      */
     protected final void _setSpeed(int speed)
     {
-        if (speed >= 0 && speed <= 100)
+        synchronized (speedMonitor)
         {
-            // Update total runtime stat
-            if (speed > 0 && this.speed == 0)
+            if (speed >= 0 && speed <= 100)
             {
-                this.lastStartTime = System.currentTimeMillis();
-                
-                // Add a placeholder record to track the date
-                String key = Locomotive.getDate();
-
-                this.historicalOperatingTime.put(key, 
-                    this.historicalOperatingTime.getOrDefault(key, 0L)
-                ); 
-            }
-            else if (speed == 0 && this.speed > 0 && this.lastStartTime > 0)
-            {
-                // Now add the number of seconds to the running total
-                String key = Locomotive.getDate();
-                
-                if (powerState)
+                // Update total runtime stat
+                if (speed > 0 && this.speed == 0)
                 {
+                    this.lastStartTime = System.currentTimeMillis();
+
+                    // Add a placeholder record to track the date
+                    String key = Locomotive.getDate();
+
                     this.historicalOperatingTime.put(key, 
-                        this.historicalOperatingTime.getOrDefault(key, 0L) +
-                        (System.currentTimeMillis() - this.lastStartTime)
-                    );
+                        this.historicalOperatingTime.getOrDefault(key, 0L)
+                    ); 
                 }
-            }
+                else if (speed == 0 && this.speed > 0 && this.lastStartTime > 0)
+                {
+                    // Now add the number of seconds to the running total
+                    String key = Locomotive.getDate();
+
+                    if (powerState)
+                    {
+                        this.historicalOperatingTime.put(key, 
+                            this.historicalOperatingTime.getOrDefault(key, 0L) +
+                            (System.currentTimeMillis() - this.lastStartTime)
+                        );
+                    }
+                }
+
+                this.speed = speed;            
+            }  
             
-            this.speed = speed;            
-        }        
+            speedMonitor.notifyAll();
+        }
     }
     
     /**
@@ -516,10 +524,20 @@ public abstract class Locomotive
      */
     public Locomotive waitForAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state)
     {        
-        while (this.getAccessoryState(id, type) != state)
+        synchronized(accessoryMonitor)
         {
-            this.delay(Locomotive.POLL_INTERVAL);
-        }    
+            while (this.getAccessoryState(id, type) != state)
+            {
+                try
+                {
+                    accessoryMonitor.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }   
+        }
         
         return this;
     }
@@ -527,18 +545,23 @@ public abstract class Locomotive
     /**
      * Blocks until this locomotive meets or exceeds the threshold speed
      * @param threshold
-     * @param maxWait maximum number of seconds to wait (0 to disable)
      * @return 
      */
-    public Locomotive waitForSpeedAtOrAbove(int threshold, int maxWait)
+    public Locomotive waitForSpeedAtOrAbove(int threshold)
     {
-        long start = System.currentTimeMillis();
-        
-        while (this.getSpeed() < threshold)
-        {
-            this.delay(Locomotive.POLL_INTERVAL);   
-            
-            if (maxWait > 0 && System.currentTimeMillis() - start > maxWait * 1000) break;
+        synchronized(speedMonitor)
+        {        
+            while (this.getSpeed() < threshold)
+            {
+                try
+                {
+                    speedMonitor.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
         
         return this;
@@ -547,18 +570,23 @@ public abstract class Locomotive
     /**
      * Blocks until this locomotive is below the threshold speed
      * @param threshold
-     * @param maxWait maximum number of seconds to wait (0 to disable)
      * @return 
      */
-    public Locomotive waitForSpeedBelow(int threshold, int maxWait)
+    public Locomotive waitForSpeedBelow(int threshold)
     {
-        long start = System.currentTimeMillis();
-        
-        while (this.getSpeed() >= threshold)
-        {
-            this.delay(Locomotive.POLL_INTERVAL);   
-            
-            if (maxWait > 0 && System.currentTimeMillis() - start > maxWait * 1000) break;
+        synchronized(speedMonitor)
+        {        
+            while (this.getSpeed() >= threshold)
+            {
+                try
+                {
+                    speedMonitor.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
         
         return this;
@@ -839,9 +867,8 @@ public abstract class Locomotive
         try
         {
             Thread.sleep(ms);
-        } catch (InterruptedException ex)
-        {
-        }
+        } 
+        catch (InterruptedException ex) { }
         
         return this;
     }

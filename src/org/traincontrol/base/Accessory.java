@@ -54,7 +54,12 @@ abstract public class Accessory
      */
     protected final void _setSwitched(boolean state)
     {
-        this.switched = state;
+        synchronized (Locomotive.accessoryMonitor)
+        {
+            this.switched = state;
+        
+            Locomotive.accessoryMonitor.notifyAll();
+        }
     }
     
     /**

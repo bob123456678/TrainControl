@@ -1412,7 +1412,7 @@ public class Layout
 
                     if (yieldLoc != null)
                     {
-                        yieldLoc.waitForSpeedAtOrAbove(1, YIELD_SLEEP);
+                        yieldLoc.waitForSpeedAtOrAbove(1);
                     }
                 }                   
             }
@@ -1938,10 +1938,10 @@ public class Layout
                     this.control.log("Auto layout: intermediate reversing for " + loc.getName());
                     loc.setSpeed(0)
                         .switchDirection()
-                        .waitForSpeedBelow(1, YIELD_SLEEP)
+                        .waitForSpeedBelow(1)
                         .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
                         .setSpeed(speed)
-                        .waitForSpeedAtOrAbove(speed, YIELD_SLEEP);
+                        .waitForSpeedAtOrAbove(speed);
                 }
                 
                 // We can also clear this edges dynamically 

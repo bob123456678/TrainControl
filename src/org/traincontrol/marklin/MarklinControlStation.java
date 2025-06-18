@@ -69,7 +69,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Verison number
-    public static final String RAW_VERSION = "2.5.9";
+    public static final String RAW_VERSION = "2.5.10";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -459,9 +459,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void waitForPowerState(boolean state) throws InterruptedException
     {
-        while (this.getPowerState() != state)
+        synchronized(this)
         {
-            Thread.sleep(Locomotive.POLL_INTERVAL);
+            while (this.getPowerState() != state)
+            {
+                try
+                {
+                    this.wait();
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
        
@@ -1455,7 +1465,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
                 {
-                    this.powerState = true;
+                    this.setPowerState(true);
 
                     // For correctly tracking locomotive stats
                     for (MarklinLocomotive l : this.locDB.getItems())
@@ -1468,7 +1478,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
                 {
-                    this.powerState = false;
+                    this.setPowerState(false);
 
                     // For correctly tracking locomotive stats
                     for (MarklinLocomotive l : this.locDB.getItems())
@@ -2244,6 +2254,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public boolean getPowerState()
     {
         return this.powerState;
+    }
+    
+    /**
+     * Sets the power
+     * @param state 
+     */
+    private void setPowerState(boolean state)
+    {
+        synchronized(this)
+        {
+            this.powerState = state;
+            notifyAll();
+        }
     }
     
     /**

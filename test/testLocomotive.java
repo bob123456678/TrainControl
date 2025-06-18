@@ -33,8 +33,10 @@ public class testLocomotive
      * Test locomotive class functionality
      */
     @Test
-    public void testLocomotiveConstructor()
+    public void testLocomotiveConstructor() throws InterruptedException
     {   
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+        
         assertEquals(10, l.isFunctionTimed(4));
         assertEquals(128, l.getFunctionType(0));
         assertEquals(true, l.isFunctionPulse(0));
@@ -136,6 +138,11 @@ public class testLocomotive
         l.setAccessoryState(1, Accessory.accessoryDecoderType.DCC, false);
         assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.DCC));
         
+        model.setAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
+        
+        assertEquals(l.getSpeed(), 0);
+        l.waitForSpeedAtOrAbove(0);
+        
         new Thread(() ->
         {
             try
@@ -152,15 +159,72 @@ public class testLocomotive
             catch (InterruptedException ex) { }
             
             model.setFeedbackState("1001", false);
+            
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ex) { }
+            
+            model.setAccessoryState(100, Accessory.accessoryDecoderType.MM2, false);
+            
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ex) { }
+            
+            l.setSpeed(1);
+            
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ex) { }
+            
+            l.setSpeed(0);
 
         }).start();
         
+        l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
+        assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
+
         assertFalse(model.getFeedbackState("1001"));
         l.waitForOccupiedFeedback("1001");
         assertTrue(model.getFeedbackState("1001"));
         
         l.waitForClearFeedback("1001");
         assertFalse(model.getFeedbackState("1001"));
+        
+        l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, false);
+        assertFalse(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
+        
+        l.waitForSpeedAtOrAbove(1);
+        assertEquals(l.getSpeed(), 1);
+
+        l.waitForSpeedBelow(1);
+        assertEquals(l.getSpeed(), 0);
+        
+        // Test power events
+        model.go();
+        model.waitForPowerState(true);
+        assertTrue(model.getPowerState());
+
+        new Thread(() ->
+        {
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ex) { }
+            model.stop();
+
+
+        }).start();
+        
+        model.waitForPowerState(false);
+        
+        assertFalse(model.getPowerState());
     }
        
     /**
