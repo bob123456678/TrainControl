@@ -1412,7 +1412,7 @@ public class Layout
 
                     if (yieldLoc != null)
                     {
-                        yieldLoc.waitForSpeedAtOrAbove(1);
+                        yieldLoc.blockUntilMotion(YIELD_SLEEP);
                     }
                 }                   
             }

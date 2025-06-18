@@ -543,6 +543,22 @@ public abstract class Locomotive
     }
     
     /**
+     * Waits up to maxWait seconds, unless this locomotive starts moving
+     * @param maxWait
+     */
+    public void blockUntilMotion(int maxWait)
+    {
+        long start = System.currentTimeMillis();
+
+        while (this.getSpeed() < 1)
+        {
+            this.delay(Locomotive.FUNCTION_DELAY_MS);   
+
+            if (maxWait > 0 && System.currentTimeMillis() - start > maxWait * 1000) break;
+        }
+    }
+    
+    /**
      * Blocks until this locomotive meets or exceeds the threshold speed
      * @param threshold
      * @return 
