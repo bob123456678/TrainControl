@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -46,7 +44,7 @@ public class Layout
     public static final int CONFIGURE_SLEEP = 150;
     
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
-    public static final int YIELD_SLEEP = 30;
+    public static final int YIELD_SECONDS = 30;
 
     // Set to false to disable locomotives
     private volatile boolean running = false;
@@ -968,7 +966,6 @@ public class Layout
                 // An opposite configuration was already issued - invalidate!
                 if (preConfigure.configHistory.containsKey(acc) && !preConfigure.configHistory.get(acc).equals(state))
                 {
-                    //this.control.log("Conflicting command " + acc.getName() + " " + state);
                     preConfigure.invalidConfigs.add(acc.getName() + " " + state);
                     preConfigure.configIsValid = false;
                 }
@@ -1372,7 +1369,7 @@ public class Layout
         {
             int waited = (int) ((currentLoc.getLastPathTime() - minLoc.getLastPathTime()) / 1000);
             
-            this.control.log(currentLoc.getName() + " yielding for up to " + YIELD_SLEEP + " seconds as " + minLoc.getName() + " has not run for " + waited + " seconds");
+            this.control.log(currentLoc.getName() + " yielding for up to " + YIELD_SECONDS + " seconds as " + minLoc.getName() + " has not run for " + waited + " seconds");
             return minLoc;
         }
         
@@ -1412,7 +1409,7 @@ public class Layout
 
                     if (yieldLoc != null)
                     {
-                        yieldLoc.blockUntilMotion(YIELD_SLEEP);
+                        yieldLoc.blockUntilMotion(YIELD_SECONDS);
                     }
                 }                   
             }

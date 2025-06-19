@@ -320,12 +320,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.9 [6/15/2025]
+* v2.5.9 [6/18/2025]
     - Routes
         - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
     - Track Diagrams
         - In autonomy mode, added a right-click option to remove the current locomotive from the selected station
-    - Improved the performance (reduced latency) of S88 events
+    - Improved the performance (reduced latency) of S88 events and othre autonomy events
     - Fixed bug where commands that referenced other routes (from 2.5.3) would fail for routes containing the word "Route"
     - Fixed bug where locomotives being run in autonomy mode might start yielding to inactive locomotives that were paused by the user
 
