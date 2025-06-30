@@ -679,6 +679,10 @@ public final class CS2File
      */
     public static int[] parseLocomotiveFunctions(String functionList)
     {
+        if (functionList == null || functionList.isEmpty()) {
+            return new int[0];
+        }
+
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
         
         int[] output = new int[data.length];
@@ -713,6 +717,10 @@ public final class CS2File
     
     public static int[] parseFunctionTriggerTypes(String functionList)
     {
+        if (functionList == null || functionList.isEmpty()) {
+            return new int[0];
+        }
+
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
         
         int[] output = new int[data.length];
