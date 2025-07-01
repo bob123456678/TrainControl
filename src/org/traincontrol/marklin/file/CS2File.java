@@ -679,7 +679,9 @@ public final class CS2File
      */
     public static int[] parseLocomotiveFunctions(String functionList)
     {
-        if (functionList == null || functionList.isEmpty()) {
+        // Sanity check in case no functions are specified in the CS2 file
+        if (functionList == null || functionList.isEmpty())
+        {
             return new int[0];
         }
 
@@ -717,7 +719,9 @@ public final class CS2File
     
     public static int[] parseFunctionTriggerTypes(String functionList)
     {
-        if (functionList == null || functionList.isEmpty()) {
+        // Sanity check in case no functions are specified in the CS2 file
+        if (functionList == null || functionList.isEmpty())
+        {
             return new int[0];
         }
 
@@ -1184,15 +1188,22 @@ public final class CS2File
                         type = MarklinLocomotive.decoderType.MM2;
                     }
                 }
-                                 
+                
+                int[] funcs = parseLocomotiveFunctions(m.get("funktionen"));
+                
                 MarklinLocomotive loc = new MarklinLocomotive(
                     control, 
                     address, 
                     type,
                     name,
-                    extractFunctionTypes(parseLocomotiveFunctions(m.get("funktionen"))),
+                    extractFunctionTypes(funcs),
                     parseFunctionTriggerTypes(m.get("funktionen"))
                 );
+                
+                if (funcs.length == 0)
+                {
+                    logMessage("Warning: locomotive " + name + " was initialized with missing function data.");
+                }
                 
                 if (m.get("icon") != null)
                 {

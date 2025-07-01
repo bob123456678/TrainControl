@@ -123,64 +123,51 @@ public class testLocomotive
         
         // Switches
         l.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, true);
+        l.delay(250);
         
         assertTrue(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
         
         l.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false);
+        l.delay(250);
         
         assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
         
         l.setAccessoryState(1, Accessory.accessoryDecoderType.DCC, true);
+        l.delay(250);
 
         assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.MM2));
         assertTrue(model.getAccessoryState(1, Accessory.accessoryDecoderType.DCC));
 
         l.setAccessoryState(1, Accessory.accessoryDecoderType.DCC, false);
+        l.delay(250);
+        
         assertFalse(model.getAccessoryState(1, Accessory.accessoryDecoderType.DCC));
         
         model.setAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
+        l.delay(250);
         
         assertEquals(l.getSpeed(), 0);
         l.waitForSpeedAtOrAbove(0);
         
         new Thread(() ->
         {
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
+            
             model.setFeedbackState("1001", true);
             
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
             
             model.setFeedbackState("1001", false);
             
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
             
             model.setAccessoryState(100, Accessory.accessoryDecoderType.MM2, false);
             
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
             
             l.setSpeed(1);
             
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
             
             l.setSpeed(0);
 
@@ -212,13 +199,9 @@ public class testLocomotive
 
         new Thread(() ->
         {
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { }
+            l.delay(250);
+            
             model.stop();
-
 
         }).start();
         

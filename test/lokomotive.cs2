@@ -6085,3 +6085,16 @@ lokomotive
  ..nr=14
  .funktionen
  ..nr=15
+lokomotive
+ .name=ABnsNoFunc
+ .richtung=1
+ .uid=0xc005
+ .adresse=0x5
+ .typ=dcc
+ .icon=ABns2
+ .symbol=3
+ .av=60
+ .bv=40
+ .volume=100
+ .tachomax=0
+ .vmin=13

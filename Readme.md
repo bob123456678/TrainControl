@@ -320,6 +320,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.10 [6/30/2025]
+    - Fixed bug where CS2 locomotives with no functions would fail to be imported
+
 * v2.5.9 [6/18/2025]
     - Routes
         - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
