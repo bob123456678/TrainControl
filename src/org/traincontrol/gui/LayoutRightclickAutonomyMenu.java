@@ -72,17 +72,23 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 // TODO there is commonality with AutoLocomotiveStatus - reuse code
                                 new Thread(() ->
                                 {
-                                    ui.ensureGraphUIVisible();
-
-                                    boolean success = ui.getModel().getAutoLayout().executePath(
-                                            path, locomotive, locomotive.getPreferredSpeed(), null
-                                    );
-
-                                    if (!success)
+                                    if (!ui.getModel().getPowerState())
                                     {
-                                        JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
+                                        JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
                                     }
+                                    else
+                                    {               
+                                        ui.ensureGraphUIVisible();
 
+                                        boolean success = ui.getModel().getAutoLayout().executePath(
+                                            path, locomotive, locomotive.getPreferredSpeed(), null
+                                        );
+
+                                        if (!success)
+                                        {
+                                            JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
+                                        }
+                                    }
                                 }).start();
                             }
                             catch (Exception e)

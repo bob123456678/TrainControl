@@ -21,7 +21,7 @@ import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 
 /**
- *
+ * This class represents the model for a track diagram
  * @author Adam
  */
 public class LayoutGrid

@@ -320,6 +320,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.11 [Beta]
+    - Starting semi-autonomous operation from the track diagram will now also first check that the power is on
+
 * v2.5.10 [6/30/2025]
     - Fixed bug where CS2 locomotives with no functions would fail to be imported
 
