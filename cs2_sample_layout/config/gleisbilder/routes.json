@@ -8,28 +8,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "18",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -43,42 +47,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "18",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "66",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "19",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -92,42 +102,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "18",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "66",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "19",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -141,42 +157,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "18",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "19",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "67",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -190,42 +212,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "18",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "19",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "67",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -239,21 +267,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "52",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "6",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "10",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -268,56 +299,64 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "50",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "51",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "99",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "100",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "58",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "10",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -331,63 +370,72 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "32",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "102",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "71",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -402,91 +450,104 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "32",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "102",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "30",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "92",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "57",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "36",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "82",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "83",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -500,28 +561,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "53",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "54",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -535,35 +600,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "53",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "54",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "91",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -577,35 +647,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "53",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "54",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "91",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -619,35 +694,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "7",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -661,35 +741,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "7",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -703,42 +788,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -752,49 +843,56 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "31",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -808,56 +906,64 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "29",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "31",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -871,56 +977,64 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "29",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "31",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -934,42 +1048,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "5",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "55",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "71",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "56",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -984,399 +1104,456 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "63",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "64",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "38",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "40",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "60",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "100",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "99",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "62",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "61",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "58",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "2",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "51",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "11",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "72",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "74",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "59",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "10",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "90",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "52",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "50",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "6",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "68",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "97",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "73",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "49",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "36",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "57",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "92",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "82",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "30",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "83",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "98",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "69",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "103",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "104",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "102",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "32",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "8",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "57",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "36",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "41",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "42",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1391,21 +1568,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "49",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "79",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1420,28 +1600,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "80",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "49",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "79",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1456,28 +1640,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "79",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "80",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "49",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1491,21 +1679,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "98",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "69",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1520,21 +1711,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "98",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "69",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1550,21 +1744,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1590,28 +1787,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "60",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1650,35 +1851,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "60",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "70",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1717,28 +1923,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "52",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "6",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "39",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1764,21 +1974,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "2",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "39",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1804,21 +2017,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1870,21 +2086,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -1948,21 +2167,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "57",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "101",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1977,21 +2199,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "82",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "84",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2006,21 +2231,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "82",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "84",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2035,21 +2263,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "57",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "101",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2064,21 +2295,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "92",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2093,7 +2327,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "103",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2160,14 +2395,16 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "103",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "52",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -2234,14 +2471,16 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "83",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2256,28 +2495,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "68",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "24",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "23",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2292,28 +2535,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "68",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "23",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "24",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2328,28 +2575,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "68",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "23",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "24",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2364,14 +2615,16 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "97",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2386,14 +2639,16 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "73",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2415,7 +2670,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "100",
-                        "SETTING": "false"
+                        "SETTING": "false",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -2442,28 +2698,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "81",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "116",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "37",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2478,42 +2738,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "100",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "69",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "40",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2528,35 +2794,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "60",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "38",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2571,42 +2842,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "1",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "87",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "60",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "70",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "86",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "94",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2621,35 +2898,40 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "3",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "63",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2664,28 +2946,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "75",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "64",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2700,56 +2986,64 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "99",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "51",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "39",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "62",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "2",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "58",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "104",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2764,42 +3058,48 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "53",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "12",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "103",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "90",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "39",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "59",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2814,7 +3114,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "40",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2838,7 +3139,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "38",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2862,7 +3164,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "107",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2886,7 +3189,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "108",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2910,7 +3214,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "86",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2934,7 +3239,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "87",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2958,7 +3264,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "63",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -2982,7 +3289,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "64",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3006,7 +3314,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "39",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3030,7 +3339,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "94",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3054,7 +3364,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "87",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3078,28 +3389,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "30",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "42",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -3114,28 +3429,32 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "30",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "88",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "42",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "25",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -3157,7 +3476,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "9",
-                        "SETTING": "true"
+                        "SETTING": "true",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3191,7 +3511,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "9",
-                        "SETTING": "false"
+                        "SETTING": "false",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3219,21 +3540,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -3285,21 +3609,24 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "9",
-                    "SETTING": "false"
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "107",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "108",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ],
@@ -3363,7 +3690,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "107",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3374,7 +3702,8 @@
                         "type": "TYPE_ACCESSORY",
                         "state": {
                             "ADDRESS": "9",
-                            "SETTING": "true"
+                            "SETTING": "true",
+                            "PROTOCOL": "MM2"
                         }
                     }
                 },
@@ -3413,7 +3742,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "108",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3424,7 +3754,8 @@
                         "type": "TYPE_ACCESSORY",
                         "state": {
                             "ADDRESS": "9",
-                            "SETTING": "false"
+                            "SETTING": "false",
+                            "PROTOCOL": "MM2"
                         }
                     }
                 },
@@ -3470,7 +3801,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "9",
-                        "SETTING": "true"
+                        "SETTING": "true",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3504,7 +3836,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "9",
-                        "SETTING": "false"
+                        "SETTING": "false",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3531,7 +3864,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "9",
-                "SETTING": "false"
+                "SETTING": "false",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3542,7 +3876,8 @@
                         "type": "TYPE_ACCESSORY",
                         "state": {
                             "ADDRESS": "9",
-                            "SETTING": "true"
+                            "SETTING": "true",
+                            "PROTOCOL": "MM2"
                         }
                     }
                 },
@@ -3581,7 +3916,8 @@
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "9",
-                "SETTING": "true"
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
             }
         }],
         "conditions": {
@@ -3592,7 +3928,8 @@
                         "type": "TYPE_ACCESSORY",
                         "state": {
                             "ADDRESS": "9",
-                            "SETTING": "false"
+                            "SETTING": "false",
+                            "PROTOCOL": "MM2"
                         }
                     }
                 },
@@ -3638,7 +3975,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "12",
-                        "SETTING": "true"
+                        "SETTING": "true",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3666,7 +4004,8 @@
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "39",
-                    "SETTING": "true"
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -3681,7 +4020,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "12",
-                        "SETTING": "false"
+                        "SETTING": "false",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3715,7 +4055,8 @@
                     "type": "TYPE_ACCESSORY",
                     "state": {
                         "ADDRESS": "103",
-                        "SETTING": "true"
+                        "SETTING": "true",
+                        "PROTOCOL": "MM2"
                     }
                 }
             },
@@ -3744,50 +4085,58 @@
         }],
         "conditions": {
             "left": {
-                "left": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_ACCESSORY",
-                        "state": {
-                            "ADDRESS": "60",
-                            "SETTING": "true"
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_ACCESSORY",
+                            "state": {
+                                "ADDRESS": "60",
+                                "SETTING": "true",
+                                "PROTOCOL": "MM2"
+                            }
                         }
-                    }
-                },
-                "right": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_FEEDBACK",
-                        "state": {
-                            "ADDRESS": "4",
-                            "SETTING": "true"
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "4",
+                                "SETTING": "true"
+                            }
                         }
-                    }
-                },
-                "type": "NodeAnd"
+                    },
+                    "type": "NodeAnd"
+                }]
             },
             "right": {
-                "left": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_ACCESSORY",
-                        "state": {
-                            "ADDRESS": "60",
-                            "SETTING": "false"
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_ACCESSORY",
+                            "state": {
+                                "ADDRESS": "60",
+                                "SETTING": "false",
+                                "PROTOCOL": "MM2"
+                            }
                         }
-                    }
-                },
-                "right": {
-                    "type": "NodeRouteCommand",
-                    "command": {
-                        "type": "TYPE_FEEDBACK",
-                        "state": {
-                            "ADDRESS": "10",
-                            "SETTING": "true"
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "10",
+                                "SETTING": "true"
+                            }
                         }
-                    }
-                },
-                "type": "NodeAnd"
+                    },
+                    "type": "NodeAnd"
+                }]
             },
             "type": "NodeOr"
         }
