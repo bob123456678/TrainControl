@@ -320,7 +320,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.11 [Beta]
+* v2.5.11 [7/26/2025]
+    - Route conditional logic now has an explicit AND operator for improved readability
     - Starting semi-autonomous operation from the track diagram will now also first check that the power is on
 
 * v2.5.10 [6/30/2025]

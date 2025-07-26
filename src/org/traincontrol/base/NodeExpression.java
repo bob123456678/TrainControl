@@ -99,7 +99,7 @@ public abstract class NodeExpression implements Serializable
     {
         StringBuilder sb = new StringBuilder();
         toTextRepresentationHelper(expression, sb, network);
-        return sb.toString().replaceAll("\n+", "\n").replaceAll("\n[ ]+OR", "\nOR").replaceAll("\n\\)", ")").trim(); // Remove empty lines and trailing newline
+        return sb.toString().replaceAll("\n+", "\n").replaceAll("\n[ ]+AND", "\nAND").replaceAll("\n[ ]+OR", "\nOR").replaceAll("\n\\)", ")").trim(); // Remove empty lines and trailing newline
     }
 
     private static void toTextRepresentationHelper(NodeExpression node, StringBuilder sb, ViewListener network)
@@ -120,7 +120,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeAnd)
         {
             toTextRepresentationHelper(((NodeAnd) node).getLeft(), sb, network);
-            sb.append("\n");
+            sb.append("\nAND\n");
             toTextRepresentationHelper(((NodeAnd) node).getRight(), sb, network);
         }
         else if (node instanceof NodeOr)
@@ -163,22 +163,14 @@ public abstract class NodeExpression implements Serializable
 
             if (line.equals("OR")) 
             {
-                while (!operators.isEmpty() && operators.peek().equals("AND")) 
-                {
-                    operators.pop();
-                    NodeExpression right = stack.pop();
-                    NodeExpression left = stack.pop();
-                    stack.push(new NodeAnd(left, right));
-                }
                 operators.push("OR");
+            } 
+            else if (line.equals("AND")) 
+            {
+                operators.push("AND");
             } 
             else if (line.equals("(")) 
             {
-                // Handle implicit AND before a group
-                if (i > 0 && !lines.get(i - 1).trim().equals("OR") && !lines.get(i - 1).trim().equals("(") && !lines.get(i - 1).trim().equals(")"))
-                {
-                    operators.push("AND");
-                }
                 operators.push("(");
             } 
             else if (line.equals(")")) 
@@ -200,31 +192,12 @@ public abstract class NodeExpression implements Serializable
                 operators.pop(); // Remove the '('
                 NodeExpression group = stack.pop();
                 stack.push(new NodeGroup(Arrays.asList(group)));
-
-                // Handle implicit AND after a group
-                if (i + 1 < lines.size())
-                {
-                    String nextLine = lines.get(i + 1).trim();
-                    if (!nextLine.equals("OR") && !nextLine.equals(")"))
-                    {
-                        operators.push("AND");
-                    }
-                }
             } 
             else 
             {
                 if (!line.isEmpty()) 
                 {
                     stack.push(parseLine(line));
-
-                    if (i + 1 < lines.size())
-                    {
-                        String nextLine = lines.get(i + 1).trim();
-                        if (!nextLine.equals("OR") && !nextLine.equals("(") && !nextLine.equals(")"))
-                        {
-                            operators.push("AND");
-                        }
-                    }
                 }
             }
         }
@@ -254,7 +227,7 @@ public abstract class NodeExpression implements Serializable
 
     private static List<String> preprocessText(String text)
     {
-        text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n").replaceAll("OR", "\nOR\n");
+        text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n").replaceAll("AND", "\nAND\n").replaceAll("OR", "\nOR\n");
         List<String> lines = Arrays.asList(text.split("\n"));
         List<String> filteredLines = new ArrayList<>();
 

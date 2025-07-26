@@ -200,102 +200,102 @@ public class testRoutes
         String commandOpposite6 = RouteCommand.RouteCommandAccessory(50, MM2, false).toLine(model.getAccessoryByAddress(50, MarklinAccessory.accessoryDecoderType.MM2));
 
         // Test 1: (Switch 60,turn Feedback 10,1) OR Feedback 10,0
-        String expr1 = "(" + command1 + "\n" + command2 + ")\nOR\n" + commandOpposite2;
+        String expr1 = "(" + command1 + "\nAND\n" + command2 + ")\nOR\n" + commandOpposite2;
         NodeExpression node1 = NodeExpression.fromTextRepresentation(expr1, model);
         assertTrue(node1.evaluate(model));
 
         // Test 2: (Switch 60,turn Feedback 10,1)
-        String expr2 = "(" + command1 + "\n" + command2 + ")";
+        String expr2 = "(" + command1 + "\nAND\n" + command2 + ")";
         NodeExpression node2 = NodeExpression.fromTextRepresentation(expr2, model);
         assertTrue(node2.evaluate(model));
 
         // Test 3: Switch 60,turn Feedback 6,0
-        String expr3 = command1 + "\n" + command3;
+        String expr3 = command1 + "\nAND\n" + command3;
         NodeExpression node3 = NodeExpression.fromTextRepresentation(expr3, model);
         assertTrue(node3.evaluate(model));
 
         // Test 4: Switch 60,turn OR (Feedback 6,0 Switch 55,straight)
-        String expr4 = command1 + "\nOR\n(" + command3 + "\n" + command4 + ")";
+        String expr4 = command1 + "\nOR\n(" + command3 + "\nAND\n" + command4 + ")";
         NodeExpression node4 = NodeExpression.fromTextRepresentation(expr4, model);
         assertTrue(node4.evaluate(model));
 
-        // Test 5: (Switch 60,turn Feedback 10,1 Feedback 6,0 Switch 55,straight) should be false
-        String expr5 = "(" + command1 + "\n" + command2 + " " + command3 + "\n" + command4 + ")";
+        // Test 5: (Switch 60,turn Feedback 10,1 Feedback 6,0 Switch 55,straight) should be true
+        String expr5 = "(" + command1 + " AND " + command2 + " AND " + command3 + " AND " + command4 + ")";
         NodeExpression node5 = NodeExpression.fromTextRepresentation(expr5, model);
-        assertFalse(node5.evaluate(model));
+        assertTrue(node5.evaluate(model));
 
         // Test 6: (Switch 60,turn) OR (Feedback 10,1 Switch 55,straight) should be true
-        String expr6 = "(" + command1 + ")\nOR\n(" + command2 + "\n" + command4 + ")";
+        String expr6 = "(" + command1 + ")\nOR\n(" + command2 + "\nAND\n" + command4 + ")";
         NodeExpression node6 = NodeExpression.fromTextRepresentation(expr6, model);
         assertTrue(node6.evaluate(model));
 
         // Test 7: (Feedback 10,1 Switch 55,straight) OR (Feedback 6,0) should be true
-        String expr7 = "(" + command2 + "\n" + command4 + ")\nOR\n(" + commandOpposite3 + ")";
+        String expr7 = "(" + command2 + "\nAND\n" + command4 + ")\nOR\n(" + commandOpposite3 + ")";
         NodeExpression node7 = NodeExpression.fromTextRepresentation(expr7, model);
         assertTrue(node7.evaluate(model));
 
         // Test 7a: (Feedback 10,1 Switch 55,turn) OR (Feedback 6,0) should be false
-        String expr7a = "(" + command2 + "\n" + commandOpposite4 + ")\nOR\n(" + commandOpposite3 + ")";
+        String expr7a = "(" + command2 + "\nAND\n" + commandOpposite4 + ")\nOR\n(" + commandOpposite3 + ")";
         NodeExpression node7a = NodeExpression.fromTextRepresentation(expr7a, model);
         assertFalse(node7a.evaluate(model));
 
         // Test 8: Feedback 10,1 (Feedback 6,0 OR Switch 55,straight) should be true
-        String expr8 = command2 + "\n(" + command3 + "\nOR\n" + command4 + ")";
+        String expr8 = command2 + "\nAND \n(" + command3 + "\nOR\n" + command4 + ")";
         NodeExpression node8 = NodeExpression.fromTextRepresentation(expr8, model);
         assertTrue(node8.evaluate(model));
 
         // Test 8a: Feedback 10,0 (Feedback 6,1 OR Switch 55,turn) should be false
-        String expr8a = commandOpposite2 + "\n(" + commandOpposite3 + "\nOR\n" + commandOpposite4 + ")";
+        String expr8a = commandOpposite2 + " \n AND \n(" + commandOpposite3 + "\nOR\n" + commandOpposite4 + ")";
         NodeExpression node8a = NodeExpression.fromTextRepresentation(expr8a, model);
         assertFalse(node8a.evaluate(model));
 
         // Test 9: Switch 60,turn Switch 60,straight should be false
-        String expr9 = command1 + "\n" + commandOpposite1;
+        String expr9 = command1 + " AND " + commandOpposite1;
         NodeExpression node9 = NodeExpression.fromTextRepresentation(expr9, model);
         assertFalse(node9.evaluate(model));
 
         // Test 10: (Feedback 10,1 Feedback 4,1) OR Switch 55,straight should be true
-        String expr10 = "(" + command2 + "\n" + command5 + ")\nOR\n" + command4;
+        String expr10 = "(" + command2 + " AND " + command5 + ")\nOR\n" + command4;
         NodeExpression node10 = NodeExpression.fromTextRepresentation(expr10, model);
         assertTrue(node10.evaluate(model));
 
         // Test 11: (Feedback 10,1 Feedback 4,1) (Switch 60,straight) should be false
-        String expr11 = "(" + command2 + "\n" + command5 + ")\n" + commandOpposite1;
+        String expr11 = "(" + command2 + " AND \n" + command5 + ") AND \n" + commandOpposite1;
         NodeExpression node11 = NodeExpression.fromTextRepresentation(expr11, model);
         assertFalse(node11.evaluate(model));
 
         // Test 12: (Switch 50,turn) (Switch 55,straight) should be true
-        String expr12 = "(" + command6 + ")\n" + command4;
+        String expr12 = "(" + command6 + ") AND \n" + command4;
         NodeExpression node12 = NodeExpression.fromTextRepresentation(expr12, model);
         assertTrue(node12.evaluate(model));
 
         // Test 13: (Switch 50,turn) (Switch 50,straight) should be false
-        String expr13 = "(" + command6 + ")\n" + commandOpposite6;
+        String expr13 = "(" + command6 + ") AND \n" + commandOpposite6;
         NodeExpression node13 = NodeExpression.fromTextRepresentation(expr13, model);
         assertFalse(node13.evaluate(model));
 
         // Test 14: Feedback 10,1 AND (Switch 50,turn OR Switch 55,straight) should be true
-        String expr14 = command2 + "\n(" + command6 + "\nOR\n" + command4 + ")";
+        String expr14 = command2 + " AND \n(" + command6 + "\nOR\n" + command4 + ")";
         NodeExpression node14 = NodeExpression.fromTextRepresentation(expr14, model);
         assertTrue(node14.evaluate(model));
 
         // Test 15: Feedback 10,1 AND (Switch 50,straight OR Switch 55,turn) should be false
-        String expr15 = command2 + "\n(" + commandOpposite6 + "\nOR\n" + commandOpposite4 + ")";
+        String expr15 = command2 + " AND \n(" + commandOpposite6 + "\nOR\n" + commandOpposite4 + ")";
         NodeExpression node15 = NodeExpression.fromTextRepresentation(expr15, model);
         assertFalse(node15.evaluate(model));
 
         // Test 16: (Switch 50,turn Feedback 4,1) AND (Switch 60,turn Feedback 10,1) should be true
-        String expr16 = "(" + command6 + "\n" + command5 + ")\n(" + command1 + "\n" + command2 + ")";
+        String expr16 = "(" + command6 + " AND \n" + command5 + ") AND \n(" + command1 + " AND \n" + command2 + ")";
         NodeExpression node16 = NodeExpression.fromTextRepresentation(expr16, model);
         assertTrue(node16.evaluate(model));
 
         // Test 17: (Switch 50,turn Feedback 4,0) AND (Switch 60,turn Feedback 10,1) should be false
-        String expr17 = "(" + command6 + "\n" + commandOpposite3 + ")\n(" + command1 + "\n" + command2 + ")";
+        String expr17 = "(" + command6 + " AND \n" + commandOpposite3 + ") AND \n(" + command1 + " AND \n" + command2 + ")";
         NodeExpression node17 = NodeExpression.fromTextRepresentation(expr17, model);
         assertFalse(node17.evaluate(model));
 
         // Test 18: (Switch 50,turn) AND (Switch 65,turn) should be true
-        String expr18 = "(" + command6 + ")\n" + command7;
+        String expr18 = "(" + command6 + ") AND \n" + command7;
         NodeExpression node18 = NodeExpression.fromTextRepresentation(expr18, model);
         assertTrue(node18.evaluate(model));
     }
@@ -307,6 +307,9 @@ public class testRoutes
         for (int i = 0; i < 20; i++)
         {
             String randomExpr = generateRandomExpression();
+            System.out.println("---");
+            System.out.println(randomExpr);
+            System.out.println("---");
             NodeExpression node = NodeExpression.fromTextRepresentation(randomExpr, model);
             String textRepresentation = NodeExpression.toTextRepresentation(node, model);            
             NodeExpression parsedNode = NodeExpression.fromTextRepresentation(textRepresentation, model);
@@ -325,6 +328,7 @@ public class testRoutes
         int numCommands = remainingCommands > 1 ? RANDOM.nextInt(remainingCommands - 1) + 1 : 1;
         boolean useParens = RANDOM.nextBoolean();
         boolean useOr = RANDOM.nextBoolean();
+        boolean useAnd = RANDOM.nextBoolean();
 
         if (useParens)
         {
@@ -348,15 +352,16 @@ public class testRoutes
                 sb.append(command);
             }
 
-            if (i < numCommands - 1)
-            {
-                sb.append("\n");
-            }
-
             // 20% likelihood of generating a nested expression
             if (remainingCommands > 1 && RANDOM.nextInt(100) < 20)
             {
+                sb.append(" AND ");
                 sb.append(generateRandomExpression(remainingCommands - numCommands));
+            }
+            
+            if (i < numCommands - 1)
+            {
+                sb.append(" AND ");
             }
         }
 
@@ -368,6 +373,11 @@ public class testRoutes
         if (useOr && RANDOM.nextBoolean())
         {
             sb.append("\nOR\n");
+            sb.append(generateRandomExpression(remainingCommands - numCommands));
+        }
+        else if (useAnd && RANDOM.nextBoolean())
+        {
+            sb.append("\nAND\n");
             sb.append(generateRandomExpression(remainingCommands - numCommands));
         }
 
