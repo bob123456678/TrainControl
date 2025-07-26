@@ -4612,7 +4612,7 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="73" green="0" red="0" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Accessory Addresses"/>
+                <Property name="text" type="java.lang.String" value="Control Accessories by Address"/>
                 <Property name="focusable" type="boolean" value="false"/>
               </Properties>
             </Component>

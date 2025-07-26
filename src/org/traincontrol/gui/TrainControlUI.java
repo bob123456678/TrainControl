@@ -5951,7 +5951,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KeyboardLabel.setForeground(new java.awt.Color(0, 0, 115));
-        KeyboardLabel.setText("Accessory Addresses");
+        KeyboardLabel.setText("Control Accessories by Address");
         KeyboardLabel.setFocusable(false);
 
         keyboardButtonPanel.setBackground(new java.awt.Color(245, 245, 245));
