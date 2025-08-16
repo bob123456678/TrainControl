@@ -238,7 +238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int NUM_KEYBOARDS = 32;
     
     // Total number of locomotive mappings >= 1
-    private static final int NUM_LOC_MAPPINGS = 10;
+    private static final int NUM_LOC_MAPPINGS = 15;
     
     // How many columns to show in the route UI
     private static final int ROUTE_UI_COLS = 3;
@@ -679,6 +679,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Style tables
         timetable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        // Locomotive mapping tabs
+        locKeyTabs.removeAll();
+        
+        this.locKeyTabs.addMouseListener(rcm);
+        
+        // Select the tab on right click too
+        locKeyTabs.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                if (SwingUtilities.isRightMouseButton(e))
+                {
+                    int tabIndex = locKeyTabs.indexAtLocation(e.getX(), e.getY());
+                    if (tabIndex != -1)
+                    {
+                        locKeyTabs.setSelectedIndex(tabIndex);
+                    }
+                }
+            }
+        });
+        
+        locKeyTabs.putClientProperty("FlatLaf.style", ""
+            + "tabInsets: 2,2,2,2;"          // Padding inside each tab
+            + "tabAreaInsets: 0,0,0,0;"      // Padding around the tab area
+            + "textIconGap: 2;"              // Gap between icon and text
+            + "minimumTabWidth: 44;"         // Optional: shrink tab width
+            + "tabHeight: 24;"               // Optional: reduce tab height
+        );
+
+        for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
+        {
+            locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
+        }
+
+        this.locKeyTabs.addChangeListener(e -> 
+        {
+            this.switchLocMapping(locKeyTabs.getSelectedIndex() + 1);
+            repaintMappings();
+        });
     }
     
     /**
@@ -690,6 +731,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // Use computeIfAbsent to initialize the set if it doesn't exist
         layoutStations.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+    }
+    
+    /**
+     * Gets a caption for the corresponding locomotive mapping tap
+     * @param tabNumber
+     * @return 
+     */
+    private String getLocMappingPageTabTitle(int tabNumber)
+    {
+        String pageTitle = this.getPageName(tabNumber, true).trim();
+
+        if (pageTitle.isEmpty())
+        {
+            pageTitle = "Page " + tabNumber;
+        }
+
+        if (pageTitle.length() > 7)
+        {
+            pageTitle = pageTitle.substring(0, 7);
+        }
+
+        return pageTitle;
     }
     
     /**
@@ -1182,6 +1245,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             
             this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
+            
+            this.locKeyTabs.setSelectedIndex(this.locMappingNumber - 1);
+            this.locKeyTabs.setTitleAt(this.locMappingNumber - 1, getLocMappingPageTabTitle(this.locMappingNumber));
             
             // Display current mapping number in the tab label
             this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control (Page " + this.locMappingNumber + ")");
@@ -2234,7 +2300,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.MappingRenderer.submit(new Thread(() -> 
         { 
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {                
+            {            
+                for (int i = 0; i < locKeyTabs.getTabCount(); i++)
+                {
+                    locKeyTabs.setTitleAt(i, getLocMappingPageTabTitle(i + 1));
+                    locKeyTabs.setToolTipTextAt(i, "Page " + (i + 1));
+                }
+                
                 Set<JButton> update;
                 
                 if (forceUpdateLoc == null)
@@ -3136,6 +3208,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         BLabel = new javax.swing.JTextField();
         NLabel = new javax.swing.JTextField();
         MLabel = new javax.swing.JTextField();
+        locKeyTabs = new javax.swing.JTabbedPane();
         controlsPanel = new javax.swing.JPanel();
         UpArrow = new javax.swing.JButton();
         DownArrow = new javax.swing.JButton();
@@ -4468,13 +4541,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         MLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         MLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
+        locKeyTabs.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
+        locKeyTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
+        locKeyTabs.setFocusable(false);
+        locKeyTabs.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
+
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
         LocContainerLayout.setHorizontalGroup(
             LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocContainerLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4634,7 +4712,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(locKeyTabs))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LocContainerLayout.setVerticalGroup(
@@ -4748,6 +4827,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(PrevLocMapping)
                             .addComponent(NextLocMapping))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -5070,18 +5151,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addGap(9, 9, 9)
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(LocControlPanelLayout.createSequentialGroup()
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
+                        .addGap(9, 9, 9)
+                        .addComponent(locMappingLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(toggleMenuBar))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
+                        .addContainerGap()
                         .addComponent(PrimaryControls)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(latencyLabel))
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
-                        .addComponent(locMappingLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(toggleMenuBar))
-                    .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap()
+                        .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(69, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -5092,14 +5178,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(locMappingLabel)
                     .addComponent(toggleMenuBar))
                 .addGap(3, 3, 3)
-                .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 338, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(PrimaryControls)
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(70, Short.MAX_VALUE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -9426,9 +9512,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void pasteCopiedPage()
     {
-        if (pageCopied())
+        if (pageCopied() && this.locMappingNumber != this.pageToCopy)
         {
-            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to replace the mappings on the current page with those from page " + this.pageToCopy + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to replace the mappings on currently visible " + this.getPageName(this.locMappingNumber, false) + " with those from " + this.getPageName(this.pageToCopy, false) + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
@@ -13917,6 +14003,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
+    private javax.swing.JTabbedPane locKeyTabs;
     private javax.swing.JLabel locMappingLabel;
     private javax.swing.JMenu locomotiveControlMenu;
     private javax.swing.JMenu locomotiveMenu;
