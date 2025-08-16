@@ -238,7 +238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int NUM_KEYBOARDS = 32;
     
     // Total number of locomotive mappings >= 1
-    private static final int NUM_LOC_MAPPINGS = 15;
+    private static final int NUM_LOC_MAPPINGS = 10;
     
     // How many columns to show in the route UI
     private static final int ROUTE_UI_COLS = 3;
@@ -720,6 +720,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.switchLocMapping(locKeyTabs.getSelectedIndex() + 1);
             repaintMappings();
         });
+        
+        // We don't need the regular caption anymore
+        // TODO - fully remove this component and helper methods
+        this.LocMappingNumberLabel.setVisible(false);
     }
     
     /**
@@ -747,9 +751,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             pageTitle = "Page " + tabNumber;
         }
 
-        if (pageTitle.length() > 7)
+        if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TOP)
         {
-            pageTitle = pageTitle.substring(0, 7);
+            pageTitle = pageTitle.substring(0, MAX_PAGE_NAME_LENGTH_TOP);
         }
 
         return pageTitle;
@@ -4828,7 +4832,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(PrevLocMapping)
                             .addComponent(NextLocMapping))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -5185,7 +5189,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(25, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
