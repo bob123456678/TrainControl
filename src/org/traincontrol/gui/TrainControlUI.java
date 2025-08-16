@@ -178,7 +178,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
     public static final String PREFERRED_KEYBOARD_MM2 = "PreferredKeyboardMM2";
     public static final String LAYOUT_SHOW_ADDRESSES = "LayoutShowAddresses";
-    
+    public static final String TABS_SETTING_PREF = "MappingTabs";
+
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
 
@@ -209,6 +210,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Maximum page name length
     public static final Integer MAX_PAGE_NAME_LENGTH = 40;
+    public static final Integer MAX_PAGE_NAME_LENGTH_TAB = 14;
     public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 10;
 
     // Maximum displayed locomotive name length
@@ -616,7 +618,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
-        
+        this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
+ 
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
             this.MM2.setSelected(true);
@@ -703,10 +706,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         
         locKeyTabs.putClientProperty("FlatLaf.style", ""
-            + "tabInsets: 2,2,2,2;"          // Padding inside each tab
+            + "tabInsets: 4,6,4,6;"          // Padding inside each tab
             + "tabAreaInsets: 0,0,0,0;"      // Padding around the tab area
             + "textIconGap: 2;"              // Gap between icon and text
-            + "minimumTabWidth: 44;"         // Optional: shrink tab width
+            + "minimumTabWidth: 30;"         // Optional: shrink tab width
             + "tabHeight: 24;"               // Optional: reduce tab height
         );
 
@@ -721,9 +724,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             repaintMappings();
         });
         
-        // We don't need the regular caption anymore
-        // TODO - fully remove this component and helper methods
-        this.LocMappingNumberLabel.setVisible(false);
+        toggleLocKeyTabs();
+    }
+    
+    /**
+     * Turns the tabs on and off
+     */
+    private void toggleLocKeyTabs()
+    {
+        this.LocMappingNumberLabel.setVisible(!this.showPageTabsPreference.isSelected());
+        this.locKeyTabs.setVisible(this.showPageTabsPreference.isSelected());
     }
     
     /**
@@ -751,9 +761,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             pageTitle = "Page " + tabNumber;
         }
 
-        if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TOP)
+        if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TAB)
         {
-            pageTitle = pageTitle.substring(0, MAX_PAGE_NAME_LENGTH_TOP);
+            pageTitle = pageTitle.substring(0, MAX_PAGE_NAME_LENGTH_TAB);
         }
 
         return pageTitle;
@@ -3522,6 +3532,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         slidersChangeActiveLocMenuItem = new javax.swing.JCheckBoxMenuItem();
         showKeyboardHintsMenuItem = new javax.swing.JCheckBoxMenuItem();
         activeLocInTitle = new javax.swing.JCheckBoxMenuItem();
+        showPageTabsPreference = new javax.swing.JCheckBoxMenuItem();
         jSeparator20 = new javax.swing.JPopupMenu.Separator();
         keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -4831,7 +4842,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(PrevLocMapping)
                             .addComponent(NextLocMapping))))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(6, 6, 6)
                 .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -8769,6 +8780,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         locomotiveControlMenu.add(activeLocInTitle);
+
+        showPageTabsPreference.setSelected(true);
+        showPageTabsPreference.setText("Show Locomotive Page Tabs");
+        showPageTabsPreference.setToolTipText("Shows a tab for each locomotive page, and hides the linear navigation buttons.");
+        showPageTabsPreference.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showPageTabsPreferenceActionPerformed(evt);
+            }
+        });
+        locomotiveControlMenu.add(showPageTabsPreference);
         locomotiveControlMenu.add(jSeparator20);
 
         buttonGroup3.add(keyboardQwertyMenuItem);
@@ -12583,10 +12604,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_menuItemShowLayoutAddressesActionPerformed
 
+    private void showPageTabsPreferenceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showPageTabsPreferenceActionPerformed
+    
+        prefs.putBoolean(TABS_SETTING_PREF, this.showPageTabsPreference.isSelected());
+        toggleLocKeyTabs();
+    }//GEN-LAST:event_showPageTabsPreferenceActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
         this.controlsPanel.setVisible(visibility);
+        this.NextLocMapping.setVisible(visibility);
+        this.PrevLocMapping.setVisible(visibility);
     }
     
     private Accessory.accessoryDecoderType getKeyboardProtocol()
@@ -14032,6 +14061,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu routesMenu;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;
+    private javax.swing.JCheckBoxMenuItem showPageTabsPreference;
     private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;

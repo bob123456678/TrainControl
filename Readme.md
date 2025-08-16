@@ -320,6 +320,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.12 [Beta]
+    - Added tabs that can be used to display and cycle the locomotive mappings
+    - Added a preference to toggle the tabbed view
+
 * v2.5.11 [7/26/2025]
     - Route conditional logic now has an explicit AND operator for improved readability
     - Starting semi-autonomous operation from the track diagram will now also first check that the power is on
