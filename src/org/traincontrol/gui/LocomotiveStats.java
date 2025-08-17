@@ -221,7 +221,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         jSeparator1 = new javax.swing.JSeparator();
         viewUsageGraph = new javax.swing.JButton();
 
-        setBackground(new java.awt.Color(238, 238, 238));
+        setBackground(new java.awt.Color(255, 255, 255));
         setPreferredSize(new java.awt.Dimension(806, 605));
         addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {

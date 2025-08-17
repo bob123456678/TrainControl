@@ -3626,6 +3626,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locMappingLabel.setToolTipText("Right-click any button for options");
 
         LocContainer.setBackground(new java.awt.Color(255, 255, 255));
+        LocContainer.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
         LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
         LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
@@ -4835,7 +4836,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locKeyTabs.getAccessibleContext().setAccessibleDescription("Alt+left/right or comma/period keys cycle tabs.");
 
         controlsPanel.setBackground(new java.awt.Color(255, 255, 255));
-        controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 1, true));
 
         UpArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         UpArrow.setText("↑");
@@ -5167,7 +5168,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(69, Short.MAX_VALUE))
+                .addContainerGap(67, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -5184,7 +5185,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addContainerGap(28, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -6040,7 +6041,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KeyboardLabel.setFocusable(false);
 
         keyboardButtonPanel.setBackground(new java.awt.Color(255, 255, 255));
-        keyboardButtonPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        keyboardButtonPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 1, true));
         keyboardButtonPanel.setFocusable(false);
 
         SwitchButton1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -7024,7 +7025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
 
         jPanel10.setBackground(new java.awt.Color(255, 255, 255));
-        jPanel10.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        jPanel10.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 1, true));
         jPanel10.setFocusable(false);
 
         PrevKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -7139,7 +7140,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardTab.addTab("Keyb", KeyboardPanel);
 
-        RoutePanel.setBackground(new java.awt.Color(238, 238, 238));
+        RoutePanel.setBackground(new java.awt.Color(255, 255, 255));
         RoutePanel.setFocusable(false);
         RoutePanel.setMaximumSize(new java.awt.Dimension(806, 589));
         RoutePanel.setMinimumSize(new java.awt.Dimension(806, 589));
@@ -7284,7 +7285,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardTab.addTab("Rout", RoutePanel);
 
-        logPanel.setBackground(new java.awt.Color(238, 238, 238));
+        logPanel.setBackground(new java.awt.Color(255, 255, 255));
         logPanel.setMaximumSize(new java.awt.Dimension(806, 589));
         logPanel.setMinimumSize(new java.awt.Dimension(806, 589));
         logPanel.setPreferredSize(new java.awt.Dimension(806, 589));
