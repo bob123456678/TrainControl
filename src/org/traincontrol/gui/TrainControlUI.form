@@ -2733,11 +2733,15 @@
                   <Properties>
                     <Property name="tabLayoutPolicy" type="int" value="1"/>
                     <Property name="tabPlacement" type="int" value="3"/>
+                    <Property name="toolTipText" type="java.lang.String" value="Alt+left/right or comma/period keys to cycle tabs."/>
                     <Property name="focusable" type="boolean" value="false"/>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="1"/>
                     </Property>
                   </Properties>
+                  <AccessibilityProperties>
+                    <Property name="AccessibleContext.accessibleDescription" type="java.lang.String" value="Alt+left/right or comma/period keys cycle tabs."/>
+                  </AccessibilityProperties>
 
                   <Layout class="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout"/>
                 </Container>

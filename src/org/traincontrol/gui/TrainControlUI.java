@@ -670,6 +670,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Window location preference
         this.rememberLocationMenuItem.setSelected(prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false));
         
+        // Restore DCC/MM keyboard preference
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
         
         // Support for changing page names
@@ -734,6 +735,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         this.LocMappingNumberLabel.setVisible(!this.showPageTabsPreference.isSelected());
         this.locKeyTabs.setVisible(this.showPageTabsPreference.isSelected());
+        this.NextLocMapping.setVisible(!this.showPageTabsPreference.isSelected());
+        this.PrevLocMapping.setVisible(!this.showPageTabsPreference.isSelected());
     }
     
     /**
@@ -4558,6 +4561,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locKeyTabs.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
         locKeyTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
+        locKeyTabs.setToolTipText("Alt+left/right or comma/period keys to cycle tabs.");
         locKeyTabs.setFocusable(false);
         locKeyTabs.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
 
@@ -4846,6 +4850,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
+
+        locKeyTabs.getAccessibleContext().setAccessibleDescription("Alt+left/right or comma/period keys cycle tabs.");
 
         controlsPanel.setBackground(new java.awt.Color(245, 245, 245));
         controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
@@ -12605,7 +12611,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_menuItemShowLayoutAddressesActionPerformed
 
     private void showPageTabsPreferenceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showPageTabsPreferenceActionPerformed
-    
         prefs.putBoolean(TABS_SETTING_PREF, this.showPageTabsPreference.isSelected());
         toggleLocKeyTabs();
     }//GEN-LAST:event_showPageTabsPreferenceActionPerformed
@@ -12614,8 +12619,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         this.PrimaryControls.setVisible(visibility);
         this.controlsPanel.setVisible(visibility);
-        this.NextLocMapping.setVisible(visibility);
-        this.PrevLocMapping.setVisible(visibility);
     }
     
     private Accessory.accessoryDecoderType getKeyboardProtocol()
