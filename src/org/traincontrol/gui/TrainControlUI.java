@@ -706,14 +706,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         
+        locKeyTabs.setFont(new Font("Segoe UI Semibold", 1, 13));
+
         locKeyTabs.putClientProperty("FlatLaf.style", ""
-            + "tabInsets: 4,6,4,6;"          // Padding inside each tab
-            + "tabAreaInsets: 0,0,0,0;"      // Padding around the tab area
-            + "textIconGap: 2;"              // Gap between icon and text
-            + "minimumTabWidth: 30;"         // Optional: shrink tab width
-            + "tabHeight: 29;"               // Optional: reduce tab height
+            + "tabInsets: 4,6,4,6;"
+            + "tabAreaInsets: 0,0,0,0;"
+            + "textIconGap: 2;"
+            + "minimumTabWidth: 30;"
+            + "tabHeight: 29;"
         );
-        
+    
         for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
         {
             locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
@@ -724,6 +726,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.switchLocMapping(locKeyTabs.getSelectedIndex() + 1);
             repaintMappings();
         });
+        
+        locKeyTabs.setPreferredSize(null); 
+
         
         toggleLocKeyTabs();
     }
@@ -4546,9 +4551,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locKeyTabs.setBackground(new java.awt.Color(255, 255, 255));
         locKeyTabs.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
         locKeyTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
-        locKeyTabs.setToolTipText("Alt+left/right or comma/period keys to cycle tabs.");
+        locKeyTabs.setToolTipText("Alt+left/right or comma/period keys will cycle tabs");
         locKeyTabs.setFocusable(false);
         locKeyTabs.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
+        locKeyTabs.setMaximumSize(new java.awt.Dimension(32767, 38));
+        locKeyTabs.setMinimumSize(new java.awt.Dimension(0, 20));
+        locKeyTabs.setPreferredSize(null);
 
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
@@ -5154,7 +5162,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(6, 6, 6)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(controlsPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
@@ -5177,7 +5185,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locMappingLabel)
                     .addComponent(toggleMenuBar))
-                .addGap(6, 6, 6)
+                .addGap(3, 3, 3)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -5185,7 +5193,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(28, Short.MAX_VALUE))
+                .addContainerGap(31, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -7108,7 +7116,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(KeyboardPanelLayout.createSequentialGroup()
                 .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(KeyboardPanelLayout.createSequentialGroup()
-                        .addGap(9, 9, 9)
+                        .addGap(6, 6, 6)
                         .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(KeyboardLabel)
                             .addComponent(keyboardButtonPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -7119,7 +7127,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addComponent(MM2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(DCC)))
-                .addContainerGap(69, Short.MAX_VALUE))
+                .addContainerGap(72, Short.MAX_VALUE))
         );
         KeyboardPanelLayout.setVerticalGroup(
             KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -7150,6 +7158,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 115));
         jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
+
+        jScrollPane5.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
         RouteList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         RouteList.setModel(new javax.swing.table.DefaultTableModel(
@@ -13537,12 +13547,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
           
             // Determine the border to set
-            int top = (row == 0) ? 1 : 0;
-            int left = (column == 0) ? 1 : 0;
+            int top = 0;
+            int left = 0;
             int bottom = 1;
+            //int bottom = (row == table.getRowCount() - 1) ? 0 : 1;
             int right = 1;
 
-            j.setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, Color.BLACK));
+            j.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            j.setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, new Color(208,208,208)));
             // End hover effect
             
             if (value != null)
@@ -13577,13 +13589,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // set to red bold font
                     c.setForeground(Color.RED);
-                    c.setFont(new Font("Dialog", Font.BOLD, 12));
+                    c.setFont(new Font("Segoe UI", Font.BOLD, 14));
                 } 
                 else 
                 {
                     // stay at default
                     c.setForeground(Color.BLACK);
-                    c.setFont(new Font("Dialog", Font.PLAIN, 12));
+                    c.setFont(new Font("Segoe UI", Font.PLAIN, 14));
                 }
             }
   
@@ -13635,8 +13647,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.RouteList.setModel(tableModel);
-            this.RouteList.setShowGrid(true);  
-            
+            this.RouteList.setShowGrid(false);  
+
             for (int j = 0; j < ROUTE_UI_COLS; j++)
             {
                 this.RouteList.getColumnModel().getColumn(j).setCellRenderer(new CustomTableRenderer());
