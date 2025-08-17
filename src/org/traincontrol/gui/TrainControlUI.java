@@ -4572,8 +4572,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locKeyTabs.setFocusable(false);
         locKeyTabs.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
         locKeyTabs.setMaximumSize(new java.awt.Dimension(32767, 50));
-        locKeyTabs.setMinimumSize(new java.awt.Dimension(0, 36));
-        locKeyTabs.setPreferredSize(new java.awt.Dimension(731, 36));
+        locKeyTabs.setMinimumSize(new java.awt.Dimension(0, 35));
+        locKeyTabs.setPreferredSize(new java.awt.Dimension(731, 35));
 
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
@@ -5210,7 +5210,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(33, Short.MAX_VALUE))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
