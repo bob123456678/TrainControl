@@ -4848,7 +4848,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(NextLocMapping))))
                 .addGap(6, 6, 6)
                 .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         locKeyTabs.getAccessibleContext().setAccessibleDescription("Alt+left/right or comma/period keys cycle tabs.");
