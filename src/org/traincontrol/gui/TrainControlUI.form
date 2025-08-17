@@ -681,26 +681,22 @@
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
-                      <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="controlsPanel" max="32767" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace min="-2" pref="9" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="1" attributes="0">
+                          <Component id="controlsPanel" alignment="0" max="32767" attributes="0"/>
+                          <Group type="102" alignment="1" attributes="0">
                               <Component id="locMappingLabel" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="toggleMenuBar" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
                               <Component id="PrimaryControls" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                               <Component id="latencyLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="1" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="LocContainer" min="-2" pref="731" max="-2" attributes="0"/>
+                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                              <Component id="LocContainer" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                       <EmptySpace pref="69" max="32767" attributes="0"/>
@@ -715,7 +711,7 @@
                           <Component id="locMappingLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="toggleMenuBar" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                       <Component id="LocContainer" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
@@ -724,7 +720,7 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="controlsPanel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="25" max="32767" attributes="0"/>
+                      <EmptySpace pref="30" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -745,12 +741,7 @@
             <Container class="javax.swing.JPanel" name="LocContainer">
               <Properties>
                 <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                  <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                </Property>
-                <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
-                  <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">
-                    <LineBorder roundedCorners="true"/>
-                  </Border>
+                  <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                   <Dimension value="[773, 366]"/>
@@ -763,9 +754,9 @@
               <Layout>
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Group type="102" attributes="0">
+                      <Group type="102" alignment="0" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="QButton" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
@@ -774,23 +765,19 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          <Component id="WSlider" max="32767" attributes="0"/>
-                                      </Group>
+                                      <Component id="WButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="WSlider" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="WLabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          <Component id="ESlider" max="32767" attributes="0"/>
-                                      </Group>
+                                      <Component id="EButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="ESlider" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="ELabel" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="RSlider" max="32767" attributes="0"/>
                                           <Component id="RButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -798,7 +785,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="TSlider" max="32767" attributes="0"/>
                                           <Component id="TButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -806,7 +793,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="YSlider" max="32767" attributes="0"/>
                                           <Component id="YButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -814,7 +801,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="USlider" max="32767" attributes="0"/>
                                           <Component id="UButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -822,7 +809,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" attributes="0">
                                           <Component id="IButton" min="-2" pref="66" max="-2" attributes="0"/>
                                           <Component id="ISlider" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -830,7 +817,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="OSlider" max="32767" attributes="0"/>
                                           <Component id="OButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -838,16 +825,14 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          <Component id="PSlider" alignment="0" max="32767" attributes="0"/>
-                                      </Group>
+                                      <Component id="PButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="PSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="PLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
                                           <Component id="ASlider" max="32767" attributes="0"/>
                                           <Component id="AButton" alignment="1" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -855,7 +840,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="SSlider" max="32767" attributes="0"/>
                                           <Component id="SButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -863,15 +848,13 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          <Component id="DSlider" alignment="0" max="32767" attributes="0"/>
-                                      </Group>
+                                      <Component id="DButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="DSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="DLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="FSlider" max="32767" attributes="0"/>
                                           <Component id="FButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -879,7 +862,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="GSlider" max="32767" attributes="0"/>
                                           <Component id="GButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -887,7 +870,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="HSlider" max="32767" attributes="0"/>
                                           <Component id="HButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -895,7 +878,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="JSlider" max="32767" attributes="0"/>
                                           <Component id="JButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -903,7 +886,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="KSlider" max="32767" attributes="0"/>
                                           <Component id="KButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -920,10 +903,8 @@
                                           <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
                                           <Component id="LocMappingNumberLabel" min="-2" pref="135" max="-2" attributes="0"/>
                                       </Group>
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="LButton" min="-2" pref="66" max="-2" attributes="0"/>
-                                          <Component id="LSlider" alignment="0" max="32767" attributes="0"/>
-                                      </Group>
+                                      <Component id="LButton" min="-2" pref="66" max="-2" attributes="0"/>
+                                      <Component id="LSlider" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                       <Component id="LLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
@@ -935,7 +916,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="XSlider" max="32767" attributes="0"/>
                                           <Component id="XButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -943,7 +924,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="CSlider" max="32767" attributes="0"/>
                                           <Component id="CButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -951,7 +932,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="VSlider" max="32767" attributes="0"/>
                                           <Component id="VButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -959,7 +940,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="1" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="BSlider" max="32767" attributes="0"/>
                                           <Component id="BButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -967,7 +948,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
                                           <Component id="NSlider" max="32767" attributes="0"/>
                                           <Component id="NButton" min="-2" pref="66" max="-2" attributes="0"/>
                                       </Group>
@@ -980,9 +961,12 @@
                                       <Component id="MLabel" alignment="0" min="-2" pref="66" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
-                              <Component id="locKeyTabs" alignment="0" max="32767" attributes="0"/>
                           </Group>
                           <EmptySpace max="32767" attributes="0"/>
+                      </Group>
+                      <Group type="102" alignment="0" attributes="0">
+                          <Component id="locKeyTabs" min="-2" pref="731" max="-2" attributes="0"/>
+                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -1466,6 +1450,9 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="LocMappingNumberLabel">
                   <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="ff" green="ff" red="ff" type="rgb"/>
+                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="13" style="1"/>
                     </Property>
@@ -1977,9 +1964,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="ELabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2006,9 +1990,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="QLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2035,9 +2016,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="WLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2064,9 +2042,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="RLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2093,9 +2068,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="TLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2122,9 +2094,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="YLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2151,9 +2120,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="ULabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2180,9 +2146,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="ILabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2209,9 +2172,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="OLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2238,9 +2198,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="PLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2267,9 +2224,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="ALabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2296,9 +2250,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="SLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2325,9 +2276,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="ZLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2354,9 +2302,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="DLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2383,9 +2328,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="FLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2412,9 +2354,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="GLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2441,9 +2380,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="HLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2470,9 +2406,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="JLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2499,9 +2432,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="KLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2528,9 +2458,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="LLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2557,9 +2484,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="XLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2586,9 +2510,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="CLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2615,9 +2536,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="VLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2644,9 +2562,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="BLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2673,9 +2588,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="NLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2702,9 +2614,6 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="MLabel">
                   <Properties>
-                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                      <Color blue="f5" green="f5" red="f5" type="rgb"/>
-                    </Property>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI Semibold" size="13" style="0"/>
                     </Property>
@@ -2731,6 +2640,9 @@
                 </Component>
                 <Container class="javax.swing.JTabbedPane" name="locKeyTabs">
                   <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="ff" green="ff" red="ff" type="rgb"/>
+                    </Property>
                     <Property name="tabLayoutPolicy" type="int" value="1"/>
                     <Property name="tabPlacement" type="int" value="3"/>
                     <Property name="toolTipText" type="java.lang.String" value="Alt+left/right or comma/period keys to cycle tabs."/>
@@ -2750,7 +2662,7 @@
             <Container class="javax.swing.JPanel" name="controlsPanel">
               <Properties>
                 <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                  <Color blue="f5" green="f5" red="f5" type="rgb"/>
+                  <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                   <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">
@@ -4655,7 +4567,7 @@
             <Container class="javax.swing.JPanel" name="keyboardButtonPanel">
               <Properties>
                 <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                  <Color blue="f5" green="f5" red="f5" type="rgb"/>
+                  <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                   <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">
@@ -6272,7 +6184,7 @@
             <Container class="javax.swing.JPanel" name="jPanel10">
               <Properties>
                 <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                  <Color blue="f5" green="f5" red="f5" type="rgb"/>
+                  <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                   <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">

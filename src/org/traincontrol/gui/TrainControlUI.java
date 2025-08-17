@@ -711,9 +711,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             + "tabAreaInsets: 0,0,0,0;"      // Padding around the tab area
             + "textIconGap: 2;"              // Gap between icon and text
             + "minimumTabWidth: 30;"         // Optional: shrink tab width
-            + "tabHeight: 24;"               // Optional: reduce tab height
+            + "tabHeight: 29;"               // Optional: reduce tab height
         );
-
+        
         for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
         {
             locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
@@ -1320,6 +1320,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String getPageName(int mappingNumber, boolean raw)
     {
         return getPageName(mappingNumber, raw, false);
+    }
+    
+    /**
+     * Returns the currently shown page number
+     * @return 
+     */
+    public int getLocMappingNumber()
+    {
+        return locMappingNumber;
     }
     
     /**
@@ -3616,8 +3625,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locMappingLabel.setText("Locomotive Key Mapping");
         locMappingLabel.setToolTipText("Right-click any button for options");
 
-        LocContainer.setBackground(new java.awt.Color(245, 245, 245));
-        LocContainer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
+        LocContainer.setBackground(new java.awt.Color(255, 255, 255));
         LocContainer.setMaximumSize(new java.awt.Dimension(773, 366));
         LocContainer.setMinimumSize(new java.awt.Dimension(773, 366));
 
@@ -3875,6 +3883,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        LocMappingNumberLabel.setBackground(new java.awt.Color(255, 255, 255));
         LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         LocMappingNumberLabel.setText("Page");
         LocMappingNumberLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -4247,7 +4256,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        ELabel.setBackground(new java.awt.Color(245, 245, 245));
         ELabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ELabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ELabel.setText("label");
@@ -4259,7 +4267,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ELabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ELabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        QLabel.setBackground(new java.awt.Color(245, 245, 245));
         QLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         QLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         QLabel.setText("label");
@@ -4271,7 +4278,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         QLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         QLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        WLabel.setBackground(new java.awt.Color(245, 245, 245));
         WLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         WLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         WLabel.setText("label");
@@ -4283,7 +4289,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         WLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         WLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        RLabel.setBackground(new java.awt.Color(245, 245, 245));
         RLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         RLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         RLabel.setText("label");
@@ -4295,7 +4300,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         RLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         RLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        TLabel.setBackground(new java.awt.Color(245, 245, 245));
         TLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         TLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         TLabel.setText("label");
@@ -4307,7 +4311,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         TLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         TLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        YLabel.setBackground(new java.awt.Color(245, 245, 245));
         YLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         YLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         YLabel.setText("label");
@@ -4319,7 +4322,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         YLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         YLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ULabel.setBackground(new java.awt.Color(245, 245, 245));
         ULabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ULabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ULabel.setText("label");
@@ -4331,7 +4333,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ULabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ULabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ILabel.setBackground(new java.awt.Color(245, 245, 245));
         ILabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ILabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ILabel.setText("label");
@@ -4343,7 +4344,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ILabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ILabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        OLabel.setBackground(new java.awt.Color(245, 245, 245));
         OLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         OLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         OLabel.setText("label");
@@ -4355,7 +4355,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         OLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         OLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        PLabel.setBackground(new java.awt.Color(245, 245, 245));
         PLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         PLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         PLabel.setText("label");
@@ -4367,7 +4366,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         PLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         PLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ALabel.setBackground(new java.awt.Color(245, 245, 245));
         ALabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ALabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ALabel.setText("label");
@@ -4379,7 +4377,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ALabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ALabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        SLabel.setBackground(new java.awt.Color(245, 245, 245));
         SLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         SLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         SLabel.setText("label");
@@ -4391,7 +4388,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         SLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         SLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        ZLabel.setBackground(new java.awt.Color(245, 245, 245));
         ZLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         ZLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         ZLabel.setText("label");
@@ -4403,7 +4399,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ZLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         ZLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        DLabel.setBackground(new java.awt.Color(245, 245, 245));
         DLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         DLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         DLabel.setText("label");
@@ -4415,7 +4410,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         DLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         DLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        FLabel.setBackground(new java.awt.Color(245, 245, 245));
         FLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         FLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         FLabel.setText("label");
@@ -4427,7 +4421,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         FLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         FLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        GLabel.setBackground(new java.awt.Color(245, 245, 245));
         GLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         GLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         GLabel.setText("label");
@@ -4439,7 +4432,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         GLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         GLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        HLabel.setBackground(new java.awt.Color(245, 245, 245));
         HLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         HLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         HLabel.setText("label");
@@ -4451,7 +4443,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         HLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         HLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        JLabel.setBackground(new java.awt.Color(245, 245, 245));
         JLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         JLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         JLabel.setText("label");
@@ -4463,7 +4454,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         JLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         JLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        KLabel.setBackground(new java.awt.Color(245, 245, 245));
         KLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         KLabel.setText("label");
@@ -4475,7 +4465,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         KLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        LLabel.setBackground(new java.awt.Color(245, 245, 245));
         LLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         LLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         LLabel.setText("label");
@@ -4487,7 +4476,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         LLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        XLabel.setBackground(new java.awt.Color(245, 245, 245));
         XLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         XLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         XLabel.setText("label");
@@ -4499,7 +4487,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         XLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         XLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        CLabel.setBackground(new java.awt.Color(245, 245, 245));
         CLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         CLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         CLabel.setText("label");
@@ -4511,7 +4498,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         CLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         CLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        VLabel.setBackground(new java.awt.Color(245, 245, 245));
         VLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         VLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         VLabel.setText("label");
@@ -4523,7 +4509,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         VLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         VLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        BLabel.setBackground(new java.awt.Color(245, 245, 245));
         BLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         BLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         BLabel.setText("label");
@@ -4535,7 +4520,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         BLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         BLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        NLabel.setBackground(new java.awt.Color(245, 245, 245));
         NLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         NLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         NLabel.setText("label");
@@ -4547,7 +4531,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         NLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         NLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
-        MLabel.setBackground(new java.awt.Color(245, 245, 245));
         MLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         MLabel.setHorizontalAlignment(javax.swing.JTextField.LEFT);
         MLabel.setText("label");
@@ -4559,6 +4542,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         MLabel.setMaximumSize(new java.awt.Dimension(64, 21));
         MLabel.setMinimumSize(new java.awt.Dimension(64, 21));
 
+        locKeyTabs.setBackground(new java.awt.Color(255, 255, 255));
         locKeyTabs.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
         locKeyTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
         locKeyTabs.setToolTipText("Alt+left/right or comma/period keys to cycle tabs.");
@@ -4571,7 +4555,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocContainerLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(QButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -4579,15 +4563,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(QLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(WSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(WButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(WSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(WLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(ESlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(EButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ESlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(ELabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4627,9 +4609,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(OLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(PSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(PSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(PLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4645,9 +4626,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(SLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(DSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(DButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(DSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(DLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(6, 6, 6)
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4688,9 +4668,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addGroup(LocContainerLayout.createSequentialGroup()
                                 .addGap(3, 3, 3)
                                 .addComponent(LocMappingNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(LSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(LSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(LLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(LocContainerLayout.createSequentialGroup()
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
@@ -4731,9 +4710,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addGroup(LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(MButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(MSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(locKeyTabs))
+                            .addComponent(MLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(LocContainerLayout.createSequentialGroup()
+                .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         LocContainerLayout.setVerticalGroup(
             LocContainerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -4853,7 +4834,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locKeyTabs.getAccessibleContext().setAccessibleDescription("Alt+left/right or comma/period keys cycle tabs.");
 
-        controlsPanel.setBackground(new java.awt.Color(245, 245, 245));
+        controlsPanel.setBackground(new java.awt.Color(255, 255, 255));
         controlsPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
 
         UpArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -5172,23 +5153,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LocControlPanelLayout.setHorizontalGroup(
             LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LocControlPanelLayout.createSequentialGroup()
-                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
-                        .addGap(9, 9, 9)
+                .addContainerGap()
+                .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(controlsPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(LocControlPanelLayout.createSequentialGroup()
                         .addComponent(locMappingLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(toggleMenuBar))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LocControlPanelLayout.createSequentialGroup()
-                        .addContainerGap()
                         .addComponent(PrimaryControls)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(latencyLabel))
                     .addGroup(LocControlPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, 731, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(69, Short.MAX_VALUE))
         );
         LocControlPanelLayout.setVerticalGroup(
@@ -5198,7 +5176,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locMappingLabel)
                     .addComponent(toggleMenuBar))
-                .addGap(3, 3, 3)
+                .addGap(6, 6, 6)
                 .addComponent(LocContainer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LocControlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -5206,7 +5184,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(25, Short.MAX_VALUE))
+                .addContainerGap(30, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -6061,7 +6039,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KeyboardLabel.setText("Control Accessories by Address");
         KeyboardLabel.setFocusable(false);
 
-        keyboardButtonPanel.setBackground(new java.awt.Color(245, 245, 245));
+        keyboardButtonPanel.setBackground(new java.awt.Color(255, 255, 255));
         keyboardButtonPanel.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         keyboardButtonPanel.setFocusable(false);
 
@@ -7045,7 +7023,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel10.setBackground(new java.awt.Color(245, 245, 245));
+        jPanel10.setBackground(new java.awt.Color(255, 255, 255));
         jPanel10.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         jPanel10.setFocusable(false);
 

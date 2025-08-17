@@ -42,7 +42,7 @@ public class RightClickPageMenu extends MouseAdapter
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {
-            menuItem = new JMenuItem("Rename Page");
+            menuItem = new JMenuItem("Rename Page " + ui.getLocMappingNumber());
             menuItem.addActionListener(event -> ui.renameCurrentPage());    
             add(menuItem);
             
