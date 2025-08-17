@@ -12,6 +12,8 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollBar;
+import javax.swing.SwingUtilities;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -55,6 +57,25 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         }
                 
         this.setVisible(true);
+        
+        // Propagate scroll event for short lists
+        availablePathScroll.addMouseWheelListener(e ->
+        {
+            // JScrollBar verticalBar = availablePathScroll.getVerticalScrollBar();
+
+            // If vertical scrollbar is not visible or can't scroll further
+            //boolean noScrollNeeded = !verticalBar.isVisible();
+                // || (verticalBar.getMaximum() - verticalBar.getVisibleAmount() <= verticalBar.getValue() &&
+                // e.getWheelRotation() > 0) || // scrolling down at bottom
+                // (verticalBar.getValue() == 0 && e.getWheelRotation() < 0); // scrolling up at top
+
+            if (!availablePathScroll.getVerticalScrollBar().isVisible())
+            {
+                // Forward event to parent scroll pane
+                parent.getAutoLocScroll().dispatchEvent(SwingUtilities.convertMouseEvent(
+                    availablePathScroll, e, parent.getAutoLocScroll()));
+            }
+        });
     }
 
     /**
@@ -186,7 +207,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         locName = new javax.swing.JLabel();
         locDest = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
+        availablePathScroll = new javax.swing.JScrollPane();
         locAvailPaths = new javax.swing.JList<>();
         locStation = new javax.swing.JLabel();
         pauseButton = new javax.swing.JToggleButton();
@@ -232,7 +253,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 locAvailPathsMouseEntered(evt);
             }
         });
-        jScrollPane1.setViewportView(locAvailPaths);
+        availablePathScroll.setViewportView(locAvailPaths);
 
         locStation.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         locStation.setForeground(new java.awt.Color(0, 0, 115));
@@ -255,7 +276,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             .addGroup(layout.createSequentialGroup()
                 .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
+                    .addComponent(availablePathScroll)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(locName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -279,7 +300,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(locDest)
                 .addGap(6, 6, 6)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
+                .addComponent(availablePathScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
                 .addGap(6, 6, 6))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -373,7 +394,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }//GEN-LAST:event_locNameMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane availablePathScroll;
     private javax.swing.JList<String> locAvailPaths;
     private javax.swing.JLabel locDest;
     private javax.swing.JLabel locName;

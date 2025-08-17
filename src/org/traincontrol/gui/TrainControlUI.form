@@ -3701,7 +3701,7 @@
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jScrollPane4" pref="733" max="32767" attributes="0"/>
+                                  <Component id="autoLocScroll" pref="733" max="32767" attributes="0"/>
                                   <Group type="102" attributes="0">
                                       <Component id="gracefulStop" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="32767" attributes="0"/>
@@ -3721,14 +3721,14 @@
                                   <Component id="gracefulStop" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jScrollPane4" pref="511" max="32767" attributes="0"/>
+                              <Component id="autoLocScroll" pref="511" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
                   </Layout>
                   <SubComponents>
-                    <Container class="javax.swing.JScrollPane" name="jScrollPane4">
+                    <Container class="javax.swing.JScrollPane" name="autoLocScroll">
                       <Properties>
                         <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                           <Color blue="ee" green="ee" red="ee" type="rgb"/>

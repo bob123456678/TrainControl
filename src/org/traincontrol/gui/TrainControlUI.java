@@ -621,7 +621,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
-        this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, true));
+        this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
  
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
@@ -3312,7 +3312,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         validateButton = new javax.swing.JButton();
         jSeparator4 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
-        jScrollPane4 = new javax.swing.JScrollPane();
+        autoLocScroll = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
         gracefulStop = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
@@ -5525,16 +5525,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
         locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
 
-        jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
-        jScrollPane4.setBorder(null);
-        jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
+        autoLocScroll.setBackground(new java.awt.Color(238, 238, 238));
+        autoLocScroll.setBorder(null);
+        autoLocScroll.setPreferredSize(new java.awt.Dimension(718, 421));
 
         autoLocPanel.setBackground(new java.awt.Color(255, 255, 255));
         autoLocPanel.setEnabled(false);
         autoLocPanel.setFocusable(false);
         autoLocPanel.setMaximumSize(new java.awt.Dimension(716, 5000));
         autoLocPanel.setLayout(new java.awt.GridLayout(100, 3, 5, 5));
-        jScrollPane4.setViewportView(autoLocPanel);
+        autoLocScroll.setViewportView(autoLocPanel);
 
         gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
         gracefulStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -5567,7 +5567,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
+                    .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
                     .addGroup(locCommandTabLayout.createSequentialGroup()
                         .addComponent(gracefulStop)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -5582,7 +5582,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(startAutonomy)
                     .addComponent(gracefulStop))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
+                .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -13509,7 +13509,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             
             // Speed up scrolling
-            jScrollPane4.getVerticalScrollBar().setUnitIncrement(16);
+            autoLocScroll.getVerticalScrollBar().setUnitIncrement(16);
 
             // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
             this.autoLocPanel.repaint();
@@ -13628,6 +13628,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
   
             return c;
         }
+    }
+    
+    /**
+     * Returns the scroll bar for access by the autonomy windows
+     * @return 
+     */
+    public JScrollPane getAutoLocScroll()
+    {
+        return autoLocScroll;
     }
     
     public void refreshRouteList()
@@ -13924,6 +13933,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JButton allButton;
     private javax.swing.JCheckBox atomicRoutes;
     private javax.swing.JPanel autoLocPanel;
+    private javax.swing.JScrollPane autoLocScroll;
     private javax.swing.JPanel autoPanel;
     private javax.swing.JPanel autoSettingsPanel;
     private javax.swing.JTextArea autonomyJSON;
@@ -14016,7 +14026,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
