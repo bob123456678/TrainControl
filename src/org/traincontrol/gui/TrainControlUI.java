@@ -618,7 +618,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
-        this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
+        this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, true));
  
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
@@ -5190,7 +5190,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
 
-        layoutPanel.setBackground(new java.awt.Color(238, 238, 238));
+        layoutPanel.setBackground(new java.awt.Color(255, 255, 255));
         layoutPanel.setFocusable(false);
         layoutPanel.setMaximumSize(new java.awt.Dimension(806, 589));
         layoutPanel.setMinimumSize(new java.awt.Dimension(806, 589));
@@ -5501,6 +5501,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
 
         jScrollPane4.setBackground(new java.awt.Color(238, 238, 238));
+        jScrollPane4.setBorder(null);
         jScrollPane4.setPreferredSize(new java.awt.Dimension(718, 421));
 
         autoLocPanel.setBackground(new java.awt.Color(255, 255, 255));
@@ -5630,8 +5631,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
 
-        jPanel3.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        jPanel3.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
         jLabel46.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel46.setForeground(new java.awt.Color(0, 0, 115));
@@ -5920,8 +5921,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel51.setForeground(new java.awt.Color(0, 0, 115));
         jLabel51.setText("Train Behavior");
 
-        jPanel4.setBackground(new java.awt.Color(245, 245, 245));
-        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        jPanel4.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
         hideReversing.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         hideReversing.setText("Hide Reversing Stations");
@@ -6005,9 +6006,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(jLabel52))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(94, 94, 94))
         );
 
         locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
@@ -8767,7 +8768,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locomotiveControlMenu.add(activeLocInTitle);
 
         showPageTabsPreference.setSelected(true);
-        showPageTabsPreference.setText("Show Locomotive Page Tabs");
+        showPageTabsPreference.setText("Show Locomotive Pages as Tabs");
         showPageTabsPreference.setToolTipText("Shows a tab for each locomotive page, and hides the linear navigation buttons.");
         showPageTabsPreference.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

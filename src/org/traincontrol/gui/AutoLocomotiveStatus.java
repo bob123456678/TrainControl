@@ -192,7 +192,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         pauseButton = new javax.swing.JToggleButton();
 
         setBackground(new java.awt.Color(255, 255, 255));
-        setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
         setFocusable(false);
         setMaximumSize(new java.awt.Dimension(219, 223));
         setPreferredSize(new java.awt.Dimension(219, 223));
