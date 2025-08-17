@@ -12,6 +12,7 @@ import java.awt.GridLayout;
 import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -80,8 +81,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -706,31 +709,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         
-        locKeyTabs.setFont(new Font("Segoe UI Semibold", 1, 13));
-
-        locKeyTabs.putClientProperty("FlatLaf.style", ""
-            + "tabInsets: 4,6,4,6;"
-            + "tabAreaInsets: 0,0,0,0;"
-            + "textIconGap: 2;"
-            + "minimumTabWidth: 30;"
-            + "tabHeight: 29;"
-        );
-    
         for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
         {
             locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
         }
-
+        
         this.locKeyTabs.addChangeListener(e -> 
         {
             this.switchLocMapping(locKeyTabs.getSelectedIndex() + 1);
             repaintMappings();
         });
-        
-        locKeyTabs.setPreferredSize(null); 
-
-        
+                
         toggleLocKeyTabs();
+        
+        adjustTabbedPaneHeight(locKeyTabs);
+    }
+    
+    /**
+     * Recalculates the appropriate height of a tabbed pane based on the height of its tabs
+     * @param tabbedPane 
+     */
+    public static final void adjustTabbedPaneHeight(JTabbedPane tabbedPane)
+    {
+        int maxTabHeight = 0;
+
+        for (int i = 0; i < tabbedPane.getTabCount(); i++)
+        {
+            Rectangle bounds = tabbedPane.getBoundsAt(i);
+            if (bounds != null)
+            {
+                maxTabHeight = Math.max(maxTabHeight, bounds.height);
+            }
+        }
+
+        // Add padding or trim if needed
+        int desiredHeight = maxTabHeight + 2; // adjust as needed
+
+        Dimension currentSize = tabbedPane.getPreferredSize();
+        tabbedPane.setPreferredSize(new Dimension(currentSize.width, desiredHeight));
+        tabbedPane.revalidate();
     }
     
     /**
@@ -3413,8 +3430,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         MM2 = new javax.swing.JRadioButton();
         DCC = new javax.swing.JRadioButton();
         RoutePanel = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
-        jScrollPane5 = new javax.swing.JScrollPane();
+        routeLabel = new javax.swing.JLabel();
+        routeScrollPane = new javax.swing.JScrollPane();
         RouteList = new javax.swing.JTable();
         AddRouteButton = new javax.swing.JButton();
         sortByName = new javax.swing.JRadioButton();
@@ -4554,9 +4571,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locKeyTabs.setToolTipText("Alt+left/right or comma/period keys will cycle tabs");
         locKeyTabs.setFocusable(false);
         locKeyTabs.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
-        locKeyTabs.setMaximumSize(new java.awt.Dimension(32767, 38));
-        locKeyTabs.setMinimumSize(new java.awt.Dimension(0, 20));
-        locKeyTabs.setPreferredSize(null);
+        locKeyTabs.setMaximumSize(new java.awt.Dimension(32767, 50));
+        locKeyTabs.setMinimumSize(new java.awt.Dimension(0, 36));
+        locKeyTabs.setPreferredSize(new java.awt.Dimension(731, 36));
 
         javax.swing.GroupLayout LocContainerLayout = new javax.swing.GroupLayout(LocContainer);
         LocContainer.setLayout(LocContainerLayout);
@@ -4837,7 +4854,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(PrevLocMapping)
                             .addComponent(NextLocMapping))))
                 .addGap(6, 6, 6)
-                .addComponent(locKeyTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(locKeyTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
 
@@ -5193,7 +5210,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -7155,11 +7172,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         RoutePanel.setMinimumSize(new java.awt.Dimension(806, 589));
         RoutePanel.setPreferredSize(new java.awt.Dimension(806, 589));
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel2.setText("Routes (Click to Execute / Right-click to Edit)");
+        routeLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        routeLabel.setForeground(new java.awt.Color(0, 0, 115));
+        routeLabel.setText("Routes (Click to Execute / Right-click to Edit)");
 
-        jScrollPane5.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
+        routeScrollPane.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
         RouteList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         RouteList.setModel(new javax.swing.table.DefaultTableModel(
@@ -7190,7 +7207,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 RouteListMouseExited(evt);
             }
         });
-        jScrollPane5.setViewportView(RouteList);
+        routeScrollPane.setViewportView(RouteList);
 
         AddRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         AddRouteButton.setText("Add Route");
@@ -7254,9 +7271,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(RoutePanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane5)
+                    .addComponent(routeScrollPane)
                     .addGroup(RoutePanelLayout.createSequentialGroup()
-                        .addComponent(jLabel2)
+                        .addComponent(routeLabel)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(RoutePanelLayout.createSequentialGroup()
                         .addComponent(AddRouteButton)
@@ -7278,9 +7295,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RoutePanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel2)
+                .addComponent(routeLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 525, Short.MAX_VALUE)
+                .addComponent(routeScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 525, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(RoutePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(AddRouteButton, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -13550,7 +13567,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int top = 0;
             int left = 0;
             int bottom = 1;
-            //int bottom = (row == table.getRowCount() - 1) ? 0 : 1;
+            
+            // This is overkill, but will ensure no double border at the bottom of the frame
+            if (row == table.getRowCount() - 1)
+            {
+                // Check if the table is inside a JScrollPane with a visible vertical scrollbar
+                JScrollBar verticalBar = routeScrollPane.getVerticalScrollBar();
+                if (verticalBar != null && verticalBar.isVisible()) {
+                    bottom = 0;
+                }
+            }
+     
             int right = 1;
 
             j.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -13968,7 +13995,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu interfaceMenu;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel43;
     private javax.swing.JLabel jLabel44;
     private javax.swing.JLabel jLabel46;
@@ -13991,7 +14017,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
@@ -14053,6 +14078,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem quickFindMenuItem;
     private javax.swing.JCheckBoxMenuItem rememberLocationMenuItem;
     private javax.swing.JMenuItem renameLayoutMenuItem;
+    private javax.swing.JLabel routeLabel;
+    private javax.swing.JScrollPane routeScrollPane;
     private javax.swing.JMenu routesMenu;
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;

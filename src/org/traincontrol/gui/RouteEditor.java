@@ -34,7 +34,7 @@ public class RouteEditor extends PositionAwareJFrame
                     + "An optional third number specifies a delay before execution, in milliseconds."
                     + "\n\nIf you want your route to execute automatically, specify a Triggering S88 sensor address and set Automatic Execution to \"On\"."
                     + "\n\nOptional Conditions allow you to specify logic consiting of S88 sensors and/or accessory states (in the same format as above) which must also evaluate "
-                    + "to true for the route to automatically execute.  Boolean logic with OR and parentheses is allowed. "
+                    + "to true for the route to automatically execute.  Boolean logic with OR, AND, and parentheses is allowed. "
                     + "For example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,0\", then "
                     + "the route would only fire if S88 11 was indicating clear at the time S88 10 was triggered.\n\n"
                     + "Beyond accessories, route commands can also reference other routes, locomotives, and functions:" + "\n"
