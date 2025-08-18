@@ -2425,6 +2425,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (!simulate)
         {
+            String lastIP = "";
+            
             while (true)
             {
                 try
@@ -2436,6 +2438,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             System.out.println("Prompting for IP in pop-up...");
                             
                             JTextField ipField = new JTextField();
+                            if (lastIP != null) ipField.setText(lastIP);
 
                             Object[] options = {"OK", "Cancel", "Auto-Detect"};
                             Object[] message = {
@@ -2579,6 +2582,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     System.out.println("Unable to prompt for IP; restart and specify the correct IP.");
                 }
 
+                lastIP = initIP;
                 initIP = null;
             }
         }
