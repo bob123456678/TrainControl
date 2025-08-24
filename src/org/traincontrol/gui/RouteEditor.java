@@ -17,6 +17,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
@@ -37,9 +38,10 @@ public class RouteEditor extends PositionAwareJFrame
                     + "to true for the route to automatically execute.  Boolean logic with OR, AND, and parentheses is allowed. "
                     + "For example, if the Triggering S88 address is 10, and the S88 Condition is \"Feedback 11,0\", then "
                     + "the route would only fire if S88 11 was indicating clear at the time S88 10 was triggered.\n\n"
-                    + "Beyond accessories, route commands can also reference other routes, locomotives, and functions:" + "\n"
+                    + "Beyond accessories, route commands can also reference other routes or locomotive speed, direction, and functions:" + "\n"
                     + "locspeed,Locomotive name,50 (sets speed to 50)\n" 
                     + "locspeed,Locomotive name,-1 (instant stop)\n" 
+                    + "locdir,Locomotive name,forward (or backward)\n" 
                     + "locfunc,Locomotive name,20,1 (toggles F20).";
     
     public static final String TURNOUT = "Turn (1)";
@@ -823,7 +825,7 @@ public class RouteEditor extends PositionAwareJFrame
         });
 
         commandTypeList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        commandTypeList.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Speed", "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", "F28", "F29", "F30", "F31" }));
+        commandTypeList.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Speed", "Forward", "Backward", "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", "F28", "F29", "F30", "F31" }));
         commandTypeList.setMaximumSize(new java.awt.Dimension(136, 26));
         commandTypeList.setName(""); // NOI18N
         commandTypeList.addItemListener(new java.awt.event.ItemListener() {
@@ -1044,7 +1046,7 @@ public class RouteEditor extends PositionAwareJFrame
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(s88CPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(8, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         Logic.addTab("S88 Conditions", jPanel4);
@@ -1183,7 +1185,7 @@ public class RouteEditor extends PositionAwareJFrame
                     .addComponent(addAND, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(addOR, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(addGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(14, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         Logic.addTab("Condition Logic", cLogicPanel);
@@ -1531,7 +1533,15 @@ public class RouteEditor extends PositionAwareJFrame
             RouteCommand rc;
             if (commandTypeList.getSelectedIndex() == 0)
             {
-                rc = RouteCommand.RouteCommandLocomotive((String) locNameList.getSelectedItem(), locSpeedSlider.getValue());
+                rc = RouteCommand.RouteCommandLocomotiveSpeed((String) locNameList.getSelectedItem(), locSpeedSlider.getValue());
+            }
+            else if (commandTypeList.getSelectedIndex() == 1)
+            {
+                rc = RouteCommand.RouteCommandLocomotiveDirection((String) locNameList.getSelectedItem(), Locomotive.locDirection.DIR_FORWARD);
+            }
+            else if (commandTypeList.getSelectedIndex() == 2)
+            {
+                rc = RouteCommand.RouteCommandLocomotiveDirection((String) locNameList.getSelectedItem(), Locomotive.locDirection.DIR_BACKWARD);
             }
             else
             {
@@ -1566,6 +1576,12 @@ public class RouteEditor extends PositionAwareJFrame
             this.locFuncOff.setEnabled(false);
             this.locFuncOn.setEnabled(false);
         }
+        else if (commandTypeList.getSelectedIndex() == 1 || commandTypeList.getSelectedIndex() == 2)
+        {
+            this.locSpeedSlider.setEnabled(false);
+            this.locFuncOff.setEnabled(false);
+            this.locFuncOn.setEnabled(false);
+        }
         else
         {
             this.locSpeedSlider.setEnabled(false);
@@ -1575,7 +1591,7 @@ public class RouteEditor extends PositionAwareJFrame
     }//GEN-LAST:event_commandTypeListItemStateChanged
 
     private void locNameListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_locNameListItemStateChanged
-        List<String> dropdownModel = new ArrayList<>(Arrays.asList("Speed"));
+        List<String> dropdownModel = new ArrayList<>(Arrays.asList("Speed", "Forward", "Backward"));
             
         if (this.locNameList.getModel().getSize() > 0)
         {

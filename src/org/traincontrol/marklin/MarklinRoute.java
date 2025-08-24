@@ -303,6 +303,19 @@ public class MarklinRoute extends Route
                                 this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
                             }
                         }
+                        else if (rc.isLocomotiveDirection())
+                        {
+                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                            if (loc != null)
+                            {
+                                loc.setDirection(rc.getDirection());
+                            }
+                            else
+                            {
+                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                            }
+                        }
                         else if (rc.isFunction())
                         {
                             MarklinLocomotive loc = this.network.getLocByName(rc.getName());

@@ -320,6 +320,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.13 [Beta]
+    - Route commands can now specify locomotive direction
+
 * v2.5.12 [8/17/2025]
     - Added UI tabs that can be used to more quickly view / cycle through the locomotive mappings
     - Added a preference to the menu bar to enable the new tabbed view

@@ -14,8 +14,11 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONObject;
+import static org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD;
+import static org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTO_LOCOMOTIVE;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE_DIRECTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 
 /**
@@ -25,13 +28,14 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
  */
 public class RouteCommand implements java.io.Serializable
 {    
-    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_FUNCTION, 
+    public static enum commandType {TYPE_ACCESSORY, TYPE_LOCOMOTIVE, TYPE_LOCOMOTIVE_DIRECTION, TYPE_FUNCTION, 
     TYPE_STOP, TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_FEEDBACK, TYPE_ROUTE,
     TYPE_AUTO_LOCOMOTIVE};
 
     public static final String LOC_AUTO_PREFIX = "autoloc";
     public static final String LOC_SPEED_PREFIX = "locspeed";
     public static final String LOC_FUNC_PREFIX = "locfunc";
+    public static final String LOC_DIRECTION_PREFIX = "locdir";
     public static final String FEEDBACK_PREFIX = "Feedback";
     
     public static final String COMMAND_ROUTE_PREFIX = "Route";
@@ -47,6 +51,7 @@ public class RouteCommand implements java.io.Serializable
     public static String KEY_SPEED = "SPEED";
     public static String KEY_DELAY = "DELAY";
     public static String KEY_PROTOCOL = "PROTOCOL";
+    public static String KEY_DIRECTION = "DIRECTION";
     public static String KEY_ACCESSORY_TYPE = "ACCESSORY_TYPE";
 
     // Settings
@@ -142,12 +147,28 @@ public class RouteCommand implements java.io.Serializable
      * @param speed
      * @return 
      */
-    public static RouteCommand RouteCommandLocomotive(String name, int speed)
+    public static RouteCommand RouteCommandLocomotiveSpeed(String name, int speed)
     {
         RouteCommand r = new RouteCommand(TYPE_LOCOMOTIVE);
         
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_SPEED, Integer.toString(speed));
+        
+        return r;
+    }
+    
+    /**
+     * Returns a full locomotive direction command
+     * @param name
+     * @param direction
+     * @return 
+     */
+    public static RouteCommand RouteCommandLocomotiveDirection(String name, Locomotive.locDirection direction)
+    {
+        RouteCommand r = new RouteCommand(TYPE_LOCOMOTIVE_DIRECTION);
+        
+        r.commandConfig.put(KEY_NAME, name);
+        r.commandConfig.put(KEY_DIRECTION, direction.toString());
         
         return r;
     }
@@ -230,6 +251,11 @@ public class RouteCommand implements java.io.Serializable
         return this.type == TYPE_LOCOMOTIVE;
     }
     
+    public boolean isLocomotiveDirection()
+    {
+        return this.type == TYPE_LOCOMOTIVE_DIRECTION;
+    }
+    
     public boolean isAutoLocomotive()
     {
         return this.type == TYPE_AUTO_LOCOMOTIVE;
@@ -293,6 +319,11 @@ public class RouteCommand implements java.io.Serializable
     public int getSpeed()
     {
         return Integer.parseInt(this.commandConfig.get(KEY_SPEED));
+    }
+    
+    public Locomotive.locDirection getDirection()
+    {
+        return Locomotive.locDirection.valueOf(this.commandConfig.get(KEY_DIRECTION));
     }
     
     public String getAccessoryType()
@@ -365,6 +396,10 @@ public class RouteCommand implements java.io.Serializable
         else if (this.isLocomotive())
         {
             typeString = "Locomotive";
+        }
+        else if (this.isLocomotiveDirection())
+        {
+            typeString = "Locomotive Direction";
         }
         else if (this.isFeedback())
         {
@@ -455,7 +490,15 @@ public class RouteCommand implements java.io.Serializable
             case TYPE_LOCOMOTIVE:
                 String locoName = jsonObject.getJSONObject("state").getString(KEY_NAME);
                 int speed = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_SPEED));
-                routeCommand = RouteCommand.RouteCommandLocomotive(locoName, speed);
+                routeCommand = RouteCommand.RouteCommandLocomotiveSpeed(locoName, speed);
+                break;
+                
+            case TYPE_LOCOMOTIVE_DIRECTION:
+                String locoDirectionName = jsonObject.getJSONObject("state").getString(KEY_NAME);
+                
+                // Fix error here so this is read correctly
+                Locomotive.locDirection direction = Locomotive.locDirection.valueOf(jsonObject.getJSONObject("state").getString(KEY_DIRECTION)); 
+                routeCommand = RouteCommand.RouteCommandLocomotiveDirection(locoDirectionName, direction);
                 break;
 
             case TYPE_STOP:
@@ -538,6 +581,10 @@ public class RouteCommand implements java.io.Serializable
         {
             return this.toString() + "\n";
         }
+        else if (this.isLocomotiveDirection())
+        {
+            return LOC_DIRECTION_PREFIX + "," + this.getName() + "," + (this.getDirection() == DIR_FORWARD ? "forward" : "backward") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
+        }
         else if (this.isLocomotive())
         {
             return LOC_SPEED_PREFIX + "," + this.getName() + "," + this.getSpeed() + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
@@ -608,6 +655,25 @@ public class RouteCommand implements java.io.Serializable
             
             return RouteCommand.RouteCommandRoute(routeName);
         }
+        else if (line.startsWith(LOC_DIRECTION_PREFIX + ",")) 
+        {
+            String[] parts = line.split(",");
+
+            String name = parts[1].trim();
+            String directionStr = parts[2].trim();
+
+            // Convert string to enum safely
+            Locomotive.locDirection direction = "forward".equals(directionStr.toLowerCase()) ? DIR_FORWARD : DIR_BACKWARD;
+
+            RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(name, direction);
+
+            if (parts.length > 3)
+            {
+                rc.setDelay(Math.abs(Integer.parseInt(parts[3].trim())));
+            }
+
+            return rc;
+        }
         else if (line.startsWith(LOC_SPEED_PREFIX + ","))
         {
             String name = line.split(",")[1].trim();
@@ -617,7 +683,7 @@ public class RouteCommand implements java.io.Serializable
             if (speed < 0) speed = -1;
             if (speed > 100) speed = 100;
 
-            RouteCommand rc = RouteCommand.RouteCommandLocomotive(name, speed);
+            RouteCommand rc = RouteCommand.RouteCommandLocomotiveSpeed(name, speed);
 
             if (line.split(",").length > 3)
             {

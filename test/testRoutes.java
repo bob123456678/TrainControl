@@ -3,6 +3,11 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_STOP;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTONOMY_LIGHTS_ON;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_LIGHTS_ON;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE_DIRECTION;
+import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -20,10 +25,8 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
-import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTONOMY_LIGHTS_ON;
-import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
-import static org.traincontrol.base.RouteCommand.commandType.TYPE_LIGHTS_ON;
-import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
+import static org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD;
+import static org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD;
 
 /**
  *
@@ -77,7 +80,7 @@ public class testRoutes
         // Populate the list with random RouteCommand objects
         for (int i = 0; i < random.nextInt(40); i++)
         {    
-            RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE, 
+            RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE, TYPE_LOCOMOTIVE_DIRECTION,
                  TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_ROUTE
             };
             RouteCommand.commandType randomType = types[random.nextInt(8)];
@@ -126,7 +129,7 @@ public class testRoutes
                     String locName = model.getLocList().get(random.nextInt(model.getLocList().size()));
                     int speed = random.nextInt(101);
                     
-                    RouteCommand locCommand = RouteCommand.RouteCommandLocomotive(locName, speed);
+                    RouteCommand locCommand = RouteCommand.RouteCommandLocomotiveSpeed(locName, speed);
                     
                     if (random.nextBoolean())
                     {
@@ -134,6 +137,20 @@ public class testRoutes
                     }
                     
                     routeCommands.add(locCommand);
+                    break;
+                    
+                case TYPE_LOCOMOTIVE_DIRECTION:
+                    String locNameForDirection = model.getLocList().get(random.nextInt(model.getLocList().size()));
+                    int direction = random.nextInt(2);
+                    
+                    RouteCommand locCommandDirection = RouteCommand.RouteCommandLocomotiveDirection(locNameForDirection, direction == 0 ? DIR_FORWARD : DIR_BACKWARD);
+                    
+                    if (random.nextBoolean())
+                    {
+                        locCommandDirection.setDelay(random.nextInt(1000));
+                    }
+                    
+                    routeCommands.add(locCommandDirection);
                     break;
                     
                 case TYPE_FUNCTION:
@@ -537,7 +554,7 @@ public class testRoutes
         
         List<MarklinRoute> newRoutes = new ArrayList();
         
-        while (newRoutes.size() < (new Random()).nextInt(20) + 1) 
+        while (newRoutes.size() < (new Random()).nextInt(40) + 1) 
         {
             MarklinRoute newRouteCandidate = generateRandomRoute();
             
