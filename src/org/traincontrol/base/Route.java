@@ -151,7 +151,7 @@ abstract public class Route
             for (RouteCommand rc : this.route)
             {
                 // Route command references old locomotive name
-                if ((rc.isLocomotive() || rc.isAutoLocomotive() || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
+                if ((rc.isLocomotiveSpeed() || rc.isFunction() || rc.isAutoLocomotive() || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
                 {
                     rc.setName(newName);
                 }

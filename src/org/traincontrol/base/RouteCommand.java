@@ -246,7 +246,7 @@ public class RouteCommand implements java.io.Serializable
         return this.type == TYPE_ROUTE;
     }
     
-    public boolean isLocomotive()
+    public boolean isLocomotiveSpeed()
     {
         return this.type == TYPE_LOCOMOTIVE;
     }
@@ -393,9 +393,9 @@ public class RouteCommand implements java.io.Serializable
         {
             typeString = "Function";
         }
-        else if (this.isLocomotive())
+        else if (this.isLocomotiveSpeed())
         {
-            typeString = "Locomotive";
+            typeString = "Locomotive Speed";
         }
         else if (this.isLocomotiveDirection())
         {
@@ -585,7 +585,7 @@ public class RouteCommand implements java.io.Serializable
         {
             return LOC_DIRECTION_PREFIX + "," + this.getName() + "," + (this.getDirection() == DIR_FORWARD ? "forward" : "backward") + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
         }
-        else if (this.isLocomotive())
+        else if (this.isLocomotiveSpeed())
         {
             return LOC_SPEED_PREFIX + "," + this.getName() + "," + this.getSpeed() + (this.getDelay() > 0 ? "," + this.getDelay() : "") + "\n";
         }

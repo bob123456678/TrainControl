@@ -97,7 +97,7 @@ public class testAccessory
         assertFalse(rc.isFunctionsOff());
         assertFalse(rc.isStop());
         assertFalse(rc.isLightsOn());
-        assertFalse(rc.isLocomotive());
+        assertFalse(rc.isLocomotiveSpeed());
         assertEquals(rc.getAddress(), 285);
         assertFalse(rc.getSetting());
         

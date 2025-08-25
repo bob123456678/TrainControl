@@ -9,7 +9,9 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_LIGHTS_ON;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE_DIRECTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -184,6 +186,54 @@ public class testRoutes
         MarklinRoute route = new MarklinRoute(model, name, id, routeCommands, s88, triggerType, enabled, NodeExpression.fromList(conditions));
         
         return route;
+    }
+    
+    @Test
+    public void testLocomotiveRenameInRouteCommand()
+    {
+        // Step 1: Get a random locomotive name from the model
+        List<String> locList = model.getLocList();
+        assertFalse(locList.isEmpty());
+
+        String originalName = locList.get(0);
+        String testName = originalName + "_test";
+
+        // Step 2: Create a single locomotive command
+        int speed = 0; // Arbitrary speed value
+        RouteCommand locCommand = RouteCommand.RouteCommandLocomotiveSpeed(originalName, speed);
+
+        // Step 3: Create a route with this single command
+        List<RouteCommand> routeCommands = new ArrayList<>();
+        routeCommands.add(locCommand);
+
+        MarklinRoute route = new MarklinRoute(
+            model,
+            "TestRoute999",
+            999,
+            routeCommands,
+            0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            true,
+            NodeExpression.fromList(new ArrayList<>())
+        );
+        
+        model.newRoute(route);
+
+        // Step 4: Rename the locomotive
+        model.renameLoc(originalName, testName);
+
+        // Step 5: Verify the command now reflects the new name
+        RouteCommand commandAfterRename = route.getRoute().get(0);
+        assertEquals(testName, commandAfterRename.getName());
+
+        // Step 6: Rename it back to the original name
+        model.renameLoc(testName, originalName);
+
+        // Step 7: Verify the command reflects the original name again
+        RouteCommand commandAfterRestore = route.getRoute().get(0);
+        assertEquals(originalName, commandAfterRestore.getName());
+        
+        model.deleteRoute(route.getName());
     }
 
     @Test
@@ -438,9 +488,11 @@ public class testRoutes
         
         assert currentRouteNames.equals(model.getRouteList());
         
+        assert null == model.getRoute(newRoute.getName());
+        
         List<MarklinRoute> finalRoutes = new ArrayList<>(model.getRoutes());
 
-        assert finalRoutes.equals(currentRoutes);
+        assertTrue(new HashSet<>(finalRoutes).equals(new HashSet<>(currentRoutes)));
     }
     
     /**

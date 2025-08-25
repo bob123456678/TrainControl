@@ -283,7 +283,7 @@ public class MarklinRoute extends Route
 
                             this.network.lightsOn(this.network.getLocList());  
                         }
-                        else if (rc.isLocomotive())
+                        else if (rc.isLocomotiveSpeed())
                         {
                             MarklinLocomotive loc = this.network.getLocByName(rc.getName());
                             
