@@ -1083,7 +1083,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Checks the locomotive database for duplicate non-MFX addresses
+     * Checks the locomotive database for duplicate addresses
      * @return 
      */
     @Override
@@ -1093,15 +1093,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 
         for (MarklinLocomotive l : this.locDB.getItems())
         {
-            if (l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
-            {        
+            // Do include MFX, but we will want to group these separately in the UI
+            //if (l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
+            //{        
                 if (!locs.containsKey(l.getAddress()))
                 {
                     locs.put(l.getAddress(), new HashSet<>());
                 }
 
                 locs.get(l.getAddress()).add(l);
-            }            
+            //}            
         }
           
         locs.keySet().removeIf(key -> locs.get(key).size() == 1);

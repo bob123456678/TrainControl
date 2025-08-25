@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinLocomotive.decoderType;
@@ -363,13 +364,13 @@ public class AddLocomotive extends javax.swing.JFrame
 
     private void checkDuplicatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkDuplicatesActionPerformed
 
-        new Thread(()->
+        new Thread(() ->
         {
-            int locAddress;
+            int locAddress = 0;
 
             try
             {
-                if (this.LocTypeMFX.isSelected())
+                if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
                 {
                     locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
                 }
@@ -380,36 +381,49 @@ public class AddLocomotive extends javax.swing.JFrame
             }
             catch (NumberFormatException e)
             {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a numerical address");
-                return;
+                //JOptionPane.showMessageDialog(this, "Please enter a numerical address");
+                //return;
             }
 
             Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
-            String message;
-
-            if (locs.containsKey(locAddress))
-            {
-                message = "Locomotive address is already in use.  See log for details.";
-            }
-            else
-            {
-                message = "Address is free.  See log for details.";
-            }
 
             if (!locs.isEmpty())
             {
-                List<Integer> sortedLocs = new ArrayList(locs.keySet());
+                List<Integer> sortedLocs = new ArrayList<>(locs.keySet());
                 Collections.sort(sortedLocs, Collections.reverseOrder());
 
+                this.model.log("=== MFX Locomotives ===");
                 for (Integer addr : sortedLocs)
                 {
-                    for (MarklinLocomotive l : locs.get(addr))
-                    {
-                        this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
-                    }
+                    List<MarklinLocomotive> mfxLocs = locs.get(addr).stream()
+                        .filter(l -> l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
+                        .collect(Collectors.toList());
 
-                    this.model.log("---- Address " + addr + " ----");
+                    if (mfxLocs.size() > 1)
+                    {
+                        for (MarklinLocomotive l : mfxLocs)
+                        {
+                            this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                        }
+                        this.model.log("---- Address " + addr + " ----");
+                    }
+                }
+
+                this.model.log("=== Non-MFX Locomotives ===");
+                for (Integer addr : sortedLocs)
+                {
+                    List<MarklinLocomotive> nonMfxLocs = locs.get(addr).stream()
+                        .filter(l -> l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
+                        .collect(Collectors.toList());
+
+                    if (nonMfxLocs.size() > 1)
+                    {
+                        for (MarklinLocomotive l : nonMfxLocs)
+                        {
+                            this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                        }
+                        this.model.log("---- Address " + addr + " ----");
+                    }
                 }
 
                 this.model.log("Duplicate locomotive address report:");
@@ -418,8 +432,23 @@ public class AddLocomotive extends javax.swing.JFrame
             {
                 this.model.log("There are no duplicate locomotive addresses in the database.");
             }
+            
+            String message;
 
-            JOptionPane.showMessageDialog(this, message);
+            if (locAddress > 0)
+            {
+                if (locs.containsKey(locAddress))
+                {
+                    message = "Locomotive address is already in use. See log for details.";
+                }
+                else
+                {
+                    message = "Address is free. See log for details.";
+                }
+                
+                JOptionPane.showMessageDialog(this, message);
+            }
+
         }).start();
     }//GEN-LAST:event_checkDuplicatesActionPerformed
 

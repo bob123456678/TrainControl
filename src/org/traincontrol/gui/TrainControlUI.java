@@ -9535,13 +9535,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.syncMenuItem.setEnabled(true);
                 this.functionsMenu.setEnabled(true);
 
-                if ("-1".equals(r.toString()))
+                if (c != null)
                 {
-                    JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
-                }
-                else
-                {
-                    JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
+                    if ("-1".equals(r.toString()))
+                    {
+                        JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
+                    }
+                    else
+                    {
+                        JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
+                    }
                 }
             }).start();
         }));
@@ -9736,7 +9739,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     clearCopyTarget();
                     repaintLoc(true, null);
-                    repaintMappings();
+                    repaintMappings(null, false);
                     this.refreshRouteList();
                     selector.refreshLocSelectorList();
                     
@@ -12660,7 +12663,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String newName = pair[1];
 
                         int response = JOptionPane.showConfirmDialog(
-                            null,
+                            this,
                             "Rename locomotive \"" + currentName + "\" to \"" + newName + "\"?",
                             "Confirm Rename",
                             JOptionPane.YES_NO_OPTION
@@ -12670,22 +12673,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             Locomotive l = model.getLocByName(currentName);
                             
-                            model.renameLoc(currentName, newName);
+                            // Check if the target loc already exists
+                            Locomotive l2 = model.getLocByName(newName);
                             
-                            clearCopyTarget();
-                            repaintLoc(true, null);
-                            repaintMappings();
-                            this.refreshRouteList();
-                            selector.refreshLocSelectorList();
-
-                            // Update locomotive on graph
-                            if (this.model.hasAutoLayout())
+                            if (l2 != null)
                             {
-                                this.model.getAutoLayout().sanitizeMultiUnits(l);
-                                this.model.getAutoLayout().refreshUI();
+                                deleteLoc(newName);
+                            }
+                            
+                            l2 = model.getLocByName(newName);
+                            
+                            if (l2 == null)
+                            {                            
+                                model.renameLoc(currentName, newName);
+
+                                clearCopyTarget();
+                                repaintLoc(true, null);
+                                repaintMappings(null, false);
+                                this.refreshRouteList();
+                                selector.refreshLocSelectorList();
+
+                                // Update locomotive on graph
+                                if (this.model.hasAutoLayout())
+                                {
+                                    this.model.getAutoLayout().sanitizeMultiUnits(l);
+                                    this.model.getAutoLayout().refreshUI();
+                                }
                             }
                         }
                     }
+                    
+                    doSync(null);
                 }
             }
             catch (Exception ex)
