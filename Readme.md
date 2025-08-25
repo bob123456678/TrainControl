@@ -328,6 +328,7 @@ Requires JDK 1.8+ and the following libraries:
         - Route commands can now specify locomotive direction
         - When locomotives are renamed, they will now also be updated across all routes
         - Added support for parsing Locomotive direction and Locomotive speed commands in routes read from the CS3 (note: function commands are deliberately not read because of a current limitation in CS3 data)
+    - Fixed UI bug where renamed locomotives might not immediately refresh
 
 * v2.5.12 [8/17/2025]
     - Added UI tabs that can be used to more quickly view / cycle through the locomotive mappings
