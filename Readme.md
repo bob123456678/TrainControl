@@ -325,6 +325,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added a UI menu option to check if any locomotives have been renamed in the Central Station, and update names if so
     - Routes
         - Route commands can now specify locomotive direction
+        - When locomotives are renamed, they will now also be updated across all routes
         - Added support for parsing Locomotive direction and Locomotive speed commands in routes read from the CS3 (note: function commands are deliberately not read because of a current limitation in CS3 data)
 
 * v2.5.12 [8/17/2025]

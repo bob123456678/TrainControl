@@ -140,6 +140,26 @@ abstract public class Route
     }
     
     /**
+     * This will update route commands when a locomotive is renamed
+     * @param oldName
+     * @param newName 
+     */
+    public void locomotiveRenamed(String oldName, String newName)
+    {
+        if (oldName != null && newName != null && !oldName.equals(newName))
+        {
+            for (RouteCommand rc : this.route)
+            {
+                // Route command references old locomotive name
+                if ((rc.isLocomotive() || rc.isAutoLocomotive() || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
+                {
+                    rc.setName(newName);
+                }
+            }
+        }
+    }
+    
+    /**
      * Marks this route as no longer executing
      * @return 
      */

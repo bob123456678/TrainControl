@@ -2079,6 +2079,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.rebuildLocIdCache();
             
+            // Update names in routes
+            for (MarklinRoute r : this.getRoutes())
+            {
+                r.locomotiveRenamed(name, newName);
+            }
+            
             return true;
         }
         

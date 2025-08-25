@@ -9737,6 +9737,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     clearCopyTarget();
                     repaintLoc(true, null);
                     repaintMappings();
+                    this.refreshRouteList();
                     selector.refreshLocSelectorList();
                     
                     // Update locomotive on graph
@@ -12636,6 +12637,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
+            if (this.model.isAutonomyRunning())
+            {
+                JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
+                return;
+            }
+            
             List<String[]> renameList;
             try
             {
@@ -12661,12 +12668,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (response == JOptionPane.YES_OPTION)
                         {
+                            Locomotive l = model.getLocByName(currentName);
+                            
                             model.renameLoc(currentName, newName);
+                            
+                            clearCopyTarget();
+                            repaintLoc(true, null);
+                            repaintMappings();
+                            this.refreshRouteList();
+                            selector.refreshLocSelectorList();
+
+                            // Update locomotive on graph
+                            if (this.model.hasAutoLayout())
+                            {
+                                this.model.getAutoLayout().sanitizeMultiUnits(l);
+                                this.model.getAutoLayout().refreshUI();
+                            }
                         }
                     }
-
-                    this.repaintMappings();
-                    this.repaintLoc(true, null);
                 }
             }
             catch (Exception ex)
