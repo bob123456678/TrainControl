@@ -59,6 +59,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -360,7 +362,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         System.setProperty("org.graphstream.ui", "swing");
 
         FlatLightLaf.setup();
-        //FlatIntelliJLaf.setup();
+        //FlatIntelliJLaf.setup();f
 
         // Makes tabs narrower
         javax.swing.UIManager.put("TabbedPane.tabWidthMode", "compact");
@@ -3532,6 +3534,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addLocomotiveMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
         syncMenuItem = new javax.swing.JMenuItem();
+        checkForRenameMenuItem = new javax.swing.JMenuItem();
         functionsMenu = new javax.swing.JMenu();
         turnOnLightsMenuItem = new javax.swing.JMenuItem();
         turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
@@ -5210,7 +5213,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(latencyLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(34, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Ctrl", LocControlPanel);
@@ -6020,7 +6023,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel52))
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6049,7 +6052,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         autoPanelLayout.setVerticalGroup(
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
+            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 592, Short.MAX_VALUE)
         );
 
         KeyboardTab.addTab("Auto", autoPanel);
@@ -7161,7 +7164,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(KeyboardPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(MM2)
                     .addComponent(DCC))
-                .addContainerGap(33, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         KeyboardTab.addTab("Keyb", KeyboardPanel);
@@ -8562,6 +8565,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         locomotiveMenu.add(syncMenuItem);
+
+        checkForRenameMenuItem.setText("Check for Renamed Locomotives");
+        checkForRenameMenuItem.setToolTipText("Checks if there are any locomotives in the Central Station with the same address but different name TrainControl.");
+        checkForRenameMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkForRenameMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(checkForRenameMenuItem);
 
         mainMenuBar.add(locomotiveMenu);
 
@@ -12622,6 +12634,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         toggleLocKeyTabs();
     }//GEN-LAST:event_showPageTabsPreferenceActionPerformed
 
+    private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForRenameMenuItemActionPerformed
+        
+        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        {
+            List<String[]> renameList;
+            try
+            {
+                renameList = model.getLocomotivesToRenameFromImport();
+                
+                if (renameList.isEmpty())
+                {
+                    JOptionPane.showMessageDialog(this, "No locomotives to rename.");
+                }
+                else
+                {
+                    for (String[] pair : renameList)
+                    {
+                        String currentName = pair[0];
+                        String newName = pair[1];
+
+                        int response = JOptionPane.showConfirmDialog(
+                            null,
+                            "Rename locomotive \"" + currentName + "\" to \"" + newName + "\"?",
+                            "Confirm Rename",
+                            JOptionPane.YES_NO_OPTION
+                        );
+
+                        if (response == JOptionPane.YES_OPTION)
+                        {
+                            model.renameLoc(currentName, newName);
+                        }
+                    }
+
+                    this.repaintMappings();
+                }
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }));
+    }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -13946,6 +14001,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.ButtonGroup buttonGroup5;
     private javax.swing.JMenuItem changeIPMenuItem;
+    private javax.swing.JMenuItem checkForRenameMenuItem;
     private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JPanel controlsPanel;

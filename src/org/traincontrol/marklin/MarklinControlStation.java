@@ -599,6 +599,46 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Checks the CS data and identifies locomotives with the same address that have a different name in TC
+     * @return
+     * @throws Exception 
+     */
+    @Override
+    public List<String[]> getLocomotivesToRenameFromImport() throws Exception
+    {
+        List<String[]> renameCandidates = new ArrayList<>();
+        List<MarklinLocomotive> parsedLocs;
+
+        // Parse locomotives based on CS version
+        if (this.isCS3)
+        {
+            parsedLocs = fileParser.parseLocomotivesCS3();
+        }
+        else
+        {
+            parsedLocs = fileParser.parseLocomotives();
+        }
+
+        for (MarklinLocomotive l : parsedLocs)
+        {
+            for (MarklinLocomotive existingLoc : this.locDB.getItems())
+            {
+                // Only consider locomotives that already exist by UID
+                if (existingLoc.getIntUID() == l.getIntUID())
+                {
+                    // If the name has changed, add to rename list
+                    if (!existingLoc.getName().equals(l.getName()))
+                    {
+                        renameCandidates.add(new String[] {existingLoc.getName(), l.getName()});
+                    }                    
+                }
+            }
+        }
+
+        return renameCandidates;
+    }
+    
+    /**
      * Synchronizes CS2 state
      * @return 
      */

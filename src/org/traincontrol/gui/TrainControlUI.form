@@ -128,6 +128,15 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="checkForRenameMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Check for Renamed Locomotives"/>
+                <Property name="toolTipText" type="java.lang.String" value="Checks if there are any locomotives in the Central Station with the same address but different name TrainControl."/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForRenameMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
           </SubComponents>
         </Menu>
         <Menu class="javax.swing.JMenu" name="functionsMenu">
@@ -720,7 +729,7 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="controlsPanel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="34" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -3933,7 +3942,7 @@
                                   <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel52" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="18" max="32767" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>
@@ -4571,7 +4580,7 @@
                           <Component id="MM2" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="DCC" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="33" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
