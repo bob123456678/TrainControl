@@ -1817,8 +1817,15 @@ public class RouteEditor extends PositionAwareJFrame
                         return false;
                     }
                     
+                    boolean updateRoute = parent.getModel().getRoute(origName) != null && parent.getModel().getRoute(origName).hasTiles();
+                    
                     parent.getModel().editRoute(origName, routeName, newRoute,
                         Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
+                    
+                    if (updateRoute)
+                    {
+                        parent.layoutEditingComplete();
+                    }
                 }
                 // New route
                 else

@@ -691,6 +691,15 @@ public class MarklinRoute extends Route
     }
     
     /**
+     * Checks if this route has any layout tiles
+     * @return 
+     */
+    public boolean hasTiles()
+    {
+        return !this.tiles.isEmpty();
+    }
+    
+    /**
      * Checks routes for equality, but does not care about the sequence of route commands
      * @param o
      * @return 
