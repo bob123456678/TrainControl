@@ -12670,6 +12670,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             catch (Exception ex)
             {
+                this.model.log(ex);
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
         }));
