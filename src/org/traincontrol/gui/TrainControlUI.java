@@ -12666,6 +12666,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
 
                     this.repaintMappings();
+                    this.repaintLoc(true, null);
                 }
             }
             catch (Exception ex)
