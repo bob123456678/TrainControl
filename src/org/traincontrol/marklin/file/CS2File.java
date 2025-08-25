@@ -19,6 +19,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
@@ -39,6 +40,7 @@ public final class CS2File
     
     // Cache CS3 mags
     private final Map<Integer, JSONObject> magList;
+    private final Map<String, JSONObject> locList;
         
     /**
      * Constructor
@@ -51,6 +53,7 @@ public final class CS2File
         this.control = control;
         this.setDefaultLayoutDataLoc();
         this.magList = new HashMap<>();
+        this.locList = new HashMap<>();
     }
     
     /**
@@ -368,7 +371,7 @@ public final class CS2File
         
         Map<String, String> array = new HashMap<>();
         
-        while (true) 
+        while (true)
         {          
             s = in.readLine();
             
@@ -461,7 +464,7 @@ public final class CS2File
     
     public List<MarklinRoute> parseRoutesCS3() throws Exception
     {
-        return parseRoutesCS3(parseJSONObject(fetchURL(getCS3RouteDBUrl())), parseJSONArray(fetchURL(getCS3MagDBUrl())));
+        return parseRoutesCS3(parseJSONObject(fetchURL(getCS3RouteDBUrl())), parseJSONArray(fetchURL(getCS3MagDBUrl())), parseJSONArray(fetchURL(this.getCS3LocDBUrl())));
     }
     
     public List<MarklinLocomotive> parseLocomotives() throws Exception
@@ -804,13 +807,47 @@ public final class CS2File
     }
     
     /**
+     * Fetches a CS3 locomotive DB entry based on its id
+     * @param searchId
+     * @return 
+     */
+    private JSONObject getCS3LocById(String searchId, JSONArray locs)
+    {
+        // Cache accessories by ID
+        if (this.locList.containsKey(searchId))
+        {
+            return this.locList.get(searchId);
+        }
+        
+        for (int i = 0 ; i < locs.length(); i++)
+        {
+            JSONObject obj = locs.getJSONObject(i);
+            
+            if (searchId.equals(obj.getString("internname")))
+            {
+                this.locList.put(searchId, obj);
+                
+                return obj;
+            }
+        }
+        
+        return null;   
+    }
+    
+    /**
      * Parses routes from the CS3 API
      * @param routes
      * @param mags
+     * @param locs
      * @return 
      */
-    public List<MarklinRoute> parseRoutesCS3(JSONObject routes, JSONArray mags)
+    public List<MarklinRoute> parseRoutesCS3(JSONObject routes, JSONArray mags, JSONArray locs)
     {
+        if (locs.isEmpty())
+        {
+            logMessage("Warning: no locomotives provided when parsing CS3 routes");
+        }
+        
         List<MarklinRoute> out = new ArrayList<>();
         
         JSONArray routeList = routes.getJSONArray("automatics");
@@ -829,7 +866,119 @@ public final class CS2File
                 {
                     JSONObject item = items.getJSONObject(j);
                     
-                    if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
+                    if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
+                    {
+                        String locName = null;
+                        
+                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
+                        {
+                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
+                        }
+                        
+                        if (locName != null)
+                        {
+                            int speed = 0;
+
+                            // wert is speed, default 0
+                            if (item.has("wert"))
+                            {
+                                speed = (int) ((item.getDouble("wert") / 1000.0) * 100.0); // check this: round down to nearest integer, ensure number is 0-100
+                            }
+
+                            RouteCommand rc = RouteCommand.RouteCommandLocomotiveSpeed(locName, speed);
+
+                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
+                            {
+                                // Fix lossy conversion from float to int
+                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                            }
+                            
+                            r.addItem(rc);
+                        }
+                        else
+                        {
+                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                        }
+                    }
+                    
+                    // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which can be is non-unique)
+                    /* 
+                    else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
+                    {
+                        String locName = null;
+                        
+                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
+                        {
+                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
+                        }
+                        
+                        if (locName != null)
+                        {
+                            // wert is on, default 0 but cant be on
+                            // icon is (almost) fno, default 0
+                            int fNo = 0;
+                            boolean fActive = false;
+
+                            if (item.has("icon"))
+                            {
+                                fNo = item.getInt("icon");
+                            }
+
+                            if (item.has("wert") && "1".equals(item.get("wert")))
+                            {
+                                fActive = true;
+                            }
+                            
+                            RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
+
+                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
+                            {
+                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                            }
+                            
+                            r.addItem(rc);
+                        }
+                        else
+                        {
+                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                        }
+                    } */
+                    else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
+                    {
+                        String locName = null;
+                        
+                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
+                        {
+                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
+                        }
+                        
+                        if (locName != null)
+                        {
+                            // wert is on, default 0 but cant be on
+                            // icon is fno, defualt 0
+                            int fNo = 0;
+                            Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
+
+                            if (item.has("wert") && "1".equals(item.get("wert")))
+                            {
+                                dir = Locomotive.locDirection.DIR_BACKWARD;
+                            }
+                            
+                            RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(locName, dir);
+
+                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
+                            {
+                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                            }
+                            
+                            r.addItem(rc);
+                        }
+                        else
+                        {
+                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                        }
+                    }
+                    else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
                     {
                         // To get the address, we need to look up this accessory in the accessory DB
                         JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 

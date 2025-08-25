@@ -24,7 +24,8 @@ public class testParseCS3Routes
     private final String tc_routes = getClass().getResource("TC_routes.json").toURI().toString();
     private final String cs3_mags = getClass().getResource("CS3_mags.json").toURI().toString();
     private final String cs3_automatics = getClass().getResource("CS3_automatics.json").toURI().toString();
-    
+    private final String cs3_loks = getClass().getResource("CS3_loks.json").toURI().toString();
+
     public MarklinControlStation model;
     public List<MarklinRoute> routesTC;
     public CS2File parser;
@@ -39,7 +40,7 @@ public class testParseCS3Routes
         // routesCS2 = parser.parseRoutes(parseFile(fetchURL(cs2_routes)));
         routesTC = model.parseRoutesFromJson(parseJSONObject(fetchURL(tc_routes)).toString()); 
         
-        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)), parseJSONArray(fetchURL(cs3_mags)));           
+        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)), parseJSONArray(fetchURL(cs3_mags)), parseJSONArray(fetchURL(cs3_loks)));           
     }
    
     /**
