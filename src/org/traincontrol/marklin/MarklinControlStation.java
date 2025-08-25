@@ -624,7 +624,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             for (MarklinLocomotive existingLoc : this.locDB.getItems())
             {
                 // Only consider locomotives that already exist by UID
-                if (existingLoc.getIntUID() == l.getIntUID())
+                if (existingLoc.getIntUID() == l.getIntUID() && !existingLoc.hasLinkedLocomotives())
                 {
                     // If the name has changed, add to rename list
                     if (!existingLoc.getName().equals(l.getName()))

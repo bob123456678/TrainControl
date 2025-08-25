@@ -323,7 +323,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.5.13 [8/25/2025]
     - Locomotives
         - Added a UI menu option to check if any locomotives have been renamed in the Central Station, and update names if so
-        - The duplicate address checker in Add Locomotive will now list MFX addresses
+        - The duplicate address checker under Add Locomotive will now list MFX addresses
     - Routes
         - Route commands can now specify locomotive direction
         - When locomotives are renamed, they will now also be updated across all routes
