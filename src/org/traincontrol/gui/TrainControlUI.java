@@ -59,8 +59,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -362,7 +360,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         System.setProperty("org.graphstream.ui", "swing");
 
         FlatLightLaf.setup();
-        //FlatIntelliJLaf.setup();f
+        //FlatIntelliJLaf.setup();
 
         // Makes tabs narrower
         javax.swing.UIManager.put("TabbedPane.tabWidthMode", "compact");
