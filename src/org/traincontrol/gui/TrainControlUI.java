@@ -8565,7 +8565,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locomotiveMenu.add(syncMenuItem);
 
         checkForRenameMenuItem.setText("Check for Renamed Locomotives");
-        checkForRenameMenuItem.setToolTipText("Checks if there are any locomotives in the Central Station with the same address but different name TrainControl.");
+        checkForRenameMenuItem.setToolTipText("Checks if there are any locomotives in the Central Station with the same address but different name in TrainControl.");
         checkForRenameMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 checkForRenameMenuItemActionPerformed(evt);

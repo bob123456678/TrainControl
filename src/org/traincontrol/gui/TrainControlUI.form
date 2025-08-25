@@ -131,7 +131,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="checkForRenameMenuItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Check for Renamed Locomotives"/>
-                <Property name="toolTipText" type="java.lang.String" value="Checks if there are any locomotives in the Central Station with the same address but different name TrainControl."/>
+                <Property name="toolTipText" type="java.lang.String" value="Checks if there are any locomotives in the Central Station with the same address but different name in TrainControl."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForRenameMenuItemActionPerformed"/>
