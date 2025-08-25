@@ -11,7 +11,6 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -27,6 +26,7 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+import org.traincontrol.base.Locomotive;
 import static org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD;
 import static org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD;
 
@@ -191,21 +191,33 @@ public class testRoutes
     @Test
     public void testLocomotiveRenameInRouteCommand()
     {
-        // Step 1: Get a random locomotive name from the model
+        // Step 1: Get two locomotive names from the model
         List<String> locList = model.getLocList();
-        assertFalse(locList.isEmpty());
+        assertTrue(locList.size() >= 2);
 
         String originalName = locList.get(0);
         String testName = originalName + "_test";
+        String untouchedName = locList.get(1); // this one won't be renamed
 
-        // Step 2: Create a single locomotive command
-        int speed = 0; // Arbitrary speed value
-        RouteCommand locCommand = RouteCommand.RouteCommandLocomotiveSpeed(originalName, speed);
+        // Step 2: Create multiple locomotive commands
+        int speed = 42;
+        int functionNumber = 3;
+        boolean functionSetting = true;
+        int s88Address = 1234;
+        Locomotive.locDirection direction = Locomotive.locDirection.DIR_FORWARD;
 
-        // Step 3: Create a route with this single command
+        int untouchedSpeed = 88;
+
         List<RouteCommand> routeCommands = new ArrayList<>();
-        routeCommands.add(locCommand);
+        routeCommands.add(RouteCommand.RouteCommandLocomotiveSpeed(originalName, speed));
+        routeCommands.add(RouteCommand.RouteCommandFunction(originalName, functionNumber, functionSetting));
+        routeCommands.add(RouteCommand.RouteCommandAutoLocomotive(originalName, s88Address));
+        routeCommands.add(RouteCommand.RouteCommandLocomotiveDirection(originalName, direction));
 
+        // Add a command for the untouched locomotive
+        routeCommands.add(RouteCommand.RouteCommandLocomotiveSpeed(untouchedName, untouchedSpeed));
+
+        // Step 3: Create a route with these commands
         MarklinRoute route = new MarklinRoute(
             model,
             "TestRoute999",
@@ -216,23 +228,55 @@ public class testRoutes
             true,
             NodeExpression.fromList(new ArrayList<>())
         );
-        
+
         model.newRoute(route);
 
         // Step 4: Rename the locomotive
         model.renameLoc(originalName, testName);
 
-        // Step 5: Verify the command now reflects the new name
-        RouteCommand commandAfterRename = route.getRoute().get(0);
-        assertEquals(testName, commandAfterRename.getName());
+        // Step 5: Verify renamed commands reflect new name and retain values
+        List<RouteCommand> renamedCommands = route.getRoute();
 
-        // Step 6: Rename it back to the original name
+        assertEquals(testName, renamedCommands.get(0).getName());
+        assertEquals(speed, renamedCommands.get(0).getSpeed());
+
+        assertEquals(testName, renamedCommands.get(1).getName());
+        assertEquals(functionNumber, renamedCommands.get(1).getFunction());
+        assertEquals(functionSetting, renamedCommands.get(1).getSetting());
+
+        assertEquals(testName, renamedCommands.get(2).getName());
+        assertEquals(s88Address, renamedCommands.get(2).getAddress());
+
+        assertEquals(testName, renamedCommands.get(3).getName());
+        assertEquals(direction, renamedCommands.get(3).getDirection());
+
+        // ✅ Verify untouched locomotive command remains unchanged
+        assertEquals(untouchedName, renamedCommands.get(4).getName());
+        assertEquals(untouchedSpeed, renamedCommands.get(4).getSpeed());
+
+        // Step 6: Rename back to original name
         model.renameLoc(testName, originalName);
 
-        // Step 7: Verify the command reflects the original name again
-        RouteCommand commandAfterRestore = route.getRoute().get(0);
-        assertEquals(originalName, commandAfterRestore.getName());
-        
+        // Step 7: Verify restored commands reflect original name and retain values
+        List<RouteCommand> restoredCommands = route.getRoute();
+
+        assertEquals(originalName, restoredCommands.get(0).getName());
+        assertEquals(speed, restoredCommands.get(0).getSpeed());
+
+        assertEquals(originalName, restoredCommands.get(1).getName());
+        assertEquals(functionNumber, restoredCommands.get(1).getFunction());
+        assertEquals(functionSetting, restoredCommands.get(1).getSetting());
+
+        assertEquals(originalName, restoredCommands.get(2).getName());
+        assertEquals(s88Address, restoredCommands.get(2).getAddress());
+
+        assertEquals(originalName, restoredCommands.get(3).getName());
+        assertEquals(direction, restoredCommands.get(3).getDirection());
+
+        // ✅ Verify untouched locomotive command still remains unchanged
+        assertEquals(untouchedName, restoredCommands.get(4).getName());
+        assertEquals(untouchedSpeed, restoredCommands.get(4).getSpeed());
+
         model.deleteRoute(route.getName());
     }
 
