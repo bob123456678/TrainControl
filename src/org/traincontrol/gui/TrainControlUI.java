@@ -12849,15 +12849,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
     }
         
-    public void setFunctionIcon(Locomotive l, JButton source)
+    public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
     {
+        Component sourceWindow = evt != null ? (Component) evt.getSource() : this;
+        
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {    
             LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
             // Select the locomotive
-            source.doClick();
-
-            JOptionPane.showMessageDialog(this, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
+            if (source != null)
+            {
+                source.doClick();
+            }
+            
+            JOptionPane.showMessageDialog(sourceWindow, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
             edit.focusFno();
         }));
     }
@@ -12874,12 +12879,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
     }
     
+    public void setLocIcon(Locomotive l)
+    {
+        setLocIcon(l, null);
+    }
+    
     /**
      * Allows a local image to be set for a locomotive
      * @param l 
+     * @param evt
      */
-    public void setLocIcon(Locomotive l)
+    public void setLocIcon(Locomotive l, MouseEvent evt)
     {
+        Component source = evt != null ? (Component) evt.getSource() : this;
+        
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
             String currentPath = null;
@@ -12906,7 +12919,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             fc.setAcceptAllFileFilterUsed(false);
 
-            int i = fc.showOpenDialog(this);
+            int i = fc.showOpenDialog(source);
 
             if (i == JFileChooser.APPROVE_OPTION)
             {

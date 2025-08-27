@@ -22,38 +22,26 @@
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" attributes="0">
-              <EmptySpace max="-2" attributes="0"/>
+              <EmptySpace min="-2" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                      <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                          <Component id="applyButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
-                          <Component id="resetButton" alignment="0" min="-2" pref="300" max="-2" attributes="0"/>
-                      </Group>
+                  <Component id="applyButton" alignment="0" max="32767" attributes="0"/>
+                  <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
+                  <Component id="resetButton" alignment="0" max="32767" attributes="0"/>
+                  <Group type="102" alignment="0" attributes="0">
+                      <Component id="useCustomFunctionIcon" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="deleteCustomIcon" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <Group type="102" attributes="0">
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="useCustomFunctionIcon" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="deleteCustomIcon" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                          <Component id="fIconlabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="fIcon" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="fNoLabel" alignment="0" min="-2" pref="120" max="-2" attributes="0"/>
-                          <Component id="fIconlabel1" min="-2" max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                              <Component id="fNo" alignment="1" max="32767" attributes="0"/>
-                              <Component id="functionTriggerType" alignment="1" pref="300" max="32767" attributes="0"/>
-                          </Group>
-                          <Component id="customFunctionIcon" alignment="0" min="-2" pref="52" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                  </Group>
+                  <Component id="fIconlabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                  <Component id="fIcon" alignment="0" max="32767" attributes="0"/>
+                  <Component id="fNoLabel" alignment="0" min="-2" pref="120" max="-2" attributes="0"/>
+                  <Component id="fIconlabel1" min="-2" max="-2" attributes="0"/>
+                  <Component id="fNo" alignment="1" max="32767" attributes="0"/>
+                  <Component id="functionTriggerType" alignment="1" max="32767" attributes="0"/>
+                  <Component id="customFunctionIcon" alignment="0" min="-2" pref="52" max="-2" attributes="0"/>
                   <Component id="copyCustomizations" alignment="0" max="32767" attributes="0"/>
               </Group>
-              <EmptySpace max="-2" attributes="0"/>
+              <EmptySpace min="-2" max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -86,7 +74,7 @@
               <Component id="resetButton" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="copyCustomizations" min="-2" max="-2" attributes="0"/>
-              <EmptySpace pref="10" max="32767" attributes="0"/>
+              <EmptySpace max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -154,7 +142,7 @@
         </Property>
       </Properties>
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;Object&gt;"/>
       </AuxValues>
     </Component>
     <Component class="javax.swing.JLabel" name="fIconlabel">

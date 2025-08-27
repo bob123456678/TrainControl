@@ -29,6 +29,22 @@ public class RightClickSelectorMenu extends JPopupMenu
         });
         add(menuItem);   
         
+        menuItem = new JMenuItem("Set Local Locomotive Icon");
+        menuItem.addActionListener(event -> ui.setLocIcon(loc, e));
+        add(menuItem);
+
+        if (loc.getLocalImageURL() != null)
+        {
+            menuItem = new JMenuItem("Clear Local Locomotive Icon");
+            menuItem.addActionListener(event -> ui.clearLocIcon(loc));
+
+            add(menuItem);
+        }
+        
+        menuItem = new JMenuItem("Customize Function Icons");
+        menuItem.addActionListener(event -> ui.setFunctionIcon(loc, null, e));
+        add(menuItem);
+        
         addSeparator();
         
         menuItem = new JMenuItem("Edit Name/Address/Decoder");

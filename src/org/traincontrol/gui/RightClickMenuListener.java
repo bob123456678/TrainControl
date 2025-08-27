@@ -167,7 +167,7 @@ public class RightClickMenuListener extends MouseAdapter
                 }
                 
                 menuItem = new JMenuItem("Customize Function Icons");
-                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source));
+                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
 
                 add(menuItem);
                      
