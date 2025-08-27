@@ -8,6 +8,8 @@ import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.util.List;
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.model.ViewListener;
 
@@ -39,6 +41,33 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         initComponents();
     }
     
+    /**
+     * Gets the assignment checkbox
+     * @return 
+     */
+    public JCheckBox getClickToAssign()
+    {
+        return this.clickToAssign;
+    }
+    
+    /**
+     * Returns the list of locomotives
+     * @return 
+     */
+    public JPanel getMainLocList()
+    {
+        return MainLocList;
+    }
+    
+    /**
+     * Returns the main UI
+     * @return 
+     */
+    public TrainControlUI getUI()
+    {
+        return parent;
+    }
+    
     public void init()
     {
         // For some reason, the color set in the form gets ignored
@@ -67,7 +96,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             
             for (MarklinLocomotive l : locs)
             {
-                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(l, parent, this.MainLocList);
+                LocomotiveSelectorItem loc = new LocomotiveSelectorItem(l, this);
 
                 this.MainLocList.add(loc);
                 loc.setVisible(true);
@@ -118,6 +147,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         SyncWithCS = new javax.swing.JButton();
         closeOnLocSel = new javax.swing.JCheckBox();
         addLocomotive = new javax.swing.JButton();
+        clickToAssign = new javax.swing.JCheckBox();
 
         setTitle("Locomotive Selector");
         setAutoRequestFocus(false);
@@ -234,6 +264,12 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
         });
 
+        clickToAssign.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        clickToAssign.setSelected(true);
+        clickToAssign.setText("Click to Assign");
+        clickToAssign.setToolTipText("Uncheck this to prevent any assignments from this window.");
+        clickToAssign.setFocusPainted(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -245,6 +281,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(locListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(clickToAssign)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(closeOnLocSel))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(renameLabel)
@@ -262,7 +300,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(locListLabel)
-                    .addComponent(closeOnLocSel))
+                    .addComponent(closeOnLocSel)
+                    .addComponent(clickToAssign))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(LocScroller, javax.swing.GroupLayout.DEFAULT_SIZE, 575, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -409,19 +448,27 @@ public final class LocomotiveSelector extends javax.swing.JFrame
                 }
             }  
             
-            // Update all tooltips
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
-            {
-                for (Component c: this.MainLocList.getComponents())
-                {
-                    ((LocomotiveSelectorItem) c).refreshToolTip();
-                }
-            }));
+            refreshToolTips();
         }
         catch (Exception e)
         {
             // System.out.println(e.toString());
         }
+    }
+    
+    /**
+     * Updates all tooltips to reflect new key mappings
+     */
+    public void refreshToolTips()
+    {
+        // Update all tooltips
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            for (Component c: this.MainLocList.getComponents())
+            {
+                ((LocomotiveSelectorItem) c).refreshToolTip();
+            }
+        }));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -430,6 +477,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     private javax.swing.JPanel MainLocList;
     private javax.swing.JButton SyncWithCS;
     private javax.swing.JButton addLocomotive;
+    private javax.swing.JCheckBox clickToAssign;
     private javax.swing.JCheckBox closeOnLocSel;
     private javax.swing.JLabel locListLabel;
     private javax.swing.JLabel renameLabel;

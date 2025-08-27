@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.io.IOException;
 import java.util.List;
 import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLocomotive;
 
@@ -16,22 +17,19 @@ import org.traincontrol.marklin.MarklinLocomotive;
 public final class LocomotiveSelectorItem extends javax.swing.JPanel
 {    
     private final MarklinLocomotive loc;
-    private TrainControlUI tcui;
-    private final JPanel mainLocList;
+    private final LocomotiveSelector selector;
     
     /**
      * Creates new form LocomotiveSelectorItem
      * @param loc
-     * @param ui
-     * @param mainLocList
+     * @param selector
      */
-    public LocomotiveSelectorItem(MarklinLocomotive loc, TrainControlUI ui, JPanel mainLocList)
+    public LocomotiveSelectorItem(MarklinLocomotive loc, LocomotiveSelector selector)
     {
         initComponents();
         
         this.loc = loc;
-        this.tcui = ui;
-        this.mainLocList = mainLocList;
+        this.selector = selector;
                 
         this.LocLabel.setText(loc.getName());
         this.AddrLabel.setText(loc.getDecoderTypeLabel() + " " + loc.getAddress());
@@ -41,12 +39,12 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         // Set icon
         if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null && loc.getImageURL().length() > 0)
         {
-            this.tcui.getImageLoader().submit(new Thread(() ->
+            this.selector.getUI().getImageLoader().submit(new Thread(() ->
             {
                 try 
                 {
                     ImageIcon ic = new javax.swing.ImageIcon(
-                        tcui.getLocImage(loc.getImageURL(), 142)
+                        this.selector.getUI().getLocImage(loc.getImageURL(), 142)
                     );
                     
                     locIcon.setIcon(ic);      
@@ -54,7 +52,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
                 }
                 catch (Exception e)
                 {
-                    tcui.getModel().log("Failed to load image: " + loc.getImageURL());
+                    this.selector.getUI().getModel().log("Failed to load image: " + loc.getImageURL());
                     locIcon.setIcon(null);
                 }
             }));
@@ -71,7 +69,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
     public void refreshToolTip()
     {
         // Set tooltip and label color
-        List<String> mappings = this.tcui.getAllLocButtonMappings(loc);
+        List<String> mappings = this.selector.getUI().getAllLocButtonMappings(loc);
         if (!mappings.isEmpty())
         {
             locIcon.setToolTipText("Mapped to: " + String.join(", ", mappings));
@@ -179,21 +177,29 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
-        tcui.mapLocToCurrentButton(loc.getName());
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        // Right-click menu
+        if (evt.getButton() == java.awt.event.MouseEvent.BUTTON3)
+        {    
+            (new RightClickSelectorMenu(this.selector.getUI(), evt, loc)).show(evt.getComponent(), evt.getX(), evt.getY());
+            return;
+        }
+
+        if (this.selector.getClickToAssign().isSelected())
         {
-            // Update all other tooltips
-            for (Component c: this.mainLocList.getComponents())
+            this.selector.getUI().mapLocToCurrentButton(loc.getName());
+
+            this.selector.refreshToolTips();
+
+            if (this.selector.doCloseWindow())
             {
-                ((LocomotiveSelectorItem) c).refreshToolTip();
-            }
-        }));
-        
-        if (tcui.getLocSelector().doCloseWindow())
+                this.selector.setVisible(false);
+            }  
+        }
+        else
         {
-            tcui.getLocSelector().setVisible(false);
-        }  
+            JOptionPane.showMessageDialog(selector, "Check \"Click to Assign\" to map this locomotive to the active button (" + String.valueOf((char) this.selector.getUI().getKeyForCurrentButton().intValue()) +").");
+        }
     }//GEN-LAST:event_formMouseReleased
 
     private void LocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocLabelMouseReleased

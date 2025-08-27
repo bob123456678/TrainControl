@@ -56,6 +56,8 @@
                   <Group type="102" attributes="0">
                       <Component id="locListLabel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
+                      <Component id="clickToAssign" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="closeOnLocSel" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
@@ -79,6 +81,7 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="locListLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="closeOnLocSel" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="clickToAssign" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" max="-2" attributes="0"/>
               <Component id="LocScroller" pref="575" max="32767" attributes="0"/>
@@ -213,6 +216,17 @@
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addLocomotiveActionPerformed"/>
       </Events>
+    </Component>
+    <Component class="javax.swing.JCheckBox" name="clickToAssign">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="14" style="0"/>
+        </Property>
+        <Property name="selected" type="boolean" value="true"/>
+        <Property name="text" type="java.lang.String" value="Click to Assign"/>
+        <Property name="toolTipText" type="java.lang.String" value="Uncheck this to prevent any assignments from this window."/>
+        <Property name="focusPainted" type="boolean" value="false"/>
+      </Properties>
     </Component>
   </SubComponents>
 </Form>

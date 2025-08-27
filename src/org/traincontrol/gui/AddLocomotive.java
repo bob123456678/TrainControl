@@ -331,7 +331,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 // Add list of locomotives to dropdown
                 this.parent.getLocSelector().refreshLocSelectorList();
 
-                // Rest form
+                // Reset form
                 JOptionPane.showMessageDialog(this, "Locomotive added successfully");
 
                 this.LocAddressInput.setText("");

@@ -320,6 +320,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.14 [8/27/2025]
+    - Locomotive Database
+        - Added a right-click menu to modify locomotives from this page
+        - When the database is opened from the menu bar, clicking will be default not make an assignment
+
 * v2.5.13 [8/25/2025]
     - Locomotives
         - Added a UI menu option to check if any locomotives have been renamed in the Central Station, and update names if so

@@ -952,7 +952,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Returns the key code corresponding to the currently selected locomotive button
      * @return 
      */
-    private Integer getKeyForCurrentButton()
+    public Integer getKeyForCurrentButton()
     {
         for (Entry<Integer, JButton> entry : this.buttonMapping.entrySet())
         {
@@ -2027,11 +2027,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (button != null)
         {
             button.doClick();
-            showLocSelector();
+            showLocSelector(true);
         }
     }
     
-    public void showLocSelector()
+    public void showLocSelector(boolean doAssign)
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(()->
         { 
@@ -2047,6 +2047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.selector.updateScrollArea();
                 this.selector.requestFocus();
                 this.selector.toFront();
+                this.selector.getClickToAssign().setSelected(doAssign);
             }
         }));
     }
@@ -3069,7 +3070,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Show selector if no locomotive is assigned and clipboard is empty
                 if (this.activeLoc == null && this.copyTarget == null)
                 {
-                    showLocSelector();
+                    showLocSelector(true);
                 }
             }
         }));
@@ -3083,7 +3084,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.activeLoc.setSpeed(speed);
             }).start();
-            //repaintLoc();  not needed because the network will update it
         }
     }     
     
@@ -9669,9 +9669,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void changeLocAddress(MarklinLocomotive l)
     {
+        changeLocAddress(l, null);
+    }
+    
+    public void changeLocAddress(MarklinLocomotive l, MouseEvent evt)
+    {
+        Component source = evt != null ? (Component) evt.getSource() : this;
+        
         if (this.model.isAutonomyRunning())
         {
-            JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
+            JOptionPane.showMessageDialog(source, "Cannot edit locomotives while autonomy is running.");
             return;
         }
         
@@ -9681,7 +9688,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
                 int result = JOptionPane.showConfirmDialog(
-                    this, edit, "Change name/address for " + l.getName(),
+                    source, edit, "Change name/address for " + l.getName(),
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
                 );
                 
@@ -9712,21 +9719,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if (newName.trim().length() == 0)
                     {
-                        JOptionPane.showMessageDialog(this,
+                        JOptionPane.showMessageDialog(source,
                             "Please enter a locomotive name");
                         return;
                     }
 
                     if (newName.length() > MAX_LOC_NAME_DATABASE)
                     {
-                        JOptionPane.showMessageDialog(this,
+                        JOptionPane.showMessageDialog(source,
                             "Please enter a locomotive name no longer than " + MAX_LOC_NAME_DATABASE + " characters");
                         return;
                     }
 
                     if (this.model.getLocByName(newName) != null)
                     {
-                        JOptionPane.showMessageDialog(this,
+                        JOptionPane.showMessageDialog(source,
                             "Locomotive " + newName + " already exists in the locomotive DB.  Rename or delete it first.");
                         return;
                     }
@@ -9756,7 +9763,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.model.log(e);
             
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+            JOptionPane.showMessageDialog(source, "Error: " + e.getMessage());
         }
     }
       
@@ -10082,12 +10089,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    public void changeLocNotes(Locomotive l)
+    {
+        changeLocNotes(l, null);
+    }
+    
     /**
      * Allows the user to specify notes for the given locomotive
      * @param l
      */
-    public void changeLocNotes(Locomotive l)
+    public void changeLocNotes(Locomotive l, MouseEvent evt)
     {
+        Component source = evt != null ? (Component) evt.getSource() : this;
+
         if (l != null)
         {
             JTextArea textArea = new JTextArea(l.getNotes());
@@ -10113,7 +10127,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             });
             
-            int confirm = JOptionPane.showConfirmDialog(this, new JScrollPane(textArea), "Enter notes for " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(source, new JScrollPane(textArea), "Enter notes for " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION)
             {
@@ -10124,13 +10138,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void deleteLoc(String value)
     {
+        deleteLoc(value, null);
+    }
+    
+    public void deleteLoc(String value, MouseEvent evt)
+    {
+        Component source = evt != null ? (Component) evt.getSource() : this;
+        
         if (this.model.isAutonomyRunning())
         {
-            JOptionPane.showMessageDialog(this, "Cannot edit locomotives while autonomy is running.");
+            JOptionPane.showMessageDialog(source, "Cannot edit locomotives while autonomy is running.");
             return;
         }
         
-        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + value + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
+        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(source, "Are you sure you want to delete " + value + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
         {
             Locomotive l = this.model.getLocByName(value);
 
@@ -10170,7 +10191,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
         
-        this.showLocSelector();
+        this.showLocSelector(true);
         
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
 
@@ -10787,7 +10808,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_syncMenuItemActionPerformed
 
     private void viewDatabaseMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewDatabaseMenuItemActionPerformed
-        ActiveLocLabelMouseReleased(null);
+        this.showLocSelector(false);
     }//GEN-LAST:event_viewDatabaseMenuItemActionPerformed
 
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
