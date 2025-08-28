@@ -9791,6 +9791,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.showMessageDialog(this, "Cannot edit Multi Units while autonomy is running.");
             return;
         }
+        
+        if (this.model.getLocomotives().size() < 2)
+        {
+            JOptionPane.showMessageDialog(this, "There need to be at least two locomotives in the database to create a multi-unit.");
+            return;
+        }
 
         List<MarklinLocomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getCentralStationMultiUnitLocomotives();
         Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getCentralStationMultiUnitLocomotiveNames();        

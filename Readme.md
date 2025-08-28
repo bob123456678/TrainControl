@@ -324,6 +324,7 @@ Requires JDK 1.8+ and the following libraries:
     - Locomotive Database
         - Added a right-click menu to modify locomotives from this page
         - When the database is opened from the menu bar, clicking will by default not make an assignment
+    - An error will now be shown if attempting to create a multi-unit with only one locomotive in the database
     - Removed redundant OK button from the locomotive function editor
     - Fixed latency issue when opening the locomotive function editor for the first time
     - Fixed issue where the multi-unit editor might appear below the main window
