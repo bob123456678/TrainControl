@@ -4,8 +4,10 @@ import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -65,6 +67,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
@@ -74,6 +77,7 @@ import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -12862,7 +12866,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 source.doClick();
             }
             
-            JOptionPane.showMessageDialog(sourceWindow, edit, "Edit " + l.getName() + " Functions", JOptionPane.PLAIN_MESSAGE);
+            // Create a custom dialog without buttons
+            JDialog dialog = new JDialog(this, 
+                                         "Edit " + l.getName() + " Functions", 
+                                         Dialog.ModalityType.APPLICATION_MODAL);
+            dialog.getContentPane().add(edit);
+            dialog.pack();
+            dialog.setLocationRelativeTo(sourceWindow);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setResizable(false);
+            
+            // Add Escape key binding to close the dialog
+            KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+            dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                  .put(escapeKeyStroke, "ESCAPE");
+            dialog.getRootPane().getActionMap()
+                  .put("ESCAPE", new AbstractAction() {
+                      @Override
+                      public void actionPerformed(ActionEvent e) {
+                          dialog.dispose();
+                      }
+                  });
+            
+            dialog.setVisible(true);
+
             edit.focusFno();
         }));
     }

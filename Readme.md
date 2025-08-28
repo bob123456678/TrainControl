@@ -320,10 +320,12 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.14 [8/27/2025]
+* v2.5.14 [8/28/2025]
     - Locomotive Database
         - Added a right-click menu to modify locomotives from this page
-        - When the database is opened from the menu bar, clicking will be default not make an assignment
+        - When the database is opened from the menu bar, clicking will by default not make an assignment
+    - Fixed latency issue when opening the locomotive function editor for the first time
+    - Removed redundant OK button from the locomotive function editor
 
 * v2.5.13 [8/25/2025]
     - Locomotives
