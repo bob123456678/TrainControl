@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -111,10 +112,7 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem = new JMenuItem("Copy to previous page");
                 menuItem.addActionListener(event -> ui.copyToPrevPage(source));
                 add(menuItem);
-            }
-
-            if (ui.buttonHasLocomotive(source))
-            {
+            
                 addSeparator();
                 
                 menuItem = new JMenuItem("Apply Saved Function Preset");
@@ -152,45 +150,7 @@ public class RightClickMenuListener extends MouseAdapter
                 add(menuItem);
                 
                 addSeparator();
-
-                menuItem = new JMenuItem("Set Local Locomotive Icon");
-                menuItem.addActionListener(event -> ui.setLocIcon(ui.getButtonLocomotive(source)));
-                
-                add(menuItem);
-                
-                if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
-                {
-                    menuItem = new JMenuItem("Clear Local Locomotive Icon");
-                    menuItem.addActionListener(event -> ui.clearLocIcon(ui.getButtonLocomotive(source)));
-
-                    add(menuItem);
-                }
-                
-                menuItem = new JMenuItem("Customize Function Icons");
-                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
-
-                add(menuItem);
-                     
-                // Option to clear the mapping
-                addSeparator();
-
-                menuItem = new JMenuItem("Clear Button / Cut");
-                menuItem.addActionListener(event -> {ui.setCopyTarget(source, true);});
-                menuItem.setToolTipText("Control+X");
-                add(menuItem);
-                
-                addSeparator();
-                 
-                menuItem = new JMenuItem("Edit Name/Address/Decoder");
-                menuItem.addActionListener(event -> {ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source));});
-                menuItem.setToolTipText("Control+R");
-                add(menuItem);
-                
-                menuItem = new JMenuItem("Edit Notes");
-                menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
-                menuItem.setToolTipText("Control+N");
-                add(menuItem);
-                
+                   
                 // Multi-unit
                 menuItem = new JMenuItem(
                         !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives() ?
@@ -206,7 +166,45 @@ public class RightClickMenuListener extends MouseAdapter
                 
                 add(menuItem);
                 
-                addSeparator();
+                // Consolidate all editing functions
+                addSeparator();                
+                JMenu submenu = new JMenu("Manage Locomotive...");
+                
+                menuItem = new JMenuItem(ui.getButtonLocomotive(source).getName());
+                menuItem.setEnabled(false);
+                submenu.add(menuItem);
+                submenu.addSeparator();
+                
+                menuItem = new JMenuItem("Set Local Locomotive Icon");
+                menuItem.addActionListener(event -> ui.setLocIcon(ui.getButtonLocomotive(source)));
+                
+                submenu.add(menuItem);
+                
+                if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
+                {
+                    menuItem = new JMenuItem("Clear Local Locomotive Icon");
+                    menuItem.addActionListener(event -> ui.clearLocIcon(ui.getButtonLocomotive(source)));
+
+                    submenu.add(menuItem);
+                }
+                
+                menuItem = new JMenuItem("Customize Function Icons");
+                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
+
+                submenu.add(menuItem);
+                submenu.addSeparator();
+                
+                menuItem = new JMenuItem("Edit Name/Address/Decoder");
+                menuItem.addActionListener(event -> {ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source));});
+                menuItem.setToolTipText("Control+R");
+                submenu.add(menuItem);
+                
+                menuItem = new JMenuItem("Edit Notes");
+                menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
+                menuItem.setToolTipText("Control+N");
+                submenu.add(menuItem);
+                
+                submenu.addSeparator();
                 
                 menuItem = new JMenuItem("Delete from Database");
                 menuItem.setToolTipText("Control+Delete");
@@ -214,6 +212,16 @@ public class RightClickMenuListener extends MouseAdapter
                     ui.deleteLoc(ui.getButtonLocomotive(source).getName());
                 });
                 
+                submenu.add(menuItem);
+                
+                add(submenu);
+                     
+                // Option to clear the mapping
+                addSeparator();
+
+                menuItem = new JMenuItem("Clear Button / Cut");
+                menuItem.addActionListener(event -> {ui.setCopyTarget(source, true);});
+                menuItem.setToolTipText("Control+X");
                 add(menuItem);
             }
         }

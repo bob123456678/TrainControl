@@ -10047,7 +10047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             filterField.setVisible(false);
         }   
 
-        int result = JOptionPane.showConfirmDialog(null, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(this, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
         {
