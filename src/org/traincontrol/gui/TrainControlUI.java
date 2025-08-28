@@ -3069,13 +3069,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             repaintLoc();  
             repaintMappings();
             
-            if (showSelector)
+            // Show selector if no locomotive is assigned and clipboard is empty
+            if (showSelector && this.activeLoc == null && this.copyTarget == null)
             {
-                // Show selector if no locomotive is assigned and clipboard is empty
-                if (this.activeLoc == null && this.copyTarget == null)
-                {
-                    showLocSelector(true);
-                }
+                showLocSelector(true);
             }
         }));
     }
