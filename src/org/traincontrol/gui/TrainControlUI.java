@@ -7,7 +7,6 @@ import java.awt.Desktop;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -16,6 +15,7 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
@@ -12858,7 +12858,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
     {
-        Component sourceWindow = evt != null ? (Component) evt.getSource() : this;
+        Window sourceWindow = evt != null ? SwingUtilities.getWindowAncestor((Component) evt.getSource()) : this;
         
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {    
@@ -12870,7 +12870,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             
             // Create a custom dialog without buttons
-            JDialog dialog = new JDialog(this, 
+            JDialog dialog = new JDialog(sourceWindow, 
                                          "Edit " + l.getName() + " Functions", 
                                          Dialog.ModalityType.APPLICATION_MODAL);
             dialog.getContentPane().add(edit);

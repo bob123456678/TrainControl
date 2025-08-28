@@ -98,7 +98,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.fNo.setVisible(false);
             this.fNoLabel.setVisible(false);
             this.fIconlabel.setText("Function " + functionIndex + " Icon (Loading...)");
-            this.setPreferredSize(new Dimension(390, 200));
+            this.setPreferredSize(new Dimension(390, 260));
         }
         else
         {
@@ -243,7 +243,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         deleteCustomIcon = new javax.swing.JButton();
         copyCustomizations = new javax.swing.JButton();
 
-        setMinimumSize(new java.awt.Dimension(360, 200));
+        setMinimumSize(new java.awt.Dimension(360, 260));
+        setName(""); // NOI18N
         setPreferredSize(new java.awt.Dimension(360, 375));
 
         fNoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
