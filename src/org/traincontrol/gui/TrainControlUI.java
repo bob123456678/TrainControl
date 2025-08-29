@@ -11481,22 +11481,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
+        this.editLayoutButton.setEnabled(false);
+        
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {    
-            // New native editor
-            LayoutEditor popup = new LayoutEditor(
-                this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                this,
-                this.LayoutList.getSelectedIndex()
-            );
+            try
+            {
+                // New native editor
+                LayoutEditor popup = new LayoutEditor(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                    this,
+                    this.LayoutList.getSelectedIndex()
+                );
 
-            // Force window to not be on top
-            this.setAlwaysOnTop(false);
+                // Force window to not be on top
+                this.setAlwaysOnTop(false);
+
+                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
+
+                popup.render();
+            }
+            catch (Exception e)
+            {
+                if (this.model.isDebug())
+                {
+                    this.model.log(e);
+                }
+            }
             
-            if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
-
-            popup.render();
+            this.editLayoutButton.setEnabled(true);
         }));
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
