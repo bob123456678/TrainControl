@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -22,7 +23,7 @@ public class RightClickSelectorMenu extends JPopupMenu
         
         addSeparator();
         
-        menuItem = new JMenuItem("Assign to button " + String.valueOf((char) ui.getKeyForCurrentButton().intValue()));
+        menuItem = new JMenuItem("Assign to Button " + String.valueOf((char) ui.getKeyForCurrentButton().intValue()));
         menuItem.addActionListener(event -> {
             ui.mapLocToCurrentButton(loc.getName());
             ui.getLocSelector().refreshToolTips();
@@ -58,6 +59,7 @@ public class RightClickSelectorMenu extends JPopupMenu
         addSeparator();
         
         menuItem = new JMenuItem("Delete from Database");
+        menuItem.setForeground(Color.RED);
         menuItem.addActionListener(event -> { 
             ui.deleteLoc(loc.getName(), e);
         });    

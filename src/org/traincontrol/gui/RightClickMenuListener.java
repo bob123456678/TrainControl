@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
@@ -207,6 +208,7 @@ public class RightClickMenuListener extends MouseAdapter
                 submenu.addSeparator();
                 
                 menuItem = new JMenuItem("Delete from Database");
+                menuItem.setForeground(Color.RED);
                 menuItem.setToolTipText("Control+Delete");
                 menuItem.addActionListener(event -> { 
                     ui.deleteLoc(ui.getButtonLocomotive(source).getName());

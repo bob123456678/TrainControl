@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
@@ -95,6 +96,7 @@ public class RightClickRouteMenu extends MouseAdapter
                     add(menuItem);
 
                     menuItem = new JMenuItem("Delete Route");
+                    menuItem.setForeground(Color.RED);
                     menuItem.addActionListener(event -> ui.deleteRoute(routeName));    
                     add(menuItem);
                 }

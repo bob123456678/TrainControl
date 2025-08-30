@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.Accessory;
@@ -273,6 +274,11 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                 formWindowClosing(evt);
             }
         });
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                formKeyReleased(evt);
+            }
+        });
 
         arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
@@ -517,6 +523,13 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     private void testCommands1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testCommands1ActionPerformed
         highlightTiles();
     }//GEN-LAST:event_testCommands1ActionPerformed
+
+    private void formKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyReleased
+        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {    
+            dispose(); // Close the window
+        }
+    }//GEN-LAST:event_formKeyReleased
 
     /**
      * Updates the lock edges shown on the graph for easier editing

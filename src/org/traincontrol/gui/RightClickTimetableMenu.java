@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
@@ -64,6 +65,7 @@ public class RightClickTimetableMenu extends MouseAdapter
             addSeparator();
             
             menuItem = new JMenuItem("Clear Timetable");
+            menuItem.setForeground(Color.RED);
             menuItem.addActionListener(event -> ui.clearTimetable());  
             menuItem.setToolTipText("This will completely empty the timetable.");
             add(menuItem);

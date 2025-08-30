@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -691,6 +692,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
             addSeparator();
 
             menuItem = new JMenuItem("Delete Edge...");
+            menuItem.setForeground(Color.RED);
             menuItem.addActionListener(event -> 
                 {
                     // Get all point names except this one
@@ -794,6 +796,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
         addSeparator();
 
         menuItem = new JMenuItem("Delete Point");
+        menuItem.setForeground(Color.RED);
         menuItem.addActionListener(event -> 
         {
             int dialogResult = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), 
