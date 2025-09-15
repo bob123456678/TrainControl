@@ -70,6 +70,7 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -121,6 +122,7 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
@@ -213,6 +215,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Maximum allowed length of locomotive names and notes (in characters)
     public static final Integer MAX_LOC_NAME_DATABASE = 30;
+    public static final Integer MAX_LOC_RAILWAY_NAME = 50;
     public static final Integer MAX_LOC_NOTES_LENGTH = 2000;
 
     // Maximum page name length
@@ -10115,25 +10118,63 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Allows the user to specify notes for the given locomotive
-     * @param l
-     * @param evt
-     */
+    * Allows the user to specify notes and metadata for the given locomotive
+    * @param l
+    * @param evt
+    */
     public void changeLocNotes(Locomotive l, MouseEvent evt)
     {
         Component source = evt != null ? (Component) evt.getSource() : this;
 
         if (l != null)
         {
-            JTextArea textArea = new JTextArea(l.getStructuredNotes().getNotes());
-            textArea.setColumns(70);
-            textArea.setRows(20);
-            //textArea.setLineWrap(true);
-            //textArea.setWrapStyleWord(true);
-            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+            LocomotiveNotes existing = l.getStructuredNotes();
 
-            // Ensure the text area is in focus
+            String startYearText = existing.getStartYear() == 0 ? "" : String.valueOf(existing.getStartYear());
+            String endYearText = existing.getEndYear() == 0 ? "" : String.valueOf(existing.getEndYear());
+
+            JTextField startYearField = new JTextField(startYearText, 10);
+            startYearField.setToolTipText("The first year this locomotive operated in real life.");
+            JTextField endYearField = new JTextField(endYearText, 10);
+            endYearField.setToolTipText("The last year this locomotive operated in real life.");
+            JTextField railwayField = new JTextField(existing.getRailway(), 30);
+
+            // Add validation listeners for year fields
+            startYearField.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    TrainControlUI.validateInt(e, false);
+                    TrainControlUI.limitLength(e, 4);
+                }
+            });
+
+            endYearField.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    TrainControlUI.validateInt(e, false);
+                    TrainControlUI.limitLength(e, 4);
+                }
+            });
+            
+            railwayField.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    TrainControlUI.limitLength(e, MAX_LOC_RAILWAY_NAME);
+                }
+            });
+
+            JTextArea textArea = new JTextArea(existing.getNotes());
+            textArea.setColumns(80);
+            textArea.setRows(15);
+            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
+
             textArea.addAncestorListener(new AncestorListener()
             {
                 @Override
@@ -10143,16 +10184,65 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 public void ancestorMoved(AncestorEvent event) {}
 
                 @Override
-                public void ancestorAdded(AncestorEvent event) {
+                public void ancestorAdded(AncestorEvent event)
+                {
                     event.getComponent().requestFocusInWindow();
                 }
             });
-            
-            int confirm = JOptionPane.showConfirmDialog(source, new JScrollPane(textArea), "Enter notes for " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(4, 4, 4, 4);
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            panel.add(new JLabel("Start Year:"), gbc);
+            gbc.gridx = 1;
+            panel.add(startYearField, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy++;
+            panel.add(new JLabel("End Year:"), gbc);
+            gbc.gridx = 1;
+            panel.add(endYearField, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy++;
+            panel.add(new JLabel("Railway Name:"), gbc);
+            gbc.gridx = 1;
+            panel.add(railwayField, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy++;
+            gbc.gridwidth = 2;
+            panel.add(new JLabel("Notes:"), gbc);
+
+            gbc.gridy++;
+            panel.add(new JScrollPane(textArea), gbc);
+
+            int confirm = JOptionPane.showConfirmDialog(source, panel, "Edit Locomotive Info: " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION)
             {
-                l.setNotes(textArea.getText().substring(0, Math.min(textArea.getText().length(), MAX_LOC_NOTES_LENGTH)));
+                try
+                {
+                    String startText = startYearField.getText().trim();
+                    String endText = endYearField.getText().trim();
+
+                    int startYear = startText.isEmpty() ? 0 : Math.abs(Integer.parseInt(startText));
+                    int endYear = endText.isEmpty() ? 0 : Math.abs(Integer.parseInt(endText));
+
+                    String railway = railwayField.getText().trim().substring(0, Math.min(railwayField.getText().length(), MAX_LOC_RAILWAY_NAME));
+                    String notes = textArea.getText().substring(0, Math.min(textArea.getText().length(), MAX_LOC_NOTES_LENGTH));
+
+                    l.setStructuredNotes(startYear, endYear, railway, notes);
+                }
+                catch (NumberFormatException ex)
+                {
+                    JOptionPane.showMessageDialog(source, "Start and End Year must be valid integers.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }

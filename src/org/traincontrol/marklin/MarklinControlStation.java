@@ -2443,7 +2443,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         StringBuilder csvBuilder = new StringBuilder();
 
         // Header row
-        csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Notes\n");
+        csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes\n");
 
         for (MarklinLocomotive l : this.getLocomotives())
         {
@@ -2454,10 +2454,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             int address = l.getAddress();
             int prefSpeed = l.getPreferredSpeed();
             String runtime = escapeCsv(Conversion.convertSecondsToHMmSs(l.getTotalRuntime()));
+            
+            int startYear = l.getStructuredNotes().getStartYear();
+            int endYear = l.getStructuredNotes().getEndYear();
+            String railway = escapeCsv(l.getStructuredNotes().getRailway());
             String notes = escapeCsv(l.getStructuredNotes().getNotes());
 
-            csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%s\n",
-                name, mappingStr, decoder, address, prefSpeed, runtime, notes));
+            csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%d,%d,%s,%s\n",
+                name, mappingStr, decoder, address, prefSpeed, runtime, startYear, endYear, railway, notes));
         }
 
         return csvBuilder.toString();

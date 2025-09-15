@@ -55,7 +55,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             else
             {
                 this.addressSelector.setModel(new DefaultComboBoxModel<>(numberedRoutes.toArray(new String[0])));
-                //this.addressSelector.setModel(new DefaultComboBoxModel<>(tcui.getModel().getRouteList().toArray(new String[0]))); 
             }     
             
             this.addressSelector.setVisible(true);
