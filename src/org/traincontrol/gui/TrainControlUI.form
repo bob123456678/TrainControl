@@ -118,7 +118,7 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addLocomotiveMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator6">
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator23">
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="syncMenuItem">
               <Properties>
@@ -135,6 +135,17 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForRenameMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator6">
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="exportLocsToCSVMenuItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Export to CSV"/>
+                <Property name="toolTipText" type="java.lang.String" value="Save the locomotive database to a file for reference."/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="exportLocsToCSVMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>

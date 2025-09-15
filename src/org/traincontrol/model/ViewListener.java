@@ -85,4 +85,5 @@ public interface ViewListener
     public void waitForPowerState(boolean state) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
+    public String exportLocsToCSV();
 }

@@ -1,13 +1,10 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Font;
-import java.io.IOException;
 import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**

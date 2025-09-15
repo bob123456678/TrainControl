@@ -128,4 +128,26 @@ public class Util
         // Parse the JSON response to get the tag_name
         return new JSONObject(content.toString());
     }
+    
+    /**
+     * Escapes data for a CSV
+     * @param input
+     * @return 
+     */
+    public static String escapeCsv(String input)
+    {
+        if (input == null) return "";
+
+        boolean needsQuotes = input.contains(",") || input.contains("\"") || input.contains("\n");
+        String escaped = input.replace("\"", "\"\"");
+
+        if (needsQuotes)
+        {
+            return "\"" + escaped + "\"";
+        }
+        else
+        {
+            return escaped;
+        }
+    }
 }

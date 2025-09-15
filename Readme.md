@@ -320,6 +320,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.15 [Beta]
+    - Locomotive Database
+        - Added a menu option to export key locomotive data to a CSV file
+
 * v2.5.14 [8/29/2025]
     - Locomotive Database
         - Added a right-click menu to modify locomotives from this page

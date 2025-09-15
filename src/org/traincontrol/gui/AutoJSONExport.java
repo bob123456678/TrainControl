@@ -11,22 +11,23 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
-
 /**
- * UI for exporting JSON state
+ * UI for exporting JSON or other state to a file
  */
 public class AutoJSONExport extends javax.swing.JPanel
 {
     TrainControlUI tcui;
     String prefix;
+    String extension;
     
     /**
      * Creates new form AutoJSONExport
      * @param text
      * @param tcui
      * @param prefix
+     * @param extension
      */
-    public AutoJSONExport(String text, TrainControlUI tcui, String prefix)
+    public AutoJSONExport(String text, TrainControlUI tcui, String prefix, String extension)
     {
         initComponents();
         this.jsonTextArea.setText(text);
@@ -34,6 +35,7 @@ public class AutoJSONExport extends javax.swing.JPanel
         jsonTextArea.setWrapStyleWord(true);
         this.tcui = tcui;
         this.prefix = prefix;
+        this.extension = extension;
         
         // Automatically save
         jsonSaveAsActionPerformed(null);
@@ -93,8 +95,8 @@ public class AutoJSONExport extends javax.swing.JPanel
         {
             try
             {
-                JFileChooser fc = this.tcui.getJSONFileChooser(JFileChooser.FILES_ONLY);
-                fc.setSelectedFile(new File("TC_" + prefix + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".json"));
+                JFileChooser fc = this.tcui.getFileChooser(JFileChooser.FILES_ONLY, extension);
+                fc.setSelectedFile(new File("TC_" + prefix + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + "." + extension));
                 int i = fc.showSaveDialog(this);
 
                 if (i == JFileChooser.APPROVE_OPTION)

@@ -50,4 +50,7 @@ public interface View
      * @param r 
      */
     public void emergencyStopTriggered(Route r);
+    
+    // Tells us which key(s) a locomotive is bound to
+    public List<String> getAllLocButtonMappings(Locomotive l);
 }

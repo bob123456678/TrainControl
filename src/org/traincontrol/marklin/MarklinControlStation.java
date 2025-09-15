@@ -57,6 +57,7 @@ import org.traincontrol.model.ModelListener;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
+import static org.traincontrol.util.Util.escapeCsv;
 
 /**
  * Main "station" class.  Mimics CS2 functionality.
@@ -69,7 +70,7 @@ import org.traincontrol.util.Conversion;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "2.5.14";
+    public static final String RAW_VERSION = "2.5.15";
     
     // Window/UI titles
     public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
@@ -2432,6 +2433,36 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
         
+    /**
+     * Exports the locomotive database to a user-friendly CSV file for reference
+     * @return 
+     */
+    @Override
+    public String exportLocsToCSV()
+    {
+        StringBuilder csvBuilder = new StringBuilder();
+
+        // Header row
+        csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Notes\n");
+
+        for (MarklinLocomotive l : this.getLocomotives())
+        {
+            String name = escapeCsv(l.getName());
+            List<String> mappings = this.view.getAllLocButtonMappings(l);
+            String mappingStr = escapeCsv(String.join(";", mappings)); // Semicolon to avoid comma collision
+            String decoder = escapeCsv(l.getDecoderTypeLabel());
+            int address = l.getAddress();
+            int prefSpeed = l.getPreferredSpeed();
+            String runtime = escapeCsv(Conversion.convertSecondsToHMmSs(l.getTotalRuntime()));
+            String notes = escapeCsv(l.getNotes());
+
+            csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%s\n",
+                name, mappingStr, decoder, address, prefSpeed, runtime, notes));
+        }
+
+        return csvBuilder.toString();
+    }
+    
     /**
      * Main initialization method
      * @param initIP

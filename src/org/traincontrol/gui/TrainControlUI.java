@@ -1069,6 +1069,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param l
      * @return 
      */
+    @Override
     public List<String> getAllLocButtonMappings(Locomotive l)
     {
         List<String> out = new ArrayList<>();
@@ -3531,9 +3532,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jSeparator7 = new javax.swing.JPopupMenu.Separator();
         viewDatabaseMenuItem = new javax.swing.JMenuItem();
         addLocomotiveMenuItem = new javax.swing.JMenuItem();
-        jSeparator6 = new javax.swing.JPopupMenu.Separator();
+        jSeparator23 = new javax.swing.JPopupMenu.Separator();
         syncMenuItem = new javax.swing.JMenuItem();
         checkForRenameMenuItem = new javax.swing.JMenuItem();
+        jSeparator6 = new javax.swing.JPopupMenu.Separator();
+        exportLocsToCSVMenuItem = new javax.swing.JMenuItem();
         functionsMenu = new javax.swing.JMenu();
         turnOnLightsMenuItem = new javax.swing.JMenuItem();
         turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
@@ -6051,7 +6054,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         autoPanelLayout.setVerticalGroup(
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 592, Short.MAX_VALUE)
+            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
         );
 
         KeyboardTab.addTab("Auto", autoPanel);
@@ -8555,7 +8558,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         locomotiveMenu.add(addLocomotiveMenuItem);
-        locomotiveMenu.add(jSeparator6);
+        locomotiveMenu.add(jSeparator23);
 
         syncMenuItem.setText("Sync Database w/ Central Station");
         syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -8573,6 +8576,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         locomotiveMenu.add(checkForRenameMenuItem);
+        locomotiveMenu.add(jSeparator6);
+
+        exportLocsToCSVMenuItem.setText("Export to CSV");
+        exportLocsToCSVMenuItem.setToolTipText("Save the locomotive database to a file for reference.");
+        exportLocsToCSVMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportLocsToCSVMenuItemActionPerformed(evt);
+            }
+        });
+        locomotiveMenu.add(exportLocsToCSVMenuItem);
 
         mainMenuBar.add(locomotiveMenu);
 
@@ -12007,7 +12020,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                    JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
                     int i = fc.showOpenDialog(this);
 
                     if (i == JFileChooser.APPROVE_OPTION)
@@ -12037,7 +12050,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy"),
+                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().getAutoLayout().toJSON(), this, "autonomy", "json"),
                         "Export current graph state to JSON file", JOptionPane.PLAIN_MESSAGE
                     );
 
@@ -12071,7 +12084,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "routes"),
+                    JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportRoutes(), this, "routes", "json"),
                         "Export route data", JOptionPane.PLAIN_MESSAGE
                     );
 
@@ -12096,7 +12109,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    JFileChooser fc = getJSONFileChooser(JFileChooser.OPEN_DIALOG);
+                    JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
                     int i = fc.showOpenDialog(this);
 
                     if (i == JFileChooser.APPROVE_OPTION)
@@ -12756,6 +12769,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
     }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
 
+    private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
+        new Thread(() ->
+        {
+            try
+            {
+                JOptionPane.showMessageDialog(this, new AutoJSONExport(this.getModel().exportLocsToCSV(), this, "locs", "csv"),
+                    "Export locomotive data", JOptionPane.PLAIN_MESSAGE
+                );
+            }
+            catch (Exception e)
+            {
+                this.model.log("Export error: " + e.getMessage());
+                this.model.log(e);
+
+                JOptionPane.showMessageDialog(this, "Failed to generate/export locomotive database.  Check log for details.");
+            }
+        }).start();
+    }//GEN-LAST:event_exportLocsToCSVMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -12983,19 +13015,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Returns a file chooser for autonomy files
      * @param type
+     * @param extension
      * @return 
      */
-    public JFileChooser getJSONFileChooser(int type)
+    public JFileChooser getFileChooser(int type, String extension)
     {
         JFileChooser fc = new JFileChooser(
             prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
         );
-                
-        fc.setFileSelectionMode(type);
-        //FileFilter filter =  new FileNameExtensionFilter("Text File", "txt");
-        //fc.setFileFilter(filter);
-        FileFilter filter = new FileNameExtensionFilter("JSON File", "json");
-        fc.setFileFilter(filter);
+        
+        if ("json".equals(extension))
+        {
+            FileFilter filter = new FileNameExtensionFilter("JSON File", "json");
+            fc.setFileFilter(filter);
+        }
+        else if ("csv".equals(extension))
+        {
+            FileFilter filter = new FileNameExtensionFilter("CSV File", "csv");
+            fc.setFileFilter(filter);
+        }
+        else if ("txt".equals(extension))
+        {
+            FileFilter filter = new FileNameExtensionFilter("Text File", "txt");
+            fc.setFileFilter(filter);
+        }
         
         return fc;        
     }
@@ -14131,6 +14174,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JButton executeTimetable;
     private javax.swing.JMenuItem exitMenuItem;
     private javax.swing.JButton exportJSON;
+    private javax.swing.JMenuItem exportLocsToCSVMenuItem;
     private javax.swing.JMenuItem exportRoutesMenuItem;
     private javax.swing.JLabel f0Label;
     private javax.swing.JLabel f10Label;
@@ -14213,6 +14257,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator20;
     private javax.swing.JPopupMenu.Separator jSeparator21;
     private javax.swing.JPopupMenu.Separator jSeparator22;
+    private javax.swing.JPopupMenu.Separator jSeparator23;
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
