@@ -2454,7 +2454,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             int address = l.getAddress();
             int prefSpeed = l.getPreferredSpeed();
             String runtime = escapeCsv(Conversion.convertSecondsToHMmSs(l.getTotalRuntime()));
-            String notes = escapeCsv(l.getNotes());
+            String notes = escapeCsv(l.getStructuredNotes().getNotes());
 
             csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%s\n",
                 name, mappingStr, decoder, address, prefSpeed, runtime, notes));

@@ -10117,6 +10117,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Allows the user to specify notes for the given locomotive
      * @param l
+     * @param evt
      */
     public void changeLocNotes(Locomotive l, MouseEvent evt)
     {
@@ -10124,7 +10125,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (l != null)
         {
-            JTextArea textArea = new JTextArea(l.getNotes());
+            JTextArea textArea = new JTextArea(l.getStructuredNotes().getNotes());
             textArea.setColumns(70);
             textArea.setRows(20);
             //textArea.setLineWrap(true);

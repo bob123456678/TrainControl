@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Abstract locomotive class
@@ -1300,21 +1302,52 @@ public abstract class Locomotive
     }
     
     /**
-     * Gets the plain text notes
+     * Legacy-compatible setter. Wraps plain text into JSON if needed.
+     * @param notes
+     */
+    public void setNotes(String notes)
+    {
+        try
+        {
+            new JSONObject(notes); // Try parsing as JSON
+            this.notes = notes;
+        }
+        catch (JSONException e)
+        {
+            LocomotiveNotes wrapper = new LocomotiveNotes(0, 0, "", notes);
+            this.notes = wrapper.toJson().toString();
+        }
+    }
+
+    /**
+     * Returns raw notes string (JSON or plain text).
      * @return 
      */
     public String getNotes()
     {
-        return notes;
+        return this.notes;
     }
 
     /**
-     * Updates the plain text notes
-     * @param notes 
+     * Sets structured notes all at once.
+     * @param startYear
+     * @param endYear
+     * @param railway
+     * @param plainNotes
      */
-    public void setNotes(String notes)
+    public void setStructuredNotes(int startYear, int endYear, String railway, String plainNotes)
     {
-        this.notes = notes;
+        LocomotiveNotes wrapper = new LocomotiveNotes(startYear, endYear, railway, plainNotes);
+        this.notes = wrapper.toJson().toString();
+    }
+
+    /**
+     * Returns structured notes object.
+     * @return 
+     */
+    public LocomotiveNotes getStructuredNotes()
+    {
+        return LocomotiveNotes.fromJson(this.notes);
     }
     
     /**
