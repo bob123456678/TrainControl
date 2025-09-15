@@ -1307,9 +1307,14 @@ public abstract class Locomotive
      */
     public void setNotes(String notes)
     {
+        if (notes == null)
+        {
+            notes = "";
+        }
+
         try
         {
-            new JSONObject(notes); // Try parsing as JSON
+            new JSONObject(notes); // valid JSON
             this.notes = notes;
         }
         catch (JSONException e)
