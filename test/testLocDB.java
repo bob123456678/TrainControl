@@ -1,6 +1,8 @@
 import org.traincontrol.base.Locomotive;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -115,6 +117,82 @@ public class testLocDB
         assert model.getLocByName(locName) == null;
         assert model.getLocByName(locName2) != null;
         assert locName2.equals(model.getLocByName(locName2).getName());
+    }
+    
+    @Test
+    public void testYearRangeMatching()
+    {
+        // Target locomotive
+        String targetName = "TargetLoc";
+        model.newMFXLocomotive(targetName, 20);
+        Locomotive target = model.getLocByName(targetName);
+        target.setStructuredNotes(1950, 1970, "PKP", "Target notes");
+
+        // Candidate: full overlap
+        String fullOverlapName = "FullOverlap";
+        model.newMFXLocomotive(fullOverlapName, 21);
+        Locomotive fullOverlap = model.getLocByName(fullOverlapName);
+        fullOverlap.setStructuredNotes(1960, 1965, "PKP", "Full overlap");
+
+        // Candidate: partial overlap
+        String partialOverlapName = "PartialOverlap";
+        model.newMFXLocomotive(partialOverlapName, 22);
+        Locomotive partialOverlap = model.getLocByName(partialOverlapName);
+        partialOverlap.setStructuredNotes(1965, 1980, "PKP", "Partial overlap");
+
+        // Candidate: no overlap
+        String noOverlapName = "NoOverlap";
+        model.newMFXLocomotive(noOverlapName, 23);
+        Locomotive noOverlap = model.getLocByName(noOverlapName);
+        noOverlap.setStructuredNotes(1980, 1990, "PKP", "No overlap");
+
+        // Candidate: no end year
+        String noEndName = "NoEndYear";
+        model.newMFXLocomotive(noEndName, 24);
+        Locomotive noEnd = model.getLocByName(noEndName);
+        noEnd.setStructuredNotes(1960, 0, "PKP", "No end year");
+
+        // Candidate: no start year
+        String noStartName = "NoStartYear";
+        model.newMFXLocomotive(noStartName, 25);
+        Locomotive noStart = model.getLocByName(noStartName);
+        noStart.setStructuredNotes(0, 1970, "PKP", "No start year");
+
+        // Candidate: both years missing
+        String noYearsName = "NoYears";
+        model.newMFXLocomotive(noYearsName, 26);
+        Locomotive noYears = model.getLocByName(noYearsName);
+        noYears.setStructuredNotes(0, 0, "PKP", "No years");
+
+        // Candidate: wrong railway
+        String wrongRailwayName = "WrongRailway";
+        model.newMFXLocomotive(wrongRailwayName, 27);
+        Locomotive wrongRailway = model.getLocByName(wrongRailwayName);
+        wrongRailway.setStructuredNotes(1960, 1970, "DB", "Wrong railway");
+
+        List<String> railroads = Arrays.asList("PKP");
+        List<Locomotive> allLocs = new ArrayList<>(model.getLocomotives());
+
+        List<Locomotive> result = Locomotive.findSimilarLocomotives(target, 10, railroads, allLocs);
+        List<String> names = result.stream().map(Locomotive::getName).collect(Collectors.toList());
+
+        assertEquals(true, names.contains(fullOverlapName));
+        assertEquals(true, names.contains(partialOverlapName));
+        assertEquals(true, names.contains(noEndName));
+        assertEquals(false, names.contains(noStartName));
+        assertEquals(false, names.contains(noYearsName));
+        assertEquals(false, names.contains(noOverlapName));
+        assertEquals(false, names.contains(wrongRailwayName));
+
+        // Cleanup
+        model.deleteLoc(targetName);
+        model.deleteLoc(fullOverlapName);
+        model.deleteLoc(partialOverlapName);
+        model.deleteLoc(noOverlapName);
+        model.deleteLoc(noEndName);
+        model.deleteLoc(noStartName);
+        model.deleteLoc(noYearsName);
+        model.deleteLoc(wrongRailwayName);
     }
     
     /**
