@@ -1356,6 +1356,60 @@ public abstract class Locomotive
     }
     
     /**
+     * Finds other locomotives with a similar profile to to the specified locomotive
+     * @param target
+     * @param maxResults
+     * @param railroads
+     * @param locList
+     * @return 
+     */
+    public static List<Locomotive> findSimilarLocomotives(
+        Locomotive target,
+        int maxResults,
+        List<String> railroads,
+        List<Locomotive> locList)
+    {
+        List<Locomotive> matches = new ArrayList<>();
+
+        LocomotiveNotes targetNotes = target.getStructuredNotes();
+        int targetStart = targetNotes.getStartYear();
+        int targetEnd = targetNotes.getEndYear();
+        
+        if (targetStart == 0 && railroads.isEmpty())
+        {
+            return Collections.emptyList(); // No meaningful range to compare against
+        }
+
+        List<Locomotive> shuffled = new ArrayList<>(locList);
+        Collections.shuffle(shuffled);
+
+        for (Locomotive l : shuffled)
+        {
+            if (l == target) continue; // skip self
+
+            LocomotiveNotes notes = l.getStructuredNotes();
+            int start = notes.getStartYear();
+            int end = notes.getEndYear();
+
+            boolean yearsOverlap = (start != 0) &&
+                       (start <= targetEnd || targetEnd == 0) &&
+                       (end == 0 || end >= targetStart);
+
+            boolean railroadMatch = railroads == null || railroads.isEmpty()
+                || railroads.stream().anyMatch(r -> r.equalsIgnoreCase(notes.getRailway()));
+
+            if (yearsOverlap && railroadMatch)
+            {
+                matches.add(l);
+                
+                if (matches.size() >= maxResults) break;
+            }
+        }
+
+        return matches;
+    }
+    
+    /**
      * Flags autonomy as paused so that no further routes are started
      * @param state 
      */

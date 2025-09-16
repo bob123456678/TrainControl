@@ -320,10 +320,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.15 [9/14/2025]
+* v2.5.15 [9/15/2025]
     - Locomotive Database
         - Added a menu option to export key locomotive data to a CSV file
-        - In the locomotive notes, added fields for years of operation and railway name
+        - In the locomotive notes editor, added fields for years of operation and railway name
+        - In the locomotive notes editor, added a utility button to find locomotives with a similar year or railway name 
 
 * v2.5.14 [8/29/2025]
     - Locomotive Database

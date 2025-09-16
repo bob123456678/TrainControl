@@ -10139,7 +10139,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             endYearField.setToolTipText("The last year this locomotive operated in real life.");
             JTextField railwayField = new JTextField(existing.getRailway(), 30);
 
-            // Add validation listeners for year fields
             startYearField.addKeyListener(new KeyAdapter()
             {
                 @Override
@@ -10159,7 +10158,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     TrainControlUI.limitLength(e, 4);
                 }
             });
-            
+
             railwayField.addKeyListener(new KeyAdapter()
             {
                 @Override
@@ -10177,16 +10176,143 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             textArea.addAncestorListener(new AncestorListener()
             {
-                @Override
-                public void ancestorRemoved(AncestorEvent event) {}
-
-                @Override
-                public void ancestorMoved(AncestorEvent event) {}
-
-                @Override
-                public void ancestorAdded(AncestorEvent event)
+                @Override public void ancestorRemoved(AncestorEvent event) {}
+                @Override public void ancestorMoved(AncestorEvent event) {}
+                @Override public void ancestorAdded(AncestorEvent event)
                 {
                     event.getComponent().requestFocusInWindow();
+                }
+            });
+
+            JButton findSimilarButton = new JButton("Find Similar Locomotives");
+            findSimilarButton.addActionListener(e ->
+            {
+                JTextField countField = new JTextField("5", 5);
+                JTextField railroadsField = new JTextField("", 30);
+                railroadsField.setText(railwayField.getText());
+
+                JPanel inputPanel = new JPanel(new GridLayout(0, 1));
+                inputPanel.add(new JLabel("Max number of matches:"));
+                inputPanel.add(countField);
+                
+                countField.addKeyListener(new KeyAdapter()
+                {
+                    @Override
+                    public void keyReleased(KeyEvent e)
+                    {
+                        TrainControlUI.validateInt(e, false);
+                        TrainControlUI.limitLength(e, 3);
+                    }
+                });
+                
+                inputPanel.add(new JLabel("Railroad names (comma-separated):"));
+                inputPanel.add(railroadsField);
+
+                int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Similar Locomotives", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION)
+                {
+                    try
+                    {
+                        int count = Math.abs(Integer.parseInt(countField.getText().trim()));
+                        String rawRailroads = railroadsField.getText().trim();
+                        List<String> railroads = rawRailroads.isEmpty()
+                            ? Collections.emptyList()
+                            : Arrays.stream(rawRailroads.split(","))
+                                    .map(String::trim)
+                                    .filter(s -> !s.isEmpty())
+                                    .collect(Collectors.toList());
+
+                        List<Locomotive> matches = Locomotive.findSimilarLocomotives(
+                            l, count, railroads, 
+                                this.model.getLocomotives()
+                                .stream()
+                                .map(ll -> (Locomotive) ll)
+                                .collect(Collectors.toList())
+                        );
+
+                        if (matches.isEmpty())
+                        {
+                            JOptionPane.showMessageDialog(source, "No similar locomotives found.", "Results", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                        else
+                        {
+                            LocomotiveNotes targetNotes = l.getStructuredNotes();
+                            String targetRailway = targetNotes.getRailway();
+                            int targetStart = targetNotes.getStartYear();
+                            int targetEnd = targetNotes.getEndYear();
+
+                            String targetRange = (targetStart == 0) ? "" :
+                                                 (targetEnd == 0) ? String.valueOf(targetStart) + "–" :
+                                                 targetStart + "–" + targetEnd;
+
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("Target locomotive: \n- ").append(l.getName());
+
+                            if (!targetRange.isEmpty() || !targetRailway.isEmpty())
+                            {
+                                sb.append(" [");
+                                if (!targetRange.isEmpty())
+                                {
+                                    sb.append(targetRange);
+                                    if (!targetRailway.isEmpty())
+                                    {
+                                        sb.append(", ");
+                                    }
+                                }
+                                if (!targetRailway.isEmpty())
+                                {
+                                    sb.append(targetRailway);
+                                }
+                                sb.append("]");
+                            }
+                            sb.append("\n\nSimilar locomotives:\n");
+
+                            for (Locomotive match : matches)
+                            {
+                                LocomotiveNotes notes = match.getStructuredNotes();
+                                String railway = notes.getRailway();
+                                int startYear = notes.getStartYear();
+                                int endYear = notes.getEndYear();
+
+                                String range = (startYear == 0) ? "" :
+                                               (endYear == 0) ? String.valueOf(startYear) + "–" :
+                                               startYear + "–" + endYear;
+
+                                sb.append("- ")
+                                  .append(match.getName());
+
+                                if (!range.isEmpty() || !railway.isEmpty())
+                                {
+                                    sb.append(" [");
+                                    if (!range.isEmpty())
+                                    {
+                                        sb.append(range);
+                                        if (!railway.isEmpty())
+                                        {
+                                            sb.append(", ");
+                                        }
+                                    }
+                                    if (!railway.isEmpty())
+                                    {
+                                        sb.append(railway);
+                                    }
+                                    sb.append("]");
+                                }
+
+                                sb.append("\n");
+
+                                this.model.log("Similar to " + l.getName() + ": " + match.getName()
+                                    + (range.isEmpty() ? "" : " (" + range + ")")
+                                    + (railway.isEmpty() ? "" : " [" + railway + "]"));
+                            }
+
+                            JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                    catch (NumberFormatException ex)
+                    {
+                        JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
 
@@ -10214,6 +10340,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             gbc.gridx = 1;
             panel.add(railwayField, gbc);
 
+            gbc.gridy++;
+            panel.add(findSimilarButton, gbc);
+            
+            findSimilarButton.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
+            if (l.getStructuredNotes().getStartYear() == 0 && l.getStructuredNotes().getRailway().isEmpty())
+            {
+                findSimilarButton.setEnabled(false);
+            }
+            
             gbc.gridx = 0;
             gbc.gridy++;
             gbc.gridwidth = 2;
@@ -10246,7 +10381,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
     }
-    
+
     public void deleteLoc(String value)
     {
         deleteLoc(value, null);
