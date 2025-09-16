@@ -10195,6 +10195,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 inputPanel.add(new JLabel("Max number of matches:"));
                 inputPanel.add(countField);
                 
+                JCheckBox currentPageOnly = new JCheckBox("Current Page Only");
+                currentPageOnly.setSelected(false); // default unchecked
+
                 countField.addKeyListener(new KeyAdapter()
                 {
                     @Override
@@ -10207,6 +10210,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 inputPanel.add(new JLabel("Railroad names (comma-separated):"));
                 inputPanel.add(railroadsField);
+                inputPanel.add(currentPageOnly);
 
                 int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Similar Locomotives", JOptionPane.OK_CANCEL_OPTION);
                 if (result == JOptionPane.OK_OPTION)
@@ -10224,7 +10228,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         List<Locomotive> matches = Locomotive.findSimilarLocomotives(
                             l, count, railroads, 
-                                this.model.getLocomotives()
+                                (currentPageOnly.isSelected() ? this.currentLocMapping().values() : this.model.getLocomotives())
                                 .stream()
                                 .map(ll -> (Locomotive) ll)
                                 .collect(Collectors.toList())
