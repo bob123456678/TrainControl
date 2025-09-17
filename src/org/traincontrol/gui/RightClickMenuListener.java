@@ -207,6 +207,13 @@ public class RightClickMenuListener extends MouseAdapter
                 
                 submenu.addSeparator();
                 
+                menuItem = new JMenuItem("Find Similar Locomotives");
+                menuItem.addActionListener(event -> {ui.findSimilarLocs(ui.getButtonLocomotive(source), null);});
+                menuItem.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
+                submenu.add(menuItem);
+                
+                submenu.addSeparator();
+                
                 menuItem = new JMenuItem("Delete from Database");
                 menuItem.setForeground(Color.RED);
                 menuItem.setToolTipText("Control+Delete");

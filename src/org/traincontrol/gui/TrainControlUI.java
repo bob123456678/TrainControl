@@ -10165,6 +10165,127 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
+     * @param searchLoc
+     * @param evt 
+     */
+    public void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
+    {
+        Component source = evt != null ? (Component) evt.getSource() : this;
+        
+        LocomotiveNotes notes = searchLoc.getStructuredNotes();
+        String railway = notes.getRailway();
+        int startYear = notes.getStartYear();
+
+        if ((railway == null || railway.trim().isEmpty()) && startYear == 0)
+        {
+            JOptionPane.showMessageDialog(source, "This locomotive has no railway and no start year.\nCannot perform similarity search.", "Insufficient Data", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        JComboBox<Integer> countDropdown = new JComboBox<>();
+        for (int i = 1; i <= 10; i++) {
+            countDropdown.addItem(i);
+        }
+        for (int i = 15; i <= 50; i += 5) {
+            countDropdown.addItem(i);
+        }
+        countDropdown.setSelectedItem(5); // default selection
+
+        JTextField railroadsField = new JTextField("", 30);
+        railroadsField.setText(searchLoc.getStructuredNotes().getRailway());
+
+        JPanel inputPanel = new JPanel(new GridLayout(0, 1));
+        inputPanel.add(new JLabel("Maximum Matches:"));
+        inputPanel.add(countDropdown);
+
+        JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
+        currentPageOnly.setSelected(false); // default unchecked
+
+        // Build dropdown for "Map to Page"
+        JComboBox<String> pageDropdown = new JComboBox<>();
+        pageDropdown.addItem(""); // default blank
+
+        for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
+        {
+            if (i != this.currentButtonlocMappingNumber)
+            {
+                pageDropdown.addItem("Page " + (i + 1));
+            }
+        }
+
+        inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
+        inputPanel.add(railroadsField);
+
+        inputPanel.add(new JLabel("Map to Page (Optional):"));
+        inputPanel.add(pageDropdown);
+        inputPanel.add(currentPageOnly);
+
+        int result = JOptionPane.showConfirmDialog(source != null ? source : this, inputPanel, "Find Locomotives Similar to " + searchLoc.getName(), JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION)
+        {
+            try
+            {
+                int count = Math.abs(Integer.parseInt(countDropdown.getSelectedItem().toString().trim()));
+                String rawRailroads = railroadsField.getText().trim();
+                List<String> railroads = rawRailroads.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.stream(rawRailroads.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
+
+                List<Locomotive> matches = Locomotive.findSimilarLocomotives(
+                    searchLoc, count, railroads, 
+                        (currentPageOnly.isSelected() ? this.currentLocMapping().values() : this.model.getLocomotives())
+                        .stream()
+                        .map(ll -> (Locomotive) ll)
+                        .collect(Collectors.toList())
+                );
+
+                if (matches.isEmpty())
+                {
+                    JOptionPane.showMessageDialog(source, "No similar locomotives found.", "Results", JOptionPane.INFORMATION_MESSAGE);
+                }
+                else
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Target locomotive:\n- ").append(searchLoc.getNotesSummaryLine());
+                    sb.append("\n\nSimilar locomotives:\n");
+
+                    for (Locomotive match : matches)
+                    {
+                        sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
+
+                        this.model.log("Similar to " + searchLoc.getName() + ": " + match.getNotesSummaryLine());
+                    }
+
+                    JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+                String selectedPage = (String) pageDropdown.getSelectedItem();
+                if (selectedPage != null && !selectedPage.isEmpty())
+                {
+                    try
+                    {
+                        int pageNumber = Integer.parseInt(selectedPage.replace("Page ", ""));
+                        matches.add(searchLoc);
+                        mapLocomotivesToPage(pageNumber, matches);
+                    }
+                    catch (NumberFormatException ex)
+                    {
+                        this.model.log("Invalid page selection: " + selectedPage);
+                    }
+                }
+            }
+            catch (NumberFormatException ex)
+            {
+                JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    /**
     * Allows the user to specify notes and metadata for the given locomotive
     * @param l
     * @param evt
@@ -10231,112 +10352,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             });
 
-            JButton findSimilarButton = new JButton("Find Similar Locomotives");
+            JPanel panel = new JPanel(new GridBagLayout());
+            
+            /* JButton findSimilarButton = new JButton("Find Similar Locomotives");
             findSimilarButton.addActionListener(e ->
             {
-                JComboBox<Integer> countDropdown = new JComboBox<>();
-                for (int i = 1; i <= 10; i++) {
-                    countDropdown.addItem(i);
-                }
-                for (int i = 15; i <= 50; i += 5) {
-                    countDropdown.addItem(i);
-                }
-                countDropdown.setSelectedItem(5); // default selection
+                findSimilarLocs(l, evt);
+            }); */
 
-                JTextField railroadsField = new JTextField("", 30);
-                railroadsField.setText(railwayField.getText());
-
-                JPanel inputPanel = new JPanel(new GridLayout(0, 1));
-                inputPanel.add(new JLabel("Maximum Matches:"));
-                inputPanel.add(countDropdown);
-                
-                JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
-                currentPageOnly.setSelected(false); // default unchecked
-                
-                // Build dropdown for "Map to Page"
-                JComboBox<String> pageDropdown = new JComboBox<>();
-                pageDropdown.addItem(""); // default blank
-
-                for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
-                {
-                    if (i != this.currentButtonlocMappingNumber)
-                    {
-                        pageDropdown.addItem("Page " + (i + 1));
-                    }
-                }
-                
-                inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
-                inputPanel.add(railroadsField);
-
-                inputPanel.add(new JLabel("Map to Page (Optional):"));
-                inputPanel.add(pageDropdown);
-                inputPanel.add(currentPageOnly);
-
-                int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Similar Locomotives", JOptionPane.OK_CANCEL_OPTION);
-                if (result == JOptionPane.OK_OPTION)
-                {
-                    try
-                    {
-                        int count = Math.abs(Integer.parseInt(countDropdown.getSelectedItem().toString().trim()));
-                        String rawRailroads = railroadsField.getText().trim();
-                        List<String> railroads = rawRailroads.isEmpty()
-                            ? Collections.emptyList()
-                            : Arrays.stream(rawRailroads.split(","))
-                                    .map(String::trim)
-                                    .filter(s -> !s.isEmpty())
-                                    .collect(Collectors.toList());
-
-                        List<Locomotive> matches = Locomotive.findSimilarLocomotives(
-                            l, count, railroads, 
-                                (currentPageOnly.isSelected() ? this.currentLocMapping().values() : this.model.getLocomotives())
-                                .stream()
-                                .map(ll -> (Locomotive) ll)
-                                .collect(Collectors.toList())
-                        );
-
-                        if (matches.isEmpty())
-                        {
-                            JOptionPane.showMessageDialog(source, "No similar locomotives found.", "Results", JOptionPane.INFORMATION_MESSAGE);
-                        }
-                        else
-                        {
-                            StringBuilder sb = new StringBuilder();
-                            sb.append("Target locomotive:\n- ").append(l.getNotesSummaryLine());
-                            sb.append("\n\nSimilar locomotives:\n");
-
-                            for (Locomotive match : matches)
-                            {
-                                sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
-
-                                this.model.log("Similar to " + l.getName() + ": " + match.getNotesSummaryLine());
-                            }
-
-                            JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
-                        }
-                        
-                        String selectedPage = (String) pageDropdown.getSelectedItem();
-                        if (selectedPage != null && !selectedPage.isEmpty())
-                        {
-                            try
-                            {
-                                int pageNumber = Integer.parseInt(selectedPage.replace("Page ", ""));
-                                matches.add(l);
-                                mapLocomotivesToPage(pageNumber, matches);
-                            }
-                            catch (NumberFormatException ex)
-                            {
-                                this.model.log("Invalid page selection: " + selectedPage);
-                            }
-                        }
-                    }
-                    catch (NumberFormatException ex)
-                    {
-                        JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            });
-
-            JPanel panel = new JPanel(new GridBagLayout());
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(4, 4, 4, 4);
             gbc.anchor = GridBagConstraints.WEST;
@@ -10361,13 +10384,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             panel.add(railwayField, gbc);
 
             gbc.gridy++;
-            panel.add(findSimilarButton, gbc);
+            
+            /* panel.add(findSimilarButton, gbc);
             
             findSimilarButton.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
             if (l.getStructuredNotes().getStartYear() == 0 && l.getStructuredNotes().getRailway().isEmpty())
             {
                 findSimilarButton.setEnabled(false);
-            }
+            }*/ 
             
             gbc.gridx = 0;
             gbc.gridy++;

@@ -57,6 +57,13 @@ public class RightClickSelectorMenu extends JPopupMenu
         add(menuItem);
         
         addSeparator();
+
+        menuItem = new JMenuItem("Find Similar Locomotives");
+        menuItem.addActionListener(event -> {ui.findSimilarLocs(loc, e);});
+        menuItem.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
+        add(menuItem);
+
+        addSeparator();
         
         menuItem = new JMenuItem("Delete from Database");
         menuItem.setForeground(Color.RED);
