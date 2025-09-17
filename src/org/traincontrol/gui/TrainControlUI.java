@@ -90,7 +90,6 @@ import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -10168,11 +10167,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
      * @param searchLoc
      * @param evt 
-     */
+     */ 
     public void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
         Component source = evt != null ? (Component) evt.getSource() : this;
-        
+
         LocomotiveNotes notes = searchLoc.getStructuredNotes();
         String railway = notes.getRailway();
         int startYear = notes.getStartYear();
@@ -10182,51 +10181,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.showMessageDialog(source, "This locomotive has no railway and no start year.\nCannot perform similarity search.", "Insufficient Data", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         JComboBox<Integer> countDropdown = new JComboBox<>();
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++)
+        {
             countDropdown.addItem(i);
         }
-        for (int i = 15; i <= 50; i += 5) {
+        
+        for (int i = 15; i <= 50; i += 5)
+        {
             countDropdown.addItem(i);
         }
+        
         countDropdown.setSelectedItem(5); // default selection
 
         JTextField railroadsField = new JTextField("", 30);
-        railroadsField.setText(searchLoc.getStructuredNotes().getRailway());
-
-        JPanel inputPanel = new JPanel(new GridLayout(0, 1));
-        inputPanel.add(new JLabel("Maximum Matches:"));
-        inputPanel.add(countDropdown);
+        railroadsField.setText(railway);
 
         JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
         currentPageOnly.setSelected(false); // default unchecked
 
-        // Build dropdown for "Map to Page"
         JComboBox<String> pageDropdown = new JComboBox<>();
         pageDropdown.addItem(""); // default blank
 
+        Map<String, Integer> pageNameToIndex = new LinkedHashMap<>();
         for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
         {
-            if (i != this.currentButtonlocMappingNumber)
+            int oneBasedIndex = i + 1;
+            if (oneBasedIndex != this.getLocMappingNumber())
             {
-                pageDropdown.addItem("Page " + (i + 1));
+                String name = this.pageNames.getOrDefault(oneBasedIndex, "Page " + oneBasedIndex);
+                pageDropdown.addItem(name);
+                pageNameToIndex.put(name, oneBasedIndex);
             }
         }
 
+        JPanel inputPanel = new JPanel(new GridLayout(0, 1));
+        inputPanel.add(new JLabel("Maximum Matches:"));
+        inputPanel.add(countDropdown);
         inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
         inputPanel.add(railroadsField);
-
         inputPanel.add(new JLabel("Map to Page (Optional):"));
         inputPanel.add(pageDropdown);
         inputPanel.add(currentPageOnly);
 
-        int result = JOptionPane.showConfirmDialog(source != null ? source : this, inputPanel, "Find Locomotives Similar to " + searchLoc.getName(), JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Locomotives Similar to " + searchLoc.getName(), JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION)
         {
             try
             {
-                int count = Math.abs(Integer.parseInt(countDropdown.getSelectedItem().toString().trim()));
+                int count = (Integer) countDropdown.getSelectedItem();
                 String rawRailroads = railroadsField.getText().trim();
                 List<String> railroads = rawRailroads.isEmpty()
                     ? Collections.emptyList()
@@ -10235,13 +10239,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .filter(s -> !s.isEmpty())
                             .collect(Collectors.toList());
 
-                List<Locomotive> matches = Locomotive.findSimilarLocomotives(
-                    searchLoc, count, railroads, 
-                        (currentPageOnly.isSelected() ? this.currentLocMapping().values() : this.model.getLocomotives())
-                        .stream()
-                        .map(ll -> (Locomotive) ll)
-                        .collect(Collectors.toList())
-                );
+                List<Locomotive> sourceLocs = currentPageOnly.isSelected()
+                    ? this.currentLocMapping().values().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList())
+                    : this.model.getLocomotives().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList());
+
+                List<Locomotive> matches = Locomotive.findSimilarLocomotives(searchLoc, count, railroads, sourceLocs);
 
                 if (matches.isEmpty())
                 {
@@ -10256,29 +10258,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     for (Locomotive match : matches)
                     {
                         sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
-
                         this.model.log("Similar to " + searchLoc.getName() + ": " + match.getNotesSummaryLine());
                     }
 
                     JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
                 }
 
-                String selectedPage = (String) pageDropdown.getSelectedItem();
-                if (selectedPage != null && !selectedPage.isEmpty())
+                String selectedPageName = (String) pageDropdown.getSelectedItem();
+                if (selectedPageName != null && !selectedPageName.isEmpty())
                 {
-                    try
+                    Integer pageNumber = pageNameToIndex.get(selectedPageName);
+                    if (pageNumber != null)
                     {
-                        int pageNumber = Integer.parseInt(selectedPage.replace("Page ", ""));
                         matches.add(searchLoc);
                         mapLocomotivesToPage(pageNumber, matches);
                     }
-                    catch (NumberFormatException ex)
+                    else
                     {
-                        this.model.log("Invalid page selection: " + selectedPage);
+                        this.model.log("Invalid page selection: " + selectedPageName);
                     }
                 }
             }
-            catch (NumberFormatException ex)
+            catch (Exception ex)
             {
                 JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }

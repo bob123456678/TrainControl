@@ -324,7 +324,7 @@ Requires JDK 1.8+ and the following libraries:
     - Locomotive Database
         - Added a menu option to export key locomotive data to a CSV file
         - In the locomotive notes editor, added fields for years of operation and railway name
-        - In the locomotive notes editor, added a utility button to find locomotives with a similar year or railway name 
+        - In the locomotive button and database right-click menus, added a utility button to find locomotives with a similar year or railway name 
         - Similar locomotives can optionally be mapped to a keyboard page
 
 * v2.5.14 [8/29/2025]
