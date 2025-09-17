@@ -10353,12 +10353,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
 
             JPanel panel = new JPanel(new GridBagLayout());
-            
-            /* JButton findSimilarButton = new JButton("Find Similar Locomotives");
-            findSimilarButton.addActionListener(e ->
-            {
-                findSimilarLocs(l, evt);
-            }); */
 
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(4, 4, 4, 4);
@@ -10382,16 +10376,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             panel.add(new JLabel("Railway Name:"), gbc);
             gbc.gridx = 1;
             panel.add(railwayField, gbc);
-
-            gbc.gridy++;
-            
-            /* panel.add(findSimilarButton, gbc);
-            
-            findSimilarButton.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
-            if (l.getStructuredNotes().getStartYear() == 0 && l.getStructuredNotes().getRailway().isEmpty())
-            {
-                findSimilarButton.setEnabled(false);
-            }*/ 
             
             gbc.gridx = 0;
             gbc.gridy++;
