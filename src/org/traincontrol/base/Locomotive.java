@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1361,39 +1362,50 @@ public abstract class Locomotive
      * @param maxResults
      * @param railroads
      * @param locList
+     * @param randomize
      * @return 
      */
     public static List<Locomotive> findSimilarLocomotives(
         Locomotive target,
         int maxResults,
         List<String> railroads,
-        List<Locomotive> locList)
+        List<Locomotive> locList,
+        boolean randomize
+    )
     {
+        List<Locomotive> candidates = new ArrayList<>(locList);
+
+        if (randomize)
+        {
+            Collections.shuffle(candidates);
+        }
+        else
+        {
+            candidates.sort(Comparator.comparingLong(Locomotive::getTotalRuntime));
+        }
+
         List<Locomotive> matches = new ArrayList<>();
 
         LocomotiveNotes targetNotes = target.getStructuredNotes();
         int targetStart = targetNotes.getStartYear();
         int targetEnd = targetNotes.getEndYear();
-        
-        if (targetStart == 0 && railroads.isEmpty())
+
+        if (targetStart == 0 && (railroads == null || railroads.isEmpty()))
         {
             return Collections.emptyList(); // No meaningful range to compare against
         }
 
-        List<Locomotive> shuffled = new ArrayList<>(locList);
-        Collections.shuffle(shuffled);
-
-        for (Locomotive l : shuffled)
+        for (Locomotive l : candidates)
         {
-            if (l == target) continue; // skip self
+            if (l == target) continue;
 
             LocomotiveNotes notes = l.getStructuredNotes();
             int start = notes.getStartYear();
             int end = notes.getEndYear();
 
             boolean yearsOverlap = (start != 0) &&
-                       (start <= targetEnd || targetEnd == 0) &&
-                       (end == 0 || end >= targetStart);
+                                   (start <= targetEnd || targetEnd == 0) &&
+                                   (end == 0 || end >= targetStart);
 
             boolean railroadMatch = railroads == null || railroads.isEmpty()
                 || railroads.stream().anyMatch(r -> r.equalsIgnoreCase(notes.getRailway()));
@@ -1401,7 +1413,6 @@ public abstract class Locomotive
             if (yearsOverlap && railroadMatch)
             {
                 matches.add(l);
-                
                 if (matches.size() >= maxResults) break;
             }
         }

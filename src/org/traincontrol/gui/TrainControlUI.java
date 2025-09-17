@@ -72,6 +72,7 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -10183,26 +10184,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         JComboBox<Integer> countDropdown = new JComboBox<>();
-        for (int i = 1; i <= 10; i++)
-        {
-            countDropdown.addItem(i);
-        }
-        
-        for (int i = 15; i <= 50; i += 5)
-        {
-            countDropdown.addItem(i);
-        }
-        
-        countDropdown.setSelectedItem(5); // default selection
+        for (int i = 1; i <= 10; i++) countDropdown.addItem(i);
+        for (int i = 15; i <= 50; i += 5) countDropdown.addItem(i);
+        countDropdown.setSelectedItem(5);
 
         JTextField railroadsField = new JTextField("", 30);
         railroadsField.setText(railway);
 
         JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
-        currentPageOnly.setSelected(false); // default unchecked
+        currentPageOnly.setSelected(false);
 
         JComboBox<String> pageDropdown = new JComboBox<>();
-        pageDropdown.addItem(""); // default blank
+        pageDropdown.addItem("");
 
         Map<String, Integer> pageNameToIndex = new LinkedHashMap<>();
         for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
@@ -10216,6 +10209,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
+        // 🔘 Radio buttons for ordering
+        JRadioButton randomOrder = new JRadioButton("Random", true);
+        JRadioButton leastUsedOrder = new JRadioButton("Least Used");
+        ButtonGroup orderGroup = new ButtonGroup();
+        orderGroup.add(randomOrder);
+        orderGroup.add(leastUsedOrder);
+
         JPanel inputPanel = new JPanel(new GridLayout(0, 1));
         inputPanel.add(new JLabel("Maximum Matches:"));
         inputPanel.add(countDropdown);
@@ -10224,6 +10224,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         inputPanel.add(new JLabel("Map to Page (Optional):"));
         inputPanel.add(pageDropdown);
         inputPanel.add(currentPageOnly);
+        inputPanel.add(new JLabel("Ordering:"));
+        inputPanel.add(randomOrder);
+        inputPanel.add(leastUsedOrder);
 
         int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Locomotives Similar to " + searchLoc.getName(), JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION)
@@ -10243,7 +10246,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     ? this.currentLocMapping().values().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList())
                     : this.model.getLocomotives().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList());
 
-                List<Locomotive> matches = Locomotive.findSimilarLocomotives(searchLoc, count, railroads, sourceLocs);
+                boolean randomize = randomOrder.isSelected();
+
+                List<Locomotive> matches = Locomotive.findSimilarLocomotives(
+                    searchLoc, count, railroads, sourceLocs, randomize
+                );
 
                 if (matches.isEmpty())
                 {
