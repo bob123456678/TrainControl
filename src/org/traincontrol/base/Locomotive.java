@@ -1410,6 +1410,44 @@ public abstract class Locomotive
     }
     
     /**
+     * Summarizes the metadata in the locomotive notes
+     * @return 
+     */
+    public String getNotesSummaryLine()
+    {
+        LocomotiveNotes n = this.getStructuredNotes();
+        String railway = n.getRailway();
+        int startYear = n.getStartYear();
+        int endYear = n.getEndYear();
+
+        String range = (startYear == 0) ? "" :
+                       (endYear == 0) ? String.valueOf(startYear) + "–" :
+                       startYear + "–" + endYear;
+
+        StringBuilder sb = new StringBuilder(this.getName());
+
+        if (!range.isEmpty() || !railway.isEmpty())
+        {
+            sb.append(" [");
+            if (!range.isEmpty())
+            {
+                sb.append(range);
+                if (!railway.isEmpty())
+                {
+                    sb.append(", ");
+                }
+            }
+            if (!railway.isEmpty())
+            {
+                sb.append(railway);
+            }
+            sb.append("]");
+        }
+
+        return sb.toString();
+    }
+    
+    /**
      * Flags autonomy as paused so that no further routes are started
      * @param state 
      */

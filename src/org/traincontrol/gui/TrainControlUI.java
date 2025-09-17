@@ -10234,26 +10234,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JButton findSimilarButton = new JButton("Find Similar Locomotives");
             findSimilarButton.addActionListener(e ->
             {
-                JTextField countField = new JTextField("5", 5);
+                JComboBox<Integer> countDropdown = new JComboBox<>();
+                for (int i = 1; i <= 10; i++) {
+                    countDropdown.addItem(i);
+                }
+                for (int i = 15; i <= 50; i += 5) {
+                    countDropdown.addItem(i);
+                }
+                countDropdown.setSelectedItem(5); // default selection
+
                 JTextField railroadsField = new JTextField("", 30);
                 railroadsField.setText(railwayField.getText());
 
                 JPanel inputPanel = new JPanel(new GridLayout(0, 1));
                 inputPanel.add(new JLabel("Maximum Matches:"));
-                inputPanel.add(countField);
+                inputPanel.add(countDropdown);
                 
                 JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
                 currentPageOnly.setSelected(false); // default unchecked
-
-                countField.addKeyListener(new KeyAdapter()
-                {
-                    @Override
-                    public void keyReleased(KeyEvent e)
-                    {
-                        TrainControlUI.validateInt(e, false);
-                        TrainControlUI.limitLength(e, 3);
-                    }
-                });
                 
                 // Build dropdown for "Map to Page"
                 JComboBox<String> pageDropdown = new JComboBox<>();
@@ -10269,17 +10267,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
                 inputPanel.add(railroadsField);
-                inputPanel.add(currentPageOnly);
 
                 inputPanel.add(new JLabel("Map to Page (Optional):"));
                 inputPanel.add(pageDropdown);
+                inputPanel.add(currentPageOnly);
 
                 int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Similar Locomotives", JOptionPane.OK_CANCEL_OPTION);
                 if (result == JOptionPane.OK_OPTION)
                 {
                     try
                     {
-                        int count = Math.abs(Integer.parseInt(countField.getText().trim()));
+                        int count = Math.abs(Integer.parseInt(countDropdown.getSelectedItem().toString().trim()));
                         String rawRailroads = railroadsField.getText().trim();
                         List<String> railroads = rawRailroads.isEmpty()
                             ? Collections.emptyList()
@@ -10302,74 +10300,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         else
                         {
-                            LocomotiveNotes targetNotes = l.getStructuredNotes();
-                            String targetRailway = targetNotes.getRailway();
-                            int targetStart = targetNotes.getStartYear();
-                            int targetEnd = targetNotes.getEndYear();
-
-                            String targetRange = (targetStart == 0) ? "" :
-                                                 (targetEnd == 0) ? String.valueOf(targetStart) + "–" :
-                                                 targetStart + "–" + targetEnd;
-
                             StringBuilder sb = new StringBuilder();
-                            sb.append("Target locomotive: \n- ").append(l.getName());
-
-                            if (!targetRange.isEmpty() || !targetRailway.isEmpty())
-                            {
-                                sb.append(" [");
-                                if (!targetRange.isEmpty())
-                                {
-                                    sb.append(targetRange);
-                                    if (!targetRailway.isEmpty())
-                                    {
-                                        sb.append(", ");
-                                    }
-                                }
-                                if (!targetRailway.isEmpty())
-                                {
-                                    sb.append(targetRailway);
-                                }
-                                sb.append("]");
-                            }
+                            sb.append("Target locomotive:\n- ").append(l.getNotesSummaryLine());
                             sb.append("\n\nSimilar locomotives:\n");
 
                             for (Locomotive match : matches)
                             {
-                                LocomotiveNotes notes = match.getStructuredNotes();
-                                String railway = notes.getRailway();
-                                int startYear = notes.getStartYear();
-                                int endYear = notes.getEndYear();
+                                sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
 
-                                String range = (startYear == 0) ? "" :
-                                               (endYear == 0) ? String.valueOf(startYear) + "–" :
-                                               startYear + "–" + endYear;
-
-                                sb.append("- ")
-                                  .append(match.getName());
-
-                                if (!range.isEmpty() || !railway.isEmpty())
-                                {
-                                    sb.append(" [");
-                                    if (!range.isEmpty())
-                                    {
-                                        sb.append(range);
-                                        if (!railway.isEmpty())
-                                        {
-                                            sb.append(", ");
-                                        }
-                                    }
-                                    if (!railway.isEmpty())
-                                    {
-                                        sb.append(railway);
-                                    }
-                                    sb.append("]");
-                                }
-
-                                sb.append("\n");
-
-                                this.model.log("Similar to " + l.getName() + ": " + match.getName()
-                                    + (range.isEmpty() ? "" : " (" + range + ")")
-                                    + (railway.isEmpty() ? "" : " [" + railway + "]"));
+                                this.model.log("Similar to " + l.getName() + ": " + match.getNotesSummaryLine());
                             }
 
                             JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
