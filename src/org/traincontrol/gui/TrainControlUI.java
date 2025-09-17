@@ -48,6 +48,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,13 +72,13 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -88,6 +90,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -377,7 +380,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
-        this.labelMapping = new HashMap<>();
+        this.labelMapping = new LinkedHashMap<>();
         this.switchMapping = new HashMap<>();
         this.functionMapping = new HashMap<>();
         this.rFunctionMapping = new HashMap<>();
@@ -498,32 +501,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Map buttons to labels
-        this.labelMapping.put(AButton, ALabel);
-        this.labelMapping.put(BButton, BLabel);
-        this.labelMapping.put(CButton, CLabel);
-        this.labelMapping.put(DButton, DLabel);
+        this.labelMapping.put(QButton, QLabel);
+        this.labelMapping.put(WButton, WLabel);
         this.labelMapping.put(EButton, ELabel);
+        this.labelMapping.put(RButton, RLabel);
+        this.labelMapping.put(TButton, TLabel);
+        this.labelMapping.put(YButton, YLabel);
+        this.labelMapping.put(UButton, ULabel);
+        this.labelMapping.put(IButton, ILabel);
+        this.labelMapping.put(OButton, OLabel);
+        this.labelMapping.put(PButton, PLabel);
+        this.labelMapping.put(AButton, ALabel);
+        this.labelMapping.put(SButton, SLabel);
+        this.labelMapping.put(DButton, DLabel);
         this.labelMapping.put(FButton, FLabel);
         this.labelMapping.put(GButton, GLabel);
         this.labelMapping.put(HButton, HLabel);
-        this.labelMapping.put(IButton, ILabel);
         this.labelMapping.put(JButton, JLabel);
         this.labelMapping.put(KButton, KLabel);
         this.labelMapping.put(LButton, LLabel);
-        this.labelMapping.put(MButton, MLabel);
-        this.labelMapping.put(NButton, NLabel);
-        this.labelMapping.put(OButton, OLabel);
-        this.labelMapping.put(PButton, PLabel);
-        this.labelMapping.put(QButton, QLabel);
-        this.labelMapping.put(RButton, RLabel);
-        this.labelMapping.put(SButton, SLabel);
-        this.labelMapping.put(TButton, TLabel);
-        this.labelMapping.put(UButton, ULabel);
-        this.labelMapping.put(VButton, VLabel);
-        this.labelMapping.put(WButton, WLabel);
-        this.labelMapping.put(XButton, XLabel);
-        this.labelMapping.put(YButton, YLabel);
         this.labelMapping.put(ZButton, ZLabel);
+        this.labelMapping.put(XButton, XLabel);
+        this.labelMapping.put(CButton, CLabel);
+        this.labelMapping.put(VButton, VLabel);
+        this.labelMapping.put(BButton, BLabel);
+        this.labelMapping.put(NButton, NLabel);
+        this.labelMapping.put(MButton, MLabel);
         
         // Map switch addresses to buttons
         this.switchMapping.put(1,SwitchButton1);
@@ -2530,6 +2533,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             break;
                         }
                     }
+                }
+            }
+
+            repaintMappings();
+        }));
+    }
+    
+    /**
+     * Maps a specific list of locomotives to a page
+     * @param pageNumber
+     * @param locs 
+     */
+    public void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
+    {
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            // Switch to the target page and clear it
+            this.switchLocMapping(pageNumber);
+            this.doClearCurrentPage();
+
+            Iterator<Locomotive> iterator = locs.iterator();
+
+            for (JButton key : this.labelMapping.keySet())
+            {
+                if (!iterator.hasNext())
+                {
+                    break; // no more locomotives to assign
+                }
+
+                Locomotive l = iterator.next();
+
+                // Only assign if locomotive is valid
+                if (l != null && this.currentLocMapping().get(key) == null)
+                {
+                    this.currentLocMapping().put(key, l);
                 }
             }
 
@@ -9617,16 +9655,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard Mappings", JOptionPane.YES_NO_OPTION);
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                this.activeLoc = null;
-
-                for (JButton key : this.currentLocMapping().keySet())
-                {
-                    this.currentLocMapping().put(key, null);
-                }
-                repaintMappings();
-                repaintLoc();
+                doClearCurrentPage();
             }
         }).start();
+    }
+    
+    /**
+     * Resets the mappings on the current page without asking
+     */
+    private void doClearCurrentPage()
+    {
+        this.activeLoc = null;
+
+        for (JButton key : this.currentLocMapping().keySet())
+        {
+            this.currentLocMapping().put(key, null);
+        }
+        
+        repaintMappings();
+        repaintLoc();
     }
     
     /**
@@ -10192,10 +10239,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 railroadsField.setText(railwayField.getText());
 
                 JPanel inputPanel = new JPanel(new GridLayout(0, 1));
-                inputPanel.add(new JLabel("Max number of matches:"));
+                inputPanel.add(new JLabel("Maximum Matches:"));
                 inputPanel.add(countField);
                 
-                JCheckBox currentPageOnly = new JCheckBox("Current Page Only");
+                JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
                 currentPageOnly.setSelected(false); // default unchecked
 
                 countField.addKeyListener(new KeyAdapter()
@@ -10208,9 +10255,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 });
                 
-                inputPanel.add(new JLabel("Railroad names (comma-separated):"));
+                // Build dropdown for "Map to Page"
+                JComboBox<String> pageDropdown = new JComboBox<>();
+                pageDropdown.addItem(""); // default blank
+
+                for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
+                {
+                    if (i != this.currentButtonlocMappingNumber)
+                    {
+                        pageDropdown.addItem("Page " + (i + 1));
+                    }
+                }
+                
+                inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
                 inputPanel.add(railroadsField);
                 inputPanel.add(currentPageOnly);
+
+                inputPanel.add(new JLabel("Map to Page (Optional):"));
+                inputPanel.add(pageDropdown);
 
                 int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Similar Locomotives", JOptionPane.OK_CANCEL_OPTION);
                 if (result == JOptionPane.OK_OPTION)
@@ -10311,6 +10373,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             }
 
                             JOptionPane.showMessageDialog(source, sb.toString(), "Results", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                        
+                        String selectedPage = (String) pageDropdown.getSelectedItem();
+                        if (selectedPage != null && !selectedPage.isEmpty())
+                        {
+                            try
+                            {
+                                int pageNumber = Integer.parseInt(selectedPage.replace("Page ", ""));
+                                matches.add(l);
+                                mapLocomotivesToPage(pageNumber, matches);
+                            }
+                            catch (NumberFormatException ex)
+                            {
+                                this.model.log("Invalid page selection: " + selectedPage);
+                            }
                         }
                     }
                     catch (NumberFormatException ex)
