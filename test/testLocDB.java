@@ -173,7 +173,7 @@ public class testLocDB
         List<String> railroads = Arrays.asList("PKP");
         List<Locomotive> allLocs = new ArrayList<>(model.getLocomotives());
 
-        List<Locomotive> result = Locomotive.findSimilarLocomotives(target, 10, railroads, allLocs);
+        List<Locomotive> result = Locomotive.findSimilarLocomotives(target, 10, railroads, allLocs, true);
         List<String> names = result.stream().map(Locomotive::getName).collect(Collectors.toList());
 
         assertEquals(true, names.contains(fullOverlapName));
