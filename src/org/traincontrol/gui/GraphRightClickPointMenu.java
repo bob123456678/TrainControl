@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -92,7 +91,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 menuItem.addActionListener(event -> 
                     {
                         ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), nodeName, false);
-
+                        ui.repaintAutoLocList(false);
                     }
                 );    
 

@@ -320,6 +320,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.5.16 [Beta]
+    - Autonomy graph
+        - Fixed bug where adding a new locomotive using the "Add to Node" shortcut on the graph UI would not update the list of running locomotives
+
 * v2.5.15 [9/16/2025]
     - Locomotive Database
         - Added a menu option to export key locomotive data to a CSV file
