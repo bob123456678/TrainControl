@@ -320,7 +320,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.5.16 [Beta]
+* v2.5.16 [9/20/2025]
     - Autonomy graph
         - Fixed bug where adding a new locomotive using the "Add to Node" shortcut on the graph UI would not update the list of running locomotives
 
