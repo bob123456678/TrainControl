@@ -1422,7 +1422,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (input != null)
         {
-            this.setPageName(input);
+            input = input.trim();
+            
+            if (this.pageNames.containsValue(input) && !input.equals(this.getPageName(this.locMappingNumber, true).trim()))
+            {
+                JOptionPane.showMessageDialog(this, "Another page with this name already exists.");
+            }
+            else
+            {
+                this.setPageName(input);
+            }
         }
     }
     

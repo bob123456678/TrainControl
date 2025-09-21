@@ -323,6 +323,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.5.16 [9/20/2025]
     - Autonomy graph
         - Fixed bug where adding a new locomotive using the "Add to Node" shortcut on the graph UI would not update the list of running locomotives
+    - Keyboard mapping pages can no longer have duplicate names
 
 * v2.5.15 [9/16/2025]
     - Locomotive Database
