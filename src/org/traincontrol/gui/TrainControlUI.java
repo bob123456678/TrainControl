@@ -10304,6 +10304,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception ex)
         {
             JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            this.model.log(ex);
         }
     }
     

@@ -1397,7 +1397,7 @@ public abstract class Locomotive
 
         for (Locomotive l : candidates)
         {
-            if (l == target) continue;
+            if (l == target || l == null) continue;
 
             LocomotiveNotes notes = l.getStructuredNotes();
             int start = notes.getStartYear();
@@ -1432,8 +1432,8 @@ public abstract class Locomotive
         int endYear = n.getEndYear();
 
         String range = (startYear == 0) ? "" :
-                       (endYear == 0) ? String.valueOf(startYear) + "–" :
-                       startYear + "–" + endYear;
+                       (endYear == 0) ? String.valueOf(startYear) + "-" :
+                       startYear + "-" + endYear;
 
         StringBuilder sb = new StringBuilder(this.getName());
 
