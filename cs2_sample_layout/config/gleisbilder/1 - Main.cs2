@@ -2,8 +2,8 @@
 version
  .major=1
 element
- .typ=bogen
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=256
 element
  .id=0x1
  .typ=linksweiche
@@ -694,7 +694,7 @@ element
 element
  .id=0x70e
  .artikel=-1
- .text=Cross over
+ .text=Cross down
 element
  .id=0x711
  .typ=gerade
@@ -994,6 +994,7 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:BottomExitVIrt
 element
  .id=0xb06
  .typ=linksweiche
@@ -1214,3 +1215,7 @@ element
  .typ=prellbock
  .drehung=1
  .artikel=-1
+element
+ .id=0xe10
+ .artikel=-1
+ .text=Point:BottomMainCTerm

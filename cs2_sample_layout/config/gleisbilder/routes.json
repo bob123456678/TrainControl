@@ -3,6 +3,7 @@
         "name": "Top Track 1",
         "id": 1,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -48,7 +49,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -56,7 +57,7 @@
                 "state": {
                     "ADDRESS": "18",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -64,7 +65,7 @@
                 "state": {
                     "ADDRESS": "66",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -72,7 +73,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -80,7 +81,7 @@
                 "state": {
                     "ADDRESS": "19",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -88,7 +89,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -103,7 +104,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -111,7 +112,7 @@
                 "state": {
                     "ADDRESS": "18",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -119,7 +120,7 @@
                 "state": {
                     "ADDRESS": "66",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -127,7 +128,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -135,7 +136,7 @@
                 "state": {
                     "ADDRESS": "19",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -143,7 +144,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -158,7 +159,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -166,7 +167,7 @@
                 "state": {
                     "ADDRESS": "18",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -174,7 +175,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -182,7 +183,7 @@
                 "state": {
                     "ADDRESS": "19",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -190,7 +191,7 @@
                 "state": {
                     "ADDRESS": "67",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -198,7 +199,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -213,7 +214,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -221,7 +222,7 @@
                 "state": {
                     "ADDRESS": "18",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -229,7 +230,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -237,7 +238,7 @@
                 "state": {
                     "ADDRESS": "19",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -245,7 +246,7 @@
                 "state": {
                     "ADDRESS": "67",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -253,7 +254,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -268,7 +269,7 @@
                 "state": {
                     "ADDRESS": "52",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -276,7 +277,7 @@
                 "state": {
                     "ADDRESS": "6",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -284,7 +285,7 @@
                 "state": {
                     "ADDRESS": "10",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -300,7 +301,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -308,7 +309,7 @@
                 "state": {
                     "ADDRESS": "50",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -316,7 +317,7 @@
                 "state": {
                     "ADDRESS": "51",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -324,7 +325,7 @@
                 "state": {
                     "ADDRESS": "99",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -332,7 +333,7 @@
                 "state": {
                     "ADDRESS": "100",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -340,7 +341,7 @@
                 "state": {
                     "ADDRESS": "58",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -348,7 +349,7 @@
                 "state": {
                     "ADDRESS": "10",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -356,7 +357,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -371,7 +372,7 @@
                 "state": {
                     "ADDRESS": "32",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -379,7 +380,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -387,7 +388,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -395,7 +396,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -403,7 +404,7 @@
                 "state": {
                     "ADDRESS": "102",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -411,7 +412,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -419,7 +420,7 @@
                 "state": {
                     "ADDRESS": "71",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -427,7 +428,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -435,7 +436,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -451,7 +452,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -459,7 +460,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -467,7 +468,7 @@
                 "state": {
                     "ADDRESS": "32",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -475,7 +476,7 @@
                 "state": {
                     "ADDRESS": "102",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -483,7 +484,7 @@
                 "state": {
                     "ADDRESS": "30",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -491,7 +492,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -499,7 +500,7 @@
                 "state": {
                     "ADDRESS": "25",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -507,7 +508,7 @@
                 "state": {
                     "ADDRESS": "92",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -515,7 +516,7 @@
                 "state": {
                     "ADDRESS": "57",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -523,7 +524,7 @@
                 "state": {
                     "ADDRESS": "36",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -531,7 +532,7 @@
                 "state": {
                     "ADDRESS": "82",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -539,7 +540,7 @@
                 "state": {
                     "ADDRESS": "83",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -547,7 +548,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -562,7 +563,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -570,7 +571,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -578,7 +579,7 @@
                 "state": {
                     "ADDRESS": "53",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -586,7 +587,7 @@
                 "state": {
                     "ADDRESS": "54",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -601,7 +602,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -609,7 +610,7 @@
                 "state": {
                     "ADDRESS": "53",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -617,7 +618,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -625,7 +626,7 @@
                 "state": {
                     "ADDRESS": "54",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -633,7 +634,7 @@
                 "state": {
                     "ADDRESS": "91",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -648,7 +649,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -656,7 +657,7 @@
                 "state": {
                     "ADDRESS": "53",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -664,7 +665,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -672,7 +673,7 @@
                 "state": {
                     "ADDRESS": "54",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -680,7 +681,7 @@
                 "state": {
                     "ADDRESS": "91",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -695,7 +696,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -703,7 +704,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -711,7 +712,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -719,7 +720,7 @@
                 "state": {
                     "ADDRESS": "7",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -727,7 +728,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -742,7 +743,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -750,7 +751,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -758,7 +759,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -766,7 +767,7 @@
                 "state": {
                     "ADDRESS": "7",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -774,7 +775,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -789,7 +790,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -797,7 +798,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -805,7 +806,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -813,7 +814,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -821,7 +822,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -829,7 +830,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -844,7 +845,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -852,7 +853,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -860,7 +861,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -868,7 +869,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -876,7 +877,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -884,7 +885,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -892,7 +893,7 @@
                 "state": {
                     "ADDRESS": "31",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -907,7 +908,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -915,7 +916,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -923,7 +924,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -931,7 +932,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -939,7 +940,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -947,7 +948,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -955,7 +956,7 @@
                 "state": {
                     "ADDRESS": "29",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -963,7 +964,7 @@
                 "state": {
                     "ADDRESS": "31",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -978,7 +979,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -986,7 +987,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -994,7 +995,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1002,7 +1003,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1010,7 +1011,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1018,7 +1019,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1026,7 +1027,7 @@
                 "state": {
                     "ADDRESS": "29",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1034,7 +1035,7 @@
                 "state": {
                     "ADDRESS": "31",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1049,7 +1050,7 @@
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1057,7 +1058,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1065,7 +1066,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1073,7 +1074,7 @@
                 "state": {
                     "ADDRESS": "71",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1081,7 +1082,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1089,7 +1090,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1105,7 +1106,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1113,7 +1114,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1121,7 +1122,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1129,7 +1130,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1137,7 +1138,7 @@
                 "state": {
                     "ADDRESS": "63",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1145,7 +1146,7 @@
                 "state": {
                     "ADDRESS": "64",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1153,7 +1154,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1161,7 +1162,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1169,7 +1170,7 @@
                 "state": {
                     "ADDRESS": "38",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1177,7 +1178,7 @@
                 "state": {
                     "ADDRESS": "40",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1185,7 +1186,7 @@
                 "state": {
                     "ADDRESS": "60",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1193,7 +1194,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1201,7 +1202,7 @@
                 "state": {
                     "ADDRESS": "100",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1209,7 +1210,7 @@
                 "state": {
                     "ADDRESS": "99",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1217,7 +1218,7 @@
                 "state": {
                     "ADDRESS": "62",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1225,7 +1226,7 @@
                 "state": {
                     "ADDRESS": "61",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1233,7 +1234,7 @@
                 "state": {
                     "ADDRESS": "58",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1241,7 +1242,7 @@
                 "state": {
                     "ADDRESS": "2",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1249,7 +1250,7 @@
                 "state": {
                     "ADDRESS": "12",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1257,7 +1258,7 @@
                 "state": {
                     "ADDRESS": "51",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1265,7 +1266,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1273,7 +1274,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1281,7 +1282,7 @@
                 "state": {
                     "ADDRESS": "11",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1289,7 +1290,7 @@
                 "state": {
                     "ADDRESS": "72",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1297,7 +1298,7 @@
                 "state": {
                     "ADDRESS": "74",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1305,7 +1306,7 @@
                 "state": {
                     "ADDRESS": "59",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1313,7 +1314,7 @@
                 "state": {
                     "ADDRESS": "10",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1321,7 +1322,7 @@
                 "state": {
                     "ADDRESS": "90",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1329,7 +1330,7 @@
                 "state": {
                     "ADDRESS": "52",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1337,7 +1338,7 @@
                 "state": {
                     "ADDRESS": "50",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1345,7 +1346,7 @@
                 "state": {
                     "ADDRESS": "6",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1353,7 +1354,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1361,7 +1362,7 @@
                 "state": {
                     "ADDRESS": "97",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1369,7 +1370,7 @@
                 "state": {
                     "ADDRESS": "73",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1377,7 +1378,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1385,7 +1386,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1393,7 +1394,7 @@
                 "state": {
                     "ADDRESS": "49",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1401,7 +1402,7 @@
                 "state": {
                     "ADDRESS": "36",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1409,7 +1410,7 @@
                 "state": {
                     "ADDRESS": "57",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1417,7 +1418,7 @@
                 "state": {
                     "ADDRESS": "92",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1425,7 +1426,7 @@
                 "state": {
                     "ADDRESS": "82",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1433,7 +1434,7 @@
                 "state": {
                     "ADDRESS": "25",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1441,7 +1442,7 @@
                 "state": {
                     "ADDRESS": "30",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1449,7 +1450,7 @@
                 "state": {
                     "ADDRESS": "83",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1457,7 +1458,7 @@
                 "state": {
                     "ADDRESS": "98",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1465,7 +1466,7 @@
                 "state": {
                     "ADDRESS": "69",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1473,7 +1474,7 @@
                 "state": {
                     "ADDRESS": "103",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1481,7 +1482,7 @@
                 "state": {
                     "ADDRESS": "104",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1489,7 +1490,7 @@
                 "state": {
                     "ADDRESS": "102",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1497,7 +1498,7 @@
                 "state": {
                     "ADDRESS": "32",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1505,7 +1506,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1513,7 +1514,7 @@
                 "state": {
                     "ADDRESS": "57",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1521,7 +1522,7 @@
                 "state": {
                     "ADDRESS": "36",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1529,7 +1530,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1537,7 +1538,7 @@
                 "state": {
                     "ADDRESS": "108",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1545,7 +1546,7 @@
                 "state": {
                     "ADDRESS": "41",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1553,7 +1554,7 @@
                 "state": {
                     "ADDRESS": "42",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1569,7 +1570,7 @@
                 "state": {
                     "ADDRESS": "49",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1577,7 +1578,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1585,7 +1586,7 @@
                 "state": {
                     "ADDRESS": "79",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1601,7 +1602,7 @@
                 "state": {
                     "ADDRESS": "80",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1609,7 +1610,7 @@
                 "state": {
                     "ADDRESS": "49",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1617,7 +1618,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1625,7 +1626,7 @@
                 "state": {
                     "ADDRESS": "79",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1641,7 +1642,7 @@
                 "state": {
                     "ADDRESS": "79",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1649,7 +1650,7 @@
                 "state": {
                     "ADDRESS": "80",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1657,7 +1658,7 @@
                 "state": {
                     "ADDRESS": "49",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1665,7 +1666,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1680,7 +1681,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1688,7 +1689,7 @@
                 "state": {
                     "ADDRESS": "98",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1696,7 +1697,7 @@
                 "state": {
                     "ADDRESS": "69",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1712,7 +1713,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1720,7 +1721,7 @@
                 "state": {
                     "ADDRESS": "98",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1728,7 +1729,7 @@
                 "state": {
                     "ADDRESS": "69",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -1745,7 +1746,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1753,7 +1754,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1761,7 +1762,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -1788,7 +1789,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1796,7 +1797,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1804,7 +1805,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1812,7 +1813,7 @@
                 "state": {
                     "ADDRESS": "60",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -1852,7 +1853,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1860,7 +1861,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1868,7 +1869,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1876,7 +1877,7 @@
                 "state": {
                     "ADDRESS": "60",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1884,7 +1885,7 @@
                 "state": {
                     "ADDRESS": "70",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -1924,7 +1925,7 @@
                 "state": {
                     "ADDRESS": "52",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1932,7 +1933,7 @@
                 "state": {
                     "ADDRESS": "6",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1940,7 +1941,7 @@
                 "state": {
                     "ADDRESS": "39",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1948,7 +1949,7 @@
                 "state": {
                     "ADDRESS": "12",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -1975,7 +1976,7 @@
                 "state": {
                     "ADDRESS": "2",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1983,7 +1984,7 @@
                 "state": {
                     "ADDRESS": "39",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -1991,7 +1992,7 @@
                 "state": {
                     "ADDRESS": "12",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -2018,7 +2019,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2026,7 +2027,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2034,7 +2035,7 @@
                 "state": {
                     "ADDRESS": "108",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -2087,7 +2088,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2095,7 +2096,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2103,7 +2104,7 @@
                 "state": {
                     "ADDRESS": "108",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -2168,7 +2169,7 @@
                 "state": {
                     "ADDRESS": "57",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2176,7 +2177,7 @@
                 "state": {
                     "ADDRESS": "101",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2184,7 +2185,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2200,7 +2201,7 @@
                 "state": {
                     "ADDRESS": "82",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2208,7 +2209,7 @@
                 "state": {
                     "ADDRESS": "84",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2216,7 +2217,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2232,7 +2233,7 @@
                 "state": {
                     "ADDRESS": "82",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2240,7 +2241,7 @@
                 "state": {
                     "ADDRESS": "84",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2248,7 +2249,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2264,7 +2265,7 @@
                 "state": {
                     "ADDRESS": "57",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2272,7 +2273,7 @@
                 "state": {
                     "ADDRESS": "101",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2280,7 +2281,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2296,7 +2297,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2304,7 +2305,7 @@
                 "state": {
                     "ADDRESS": "25",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2312,83 +2313,91 @@
                 "state": {
                     "ADDRESS": "92",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
     },
     {
         "name": "Auto Bottom Sec Track 1 Crossover",
-        "id": 41,
+        "id": 39,
         "s88": 1011,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "103",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
-            "left": {
-                "type": "NodeGroup",
-                "expressions": [{
-                    "left": {
-                        "type": "NodeRouteCommand",
-                        "command": {
-                            "type": "TYPE_FEEDBACK",
-                            "state": {
-                                "ADDRESS": "4",
-                                "SETTING": "false"
-                            }
-                        }
-                    },
-                    "right": {
-                        "left": {
-                            "type": "NodeRouteCommand",
-                            "command": {
-                                "type": "TYPE_FEEDBACK",
-                                "state": {
-                                    "ADDRESS": "10",
-                                    "SETTING": "false"
-                                }
-                            }
-                        },
-                        "right": {
-                            "type": "NodeRouteCommand",
-                            "command": {
-                                "type": "TYPE_FEEDBACK",
-                                "state": {
-                                    "ADDRESS": "9",
-                                    "SETTING": "false"
-                                }
-                            }
-                        },
-                        "type": "NodeOr"
-                    },
-                    "type": "NodeOr"
-                }]
-            },
-            "right": {
-                "type": "NodeRouteCommand",
-                "command": {
-                    "type": "TYPE_FEEDBACK",
-                    "state": {
-                        "ADDRESS": "1030",
-                        "SETTING": "false"
-                    }
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
                 }
-            },
-            "type": "NodeAnd"
+            }
         }
     },
     {
-        "name": "Auto Bottom Sec Track 1 Not Crossover",
+        "name": "Auto Bottom Sec Track 1 Crossover 2",
+        "id": 40,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover 3",
+        "id": 41,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover 4",
         "id": 42,
         "s88": 1011,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -2396,7 +2405,7 @@
                 "state": {
                     "ADDRESS": "103",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2404,61 +2413,53 @@
                 "state": {
                     "ADDRESS": "52",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "6",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
                 }
             }
         ],
         "conditions": {
             "left": {
-                "type": "NodeGroup",
-                "expressions": [{
-                    "left": {
-                        "type": "NodeRouteCommand",
-                        "command": {
-                            "type": "TYPE_FEEDBACK",
-                            "state": {
-                                "ADDRESS": "4",
-                                "SETTING": "true"
-                            }
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "4",
+                            "SETTING": "true"
                         }
-                    },
-                    "right": {
-                        "left": {
-                            "type": "NodeRouteCommand",
-                            "command": {
-                                "type": "TYPE_FEEDBACK",
-                                "state": {
-                                    "ADDRESS": "9",
-                                    "SETTING": "true"
-                                }
-                            }
-                        },
-                        "right": {
-                            "type": "NodeRouteCommand",
-                            "command": {
-                                "type": "TYPE_FEEDBACK",
-                                "state": {
-                                    "ADDRESS": "10",
-                                    "SETTING": "true"
-                                }
-                            }
-                        },
-                        "type": "NodeAnd"
-                    },
-                    "type": "NodeAnd"
-                }]
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
             },
             "right": {
                 "type": "NodeRouteCommand",
                 "command": {
                     "type": "TYPE_FEEDBACK",
                     "state": {
-                        "ADDRESS": "1030",
+                        "ADDRESS": "10",
                         "SETTING": "true"
                     }
                 }
             },
-            "type": "NodeOr"
+            "type": "NodeAnd"
         }
     },
     {
@@ -2472,7 +2473,7 @@
                 "state": {
                     "ADDRESS": "83",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2480,7 +2481,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2496,7 +2497,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2504,7 +2505,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2512,7 +2513,7 @@
                 "state": {
                     "ADDRESS": "24",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2520,7 +2521,7 @@
                 "state": {
                     "ADDRESS": "23",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2536,7 +2537,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2544,7 +2545,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2552,7 +2553,7 @@
                 "state": {
                     "ADDRESS": "23",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2560,7 +2561,7 @@
                 "state": {
                     "ADDRESS": "24",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2576,7 +2577,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2584,7 +2585,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2592,7 +2593,7 @@
                 "state": {
                     "ADDRESS": "23",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2600,7 +2601,7 @@
                 "state": {
                     "ADDRESS": "24",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2616,7 +2617,7 @@
                 "state": {
                     "ADDRESS": "97",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2624,7 +2625,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2640,7 +2641,7 @@
                 "state": {
                     "ADDRESS": "73",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2648,7 +2649,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2657,7 +2658,7 @@
         "name": "Auto Emergency Stop Main A",
         "id": 49,
         "s88": 1007,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -2671,7 +2672,7 @@
                     "state": {
                         "ADDRESS": "100",
                         "SETTING": "false",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -2699,7 +2700,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2707,7 +2708,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2715,7 +2716,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2723,7 +2724,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2739,7 +2740,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2747,7 +2748,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2755,7 +2756,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2763,7 +2764,7 @@
                 "state": {
                     "ADDRESS": "100",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2771,7 +2772,7 @@
                 "state": {
                     "ADDRESS": "69",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2779,7 +2780,7 @@
                 "state": {
                     "ADDRESS": "40",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2795,7 +2796,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2803,7 +2804,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2811,7 +2812,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2819,7 +2820,7 @@
                 "state": {
                     "ADDRESS": "60",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2827,7 +2828,7 @@
                 "state": {
                     "ADDRESS": "38",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2843,7 +2844,7 @@
                 "state": {
                     "ADDRESS": "1",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2851,7 +2852,7 @@
                 "state": {
                     "ADDRESS": "87",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2859,7 +2860,7 @@
                 "state": {
                     "ADDRESS": "60",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2867,7 +2868,7 @@
                 "state": {
                     "ADDRESS": "70",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2875,7 +2876,7 @@
                 "state": {
                     "ADDRESS": "86",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2883,7 +2884,7 @@
                 "state": {
                     "ADDRESS": "94",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2899,7 +2900,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2907,7 +2908,7 @@
                 "state": {
                     "ADDRESS": "3",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2915,7 +2916,7 @@
                 "state": {
                     "ADDRESS": "75",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2923,7 +2924,7 @@
                 "state": {
                     "ADDRESS": "63",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2931,7 +2932,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -2973,6 +2974,14 @@
                     "SETTING": "false",
                     "PROTOCOL": "MM2"
                 }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "128",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
             }
         ]
     },
@@ -2987,7 +2996,7 @@
                 "state": {
                     "ADDRESS": "99",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -2995,7 +3004,7 @@
                 "state": {
                     "ADDRESS": "51",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3003,7 +3012,7 @@
                 "state": {
                     "ADDRESS": "12",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3011,7 +3020,7 @@
                 "state": {
                     "ADDRESS": "39",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3019,7 +3028,7 @@
                 "state": {
                     "ADDRESS": "62",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3027,7 +3036,7 @@
                 "state": {
                     "ADDRESS": "2",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3035,7 +3044,7 @@
                 "state": {
                     "ADDRESS": "58",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3043,7 +3052,7 @@
                 "state": {
                     "ADDRESS": "104",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -3059,7 +3068,7 @@
                 "state": {
                     "ADDRESS": "53",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3067,7 +3076,7 @@
                 "state": {
                     "ADDRESS": "12",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3075,7 +3084,7 @@
                 "state": {
                     "ADDRESS": "103",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3083,7 +3092,7 @@
                 "state": {
                     "ADDRESS": "90",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3091,7 +3100,7 @@
                 "state": {
                     "ADDRESS": "39",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3099,7 +3108,7 @@
                 "state": {
                     "ADDRESS": "59",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -3115,7 +3124,7 @@
             "state": {
                 "ADDRESS": "40",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3140,7 +3149,7 @@
             "state": {
                 "ADDRESS": "38",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3165,7 +3174,7 @@
             "state": {
                 "ADDRESS": "107",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3190,7 +3199,7 @@
             "state": {
                 "ADDRESS": "108",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3215,7 +3224,7 @@
             "state": {
                 "ADDRESS": "86",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3240,7 +3249,7 @@
             "state": {
                 "ADDRESS": "87",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3265,7 +3274,7 @@
             "state": {
                 "ADDRESS": "63",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3290,7 +3299,7 @@
             "state": {
                 "ADDRESS": "64",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3315,7 +3324,7 @@
             "state": {
                 "ADDRESS": "39",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3340,7 +3349,7 @@
             "state": {
                 "ADDRESS": "94",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3365,7 +3374,7 @@
             "state": {
                 "ADDRESS": "87",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3390,7 +3399,7 @@
                 "state": {
                     "ADDRESS": "30",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3398,7 +3407,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3406,7 +3415,7 @@
                 "state": {
                     "ADDRESS": "42",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3414,7 +3423,7 @@
                 "state": {
                     "ADDRESS": "25",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -3430,7 +3439,7 @@
                 "state": {
                     "ADDRESS": "30",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3438,7 +3447,7 @@
                 "state": {
                     "ADDRESS": "88",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3446,7 +3455,7 @@
                 "state": {
                     "ADDRESS": "42",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3454,7 +3463,7 @@
                 "state": {
                     "ADDRESS": "25",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ]
@@ -3463,7 +3472,7 @@
         "name": "Auto Emergency Stop Top R1",
         "id": 72,
         "s88": 1027,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3477,7 +3486,7 @@
                     "state": {
                         "ADDRESS": "9",
                         "SETTING": "true",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -3498,7 +3507,7 @@
         "name": "Auto Emergency Stop Top R2",
         "id": 73,
         "s88": 1027,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3512,7 +3521,7 @@
                     "state": {
                         "ADDRESS": "9",
                         "SETTING": "false",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -3541,7 +3550,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3549,7 +3558,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3557,7 +3566,7 @@
                 "state": {
                     "ADDRESS": "108",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -3610,7 +3619,7 @@
                 "state": {
                     "ADDRESS": "9",
                     "SETTING": "false",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3618,7 +3627,7 @@
                 "state": {
                     "ADDRESS": "107",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -3626,7 +3635,7 @@
                 "state": {
                     "ADDRESS": "108",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             }
         ],
@@ -3684,14 +3693,14 @@
         "name": "Auto Emergency Red Light Top R1 pre",
         "id": 78,
         "s88": 1027,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "107",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3703,7 +3712,7 @@
                         "state": {
                             "ADDRESS": "9",
                             "SETTING": "true",
-                            "PROTOCOL": "MM2"
+                            "PROTOCOL": ""
                         }
                     }
                 },
@@ -3736,14 +3745,14 @@
         "name": "Auto Emergency Red Light Top R2 pre",
         "id": 79,
         "s88": 1027,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
             "state": {
                 "ADDRESS": "108",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3755,7 +3764,7 @@
                         "state": {
                             "ADDRESS": "9",
                             "SETTING": "false",
-                            "PROTOCOL": "MM2"
+                            "PROTOCOL": ""
                         }
                     }
                 },
@@ -3788,7 +3797,7 @@
         "name": "Auto Emergency Stop Top R1 2",
         "id": 80,
         "s88": 2014,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3802,7 +3811,7 @@
                     "state": {
                         "ADDRESS": "9",
                         "SETTING": "true",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -3823,7 +3832,7 @@
         "name": "Auto Emergency Stop Top R2 2",
         "id": 81,
         "s88": 2014,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3837,7 +3846,7 @@
                     "state": {
                         "ADDRESS": "9",
                         "SETTING": "false",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -3865,7 +3874,7 @@
             "state": {
                 "ADDRESS": "9",
                 "SETTING": "false",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3877,7 +3886,7 @@
                         "state": {
                             "ADDRESS": "9",
                             "SETTING": "true",
-                            "PROTOCOL": "MM2"
+                            "PROTOCOL": ""
                         }
                     }
                 },
@@ -3917,7 +3926,7 @@
             "state": {
                 "ADDRESS": "9",
                 "SETTING": "true",
-                "PROTOCOL": "MM2"
+                "PROTOCOL": ""
             }
         }],
         "conditions": {
@@ -3929,7 +3938,7 @@
                         "state": {
                             "ADDRESS": "9",
                             "SETTING": "false",
-                            "PROTOCOL": "MM2"
+                            "PROTOCOL": ""
                         }
                     }
                 },
@@ -3962,7 +3971,7 @@
         "name": "Auto Emergency Stop Bottom Inner",
         "id": 84,
         "s88": 2012,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3976,7 +3985,7 @@
                     "state": {
                         "ADDRESS": "12",
                         "SETTING": "true",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -3997,7 +4006,7 @@
         "name": "Auto Emergency Stop Bottom Secondary",
         "id": 85,
         "s88": 2012,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -4005,7 +4014,7 @@
                 "state": {
                     "ADDRESS": "39",
                     "SETTING": "true",
-                    "PROTOCOL": "MM2"
+                    "PROTOCOL": ""
                 }
             },
             {
@@ -4021,7 +4030,7 @@
                     "state": {
                         "ADDRESS": "12",
                         "SETTING": "false",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -4042,7 +4051,7 @@
         "name": "Auto Emergency Stop Bottom Inner 2",
         "id": 86,
         "s88": 1008,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -4056,7 +4065,7 @@
                     "state": {
                         "ADDRESS": "103",
                         "SETTING": "true",
-                        "PROTOCOL": "MM2"
+                        "PROTOCOL": ""
                     }
                 }
             },
@@ -4077,7 +4086,7 @@
         "name": "Auto Emergency Stop Main BC",
         "id": 87,
         "s88": 1006,
-        "auto": false,
+        "auto": true,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",

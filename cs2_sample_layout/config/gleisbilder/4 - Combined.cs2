@@ -2,8 +2,8 @@
 version
  .major=1
 element
- .typ=bogen
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=256
 element
  .id=0x1
  .typ=linksweiche
@@ -529,6 +529,7 @@ element
  .artikel=6
 element
  .id=0x415
+ .artikel=-1
  .text=Inner Loop
 element
  .id=0x419
@@ -769,6 +770,7 @@ element
  .artikel=8
 element
  .id=0x615
+ .artikel=-1
  .text=Loopback
 element
  .id=0x618
@@ -891,6 +893,7 @@ element
  .artikel=9
 element
  .id=0x715
+ .artikel=-1
  .text=Lower circuit
 element
  .id=0x719
@@ -967,7 +970,7 @@ element
  .id=0x80f
  .typ=signal
  .drehung=2
- .artikel=232
+ .artikel=178
 element
  .id=0x810
  .typ=bogen
@@ -993,6 +996,7 @@ element
  .artikel=7
 element
  .id=0x816
+ .artikel=-1
  .text=Cross over
 element
  .id=0x819
@@ -1035,6 +1039,7 @@ element
  .artikel=20
 element
  .id=0x905
+ .artikel=-1
  .text= Reset
 element
  .id=0x90c
@@ -1362,6 +1367,7 @@ element
  .artikel=20
 element
  .id=0xc04
+ .artikel=-1
  .text=Reset
 element
  .id=0xc0e
@@ -1442,6 +1448,7 @@ element
  .artikel=51
 element
  .id=0xd05
+ .artikel=-1
  .text=Turn off parking
 element
  .id=0xd0e
