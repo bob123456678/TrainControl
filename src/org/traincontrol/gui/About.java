@@ -8,15 +8,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  *
- * @author adamo
+ * @author adam
  */
-public class About extends javax.swing.JPanel {
-
+public class About extends javax.swing.JPanel
+{
     public About()
     {
         initComponents();
         
-        versionLabel.setText(versionLabel.getText().replace("xxx", MarklinControlStation.RAW_VERSION));
+        versionLabel.setText(versionLabel.getText().replace("{0}", MarklinControlStation.RAW_VERSION));
     }
 
     /**
@@ -32,14 +32,12 @@ public class About extends javax.swing.JPanel {
         jLabel1 = new javax.swing.JLabel();
         linkLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
         versionLabel = new javax.swing.JLabel();
 
         linkLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         linkLabel.setForeground(new java.awt.Color(0, 0, 115));
-        linkLabel.setText("Readme (Instructions & API)");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        linkLabel.setText(bundle.getString("ui.readmeLink")); // NOI18N
         linkLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         linkLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -51,7 +49,7 @@ public class About extends javax.swing.JPanel {
 
         linkLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         linkLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        linkLabel1.setText("Support this Project");
+        linkLabel1.setText(bundle.getString("ui.supportLink")); // NOI18N
         linkLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         linkLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -60,19 +58,10 @@ public class About extends javax.swing.JPanel {
         });
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel2.setText("TrainControl is free software that allows you to conveniently control & fully");
-
-        jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel3.setText("Designed for users with many trains and accessories where two knobs ");
-
-        jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel4.setText("automate large model train layouts using your computer and keyboard. ");
-
-        jLabel5.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel5.setText("just aren't enough. Requires the Marklin Central Station 2 or 3 controller.");
+        jLabel2.setText(bundle.getString("ui.about")); // NOI18N
 
         versionLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
-        versionLabel.setText("Version xxx, developed and maintained by Adam Oest.");
+        versionLabel.setText(bundle.getString("ui.versionAboutString")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -81,10 +70,7 @@ public class About extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel5)
-                    .addComponent(jLabel2)
-                    .addComponent(jLabel4)
-                    .addComponent(jLabel3)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(linkLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -98,14 +84,8 @@ public class About extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel4)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel5)
-                .addGap(29, 29, 29)
+                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
                 .addComponent(versionLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -134,9 +114,6 @@ public class About extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel linkLabel;
     private javax.swing.JLabel linkLabel1;
     private javax.swing.JLabel versionLabel;
