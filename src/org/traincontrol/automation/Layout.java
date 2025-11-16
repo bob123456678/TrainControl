@@ -2723,14 +2723,18 @@ public class Layout
         }
         catch (JSONException e)
         {
-            layout.invalidate("Auto layout error: missing or invalid keys (points, edges, minDelay, maxDelay, defaultLocSpeed)");            
+            layout.invalidate(
+                I18n.f("autolayout.errorMissingOrInvalidKeys")
+            );
             return layout;
         }
-        
+
         if (points == null || edges == null)
         {
-            layout.invalidate("Auto layout error: missing keys (points, edges)");
-            return layout;        
+            layout.invalidate(
+                I18n.f("autolayout.errorMissingKeysPointsEdges")
+            );
+            return layout;
         }
                 
         // Save values in layout class
@@ -2752,7 +2756,9 @@ public class Layout
         }
         catch (Exception e)
         {
-            layout.invalidate("Auto layout error: " + e.getMessage());
+            layout.invalidate(
+                I18n.f("autolayout.errorGenericWithMessage", e.getMessage())
+            );
             return layout;   
         }
                 
@@ -2765,7 +2771,9 @@ public class Layout
             }
             catch (Exception e)
             {
-                layout.invalidate("Auto layout error: invalid value for preArrivalSpeedReduction (must be 0.0-1.0)");
+                layout.invalidate(
+                    I18n.f("autolayout.errorPreArrivalSpeedReductionInvalid")
+                );
                 return layout;
             }    
         }
@@ -2778,7 +2786,9 @@ public class Layout
             }
             catch (Exception e)
             {
-                layout.invalidate("Auto layout error: invalid value for maxLatency (must be an integer)");
+                layout.invalidate(
+                    I18n.f("autolayout.errorMaxLatencyInvalid")
+                );
                 return layout;
             }    
         }
@@ -2791,12 +2801,17 @@ public class Layout
                 
                 if (o.getInt("maxActiveTrains") > 0)
                 {
-                     control.log("Auto layout: set maximum of " + o.getInt("maxActiveTrains") + " concurrently active trains");
+                    control.logf(
+                        "autolayout.infoSetMaxActiveTrains",
+                        o.getInt("maxActiveTrains")
+                    );
                 }
             }
             catch (Exception e)
             {
-                layout.invalidate("Auto layout error: invalid value for maxActiveTrains (must not be negative)");
+                layout.invalidate(
+                    I18n.f("autolayout.errorMaxActiveTrainsInvalid")
+                );
                 return layout;
             }    
         }
@@ -2806,17 +2821,22 @@ public class Layout
             try
             {
                 layout.setMaxLocInactiveSeconds(o.getInt("maxLocInactiveSeconds"));
-                
+
                 if (o.getInt("maxLocInactiveSeconds") > 0)
                 {
-                     control.log("Auto layout: trains will yield to other trains inactive longer than " + o.getInt("maxLocInactiveSeconds") + " seconds");
+                    control.logf(
+                        "autolayout.infoYieldToInactiveTrains",
+                        o.getInt("maxLocInactiveSeconds")
+                    );
                 }
             }
             catch (Exception e)
             {
-                layout.invalidate("Auto layout error: invalid value for maxLocInactiveSeconds (must not be negative)");
+                layout.invalidate(
+                    I18n.f("autolayout.errorMaxLocInactiveSecondsInvalid")
+                );
                 return layout;
-            }    
+            } 
         }
         
         // Debug/dev only setting
@@ -2831,7 +2851,10 @@ public class Layout
         }
         catch (Exception e)
         {
-            control.log("Auto layout simulation warning: " + e.getMessage());
+            control.logf(
+                "autolayout.warnSimulation",
+                e.getMessage()
+            );
         }
         
         if (o.has("atomicRoutes"))
@@ -2839,16 +2862,19 @@ public class Layout
             try
             {
                 layout.setAtomicRoutes(o.getBoolean("atomicRoutes"));
-                
+
                 if (!o.getBoolean("atomicRoutes"))
                 {
-                    control.log("Auto layout notice: disabled atomic routes.  Edges will be unlocked as trains pass them instead of at the end of the route.");
+                    control.logf(
+                        "autolayout.infoAtomicRoutesDisabled"
+                    );
                 }
-
             }
             catch (JSONException e)
             {
-                layout.invalidate("Auto layout error: invalid value for atomicRoutes (must be true or false)");
+                layout.invalidate(
+                    I18n.f("autolayout.errorAtomicRoutesInvalid")
+                );
                 return layout;
             }    
         }
@@ -2864,16 +2890,21 @@ public class Layout
                 if (point.get("s88") instanceof Integer)
                 {
                     s88 = Integer.toString(point.getInt("s88"));
-                    
+
                     if (!control.isFeedbackSet(s88))
                     {
-                        control.log("Auto layout warning: feedback " + s88 + " does not exist in CS2 layout");
+                        control.logf(
+                            "autolayout.warnFeedbackDoesNotExistInCs2Layout",
+                            s88
+                        );
                         control.newFeedback(point.getInt("s88"), null);
                     }
                 }
                 else if (!point.isNull("s88"))
                 {
-                    layout.invalidate("Auto layout error: s88 not a valid integer " + point.toString());
+                    layout.invalidate(
+                        I18n.f("autolayout.errorS88NotValidInteger", point.toString())
+                    );
                 }
             }
             
@@ -2887,10 +2918,12 @@ public class Layout
                 }
                 else
                 {
-                    layout.invalidate("Auto layout error: x not a valid integer " + point.toString());
+                    layout.invalidate(
+                        I18n.f("autolayout.errorNotValidInteger", "x", point.toString())
+                    );
                 }
             }
-            
+
             if (point.has("y"))
             {
                 if (point.get("y") instanceof Integer)
@@ -2899,7 +2932,9 @@ public class Layout
                 }
                 else
                 {
-                    layout.invalidate("Auto layout error: y not a valid integer " + point.toString());
+                    layout.invalidate(
+                        I18n.f("autolayout.errorNotValidInteger", "y", point.toString())
+                    );
                 }
             }
             
@@ -2923,7 +2958,9 @@ public class Layout
                         }
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: invalid excluded locomotive on " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorInvalidExcludedLocomotive", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     
@@ -2938,12 +2975,18 @@ public class Layout
 
                         if (point.getInt("maxTrainLength") > 0)
                         {
-                            control.log("Set max train length of " + point.getInt("maxTrainLength") + " for " + point.getString("name"));
+                            control.logf(
+                                "autolayout.infoSetMaxTrainLength",
+                                point.getInt("maxTrainLength"),
+                                point.getString("name")
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: " + point.getString("name") + " maxTrainLength must be >= 0");  
+                        layout.invalidate(
+                            I18n.f("autolayout.errorMaxTrainLengthInvalid", point.getString("name"))
+                        );
                     }
                 }
                 else
@@ -2968,12 +3011,16 @@ public class Layout
                         } 
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: invalid value for terminus " + point.toString() + ", must be true or false");
+                        layout.invalidate(
+                            I18n.f("autolayout.errorTerminusInvalidValue", point.toString())
+                        );
                     }
                 }  
                 
@@ -2987,15 +3034,19 @@ public class Layout
                         } 
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: invalid value for active " + point.toString() + ", must be true or false");
+                        layout.invalidate(
+                            I18n.f("autolayout.errorActiveInvalidValue", point.toString())
+                        );
                     }
-                }   
-                
+                }
+
                 if (point.has("reversing"))
                 {
                     if (point.get("reversing") instanceof Boolean)
@@ -3006,15 +3057,19 @@ public class Layout
                         } 
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: invalid value for reversing " + point.toString());
+                        layout.invalidate(
+                            I18n.f("autolayout.errorReversingInvalidValue", point.toString())
+                        );
                     }
-                }  
-                
+                }
+
                 if (point.has("speedMultiplier"))
                 {
                     if (point.get("speedMultiplier") instanceof Number)
@@ -3025,12 +3080,16 @@ public class Layout
                         } 
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: invalid value for speedMultiplier " + point.toString() + ", must be a number.");
+                        layout.invalidate(
+                            I18n.f("autolayout.errorSpeedMultiplierInvalidValue", point.toString())
+                        );
                     }
                 } 
                 
@@ -3044,12 +3103,16 @@ public class Layout
                         } 
                         catch (Exception e)
                         {
-                            layout.invalidate("Auto layout error: " + point.toString() + " " + e.getMessage());  
+                            layout.invalidate(
+                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: invalid value for priority " + point.toString() + ", must be an integer");
+                        layout.invalidate(
+                            I18n.f("autolayout.errorPriorityInvalidValue", point.toString())
+                        );
                     }
                 } 
             } 
@@ -3057,7 +3120,9 @@ public class Layout
             {
                 control.log(ex);
                 
-                layout.invalidate("Auto layout error: Point error for " + point.toString() + " (" + ex.getMessage() + ")");
+                layout.invalidate(
+                    I18n.f("autolayout.errorPointErrorWithMessage", point.toString(), ex.getMessage())
+                );
                 return;
             }
 
@@ -3082,11 +3147,17 @@ public class Layout
                                 {
                                     l.setTrainLength(locInfo.getInt("trainLength"));   
 
-                                    control.log("Set train length of " + locInfo.getInt("trainLength") + " for " + loc);
+                                    control.logf(
+                                        "autolayout.infoSetTrainLength",
+                                        locInfo.getInt("trainLength"),
+                                        loc
+                                    );
                                 }
                                 else
                                 {
-                                    layout.invalidate("Auto layout error: " + loc + " has invalid trainLength value, must be integer >= 0");  
+                                    layout.invalidate(
+                                        I18n.f("autolayout.errorTrainLengthInvalid", loc.toString())
+                                    );
                                 }
                             }
                             else
@@ -3102,12 +3173,17 @@ public class Layout
 
                                     if (locInfo.getBoolean("reversible"))
                                     {
-                                        control.log("Flagged as reversible: " + loc);
+                                        control.logf(
+                                            "autolayout.infoLocomotiveFlaggedReversible",
+                                            loc
+                                        );
                                     }
                                 }
                                 else
                                 {
-                                    layout.invalidate("Auto layout error: " + loc + " has invalid reversible value, must be true or false");  
+                                    layout.invalidate(
+                                        I18n.f("autolayout.errorLocomotiveReversibleInvalid", loc)
+                                    );
                                 }
                             }
                             else
@@ -3118,7 +3194,10 @@ public class Layout
                             // Only throw a warning if this is not a station
                             if (point.getBoolean("station") != true)
                             {
-                                control.log("Auto layout warning: " + loc + " placed on a non-station at will not be run automatically");
+                                control.logf(
+                                    "autolayout.warnLocomotivePlacedOnNonStation",
+                                    loc
+                                );
                             }
 
                             // De-conflict with other multi-units
@@ -3142,11 +3221,13 @@ public class Layout
                                 }
                                 catch (JSONException ex)
                                 {
-                                    layout.invalidate("Auto layout error: Error in speed value for " + locInfo.getString("name") + ", must be integer between 0-100"); 
+                                    layout.invalidate(
+                                        I18n.f("autolayout.errorSpeedInvalidValue", locInfo.getString("name"))
+                                    );
                                 }
                             }
 
-                            // Set start and end callbacks
+                            // Set departure callback
                             if (locInfo.has("departureFunc") && locInfo.get("departureFunc") != null)
                             {
                                 try
@@ -3155,7 +3236,9 @@ public class Layout
                                 }
                                 catch (JSONException ex)
                                 {
-                                    layout.invalidate("Auto layout error: Error in departureFunc value for " + locInfo.getString("name") + ", must be integer");
+                                    layout.invalidate(
+                                        I18n.f("autolayout.errorDepartureFuncInvalidValue", locInfo.getString("name"))
+                                    );
                                 }
                             }
 
@@ -3165,6 +3248,7 @@ public class Layout
                             // Reset if none present
                             l.setArrivalFunc(null);
 
+                            // Set arrival callback
                             if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)
                             {
                                 try
@@ -3173,19 +3257,29 @@ public class Layout
                                 }
                                 catch (JSONException ex)
                                 {
-                                    layout.invalidate("Auto layout error: Error in arrivalFunc value for " + locInfo.getString("name") + ", must be integer");
+                                    layout.invalidate(
+                                        I18n.f("autolayout.errorArrivalFuncInvalidValue", locInfo.getString("name"))
+                                    );
                                 }
                             }
 
+                            // Handle default speed
                             if (l.getPreferredSpeed() == 0)
                             {
                                 l.setPreferredSpeed(defaultLocSpeed);
-                                control.log("Auto layout warning: Locomotive " + loc + " had no preferred speed.  Setting to default of " + defaultLocSpeed);
+                                control.logf(
+                                    "autolayout.warnLocomotiveDefaultSpeedApplied",
+                                    loc,
+                                    defaultLocSpeed
+                                );
                             }
 
+                            // Duplicate locomotive check
                             if (locomotives.contains(loc))
                             {
-                                layout.invalidate("Auto layout error: duplicate locomotive " + loc + " at " + point.getString("name"));
+                                layout.invalidate(
+                                    I18n.f("autolayout.errorDuplicateLocomotive", loc.toString(), point.getString("name"))
+                                );
                             }
                             else
                             {
@@ -3194,18 +3288,25 @@ public class Layout
                         }
                         else
                         {
-                            layout.invalidate("Auto layout error: Locomotive " + loc + " does not exist in database");
+                            layout.invalidate(
+                                I18n.f("autolayout.errorLocomotiveNotInDatabase", loc.toString())
+                            );
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: Locomotive configuration array at " + point.getString("name") + " is missing name");
+                        layout.invalidate(
+                            I18n.f("autolayout.errorLocomotiveConfigMissingName", point.getString("name"))
+                        );
                     }
                 }
                 else
                 {
-                    control.log("Auto layout warning: ignoring invalid value for loc \"" + point.get("loc").toString() + "\" (must be a JSON object)");
-                } 
+                    control.logf(
+                        "autolayout.warnInvalidLocValue",
+                        point.get("loc").toString()
+                    );
+                }
             }
         });
 
@@ -3241,47 +3342,15 @@ public class Layout
                                 {
 
                                 }
-                                
-                                // TODO - use Edge.validateConfigCommand
-                                /* control.log("Auto layout warning: accessory \"" + accessory + "\" does not exist in CS2 layout");
-                                
-                                if (accessory.contains("Signal "))
-                                {
-                                    Integer address = Integer.valueOf(accessory.replace("Signal ", ""));
-                                    
-                                    if (control.getAccessoryByName("Switch " + address) != null)
-                                    {
-                                        control.log("Auto layout warning: " + accessory + " conflicts with switch with the same address.");
-                                        //layout.invalidate();
-                                    }
-                                    
-                                    control.newSignal(address, MarklinAccessory.determineDecoderType(address - 1), false);
-                                    control.log("Auto layout warning: created " + accessory);
-                                }
-                                else if (accessory.contains("Switch "))
-                                {   
-                                    Integer address = Integer.valueOf(accessory.replace("Switch ", ""));
-
-                                    if (control.getAccessoryByName("Signal " + address) != null)
-                                    {
-                                        control.log("Auto layout warning: " + accessory + " conflicts with signal with the same address.");
-                                        //layout.invalidate();
-                                    }
-                                    
-                                    control.newSwitch(address, MarklinAccessory.determineDecoderType(address - 1), false);
-                                    control.log("Auto layout warning: created " + accessory);                       
-                                }
-                                else
-                                {
-                                    layout.invalidate("Auto layout error: unrecognized accessory type in " + accessory);
-                                }*/
                             }
                         }
                         else
                         {
-                            layout.invalidate("Auto layout error: Edge command missing accessory definition in " + start + "-" + end + " action: " + command.toString()); 
+                            layout.invalidate(
+                                I18n.f("autolayout.errorEdgeMissingAccessoryDefinition", start, end, command.toString())
+                            );
                         }
-                        
+
                         // Validate state
                         if (command.has("state") && !command.isNull("state"))
                         {            
@@ -3289,12 +3358,16 @@ public class Layout
 
                             if (null == Accessory.stringToAccessorySetting(action))
                             {
-                                layout.invalidate("Auto layout error: Invalid action in edge " + start + "->" + end + " (" + command.toString() + ")");
+                                layout.invalidate(
+                                    I18n.f("autolayout.errorEdgeInvalidAction", start, end, command.toString())
+                                );
                             }
                         }
                         else
                         {
-                            layout.invalidate("Auto layout error: Edge command missing state " + start + "->" + end + " action: " + command.toString());
+                            layout.invalidate(
+                                I18n.f("autolayout.errorEdgeMissingState", start, end, command.toString())
+                            );
                         }
                     });
                 }
@@ -3325,13 +3398,19 @@ public class Layout
                         {
                             if (control.isDebug())
                             {
-                                control.log("Set edge length of " + edge.getInt("length") + " for " + e.getName());
+                                control.logf(
+                                    "autolayout.infoSetEdgeLength",
+                                    edge.getInt("length"),
+                                    e.getName()
+                                );
                             }
                         }
                     }
                     else
                     {
-                        layout.invalidate("Auto layout error: " + e.getName() + " has invalid length value, must be integer >= 0");  
+                        layout.invalidate(
+                            I18n.f("autolayout.errorEdgeLengthInvalid", e.getName())
+                        );
                     }
                 }
                 else
@@ -3341,7 +3420,9 @@ public class Layout
             } 
             catch (Exception ex)
             {
-                layout.invalidate("Auto layout error: Invalid edge " + edge.toString() + " (" + ex.getMessage() + ")");
+                layout.invalidate(
+                    I18n.f("autolayout.errorInvalidEdgeWithMessage", edge.toString(), ex.getMessage())
+                );
             }
         });
 
@@ -3361,7 +3442,9 @@ public class Layout
 
                         if (layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end")) == null)
                         {
-                            layout.invalidate("Auto layout error: Lock edge" + lockEdge.toString() + " does not exist in graph");
+                            layout.invalidate(
+                                I18n.f("autolayout.errorLockEdgeNotInGraph", lockEdge.toString())
+                            );
                         }
                         else
                         {
@@ -3374,7 +3457,9 @@ public class Layout
             } 
             catch (JSONException ex)
             {
-                layout.invalidate("Auto layout error: Lock edge error - " + edge.toString());
+                layout.invalidate(
+                    I18n.f("autolayout.errorLockEdgeGeneric", edge.toString())
+                );
             }
         });
         
@@ -3393,7 +3478,10 @@ public class Layout
         }
         catch (Exception e)
         {
-            control.log("Auto layout timetable warning: " + e.getMessage());
+            control.logf(
+                "autolayout.warnTimetable",
+                e.getMessage()
+            );
         }
         
         /*if (locomotives.isEmpty())
