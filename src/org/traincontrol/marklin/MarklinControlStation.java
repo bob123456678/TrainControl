@@ -970,11 +970,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.log("Saving database state to: " + new File(prefix + MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
+            this.logf("log.savingDatabaseState", new File(prefix + MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
         } 
         catch (IOException iOException)
         {
-            this.log("Could not save database. " + iOException.getMessage());
+            this.logf("log.databaseSaveFailed", iOException.getMessage());
         }
     }
     
@@ -1024,7 +1024,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 instance = (List<MarklinSimpleComponent>) obj;
             }
 
-            this.log("DB loaded from file.");
+            this.logf("log.databaseLoadedFromFile");
         } 
         catch (IOException iex)
         {
@@ -1034,13 +1034,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.log(iex);
             }
             
-            this.log("No compatible data file found, "
-                    + "DB initializing with default data");
-            
+            this.logf("log.databaseInitDefault");       
         } 
         catch (ClassNotFoundException cex)
         {
-            this.log("Bad data file for DB");    
+            this.logf("log.databaseBadDataFile");   
             
             if (debug)
             {
@@ -1140,7 +1138,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.log("Route " + r.getId() + " or " + r.getName().trim() + " was already imported into database - skipping");
+            this.logf("route.alreadyImportedSkipping", r.getId(), r.getName().trim());
             return false;
         }
     }
@@ -1168,7 +1166,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.log("Route " + id + " or " + name + " was already imported into database - skipping");
+            this.logf("route.alreadyImportedSkipping", id, name);
             return false;
         }
     }
@@ -1405,7 +1403,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (this.debug && DEBUG_LOG_NETWORK)
                 {
-                    this.log("Skipping duplicate packet " + message.toString());
+                    this.logf("network.skippingDuplicatePacket", message.toString());
                 }
                 
                 return;
@@ -1470,8 +1468,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else
                     {
-                        this.log("Unknown locomotive received command: " 
-                            + MarklinLocomotive.addressFromUID(id));
+                        this.logf("network.unknownLocomotiveCommand", MarklinLocomotive.addressFromUID(id));
                     }
                 }
             }));
@@ -1514,7 +1511,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
 
                     if (this.view != null) this.view.updatePowerState();
-                    this.log("Power On");
+                    this.logf("log.powerOn");
                 }
                 else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
                 {
@@ -1527,7 +1524,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
 
                     if (this.view != null) this.view.updatePowerState();
-                    this.log("Power Off");
+                    this.logf("log.powerOff");
                 }
             }));
         }
@@ -1563,7 +1560,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         this.UID = message.extractUID();
                         this.serialNumber = (message.extractUID() - 0x43533200) / 2;
 
-                        this.log("Connected to Central Station with serial number " + this.serialNumber);
+                        this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
             }));
@@ -1593,7 +1590,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             if (debug && MarklinControlStation.DEBUG_LOG_NETWORK)
             {
-                this.log("Network transmission disabled\n" + m.toString());
+                this.logf("network.transmissionDisabled", m.toString());
 
                 if (DEBUG_SIMULATE_PACKETS)
                 {
@@ -1878,7 +1875,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         else
         {
             // This is a sanity check for corrupt versions of the database from older versions of TrainControl
-            this.log("Saved locomotive " + c.getName() + " is a duplicate.  Skipping.");
+            this.logf("loc.savedDuplicateSkipping", c.getName());
             return null;
         }
     }
@@ -1920,7 +1917,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!newAccessory.isValidAddress())
         {
-            this.log("Warning: accessory " + name + " has invalid address " + address);
+            this.logf("acc.invalidAddressWarning", name, address);
         }
         
         return newAccessory;
@@ -1951,11 +1948,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         MarklinLocomotive l = this.locDB.getByName(locName);
         
-        if (l == null) throw new Exception("Locomotive " + locName + " does not exist");
+        if (l == null) throw new Exception(I18n.f("loc.notExist", locName));
         
         if (!MarklinLocomotive.validateNewAddress(newDecoderType, newAddress))
         {
-            throw new Exception("Address " + newAddress + " is outside of the allowed range.");
+            throw new Exception(I18n.f("loc.addrOutOfRange", newAddress));
         }
         
         if (newDecoderType == MarklinLocomotive.decoderType.MULTI_UNIT && l.hasLinkedLocomotives())
@@ -1964,7 +1961,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             l.setLinkedLocomotives();
             this.log("Multi-unit locomotives have been unlinked from " + locName);*/
             
-            throw new Exception("Cannot change decoder type to Central Station multi-unit when multi-unit locomotives have been linked in TrainControl.  Unlink them first.");
+            throw new Exception(I18n.f("loc.changeToMultiUnitNotAllowed"));       
         }
         
         // Execute the change
@@ -1976,7 +1973,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.rebuildLocIdCache();
         
-        this.log("Changed address of " + l.getName() + " to " + newAddress + " (" + newDecoderType.name() + ")");
+        this.logf("loc.addressChanged", l.getName(), newAddress, newDecoderType.name());
         
         // Ensure linked locomotives have valid addresses
         for (MarklinLocomotive other : getLocomotives())
@@ -2115,8 +2112,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Sanity check
         if (address < 1)
         {
-            this.log("Warning: Invalid address passed to setAccessoryState: " + address);   
-            
+            this.logf("acc.invalidAddressStateWarning", "setAccessoryState", address);            
             return;
         }
         
@@ -2257,7 +2253,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Sanity check
         if (address < 1)
         {
-            this.log("Warning: Invalid address passed to getAccessoryState: " + address);
+            this.logf("acc.invalidAddressStateWarning", "getAccessoryState", address);            
             
             return false;
         }
@@ -2287,8 +2283,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Sanity check
         if (address < 1)
         {
-            this.log("Warning: Invalid address passed to getAccessoryByAddress: " + address);
-            
+            this.logf("acc.invalidAddressStateWarning", "getAccessoryByAddress", address);
             return null;
         }
         
@@ -2428,7 +2423,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
         
-        this.log("Deleting existing routes...");
+        this.logf("route.deletingExisting");
         for (MarklinRoute r : this.routeDB.getItems())
         {
             this.deleteRoute(r.getName());
@@ -2437,7 +2432,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // If all read successfully, remove existing routes and update route DB
         for (MarklinRoute route : routes)
         {
-            this.log("Adding route: " + route.getName());
+            this.logf("route.adding", route.getName());
             this.newRoute(route);
         }
     }
@@ -2505,7 +2500,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             catch (Exception ex)
             {
-                System.out.println("Error accessing preferences.");
+                System.out.println(I18n.t("error.prefLoadAdminHint"));
                 
                 if (debug)
                 {
@@ -2526,14 +2521,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     {       
                         if (!GraphicsEnvironment.isHeadless())
                         {
-                            System.out.println("Prompting for IP in pop-up...");
-                            
+                            System.out.println(I18n.t("ui.promptIpPopup"));
+
                             JTextField ipField = new JTextField();
                             if (lastIP != null) ipField.setText(lastIP);
 
-                            Object[] options = {"OK", "Cancel", "Auto-Detect"};
+                            Object[] options = {
+                                I18n.t("ui.ok"),
+                                I18n.t("ui.cancel"),
+                                I18n.t("ui.autoDetect")
+                            };
+
                             Object[] message = {
-                                "Enter Central Station IP Address:",
+                                I18n.t("ui.enterCentralStationIp"),
                                 ipField
                             };
 
@@ -2547,7 +2547,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             );
 
                             // To ensure the text field is focused
-                            JDialog dialog = optionPane.createDialog("IP Address Input");
+                            JDialog dialog = optionPane.createDialog(I18n.t("ui.ipAddressInputTitle"));
                             dialog.addWindowFocusListener(new WindowAdapter() 
                             {
                                 @Override
@@ -2584,11 +2584,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 case 1: // Cancel
                                     break;
                                 case 2: // Auto-Detect
-                                    System.out.println("Attempting to detect Central Station...");
+                                    System.out.println(I18n.t("centralStation.detectAttempt")); 
                                     
                                     if (!CSDetect.hasLocalSubnets())
                                     {
-                                        JOptionPane.showMessageDialog(null, "Auto-detection is not possible: no network interfaces found.  Enter IP manually or check firewall permissions.");
+                                        JOptionPane.showMessageDialog(
+                                            null,
+                                            I18n.t("ui.autoDetectNotPossibleNoInterfaces")
+                                        );
                                         continue;
                                     }
                                     
@@ -2596,7 +2599,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                                     if (initIP == null)
                                     {
-                                        JOptionPane.showMessageDialog(null, "No Central Station detected.  Enter IP manually or try again.");
+                                        JOptionPane.showMessageDialog(
+                                            null,
+                                            I18n.t("ui.noCentralStationDetected")
+                                        ); 
                                         continue;
                                     }
                                     
@@ -2609,25 +2615,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         {
                             try (Scanner scanner = new Scanner(System.in))
                             {
-                                System.out.print("Enter Central Station IP Address: ");
+                                System.out.print(I18n.t("ui.enterCentralStationIpPrompt"));
                                 initIP = scanner.next();
                             }
                         }
                         
                         if (initIP == null || "".equals(initIP))
                         {
-                            System.out.println("No IP entered - shutting down.");
-
+                            System.out.println(I18n.t("ui.noIpEnteredShutdown"));
+                            
                             if (!GraphicsEnvironment.isHeadless())
                             {
-                                JOptionPane.showMessageDialog(null, "No IP entered - shutting down.");
+                                JOptionPane.showMessageDialog(null, I18n.t("ui.noIpEnteredShutdown"));
                             }
                             
                             System.exit(1);
                         }
                     }
                             
-                    System.out.println("Connecting to " + initIP);
+                    System.out.println(I18n.f("ui.connectingToIp", initIP));
 
                     if (!CS2File.ping(initIP))
                     {
@@ -2635,7 +2641,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                         if (!GraphicsEnvironment.isHeadless())
                         {
-                            JOptionPane.showMessageDialog(null, "No response from " + initIP);
+                            JOptionPane.showMessageDialog(
+                                null,
+                                I18n.f("ui.noResponseFromIp", initIP)
+                            );                        
                         }
                     }
                     else
@@ -2643,11 +2652,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         // Verify that the device is actually a central station
                         if (!CSDetect.isCentralStation(initIP) && !CSDetect.isVNCAvailable(initIP))
                         {
-                            System.out.println("Warning: the device at " + initIP + " does not appear to be a Central Station, or its web server is down/unreachable.");
+                            System.out.println(I18n.f("ui.deviceNotCentralStationOrUnreachable", initIP));
 
                             if (!GraphicsEnvironment.isHeadless())
                             {
-                                JOptionPane.showMessageDialog(null, "Warning: the device at " + initIP + " does not appear to be a Central Station, or its web server is down/unreachable.");
+                                JOptionPane.showMessageDialog(null, I18n.f("ui.deviceNotCentralStationOrUnreachable", initIP));
                             }
                         }
                         
@@ -2657,8 +2666,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         catch (Exception ex)
                         {
-                            System.out.println("Error updating preferences.");
-                            
+                            System.out.println(I18n.t("ui.errorUpdatingPreferences"));
+
                             if (debug)
                             {
                                 ex.printStackTrace();
@@ -2670,7 +2679,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (HeadlessException e)
                 {
-                    System.out.println("Unable to prompt for IP; restart and specify the correct IP.");
+                    System.out.println(I18n.t("ui.unableToPromptForIpRestart"));
                 }
 
                 lastIP = initIP;
@@ -2694,7 +2703,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set model
         if (showUI && theUI != null)
         {
-            model.log("Initializing UI");
+            model.logf("ui.initializing");
 
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -2706,7 +2715,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (IOException ex)
                 {
-                    model.log("Error initializing UI");
+                    model.logf("ui.errorInitializing");
                     model.log(ex);
 
                     try
@@ -2717,19 +2726,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }));
 
             latch.await();
-            model.log("UI rendering...");
-
+            model.logf("ui.rendering");
+            
             try
             {
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     theUI.display();
-                    model.log("UI initialized.");
+                    model.logf("ui.initialized");
                 }));
             }
             catch (Exception ex)
             {
-                model.log("Fatal error initializing UI");
+                model.logf("ui.fatalErrorInitializing");
                 model.log(ex);
                 System.exit(0);
             }
