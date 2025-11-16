@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 
 /**
  * Represent stations/stops as graph points
@@ -47,7 +48,9 @@ public class Point
 
         if (isDestination && !hasS88())
         {
-            throw new Exception("Destination point must have S88");
+            throw new Exception(
+                I18n.f("autolayout.errorDestinationPointMustHaveS88")
+            );
         }
         
         // Save the immutable unique ID
@@ -85,7 +88,9 @@ public class Point
         }
         else
         {
-            throw new Exception("speedMultiplier must be > 0 and <= 2");
+            throw new Exception(
+                I18n.f("autolayout.errorSpeedMultiplierRange")
+            );
         }
     }
     
@@ -127,7 +132,9 @@ public class Point
     {
         if (value == null && this.isDestination()) // || this.isReversing()))
         {
-            throw new NumberFormatException("Stations must have a valid S88 address");
+            throw new NumberFormatException(
+                I18n.f("autolayout.errorStationMustHaveValidS88Address")
+            );
         }
         
         if (value != null)
@@ -186,7 +193,9 @@ public class Point
     {
         if (state && !hasS88())
         {
-            throw new Exception("Stations must have an s88 sensor.  Set the s88 address first.");
+            throw new Exception(
+                I18n.f("autolayout.errorStationMustHaveS88SensorSetAddressFirst")
+            );
         }
         
         this.isDestination = state;
@@ -207,11 +216,15 @@ public class Point
     {
         if (!isDestination && state)
         {
-            throw new Exception("Only destination points (stations) can be a terminus");
+            throw new Exception(
+                I18n.f("autolayout.errorOnlyDestinationPointsCanBeTerminus")
+            );
         }
         else if (isReversing && state)
         {
-            throw new Exception("Reversing points cannot be set as terminus");
+            throw new Exception(
+                I18n.f("autolayout.errorReversingPointsCannotBeTerminus")
+            );
         }
         else
         {
@@ -231,7 +244,9 @@ public class Point
     {
         if (isTerminus && state)
         {
-            throw new Exception("Terminus stations cannot be set as reversing");
+            throw new Exception(
+                I18n.f("autolayout.errorTerminusStationsCannotBeSetAsReversing")
+            );
         }
         else
         {

@@ -86,4 +86,5 @@ public interface ViewListener
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
     public String exportLocsToCSV();
+    public void logf(String key, Object... args);
 }

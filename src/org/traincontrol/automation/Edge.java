@@ -15,6 +15,7 @@ import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.util.I18n;
 
 /**
  * Graph edge - includes start and end points and occupied state
@@ -100,14 +101,22 @@ public class Edge
     {
         if (null == accessory || null == action)
         {
-            throw new Exception("Missing/invalid command.");
+            throw new Exception(
+                I18n.f("error.missingOrInvalidCommand")
+            );
         }
         
         Accessory.accessorySetting output = Accessory.stringToAccessorySetting(action);
         
         if (null == output)
         {
-            throw new Exception("Command " + action + " must be one of: " + Arrays.toString(Accessory.accessorySetting.values()).toLowerCase());
+            throw new Exception(
+                I18n.f(
+                    "acc.invalidAccessoryCommandMustBeOneOf",
+                    action,
+                    Arrays.toString(Accessory.accessorySetting.values()).toLowerCase()
+                )
+            );        
         }
         
         if (null == control.getAccessoryByName(accessory))
@@ -124,7 +133,13 @@ public class Edge
             
             if (existing != null && existing.getType() != type)
             {
-                throw new Exception("Command " + accessory + " conflicts with a " + existing.getType().toString() + " with the same address and should be renamed.");
+                throw new Exception(
+                    I18n.f(
+                        "acc.commandConflictSameAddressMustRename",
+                        accessory,
+                        existing.getType().toString()
+                    )
+                );            
             }
             
             if (type == Accessory.accessoryType.SIGNAL)
@@ -137,15 +152,19 @@ public class Edge
             }
             else
             {
-                throw new Exception("Auto layout error: unrecognized accessory type \"" + accessory + "\". Must be Signal or Switch, e.g. \"Signal 1\" or \"Switch 2 DCC\".");
+                throw new Exception(
+                    I18n.f("autolayout.errorUnrecognizedAccessoryTypeMustBeSignalOrSwitch", accessory)
+                );
             }
             
-            control.log("Auto layout warning: created " + accessory); 
+            control.logf("autolayout.warningCreatedAccessory", accessory);
         }
         
         if (null == control.getAccessoryByName(accessory))
         {
-            throw new Exception("Auto layout error: Accessory " + accessory + " does not exist in the layout or cannot be added");
+            throw new Exception(
+                I18n.f("autolayout.errorAccessoryDoesNotExistOrCannotBeAdded", accessory)
+            );
         }
                 
         return output;
@@ -373,11 +392,11 @@ public class Edge
     {
         if (e.isEmpty())
         {
-            return "Empty path";
+            return I18n.f("autolayout.errorEmptyPath");
         }
         else if (e.get(0) == null || e.get(e.size() - 1) == null)
         {
-            return "Error in path";
+            return I18n.f("autolayout.errorInPath");
         }
         else
         {
