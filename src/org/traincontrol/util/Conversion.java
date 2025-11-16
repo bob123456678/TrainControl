@@ -36,7 +36,7 @@ public class Conversion
     
     public static String convertSecondsToDate(long timestamp)
     {
-        if (timestamp == 0) return "Never";
+        if (timestamp == 0) return I18n.f("ui.never");
         
         LocalDateTime i = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
          
@@ -45,7 +45,7 @@ public class Conversion
     
     public static String convertSecondsToDatetime(long timestamp)
     {
-        if (timestamp == 0) return "Never";
+        if (timestamp == 0) return I18n.f("ui.never");
         
         LocalDateTime i = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
          

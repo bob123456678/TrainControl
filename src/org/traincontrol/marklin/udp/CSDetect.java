@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.traincontrol.marklin.file.CS2File;
+import org.traincontrol.util.I18n;
 
 /**
  * This class attempts to automatically detect a central station on the network
@@ -45,7 +46,7 @@ public class CSDetect
     {
         for (String subnet : getLocalSubnet())
         {
-            System.out.println("Detected local subnet " + subnet);
+            System.out.println(I18n.f("network.detectedLocalSubnet", subnet));
 
             String urlPath = CS2File.getLayoutMasterURL("");
             ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
@@ -62,10 +63,10 @@ public class CSDetect
                     //System.out.println("Testing " + host);
                     if (isReachable(host, PING_RETRY))
                     {
-                        System.out.println("\n" + host + " is reachable");
+                        System.out.println("\n" + I18n.f("network.hostReachable", host));
                         if (checkWebServer(host, urlPath))
                         {
-                            System.out.println("Web server found at: " + host + urlPath);
+                            System.out.println(I18n.f("network.webServerFoundAt", host, urlPath));
                             executor.shutdownNow();
                             return host;
                         }
@@ -87,7 +88,7 @@ public class CSDetect
                     String result = future.get();
                     if (result != null)
                     {
-                        System.out.println("Central station detected at: " + result);
+                        System.out.println(I18n.f("network.centralStationDetectedAt", result));
                         return result;
                     }
                 }

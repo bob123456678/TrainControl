@@ -57,8 +57,11 @@ public class NetworkProxy
     {
     	// Set reference
         this.model = model;
-                
-        model.log("Initializing CAN listener on " + this.getIP() + "...");
+          
+        model.logf(
+            "network.initializingCanListener",
+            this.getIP()
+        );
         
         // Start reader
         new ReadMessages().start();
@@ -101,7 +104,9 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            this.model.log("Error: failed to send packet");
+            this.model.logf(
+                "network.errorFailedToSendPacket"
+            );            
             this.model.log(e.getMessage());
             
             return false;
@@ -138,8 +143,9 @@ public class NetworkProxy
                 // Create a packet to receive the data
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 
-                model.log("CAN listener running.");
-
+                model.logf(
+                    "network.canListenerRunning"
+                );
                 // Receive packets as they come in
                 while (true) 
                 {
@@ -156,19 +162,24 @@ public class NetworkProxy
             catch (IOException e)
             {
                 // Do not exit on error, simply close the socket connection
-                model.log("Fatal network error");
+                model.logf(
+                    "network.fatalError"
+                );                
                 model.log(e);
             }
             catch (Exception e)
             {
                 // Do not exit on error, simply close the socket connection
-                model.log("Fatal network error");
+                model.logf(
+                    "network.fatalError"
+                );    
                 model.log(e);
             }
             finally
             {
-                model.log("CAN listener closed.");
-                
+                model.logf(
+                    "network.canListenerClosed"
+                );                
                 // Close connection on error or when finished
             	socket.close();
             }
