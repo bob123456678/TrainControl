@@ -1,5 +1,7 @@
 package org.traincontrol.base;
 
+import org.traincontrol.util.I18n;
+
 /**
  * Abstract switch/signal class
  * 
@@ -288,7 +290,9 @@ abstract public class Accessory
             }  
         }
         
-        throw new Exception("Invalid accessory setting " + setting);  
+        throw new Exception(
+            I18n.f("acc.invalidAccessorySetting", setting)
+        );
     }
     
     /**
@@ -310,7 +314,9 @@ abstract public class Accessory
             }
         }
         
-        throw new Exception("Invalid accessory type " + type);  
+        throw new Exception(
+            I18n.f("acc.invalidAccessoryType", type)
+        );
     }
     
     /**

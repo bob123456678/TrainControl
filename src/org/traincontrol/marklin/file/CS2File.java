@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.util.I18n;
 
 /**
  * Marklin Central Station 2/3 config file parser
@@ -137,7 +138,11 @@ public final class CS2File
         }
         catch (UnsupportedEncodingException ex)
         {
-            this.logMessage("URL encoding error: " + ex.getMessage());
+            
+            this.logMessage(I18n.f(
+                "error.urlEncoding",
+                ex.getMessage()
+            ));
  
             return URL.replace(" ", "%20");
         }
@@ -494,7 +499,10 @@ public final class CS2File
             {
                 if (m.get("id") == null || m.get("typ") == null)
                 {
-                    control.log("Invalid CS2 accessory: " + m.toString());
+                    control.logf(
+                        "acc.invalidCs2Accessory",
+                        m.toString()
+                    );                    
                     continue;
                 }
                 
@@ -845,7 +853,7 @@ public final class CS2File
     {
         if (locs.isEmpty())
         {
-            logMessage("Warning: no locomotives provided when parsing CS3 routes");
+            logMessage(I18n.f("route.warningNoLocomotivesProvidedCs3"));
         }
         
         List<MarklinRoute> out = new ArrayList<>();
@@ -897,7 +905,7 @@ public final class CS2File
                         }
                         else
                         {
-                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                            logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
                         }
                     }
                     
@@ -975,7 +983,7 @@ public final class CS2File
                         }
                         else
                         {
-                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                            logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
                         }
                     }
                     else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
@@ -1084,7 +1092,7 @@ public final class CS2File
                         }
                         else
                         {
-                            logMessage("Warning: ignoring extra S88 " + item.toString() + " in route " + r.getName());
+                            logMessage(I18n.f("route.warningIgnoringExtraS88InRoute", item.toString(), r.getName()));
                         }
                     }
                     
@@ -1099,7 +1107,11 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException e)
             {
-                logMessage("Failed to add route at index " + i + " due to parsing error.", e, false);
+                logMessage(
+                    I18n.f("route.errorFailedToAddAtIndexDueToParsing", i),
+                    e,
+                    false
+                );
             }
         }
         
@@ -1127,7 +1139,11 @@ public final class CS2File
             }
             catch (JSONException e)
             {
-                logMessage("Error pre-parsing locomotives.", e, false);
+                logMessage(
+                    I18n.f("loc.errorPreParsingLocomotives"),
+                    e,
+                    false
+                );
             }
         }
         
@@ -1168,11 +1184,17 @@ public final class CS2File
                         }
                         else
                         {
-                            logMessage("Warning: unmatched multi-unit identifier " + identifier);
+                            logMessage(
+                                I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
+                            );                        
                         }
                     }
                                     
-                    logMessage("Locomotive " + name + " is a multi-unit, using UID of " + uid, null, true);
+                    logMessage(
+                        I18n.f("loc.multiUnitUsingUid", name, uid),
+                        null,
+                        true
+                    );     
                     
                     uid = uid - MarklinLocomotive.MULTI_UNIT_BASE;
                 }
@@ -1243,7 +1265,11 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException e)
             {
-                logMessage("Failed to add locomotive at index " + i + " due to parsing error.", e, false);
+                logMessage(
+                    I18n.f("loc.errorFailedToAddAtIndexDueToParsing", i),
+                    e,
+                    false
+                );
             }
         }
         
@@ -1307,7 +1333,11 @@ public final class CS2File
                         multiUnitLocMap.put(locName, 1.0);
                     } 
                     
-                    logMessage("Locomotive " + name + " is a multi-unit, using UID of " + Integer.toString(address), null, true);
+                    logMessage(
+                        I18n.f("loc.multiUnitUsingUid", name, Integer.toString(address)),
+                        null,
+                        true
+                    );
                     
                     if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
                     {
@@ -1351,7 +1381,9 @@ public final class CS2File
                 
                 if (funcs.length == 0)
                 {
-                    logMessage("Warning: locomotive " + name + " was initialized with missing function data.");
+                    logMessage(
+                        I18n.f("loc.warningInitializedWithMissingFunctionData", name)
+                    );                
                 }
                 
                 if (m.get("icon") != null)
@@ -1605,8 +1637,10 @@ public final class CS2File
                 
             // Custom (non-CS2) components
             default:
-                logMessage("Layout: warning - component " + name + 
-                                 " is not supported and will not be displayed");
+                logMessage(
+                    I18n.f("layout.warningComponentNotSupported", name)
+                );
+                
                 return null;
         }
         
@@ -1636,7 +1670,10 @@ public final class CS2File
             
             if (control.isDebug())
             {
-                control.log("Loading layout from: " + url);
+                control.logf(
+                    "layout.loadingFromUrl",
+                    url
+                );            
             }
             
             List<Map<String, String> > l = parseFile(fetchURL(url));
@@ -1663,7 +1700,11 @@ public final class CS2File
                     }
                     else
                     {
-                        logMessage("Layout: element has no coordinate info, assuming 0,0 (" + m + ")", null, true);
+                        logMessage(
+                            I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
+                            null,
+                            true
+                        );
                     }
                     
                     Integer x = coord % 256;
@@ -1724,7 +1765,9 @@ public final class CS2File
                     {
                         if (!"text".equals(type))
                         {
-                            logMessage(String.format("Layout: component " + type + " at %s, %s has no address", x, y));
+                            logMessage(
+                                I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                            );
                         }
                     }
                     
@@ -1775,7 +1818,9 @@ public final class CS2File
                         }
                         else
                         {
-                            logMessage("Unknown protocol: " + m.get("prot"));
+                            logMessage(
+                                I18n.f("acc.errorUnknownProtocol", m.get("prot"))
+                            );
                         }
                     }
                     

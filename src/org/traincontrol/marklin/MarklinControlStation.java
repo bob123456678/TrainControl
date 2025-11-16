@@ -195,7 +195,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set debug mode
         this.debug(debug);
         
-        this.logf("app.title", RAW_VERSION);
+        this.logf("app.uititle", I18n.f("app.title", MarklinControlStation.RAW_VERSION));
         
         this.logf("log.restoring");
 

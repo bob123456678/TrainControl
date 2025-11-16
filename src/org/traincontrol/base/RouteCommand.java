@@ -20,6 +20,7 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_AUTO_LOCOMOTIV
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE_DIRECTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
+import org.traincontrol.util.I18n;
 
 /**
  * Individual route command
@@ -611,7 +612,9 @@ public class RouteCommand implements java.io.Serializable
     {
         if (setting != 1 && setting != 0)
         {
-            throw new Exception("Invalid accessory setting value: " + setting);
+            throw new Exception(
+                I18n.f("acc.invalidAccessorySettingValue", setting)
+            );
         }
         
         return setting == 1;
@@ -650,7 +653,9 @@ public class RouteCommand implements java.io.Serializable
             
             if ("".equals(routeName))
             {
-                throw new Exception("Command \"" + line + "\" is missing the route name");
+                throw new Exception(
+                    I18n.f("route.errorCommandMissingRouteName", line)
+                );
             }
             
             return RouteCommand.RouteCommandRoute(routeName);
@@ -731,7 +736,9 @@ public class RouteCommand implements java.io.Serializable
             }
             catch (Exception e2)
             {
-                throw new Exception("Invalid line: " + originalLine);
+                throw new Exception(
+                    I18n.f("error.invalidLine", originalLine)
+                );
             }
         }
         else if (line.length() > 0)
@@ -794,7 +801,9 @@ public class RouteCommand implements java.io.Serializable
                 }
                 catch (Exception e2)
                 {
-                    throw new Exception("Invalid line: " + originalLine);
+                    throw new Exception(
+                        I18n.f("error.invalidLine", originalLine)
+                    );
                 }
             }
             

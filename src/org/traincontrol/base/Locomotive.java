@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 
 /**
  * Abstract locomotive class
@@ -1231,7 +1232,7 @@ public abstract class Locomotive
         }
         else
         {
-            return "(Never)";
+            return I18n.f("loc.neverOperated");
         }
     }   
     

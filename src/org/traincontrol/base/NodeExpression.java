@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Stack;
 import org.json.JSONObject;
 import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a boolean expression for route conditions
@@ -85,7 +86,9 @@ public abstract class NodeExpression implements Serializable
             case "NodeOr":
                 return NodeOr.fromJSON(jsonObject);
             default:
-                throw new IllegalArgumentException("Unknown NodeExpression type: " + type);
+                throw new IllegalArgumentException(
+                    I18n.f("error.unknownNodeExpressionType", type)
+                );
         }
     }
     
@@ -219,7 +222,9 @@ public abstract class NodeExpression implements Serializable
 
         if (stack.size() != 1) 
         {
-            throw new Exception("Invalid expression: mismatched operators or parentheses.");
+            throw new Exception(
+                I18n.f("error.invalidExpressionMismatchedOperatorsOrParentheses")
+            );
         }
 
         return stack.pop();
@@ -248,7 +253,9 @@ public abstract class NodeExpression implements Serializable
         
         if (!rc.isConditionCommand())
         {
-            throw new Exception("Invalid condition (conditions can only be accessory, feedback, or auto locomotive location values).");
+            throw new Exception(
+                I18n.f("error.invalidCondition")
+            );
         }
         
         return new NodeRouteCommand(rc);
