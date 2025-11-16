@@ -126,7 +126,10 @@ public class MarklinRoute extends Route
                 // The utility functions are defined in Locomotive, so create a dummy locomotive
                 MarklinLocomotive loc = new MarklinLocomotive(this.network, 1, MarklinLocomotive.decoderType.MM2, "Dummy Loc");
 
-                this.network.log("Route " + this.getName() + " is running...");
+                this.network.logf(
+                    "route.running",
+                    this.getName()
+                );          
                 
                 while (this.enabled)
                 {
@@ -147,12 +150,18 @@ public class MarklinRoute extends Route
                     {                      
                         if (!this.conditions.evaluate(network))
                         {                        
-                            this.network.log("Route " + this.getName() + " S88 triggered but condition failed");
+                            this.network.logf(
+                                "route.s88ConditionFailed",
+                                this.getName()
+                            );                           
                             continue;
                         }
                     }
             
-                    this.network.log("Route " + this.getName() + " S88 triggered");
+                    this.network.logf(
+                        "route.s88Triggered",
+                        this.getName()
+                    );
 
                     this.execRoute(true);                    
                 }
@@ -219,7 +228,10 @@ public class MarklinRoute extends Route
     {
         if (recursionLimit < 0)
         {
-            this.network.log("Route " + this.getName() + " not firing; recursion limit reached.");
+            this.network.logf(
+                "route.recursionLimitReached",
+                this.getName()
+            );
             return;
         }
         
@@ -228,8 +240,11 @@ public class MarklinRoute extends Route
         {
             if (this.setExecuting())
             {   
-                this.network.log("Executing route " + this.getName());
-
+                this.network.logf(
+                    "route.executing",
+                    this.getName()
+                );
+                
                 // This will highlight icons in the UI
                 this.updateTiles();
 
@@ -249,7 +264,10 @@ public class MarklinRoute extends Route
                             // Only send stop command once
                             if (this.network.getPowerState())
                             {
-                                this.network.log("Power turned off due to route condition");
+                                this.network.logf(
+                                    "route.powerTurnedOffCondition",
+                                    this.getName()
+                                );
                                 this.network.stop();
                                 
                                 if (auto && this.network.getGUI() != null)
@@ -259,12 +277,18 @@ public class MarklinRoute extends Route
                             }
                             else
                             {
-                                this.network.log("Route condition fired but power was already off");
+                                this.network.logf(
+                                    "route.conditionFiredPowerAlreadyOff",
+                                    this.getName()
+                                );
                             }
                         }
                         else if (rc.isFunctionsOff())
                         {
-                            this.network.log("Route turning off all functions.");
+                            this.network.logf(
+                                "route.turningOffFunctions",
+                                this.getName()
+                            );
                             
                             this.network.allFunctionsOff();
                         }
@@ -272,14 +296,20 @@ public class MarklinRoute extends Route
                         {
                             if (this.network.hasAutoLayout())
                             {
-                                this.network.log("Route turning on lights of autonomy locomotives.");
+                                this.network.logf(
+                                    "route.turningOnAutonomyLights",
+                                    this.getName()
+                                );
 
                                 this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
                             }
                         }
                         else if (rc.isLightsOn())
                         {
-                            this.network.log("Route turning on lights of all locomotives.");
+                            this.network.logf(
+                                "route.turningOnAllLights",
+                                this.getName()
+                            );
 
                             this.network.lightsOn(this.network.getLocList());  
                         }
@@ -300,7 +330,10 @@ public class MarklinRoute extends Route
                             }
                             else
                             {
-                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                                this.network.logf(
+                                    "route.warningLocomotiveNotExist",
+                                    rc.getName()
+                                );
                             }
                         }
                         else if (rc.isLocomotiveDirection())
@@ -313,7 +346,10 @@ public class MarklinRoute extends Route
                             }
                             else
                             {
-                                this.network.log(("Route warning: locomotive " + rc.getName() + " does not exist"));
+                                this.network.logf(
+                                    "route.warningLocomotiveNotExist",
+                                    rc.getName()
+                                );
                             }
                         }
                         else if (rc.isFunction())
@@ -326,7 +362,11 @@ public class MarklinRoute extends Route
                             }
                             else
                             {
-                                this.network.log("Route warning: locomotive " + rc.getName() + " does not exist (called from " + this.getName() + ")");
+                                this.network.logf(
+                                    "route.warningLocomotiveNotExistCalledFrom",
+                                    rc.getName(),
+                                    this.getName()
+                                );
                             }
                         }
                         else if (rc.isRoute())
@@ -335,7 +375,10 @@ public class MarklinRoute extends Route
                             
                             if (r == this)
                             {
-                                this.network.log("Route warning: route command " + rc.getName()+ " references itself and will not fire");
+                                this.network.logf(
+                                    "route.warningCommandSelfReference",
+                                    rc.getName()
+                                );
                             }
                             else
                             {                      
@@ -348,12 +391,19 @@ public class MarklinRoute extends Route
                                     }
                                     else
                                     {
-                                        this.network.log("Route warning: cannot invoke route " + rc.getName()+ " from itself");
+                                        this.network.logf(
+                                            "route.warningCannotInvokeSelf",
+                                            rc.getName()
+                                        );
                                     }
                                 }
                                 else
                                 {
-                                    this.network.log("Route warning: route " + rc.getName()+ " does not exist (called from " + this.getName() + ")");
+                                    this.network.logf(
+                                        "route.warningRouteNotExistCalledFrom",
+                                        rc.getName(),
+                                        this.getName()
+                                    );
                                 }
                             }
                         }
@@ -362,7 +412,10 @@ public class MarklinRoute extends Route
                         {
                             if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
                             {
-                                this.network.log("Route delay " + rc.getDelay() + "ms");
+                                this.network.logf(
+                                    "route.delay",
+                                    rc.getDelay()
+                                );                                
                                 Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
                             }
                             else
@@ -381,7 +434,10 @@ public class MarklinRoute extends Route
 
                 this.updateTiles();
                 
-                this.network.log("Executed route " + this.getName());
+                this.network.logf(
+                    "route.executed",
+                    this.getName()
+                );
             }
         }).start();
     }
@@ -449,7 +505,7 @@ public class MarklinRoute extends Route
             }
         }
         
-        this.network.log("Error: route key " + key + " not found");
+        this.network.logf("route.keyNotFound", key);
     }
     
     /**

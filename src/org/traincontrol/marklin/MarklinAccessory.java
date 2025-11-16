@@ -197,7 +197,9 @@ public class MarklinAccessory extends Accessory
                 
                 this.updateTiles(false);
                                                 
-                this.network.log("Setting " + this.getName() + " " +
+                this.network.logf(
+                    "acc.setting",
+                    this.getName(),
                     switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase()
                 );
             }

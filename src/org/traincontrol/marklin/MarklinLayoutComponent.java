@@ -9,6 +9,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.util.I18n;
 
 /**
  * Representation of each layout component as defined by CS2
@@ -428,61 +429,61 @@ public class MarklinLayoutComponent
         switch (this.type)
         {
             case UNCOUPLER:
-                return "Uncoupler";
+                return I18n.t("layout.uncoupler");
             case END:
-                return "Bumper";                
+                return I18n.t("layout.bumper");
             case FEEDBACK:
-                return "S88 Feedback";
+                return I18n.t("layout.s88Feedback");
             case FEEDBACK_CURVE:
-                return "S88 Feedback (Curved)";
+                return I18n.t("layout.s88FeedbackCurved");
             case FEEDBACK_DOUBLE_CURVE:
-                return "S88 Feedback (Parallel)";
+                return I18n.t("layout.s88FeedbackParallel");
             case STRAIGHT:
-                return "Straight Track";
+                return I18n.t("layout.straightTrack");
             case SIGNAL:
-                return "Signal";
+                return I18n.t("layout.signal");
             case DOUBLE_CURVE:
-                return "Parallel Track";
+                return I18n.t("layout.parallelTrack");
             case CURVE:
-                return "Curved Track";
+                return I18n.t("layout.curvedTrack");
             case SWITCH_LEFT:
-                return "Left Switch";
+                return I18n.t("layout.leftSwitch");
             case SWITCH_RIGHT:
-                return "Right Switch";
+                return I18n.t("layout.rightSwitch");
             case SWITCH_THREE:
-                return "Three-way Switch";
+                return I18n.t("layout.threeWaySwitch");
             case TUNNEL:
-                return "Tunnel";
+                return I18n.t("layout.tunnel");
             case CROSSING:
-                return "Crossing";
+                return I18n.t("layout.crossing");
             case OVERPASS:
-                return "Overpass";
+                return I18n.t("layout.overpass");
             case SWITCH_CROSSING:
-                return "Double Slip Switch";
+                return I18n.t("layout.doubleSlipSwitch");
             case TURNTABLE:
-                return "Turntable";
+                return I18n.t("layout.turntable");
             case LAMP:
-                return "Lamp/Accessory";
+                return I18n.t("layout.lampAccessory");
             case SWITCH_Y:
-                return "Y Switch";
+                return I18n.t("layout.ySwitch");
             case ROUTE:
-                return "Route Shortcut";
+                return I18n.t("layout.routeShortcut");
             case LINK:
-                return "Page Link";
+                return I18n.t("layout.pageLink");
             case CUSTOM_PERM_LEFT:
-                return "Left Switch (Static)";
+                return I18n.t("layout.leftSwitchStatic");
             case CUSTOM_PERM_RIGHT:
-                return "Right Switch (Static)";
+                return I18n.t("layout.rightSwitchStatic");
             case CUSTOM_PERM_Y:
-                return "Y Switch (Static)";
+                return I18n.t("layout.ySwitchStatic");
             case CUSTOM_PERM_THREEWAY:
-                return "Three-way Switch (Static)";
+                return I18n.t("layout.threeWaySwitchStatic");
             case CUSTOM_PERM_SCISSORS:
-                return "Scissor Switch (Static)";
+                return I18n.t("layout.scissorSwitchStatic");
             case CUSTOM_SCISSORS:
-                return "Scissor Switch";
+                return I18n.t("layout.scissorSwitch");
             case TEXT:
-                return "Text Label";
+                return I18n.t("layout.textLabel");
         }
         
         return "";
@@ -632,31 +633,33 @@ public class MarklinLayoutComponent
         
         if (this.isThreeWay())
         {
-            return "Switch " + this.getAddress() + "-" + (this.getAddress() + 1) + digitalProtocol;
+            return I18n.f("layout.switchThreeWay", this.getAddress(), this.getAddress() + 1, digitalProtocol);
         }
         else if (this.isSwitch())
         {
-            return "Switch " + this.getAddress() + digitalProtocol;
+            return I18n.f("layout.switch", this.getAddress(), digitalProtocol);
         }
         else if (this.isUncoupler())
         {
-            return "Uncoupler " + this.getAddress() + (this.getRawAddress() % 2 == 0 ? " red" : " green") + digitalProtocol;
+            return I18n.f("layout.uncouplerColored", this.getAddress(),
+                (this.getRawAddress() % 2 == 0 ? I18n.t("layout.red") : I18n.t("layout.green")),
+                digitalProtocol);
         }
         else if (this.isFeedback())
         {
-            return "Feedback " + this.getFeedback().getUID();
+            return I18n.f("layout.feedbackUid", this.getFeedback().getUID());
         }
         else if (this.isSignal())
         {
-            return (this.isLamp() ? "Accessory " : "Signal ") + this.getAddress() + digitalProtocol;
+            return I18n.f(this.isLamp() ? "layout.accessory" : "layout.signal", this.getAddress(), digitalProtocol);
         }
         else if (this.isRoute() && this.getRoute() != null)
         {
-            return "Route " + this.getRoute().getId() + " (" + this.getRoute().getName() + ")";
+            return I18n.f("layout.route", this.getRoute().getId(), this.getRoute().getName());
         }
         else if (this.isLink())
         {
-            return "Link to page " + (this.getRawAddress() + 1);
+            return I18n.f("layout.linkPage", this.getRawAddress() + 1);
         }
         else
         {
@@ -807,7 +810,7 @@ public class MarklinLayoutComponent
             case CUSTOM_PERM_SCISSORS:
                 return "custom_perm_scissors";
             default:
-                throw new Exception("Unknown component " + type.toString());
+                throw new Exception(I18n.f("layout.unknownComponent", type.toString()));
                 //return "unknown";
         }
     }
@@ -859,7 +862,7 @@ public class MarklinLayoutComponent
             // 3-way switches have an address 1 above the base, so make the check more strict
             if (!MarklinAccessory.isValidAddress(this.isThreeWay() ? address : address - 1, protocol))
             {
-                throw new Exception("Invalid address");
+                throw new Exception(I18n.t("acc.invalidAddress"));
             }
             
             this.rawAddress = address * 2;
@@ -881,7 +884,7 @@ public class MarklinLayoutComponent
             
             if (address < 0)
             {
-                throw new Exception("Invalid address (must be positive)");
+                throw new Exception(I18n.t("acc.invalidAddressPositive"));
             }
             
             this.address = address;

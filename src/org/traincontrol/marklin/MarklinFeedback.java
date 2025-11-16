@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.traincontrol.marklin.udp.CS2Message;
+import org.traincontrol.util.I18n;
 
 /**
  * Marklin S88 feedback
@@ -88,7 +89,12 @@ public class MarklinFeedback extends Feedback
                                         
                     this.updateTiles();
                     
-                    this.network.log("Feedback " + this.getName() + " to " + (state == 1 ? "Set" : "Not set"));
+                    this.network.logf(
+                        "acc.feedbackState",
+                        this.getName(),
+                        "",
+                        (state == 1 ? I18n.t("acc.stateSet") : I18n.t("acc.stateNotSet"))
+                    );
                 }                
             }  
         }
@@ -104,7 +110,12 @@ public class MarklinFeedback extends Feedback
         
         if (this.network.isDebug())
         {
-            this.network.log("Feedback " + name + " manually to " + (val ? "Set" : "Not set"));
+            this.network.logf(
+                "acc.feedbackState",
+                name,
+                " manually",
+                (val ? I18n.t("acc.stateSet") : I18n.t("acc.stateNotSet"))
+            );
             
             // If we want to capture route commands in the future, we could call a method in the model here
         }

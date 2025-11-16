@@ -14,6 +14,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RemoteDevice;
+import org.traincontrol.util.I18n;
 
 /**
  * Marklin locomotive that implements CS2 interfaces/protocols
@@ -319,7 +320,7 @@ public class MarklinLocomotive extends Locomotive
         {
             if (this.network.isDebug())
             {
-                this.network.log("Missing local function icon: " + iconName);
+                this.network.logf("error.missingLocalFunctionIcon", iconName);
             }
         }
 
@@ -431,7 +432,13 @@ public class MarklinLocomotive extends Locomotive
             return true;
         }
         
-        this.network.log("Warning: invalid address passed to " + this.getName() + " setAddress: " + newDecoderType + " " + newAddress);
+        this.network.logf(
+            "loc.invalidAddressSet",
+            this.getName(),
+            newDecoderType,
+            newAddress
+        );
+
         return false;
     }
        
@@ -520,8 +527,11 @@ public class MarklinLocomotive extends Locomotive
                     this._setDirection(locDirection.DIR_BACKWARD);
                 }
                 
-                this.network.log("Setting " + this.getName() 
-                    + " loc direction " + (this.goingForward() ? "f" : "b"));
+                this.network.logf(
+                    "loc.settingDirection",
+                    this.getName(),
+                    (this.goingForward() ? I18n.t("loc.forwardShort") : I18n.t("loc.backwardShort"))
+                );
             }
         }
         else if (m.getCommand().equals(CS2Message.CMD_LOCO_FUNCTION))
@@ -533,8 +543,12 @@ public class MarklinLocomotive extends Locomotive
                 
                 this._setF(fNumber, fValue);
                 
-                this.network.log("Setting " + this.getName() 
-                    + " loc f" + fNumber + " " + (fValue ? "1" : "0"));
+                this.network.logf(
+                    "loc.settingFunction",
+                    this.getName(),
+                    fNumber,
+                    (fValue ? "1" : "0")
+                );
             }
         }
         else if (m.getCommand().equals(CS2Message.CMD_LOCO_VELOCITY))
@@ -549,8 +563,11 @@ public class MarklinLocomotive extends Locomotive
                 
                 this._setSpeed(speed);
                 
-                this.network.log("Setting " + this.getName() 
-                    + " loc speed " + speed);
+                this.network.logf(
+                    "loc.settingSpeed",
+                    this.getName(),
+                    speed
+                );
             }
         }
     }
@@ -858,16 +875,15 @@ public class MarklinLocomotive extends Locomotive
         switch (this.type)
         {
             case MULTI_UNIT:
-                return "Multi Unit";
+                return I18n.t("loc.multiUnit");
             default:
-                
                 if (this.hasLinkedLocomotives())
                 {
-                    return "MU " + type.name();
+                    return I18n.f("loc.multiUnitLinked", type.name());
                 }
                 else
                 {
-                    return type.name();    
+                    return type.name();
                 }
         }
     }
@@ -1025,7 +1041,9 @@ public class MarklinLocomotive extends Locomotive
             // Validate speed adjustment
             if (value < -2 || value > 2 || value == 0)
             {
-                network.log("Error setting linked locomotive: speed adjustment must be nonzero between -2 and 2");
+                this.network.logf(
+                    "loc.errorLinkedLocSpeedAdjustment"
+                );
             }
             // Validate locomotive & configure
             else if (this.canBeLinkedTo(loco, true))
@@ -1070,34 +1088,34 @@ public class MarklinLocomotive extends Locomotive
     public boolean canBeLinkedTo(MarklinLocomotive other, boolean logError)
     {
         String error = null;
-        
+
         if (other == null || !(other instanceof MarklinLocomotive))
         {
-            error = "Error linking locomotive to " + this.getName() + ": object is not a valid locomotive";
+            error = I18n.f("loc.errorLinkInvalidObject", this.getName());
         }
         else if (this.equals(other))
         {
-            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " to itself";
+            error = I18n.f("loc.errorLinkSelf", this.getName(), other.getName());
         }
         else if (other.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " because it is a Central Station multi-unit";
+            error = I18n.f("loc.errorLinkMultiUnitCentral", this.getName(), other.getName());
         }
         else if (other.hasLinkedLocomotives())
         {
-            error = "Error linking locomotive to " + this.getName() + ": cannot assign " + other.getName() + " because it is itself a multi-unit";
+            error = I18n.f("loc.errorLinkMultiUnitSelf", this.getName(), other.getName());
         }
         else if (this.hasEquivalentAddress(other))
         {
-            error = "Error linking locomotive to " + this.getName() + ": digital address of " + other.getName() + " must not be the same.";
+            error = I18n.f("loc.errorLinkSameAddress", this.getName(), other.getName());
         }
         else
         {
-            for(MarklinLocomotive l : this.getLinkedLocomotives().keySet())
+            for (MarklinLocomotive l : this.getLinkedLocomotives().keySet())
             {
                 if (l.hasEquivalentAddress(other))
                 {
-                    error = "Error linking locomotive to " + this.getName() + ": " + other.getName() + " matches the address of existing linked locomotive " + l.getName() + ".";
+                    error = I18n.f("loc.errorLinkAddressConflict", this.getName(), other.getName(), l.getName());
                     break;
                 }
             }

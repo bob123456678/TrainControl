@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.traincontrol.util.I18n;
 
 /**
  * Layout container with grid and size info
@@ -228,7 +229,7 @@ public class MarklinLayout
     @Override
     public String toString()
     {        
-        return "Layout " + this.name + " (" + Integer.toString(sx) + "x" + Integer.toString(sy) + ")";
+        return I18n.f("layout.dimensions", this.name, Integer.toString(sx), Integer.toString(sy));
     }
     
     /**
@@ -315,7 +316,7 @@ public class MarklinLayout
         } 
         catch (IOException | URISyntaxException e)
         {
-            throw new Exception("Error saving changes to file: " + url, e);
+            throw new Exception(I18n.f("error.savingFileChanges", url), e);
         }
     }
     
