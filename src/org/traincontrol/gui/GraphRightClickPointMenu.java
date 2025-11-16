@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu when the graph UI is clicked on a point
@@ -57,7 +58,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     if (ui.getModel().getLocomotives().isEmpty())
                     {
                         JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            TrainControlUI.NO_LOC_MESSAGE
+                            I18n.t("error.noLocs")
                         );
                     }
                     else

@@ -128,8 +128,10 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinAccessory;
+import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
+import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
 
@@ -137,7 +139,7 @@ import org.traincontrol.util.Util;
  * UI for controlling trains and switches using the keyboard
  */
 public class TrainControlUI extends PositionAwareJFrame implements View 
-{    
+{
     // Data save file name
     private static final String DATA_FILE_NAME = "UIState.data";
     public static final String AUTONOMY_FILE_NAME = "autonomy.json";
@@ -194,9 +196,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
-
-    // Message strings
-    public static final String NO_LOC_MESSAGE = "There are no locomotives currently in the database. Add some in the Locomotives menu, or via the Central Station, and then synchronize.";
     
     // Keyboard layout constants
     public static final String KEYBOARD_QWERTY = "QWERTY";
@@ -2058,7 +2057,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (this.getModel().getLocomotives().isEmpty())
             {
                 JOptionPane.showMessageDialog(this,
-                    NO_LOC_MESSAGE
+                    I18n.t("error.noLocs")
                 ); 
             }
             else
@@ -3650,7 +3649,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jScrollPane1.setViewportView(jList1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        setTitle(MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION);
+        setTitle(I18n.f("app.uititle", I18n.f("app.title", RAW_VERSION)));
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);

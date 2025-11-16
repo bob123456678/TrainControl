@@ -57,6 +57,7 @@ import org.traincontrol.model.ModelListener;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
+import org.traincontrol.util.I18n;
 import static org.traincontrol.util.Util.escapeCsv;
 
 /**
@@ -70,12 +71,8 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "2.5.16";
-    
-    // Window/UI titles
-    public static final String VERSION = "v" + RAW_VERSION + " for Marklin Central Station 2 & 3";
-    public static final String PROG_TITLE = "TrainControl ";
-    
+    public static final String RAW_VERSION = "2.5.17";
+        
     //// Settings
     
     // Locomotive database save file
@@ -198,10 +195,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set debug mode
         this.debug(debug);
         
-        this.log(PROG_TITLE + VERSION);
+        this.logf("app.title", RAW_VERSION);
         
-        this.log("Restoring state...");
-        
+        this.logf("log.restoring");
+
         // Restore state
         for (MarklinSimpleComponent c : this.restoreState())
         {            
@@ -219,7 +216,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (!newAccessory.isValidAddress())
                 {
                     this.accDB.delete(newAccessory.getName());
-                    this.log("Deleted invalid accessory from database: " + newAccessory.getName());
+                    this.logf("acc.deletedInvalid", newAccessory.getName());
                 }
             }
             else if (c.getType() == MarklinSimpleComponent.Type.FEEDBACK)
@@ -237,11 +234,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
                 
-        this.log("State restored.");
+        this.logf("log.restored");
         
         if (syncWithCS2() >= 0)
         {
-            this.log("Imported data from Central Station at " + network.getIP());
+            this.logf("log.csDataImported", network.getIP());
 
             // Turn on network communication and turn on the power
             this.on = true;
@@ -252,7 +249,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.log("Central Station network connection not established.");
+            this.logf("log.csNotConnected");
         } 
         
         // Resolve linked locomotives now that we have loaded everything
@@ -304,7 +301,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             if (isDebug())
             {
-                this.log("Layout: no magnetartikel.cs2 found. DCC definitions unavailable.");
+                this.logf("layout.noDCC");
             }
         }
 
@@ -312,7 +309,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.layoutDB.add(l, l.getName(), l.getName());
 
-            this.log("Imported layout " + l.getName());
+            this.logf("layout.imported", l.getName());
 
             for (MarklinLayoutComponent c : l.getAll())
             {
@@ -336,7 +333,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         // Skip components without a digital address
                         if (c.getAddress() <= 0)
                         {
-                            this.log("Layout: invalid accessory address: " + c.getTypeName() + " " + c.getAddress() + " at " + c.getX() + "," + c.getY() + " ");
+                            this.logf("layout.invalidAccessoryAddress", c.getTypeName(), c.getAddress(), c.getX(), c.getY());
                             continue;
                         }
                         
@@ -354,7 +351,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getState() != 1);
                         }
 
-                        this.log("Adding " + this.accDB.getById(targetAddress).getName());
+                        this.logf("acc.adding", this.accDB.getById(targetAddress).getName());
                     }
                     else
                     {            
@@ -429,7 +426,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     
                     if (r == null)
                     {
-                        this.log("Layout warning: route button with address " + c.getAddress() + " at " + c.getX() + "," + c.getY() + " does not correspond to an existing route.");
+                        this.logf("layout.routeButtonMissingRoute", c.getAddress(), c.getX(), c.getY());
                     }
                     
                     c.setRoute(r);
@@ -445,7 +442,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (!feedbackAddresses.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
-                    this.log("Pruning feedback that is not present on any layout: " + fb.getName());
+                    this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
                     this.feedbackDB.delete(fb.getName());
                 }
             }
@@ -649,7 +646,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Read remote config files
         this.fileParser = new CS2File(NetworkInterface.getIP(), this);
              
-        this.log("Starting Central Station database sync...");
+        this.logf("log.csDBSyncStarting");
 
         int num = 0;
         
@@ -674,11 +671,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(NetworkInterface.getIP()));
-                this.log("Station type detection result: " + (this.isCS3 ? "CS3" : "CS2"));
+                this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)
             {
-                this.log("Station type detection error: " + e.toString());
+                this.logf("log.csTypeDetectionError", e.toString());
             }
                                        
             // Import layout
@@ -689,8 +686,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             }
             catch (Exception e)
-            {
-                this.log("Error loading user preferences; try re-running as admin.");
+            {                
+                this.logf("error.prefLoadAdminHint");
                 
                 this.log(e);
             }
@@ -699,11 +696,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
                 
-                this.log("Loading static layout files from: " + overrideLayoutPath);
+                this.logf("layout.loadingStaticFiles", overrideLayoutPath);
                 
                 if (debug)
                 {
-                    this.log("This path should contain a 'config' folder with the same 'gleisbild' folder structure as on the CS2.");
+                    this.logf("layout.configFolderStructureHint");
                 }
                 
                 try
@@ -715,8 +712,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (Exception e)
                 {
                     this.log(e);
-                           
-                    this.log("Error, reverting to default layout source." + (!debug ? " Enable debug mode for details." : ""));
+                       
+                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
@@ -754,8 +751,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Other existing route with same name but different ID
                 if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
                 {
-                    this.log("Deleting old route (duplicate name): " + r.getName());
-
+                    this.logf("route.deletingDuplicateName", r.getName());
+                    
                     this.deleteRoute(r.getName());
                 }
                 
@@ -768,15 +765,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         ) 
                 )
                 {   
-                    this.log("Deleting old route (duplicate ID): " + this.routeDB.getById(r.getId()).getName());
-
+                    this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
                 }
                 
                 if (!this.routeDB.hasId(r.getId()))
                 {                    
                     newRoute(r);                    
-                    this.log("Added route " + r.getName());
+                    this.logf("route.added", r.getName());                    
                     num++;
                 }
                 
@@ -807,16 +803,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     if (this.locDB.hasName(l.getName()))
                     {
                         // Show message that we did not sync a loc with a duplicate name
-                        this.log("Did not import locomotive " + l.getName() + " from Central Station because a different locomotive with the same name exists in TrainControl.");
+                        this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
                     else
                     {
-                        this.log("Added " + l.getDecoderTypeLabel() + " locomotive " + l.getName() 
-                            + " with address " 
-                            + l.getAddress() + " ("
-                            + Conversion.intToHex(l.getIntUID()) + ")"
-                            + " from Central Station"
-                        );
+                        this.logf("loc.addedFromCentralStation",
+                            l.getDecoderTypeLabel(),
+                            l.getName(),
+                            l.getAddress(),
+                            Conversion.intToHex(l.getIntUID()));
 
                         newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(), l.getFunctionTriggerTypes());
                         num++;
@@ -837,7 +832,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.locDB.delete(l.getName());
                     this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
                     
-                    this.log("Updated address of " + existingLoc.getName() + " from " + oldAddr + " to " + this.getLocAddress(existingLoc.getName()));
+                    this.logf("loc.addressUpdated",
+                        existingLoc.getName(),
+                        oldAddr,
+                        this.getLocAddress(existingLoc.getName()));
                 }
                 
                 // Update function types if they have changed
@@ -848,13 +846,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.getById(l.getUID()).isCustomFunctions())
                     {
-                        this.log("Function types for " + l.getName() + " do not match Central Station; this will be ignored because the locomotive was customized via the UI.");
+                        this.logf("loc.functionTypesMismatchIgnoredUI", l.getName());
                     }
                     else
                     {
                         this.locDB.getById(l.getUID()).setFunctionTypes(l.getFunctionTypes(), l.getFunctionTriggerTypes());
 
-                        this.log("Updated function types for " + l.getName());
+                        this.logf("loc.functionTypesUpdated", l.getName());
                     }
                 }
                               
@@ -873,15 +871,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (Exception e)
         {
-             this.log("Failed to sync locomotive DB.");
-             this.log(e);
+            this.logf("loc.dbSyncFailed");
+            this.log(e);
              
-             return -1;
+            return -1;
         }
         
         this.rebuildLocIdCache();
                 
-        this.log("Sync complete.");
+        this.logf("loc.syncCompleted");
         
         return num;
     }
@@ -907,7 +905,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.locDB.getByName(name) != null)
         {
-            this.log("Syncing locomotive " + name);
+            this.logf("loc.syncing", name);
             this.locDB.getByName(name).syncFromNetwork();
         }
     }
@@ -1622,6 +1620,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public boolean getNetworkCommState()
     {
         return this.on;
+    }
+    
+    /**
+     * Formatted log message
+     * @param key
+     * @param args 
+     */
+    @Override
+    public final void logf(String key, Object... args)
+    {
+        log(I18n.f(key, args));
     }
     
     /**
@@ -2481,7 +2490,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException, InterruptedException
     {        
-        System.out.println("TrainControl v" + MarklinControlStation.RAW_VERSION + " starting...");
+        System.out.println(I18n.f("app.starting", I18n.f("app.title", MarklinControlStation.RAW_VERSION)));
         
         // User interface - only initialize if needed
         TrainControlUI ui = null;

@@ -579,7 +579,7 @@
   <Properties>
     <Property name="defaultCloseOperation" type="int" value="0"/>
     <Property name="title" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-      <Connection code="MarklinControlStation.PROG_TITLE + MarklinControlStation.VERSION" type="code"/>
+      <Connection code="I18n.f(&quot;app.uititle&quot;, I18n.f(&quot;app.title&quot;, RAW_VERSION))" type="code"/>
     </Property>
     <Property name="alwaysOnTop" type="boolean" value="true"/>
     <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
