@@ -25,6 +25,7 @@ import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 
 /**
  * Represent layout as a directed graph to support fully automated train operation
@@ -378,19 +379,23 @@ public class Layout
     {
         if (this.isRunning())
         {
-            throw new Exception("Simulation mode can only be changed when no trains are running");
+            throw new Exception(
+                I18n.f("autolayout.errorSimulationModeNoTrains")
+            );
         }
-        
+
         if ((!control.isDebug() || control.getNetworkCommState()) && simulate)
         {
-            throw new Exception("Simulation can only be enabled in debug mode and when not connected to a Central Station.\n\nDebug mode is enabled by passing a second argument via the command line.");
+            throw new Exception(
+                I18n.f("autolayout.errorSimulationModeDebugOnly")
+            );
         }
 
         this.simulate = simulate;
-        
+
         if (simulate)
         {
-            control.log("Auto layout WARNING: Auto layout development / simulation mode enabled.  Trains will not run.");
+            control.logf("autolayout.warningSimulationModeEnabled");
         }
     }
 
@@ -457,12 +462,12 @@ public class Layout
             // Optimization - avoid starting inactive locomotives
             if (locLocation != null && !locLocation.isActive())
             {
-                control.log("Skipping autonomous operation of locomotive " + loc.getName() + " (inactive)");  
+                control.logf("autolayout.warningSkipAutonomousInactiveLoc", loc.getName());
                 return;
             }
             else
             {
-                control.log("Starting autonomous operation of locomotive " + loc.getName());
+                control.logf("autolayout.infoAutonomousLocomotiveStarted", loc.getName());            
             }
             
             try 
@@ -471,8 +476,10 @@ public class Layout
             } 
             catch (Exception ex)
             {
-               this.invalidate("Auto layout error: Failed to run locomotive " + loc.getName());
-               this.stopLocomotives();
+                this.invalidate(
+                    I18n.f("autolayout.errorFailedToRunLocomotive", loc.getName())
+                );
+                this.stopLocomotives();
             }
         });
     }     
@@ -536,7 +543,9 @@ public class Layout
         }
         else
         {
-            throw new Exception("preArrivalSpeedReduction must be > 0 and <= 1");
+            throw new Exception(
+                I18n.f("autolayout.errorPreArrivalSpeedReductionRange")
+            );
         }
     }
     
@@ -578,17 +587,23 @@ public class Layout
     {        
         if (feedback != null && !this.control.isFeedbackSet(feedback))
         {
-            throw new Exception("Feedback " + feedback + " does not exist");
+            throw new Exception(
+                I18n.f("autolayout.errorFeedbackDoesNotExist", feedback)
+            );
         }
-        
-        if ("".equals(name) || name == null)
+
+        if (name == null || "".equals(name))
         {
-            throw new Exception("Point must have a name");
+            throw new Exception(
+                I18n.f("autolayout.errorPointMustHaveName")
+            );
         }
-        
+
         if (this.points.containsKey(name))
         {
-            throw new Exception("Point " + name + " already exists");
+            throw new Exception(
+                I18n.f("autolayout.errorPointAlreadyExists", name)
+            );
         }
         
         Point p = new Point(name, isDest, feedback);
@@ -610,16 +625,20 @@ public class Layout
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
-            throw new Exception("Start or end point does not exist");
+            throw new Exception(
+                I18n.f("autolayout.errorStartOrEndPointDoesNotExist")
+            );
         }
         
         Edge newEdge = new Edge(this.points.get(startPoint), this.points.get(endPoint));
         
         if (this.edges.containsKey(newEdge.getName()))
         {
-            throw new Exception("Edge already exists");
+            throw new Exception(
+                I18n.f("autolayout.errorEdgeAlreadyExists", newEdge.getName())
+            );
         }
-        
+      
         this.edges.put(newEdge.getName(), newEdge);
            
         if (!this.adjacency.containsKey(newEdge.getStart().getName()))
@@ -787,7 +806,12 @@ public class Layout
     {
         if (control.isDebug())
         {
-            this.control.log("\t " + loc.getName() + " path invalid: " + message + " " + this.pathToString(path));
+            this.control.logf(
+                "autolayout.errorLocomotivePathInvalid",
+                loc.getName(),
+                message,
+                this.pathToString(path)
+            );
         }
     }
 
@@ -801,7 +825,11 @@ public class Layout
     {
         if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
         {
-            logPathError(loc, path, "More than the " + this.maxActiveTrains + " maximum allowed trains are running concurrently");
+            logPathError(
+                loc,
+                path,
+                I18n.f("autolayout.errorMaxActiveTrainsExceeded", this.maxActiveTrains)
+            );
             return false;
         }
         
@@ -809,94 +837,111 @@ public class Layout
         {
             if (e.isOccupied(loc))
             {
-                logPathError(loc, path, "Edge is occupied: " + e.getName());
-                
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorEdgeOccupied", e.getName())
+                );
                 return false;
             }
-                        
+
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
-                logPathError(loc, path, "Edge is occupied: " + e.getOppositeName());
-                              
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorEdgeOccupied", e.getOppositeName())
+                );
                 return false;
             }
-            
+
             // Excluded intermediate points cannot be traversed
             if (!e.getStart().isDestination() && e.getStart().getExcludedLocs().contains(loc))
             {
-                logPathError(loc, path, "The intermediate point " + e.getStart().getName() + " excludes this locomotive");
-                
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorIntermediatePointExcluded", e.getStart().getName())
+                );
                 return false;
             }
-            
+
             // Terminus stations may only be at the end of a path
             if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
             {
-                logPathError(loc, path, "Contains an intermediate terminus station");
-                
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorIntermediateTerminusStation")
+                );
                 return false;
             }
-            
+
             // Inactive points not allowed in auto running
             if (this.isAutoRunning() && (!e.getStart().isActive() || !e.getEnd().isActive()))
             {
-                logPathError(loc, path, "Contains an inactive point, which cannot be chosen in autonomous operation");
-                
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorInactivePointInAutoRun")
+                );
                 return false;
             }
-            
+
             // Starting point is not a station - do not pick it in fully autonomous mode
             if (this.isAutoRunning() && !e.getStart().isDestination() && e.getStart().equals(path.get(0).getStart()))
             {
-                logPathError(loc, path, "Starts with a non-station, which cannot be chosen in autonomous operation");
-                
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorStartWithNonStation")
+                );
                 return false;
             }
-            
+
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
-                logPathError(loc, path, "Expects feedback " + e.getEnd().getS88() + " to be clear");
-                             
+                logPathError(loc, path,
+                    I18n.f("autolayout.errorFeedbackNotClear", e.getEnd().getS88())
+                );
                 return false;
             }
-            
+
             // Ensure all lock edges are unoccupied
             for (Edge e2 : e.getLockEdges())
             {
                 if (e2.isOccupied(loc))
                 {
-                    logPathError(loc, path, "Lock edge " + e2.getName() + " occupied");
-                    
+                    logPathError(loc, path,
+                        I18n.f("autolayout.errorLockEdgeOccupied", e2.getName())
+                    );
                     return false;
                 }
-            } 
+            }
         }
         
         // Check train length
         if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
         {
-            logPathError(loc, path, "trainLength is too long to stop at " + path.get(path.size() - 1).getEnd().getName());
-            
+            logPathError(
+                loc,
+                path,
+                I18n.f("autolayout.errorTrainLengthTooLong", path.get(path.size() - 1).getEnd().getName())
+            );
             return false;
         }
-        
+
         if (!path.get(path.size() - 1).getEnd().isActive() && this.isAutoRunning())
         {
-            logPathError(loc, path, "Disallowed because inactive station " + path.get(path.size() - 1).getEnd().getName() + " cannot be chosen in autonomous operation.");
-            
+            logPathError(
+                loc,
+                path,
+                I18n.f("autolayout.errorInactiveStationInAutoRun", path.get(path.size() - 1).getEnd().getName())
+            );
             return false;
         }
-        
+
         // Only reversible locomotives can go to a terminus
         if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
-            logPathError(loc, path, "Terminus disallowed because " + loc.getName() + " is not reversible");
-            
+            logPathError(
+                loc,
+                path,
+                I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName())
+            );
             return false;
         }
-                
-        // Preview the configuration                  
+
+        // Preview the configuration
         EdgeConfigurationState validity = new EdgeConfigurationState();
         for (Edge e : path)
         {
@@ -906,8 +951,11 @@ public class Layout
         // Invalid state means there were conflicting accessory commands, so this path would not work as intended
         if (!validity.configIsValid)
         {
-            logPathError(loc, path, "Has conflicting commands (" + validity.invalidConfigs.toString() + ")");
-            
+            logPathError(
+                loc,
+                path,
+                I18n.f("autolayout.errorConflictingAccessoryCommands", validity.invalidConfigs.toString())
+            );
             return false;
         }
               
@@ -948,14 +996,14 @@ public class Layout
 
             if (acc == null)
             {
-                String errorMessage = "Accessory does not exist - " + name + " (" + state + ")";
+                String errorMessage = I18n.f("autolayout.errorAccessoryDoesNotExist", name, state);
                 control.log(errorMessage);
 
                 if (preConfigure == null)
                 {
                     this.invalidate();
                     Layout.lastError = errorMessage;
-                    control.log("Invalidating auto layout state");
+                    control.logf("autolayout.errorInvalidatingAutoLayoutState");
                 }
                 
                 return;
@@ -976,14 +1024,22 @@ public class Layout
             }
             else
             {
-                control.log("Auto layout: Configuring " + acc.getName() + " " + state.toString().toLowerCase());
+                control.logf(
+                    "autolayout.infoConfiguringAccessory",
+                    acc.getName(),
+                    state.toString().toLowerCase()
+                );
 
                 boolean result = acc.setState(state);
-                
+
                 if (!result)
                 {
                     // This should never happen
-                    control.log("Invalid configuration command: " + name + " " + state.toString());
+                    control.logf(
+                        "autolayout.errorInvalidConfigurationCommand",
+                        name,
+                        state.toString()
+                    );
                 }
 
                 // Sleep between commands
@@ -1007,19 +1063,25 @@ public class Layout
         
         if (p == null)
         {
-            throw new Exception("Point " + name + " does not exist");
+            throw new Exception(
+                I18n.f("autolayout.errorPointDoesNotExist", name)
+            );
         }
-        
+
         if (!this.getNeighbors(p).isEmpty())
         {
-            throw new Exception("Point " + name + " is connected to other points.  Delete edges first.");
+            throw new Exception(
+                I18n.f("autolayout.errorPointConnectedDeleteEdgesFirst", name)
+            );
         }
-        
+
         for (Edge e : this.getEdges())
         {
             if (e.getStart().equals(p) || e.getEnd().equals(p))
             {
-                throw new Exception("Point " + name + " has incoming edges.  Delete edges first.");
+                throw new Exception(
+                    I18n.f("autolayout.errorPointHasIncomingEdgesDeleteFirst", name)
+                );
             }
         }
         
@@ -1078,7 +1140,7 @@ public class Layout
         
         if (e == null)
         {
-            throw new Exception("Edge " + start + " -> " + end + " does not exist");
+            throw new Exception(I18n.f("autolayout.errorEdgeDoesNotExist", start, end));                    
         }
         
         // Remove from adjacency list
@@ -1124,7 +1186,7 @@ public class Layout
         
         if (p == null)
         {
-            throw new Exception("Point " + name + " does not exist");
+            throw new Exception(I18n.f("autolayout.errorPointDoesNotExist", name));
         }
         
         // Update the point name
@@ -1253,7 +1315,10 @@ public class Layout
                     
                     if (this.control.isDebug())
                     {
-                        this.control.log("Auto layout: skipping unlock for " + e.getName() + " due to new active locomotive set via non-atomic paths");
+                        this.control.logf(
+                            "autolayout.infoSkippingUnlockDueToNonAtomicPaths",
+                            e.getName()
+                        );
                     }
                 }
                 
@@ -1284,12 +1349,12 @@ public class Layout
     {
         start = this.getPoint(start.getName());
         end = this.getPoint(end.getName());
-        
-        // this.control.log("Trying path " + start.getName() + " -> " + end.getName());
-        
+                
         if (start == null || end == null)
         {
-            throw new Exception("Invalid points specified");
+            throw new Exception(
+                I18n.f("autolayout.errorInvalidPointsSpecified")
+            );
         }
         
         if (!end.isDestination())
@@ -1337,9 +1402,7 @@ public class Layout
                 }
             }
         }
-        
-        //this.control.log("Path: []");
-        
+                
         return null;   
     }
     
@@ -1369,7 +1432,13 @@ public class Layout
         {
             int waited = (int) ((currentLoc.getLastPathTime() - minLoc.getLastPathTime()) / 1000);
             
-            this.control.log(currentLoc.getName() + " yielding for up to " + YIELD_SECONDS + " seconds as " + minLoc.getName() + " has not run for " + waited + " seconds");
+            this.control.logf(
+                "autolayout.infoLocomotiveYieldingForInactive",
+                currentLoc.getName(),
+                YIELD_SECONDS,
+                minLoc.getName(),
+                waited
+            );
             return minLoc;
         }
         
@@ -1386,7 +1455,9 @@ public class Layout
     {
         if (speed < 1 || speed > 100)
         {
-            throw new Exception("Invalid speed specified");
+            throw new Exception(
+                I18n.f("autolayout.errorInvalidSpeedSpecified")
+            );
         }
         
         new Thread( () ->
@@ -1504,8 +1575,10 @@ public class Layout
             }
         }
 
-        this.control.log(loc.getName() + " has no free paths at the moment");
-          
+        this.control.logf(
+            "autolayout.infoLocomotiveNoFreePaths",
+            loc.getName()
+        );          
         loc.delay(minDelay, maxDelay);
         
         return null;
@@ -1676,7 +1749,10 @@ public class Layout
         // Calculate start index in case of prior graceful stop request
         int startIndex = getUnfinishedTimetablePathIndex();
             
-        this.control.log("Starting timetable execution from index " + (startIndex + 1));
+        this.control.logf(
+            "autolayout.infoExecutionStartedFromIndex",
+            startIndex + 1
+        );        
         
         for (int i = startIndex; i < this.timetable.size(); i++)
         {
@@ -1689,34 +1765,48 @@ public class Layout
             {
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
                 {
-                    this.control.log("Waiting " + (ttp.getSecondsToNext() - (System.currentTimeMillis() - startTime)) / 1000  + "s to time of next timetable entry...");
+                    this.control.logf(
+                        "autolayout.infoWaitingForNextTimetableEntry",
+                        (ttp.getSecondsToNext() - (System.currentTimeMillis() - startTime)) / 1000
+                    );
                 }
                 else if (i > startIndex && this.timetable.get(i - 1).getExecutionTime() == 0)
                 {
-                    this.control.log("Waiting for previous route to start.");
+                    this.control.logf(
+                        "autolayout.infoWaitingForPreviousRouteToStart"
+                    );
                 }
                 else
                 {
-                    this.control.log("Starting timetable route " + ttp.toString());
+                    this.control.logf(
+                        "autolayout.infoStartingTimetableRoute",
+                        ttp.toString()
+                    );
                     startTime = System.currentTimeMillis();
 
                     new Thread(() ->
-                    {   
+                    {
                         try
                         {
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
-                                this.control.log("Timetable entry " + ttp.toString() + " not yet executable. Check log. Retrying...");
-                                
+                                this.control.logf(
+                                    "autolayout.infoTimetableEntryNotYetExecutable",
+                                    ttp.toString()
+                                );
+
                                 ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
                             }
-                            
-                            this.control.log("Timetable path finished.");
+
+                            this.control.logf("autolayout.infoTimetablePathFinished");
                         }
                         catch (Exception e)
                         {
-                            this.control.log("Timetable error: " + e.toString());
-                            
+                            this.control.logf(
+                                "autolayout.errorTimetableExecutionFailed",
+                                e.toString()
+                            );
+
                             // Stop execution
                             synchronized (this.activeLocomotives)
                             {
@@ -1725,21 +1815,21 @@ public class Layout
 
                             control.log(e);
                         }
-                        
+
                         // When we are done, exit in this thread to avoid disrupting the final path
                         if (index == this.timetable.size() - 1)
-                        {                           
+                        {
                             // Reset running status
                             synchronized (this.activeLocomotives)
                             {
                                 this.stopLocomotives();
                             }
-                            
-                            this.control.log("Timetable execution finished.");
+
+                            this.control.logf("autolayout.infoTimetableExecutionFinished");
                         }
-                        
+
                     }).start();
-                    
+
                     break;
                 }  
 
@@ -1806,34 +1896,33 @@ public class Layout
         // Sanity check
         if (!this.isValid())
         {
-            this.control.log("Auto layout: Configuration is invalid and must be reloaded.");
+            this.control.logf("autolayout.errorConfigurationInvalidMustReload");
             return false;
         }
-        
+
         if (path.isEmpty())
         {
-            this.control.log("Path is empty");
+            this.control.logf("autolayout.errorPathEmpty");
             return false;
         }
-                
+
         if (loc == null)
         {
-            this.control.log("Locomotive is null");
+            this.control.logf("autolayout.errorLocomotiveIsNull");
             return false;
         }
-                
+
         if (this.activeLocomotives.containsKey(loc))
         {
-            this.control.log("Locomotive is currently busy");
+            this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
             return false;
         }
-        
+
         Point start = path.get(0).getStart();
-        // Point end = path.get(path.size() - 1).getEnd();
-          
+
         if (!loc.equals(start.getCurrentLocomotive()))
         {
-            this.control.log("Locomotive does not currently occupy the start of the path");
+            this.control.logf("autolayout.errorLocomotiveNotAtPathStart", loc.getName());
             return false;
         }
         
@@ -1843,7 +1932,9 @@ public class Layout
                 
         if (!result)
         {
-            this.control.log("Error: path is occupied");
+            this.control.logf(
+                "autolayout.errorPathOccupied"
+            );
             return false;
         }
         else
@@ -1869,7 +1960,11 @@ public class Layout
                 }
             }
              
-            this.control.log("Executing path " + this.pathToString(path) + " for " + loc.getName());
+            this.control.logf(
+                "autolayout.infoExecutingPathForLocomotive",
+                this.pathToString(path),
+                loc.getName()
+            );
             this.addTimetableEntry(loc, path);
         }
         
@@ -1882,8 +1977,11 @@ public class Layout
         }
         
         loc.setSpeed(speed);
-        this.control.log("Auto layout: started " + loc.getName());
-        
+        this.control.logf(
+            "autolayout.infoLocomotiveStarted",
+            loc.getName()
+        );
+
         // When !this.atomicRoutes: track edges to unlock based on length of train
         List<Integer> toUnlock = new LinkedList<>();
         Integer lengthTraversed = 0;
@@ -1902,7 +2000,11 @@ public class Layout
                     
                     if (loc.getSpeed() != calculatedSpeed)
                     {
-                        this.control.log("Auto layout: adjusting speed to " + calculatedSpeed + " for " + loc.getName());
+                        this.control.logf(
+                            "autolayout.infoAdjustingSpeedForLocomotive",
+                            calculatedSpeed,
+                            loc.getName()
+                        );
                         loc.setSpeed(calculatedSpeed);
                     }
                 }
@@ -1932,8 +2034,11 @@ public class Layout
                 // Reverse the locomotive if this is a reversing station
                 if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
                 {
-                    this.control.log("Auto layout: intermediate reversing for " + loc.getName());
-                    loc.setSpeed(0)
+                        this.control.logf(
+                            "autolayout.infoIntermediateReversingForLocomotive",
+                            loc.getName()
+                        );
+                        loc.setSpeed(0)
                         .switchDirection()
                         .waitForSpeedBelow(1)
                         .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
@@ -1965,7 +2070,10 @@ public class Layout
                                 
                                 if (control.isDebug())
                                 {
-                                    control.log("Unlocking traversed edge: " + path.get(index).getName());
+                                    this.control.logf(
+                                        "autolayout.infoUnlockingTraversedEdge",
+                                        path.get(index).getName()
+                                    );
                                 }
                             }
                             
@@ -1976,7 +2084,12 @@ public class Layout
                         {
                             if (control.isDebug())
                             {
-                                control.log("Not yet unlocking traversed edge due to train length " + loc.getTrainLength() + " > " + lengthTraversed + ": " + path.get(i - 1).getName());
+                                this.control.logf(
+                                    "autolayout.infoNotUnlockingTraversedEdgeDueToTrainLength",
+                                    loc.getTrainLength(),
+                                    lengthTraversed,
+                                    path.get(i - 1).getName()
+                                );
                             }
                         }
                     }
@@ -1989,8 +2102,12 @@ public class Layout
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
                     loc.setSpeed((int) Math.ceil((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
-                    this.control.log("Auto layout: pre-arrival speed of " + loc.getSpeed() + " for " + loc.getName());
-                                    
+                    this.control.logf(
+                        "autolayout.infoPreArrivalSpeedForLocomotive",
+                        loc.getSpeed(),
+                        loc.getName()
+                    );
+
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
                         loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
@@ -2016,7 +2133,10 @@ public class Layout
                     }
 
                     loc.setSpeed(0);
-                    this.control.log("Auto layout: stopping " + loc.getName());
+                    this.control.logf(
+                        "autolayout.infoLocomotiveStopping",
+                        loc.getName()
+                    );
                 }
             }  
             
@@ -2025,14 +2145,21 @@ public class Layout
             {
                 if (control.isDebug())
                 {
-                    this.control.log("Locomotive " + loc.getName() + " path execution halted from prior layout version.");
+                    this.control.logf(
+                        "autolayout.debugLocomotivePathExecutionHaltedFromPriorLayoutVersion",
+                        loc.getName()
+                    );
                 }
-                
+
                 return true;
             }
-            
-            this.control.log("Locomotive " + loc.getName() + " reached milestone " + current.toString());   
-            
+
+            this.control.logf(
+                "autolayout.infoLocomotiveReachedMilestone",
+                loc.getName(),
+                current.toString()
+            );
+
             synchronized (this.activeLocomotives)
             {
                 this.locomotiveMilestones.get(loc).add(current); 
@@ -2066,7 +2193,10 @@ public class Layout
         // Reverse at terminus station
         if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
         {
-            this.control.log("Auto layout: Locomotive " + loc.getName() + " reached terminus or final reversing station. Reversing");   
+            this.control.logf(
+                "autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation",
+                loc.getName()
+            );
             loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection().delay(1000); // pause to avoid network issues
         }
         
@@ -2101,8 +2231,12 @@ public class Layout
             }
         }
         
-        this.control.log("Locomotive " + loc.getName() + " finished its path: " + this.pathToString(path));   
-        
+        this.control.logf(
+            "autolayout.infoLocomotiveFinishedPath",
+            loc.getName(),
+            this.pathToString(path)
+        );
+
         // Track number of completed paths
         loc.incrementNumPaths();
         
@@ -2146,7 +2280,9 @@ public class Layout
         
         if (this.isRunning())
         {                
-            this.control.log("Cannot edit auto layout while running.");
+            this.control.logf(
+                "autolayout.errorCannotEditWhileRunning"
+            );
             return result;
         }
         
@@ -2163,7 +2299,10 @@ public class Layout
             // Can only place loc on a station
             if (!this.getPoint(targetPoint).isDestination())
             {
-                this.control.log(targetPoint + " is not a station.");
+                this.control.logf(
+                    "autolayout.errorPointIsNotStation",
+                    targetPoint
+                );
                 return result;
             }
             
@@ -2291,7 +2430,9 @@ public class Layout
     {
         if (minDelay > this.maxDelay || minDelay < 0)
         {
-            throw new Exception("minDelay must be positive and less than or equal to maxDelay");      
+            throw new IllegalArgumentException(
+                I18n.f("autolayout.errorMinDelayRange")
+            );
         }
         
         this.minDelay = minDelay;
@@ -2306,7 +2447,9 @@ public class Layout
     {
         if (maxDelay < this.minDelay || maxDelay < 0)
         {
-            throw new Exception("maxDelay must be positive and greater than or equal to to minDelay");      
+            throw new IllegalArgumentException(
+                I18n.f("autolayout.errorMaxDelayRange")
+            );
         }
         
         this.maxDelay = maxDelay;
@@ -2321,7 +2464,9 @@ public class Layout
     {
         if (defaultLocSpeed <= 0 || defaultLocSpeed > 100)
         {
-            throw new Exception("defaultLocSpeed must be between 1 and 100");
+            throw new IllegalArgumentException(
+                I18n.f("autolayout.errorDefaultLocSpeedRange")
+            );
         }
         
         this.defaultLocSpeed = defaultLocSpeed;
@@ -2382,7 +2527,9 @@ public class Layout
     {
         if (sec < 0)
         {
-            throw new Exception("maxLocInactiveSeconds may not be a negative value");
+            throw new IllegalArgumentException(
+                I18n.f("autolayout.errorMaxLocInactiveSecondsNegative")
+            );
         }
         
         this.maxLocInactiveSeconds = sec;
@@ -2551,7 +2698,9 @@ public class Layout
         }
         catch (JSONException e)
         {
-            layout.invalidate("Auto layout error: JSON parsing error");
+            layout.invalidate(
+                I18n.f("autolayout.errorJsonParsing")
+            );
             return layout;
         }
                

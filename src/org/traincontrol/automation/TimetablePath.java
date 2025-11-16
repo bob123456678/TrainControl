@@ -7,6 +7,7 @@ import java.util.Objects;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 
 /**
  * Class representing a path (locomotive and series of edges)
@@ -67,7 +68,11 @@ public class TimetablePath
     @Override
     public String toString()
     {
-        return this.loc.getName() + " from " + this.getStart().getName() + " to " + this.getEnd().getName();
+        return I18n.f("autolayout.locFromStartToEnd",
+            this.loc.getName(),
+            this.getStart().getName(),
+            this.getEnd().getName()
+        );
     }
 
     public long getSecondsToNext()
@@ -171,7 +176,9 @@ public class TimetablePath
         
         if (loc == null)
         {
-            throw new Exception("Locomotive " + json.getString("loc") + " does not exist");
+            throw new Exception(
+                I18n.f("autolayout.errorLocomotiveDoesNotExist", json.getString("loc"))
+            );
         }
         
         // Parse path
@@ -185,7 +192,12 @@ public class TimetablePath
             
             if (newEdge == null)
             {
-                throw new Exception("Edge " + edgeJson.getString("start") + " to " + edgeJson.getString("end") + " does not exist.");
+                throw new Exception(
+                    I18n.f("autolayout.errorEdgeDoesNotExist",
+                        edgeJson.getString("start"),
+                        edgeJson.getString("end")
+                    )
+                );
             }
             
             path.add(newEdge);
