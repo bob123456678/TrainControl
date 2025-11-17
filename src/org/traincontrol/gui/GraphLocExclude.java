@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import javax.swing.DefaultListModel;
+import org.traincontrol.util.I18n;
 
 /**
  * UI to exclude locomotives from points
@@ -31,11 +32,15 @@ public class GraphLocExclude extends javax.swing.JPanel
         
         if (p.isDestination())
         {
-            this.infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
+            this.infoLabel.setText(
+                I18n.t("autolayout.ui.infoExcludedLocomotivesNotStopping")
+            );
         }
         else
         {
-            this.infoLabel.setText("Excluded locomotives will never be able to traverse this point.");
+            this.infoLabel.setText(
+                I18n.t("autolayout.ui.infoExcludedLocomotivesCannotTraverse")
+            );
         }
         
         updateValues();
@@ -111,9 +116,10 @@ public class GraphLocExclude extends javax.swing.JPanel
 
         allowedLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         allowedLocLabel.setForeground(new java.awt.Color(0, 0, 115));
-        allowedLocLabel.setText("Allowed Locomotives (Default)");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        allowedLocLabel.setText(bundle.getString("autolayout.ui.allowedLocsDefault")); // NOI18N
 
-        infoLabel.setText("Excluded locomotives will not stop at this station in autonomous operation.");
+        infoLabel.setText(bundle.getString("autolayout.ui.excludedHint")); // NOI18N
 
         allowedLocList.setBackground(new java.awt.Color(254, 254, 254));
         allowedLocList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -138,7 +144,7 @@ public class GraphLocExclude extends javax.swing.JPanel
 
         excludeLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         excludeLocLabel.setForeground(new java.awt.Color(0, 0, 115));
-        excludeLocLabel.setText("Excluded Locomotives");
+        excludeLocLabel.setText(bundle.getString("autolayout.ui.excludedLocs")); // NOI18N
 
         includeLoc.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         includeLoc.setText("<<<");

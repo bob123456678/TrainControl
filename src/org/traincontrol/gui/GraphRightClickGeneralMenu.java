@@ -8,6 +8,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu when the graph UI is clicked outside of a point
@@ -21,12 +22,16 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
         
         if (!running)
         {
-            menuItem = new JMenuItem("Create New Point");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuCreatePoint")
+            );
+            menuItem.addActionListener(event ->
             {
-                String dialogResult = JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                    "Enter the new point name.",
-                    "");
+                String dialogResult = JOptionPane.showInputDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.t("autolayout.ui.promptEnterPointName"),
+                    ""
+                );
 
                 if (dialogResult != null && !"".equals(dialogResult))
                 {
@@ -34,8 +39,10 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                     {
                         if (ui.getModel().getAutoLayout().getPoint(dialogResult) != null)
                         {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "This point name is already in use.  Pick another.");
+                            JOptionPane.showMessageDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.errorPointNameInUse")
+                            );
                         }
                         else
                         {
@@ -51,7 +58,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                             parent.getMainGraph().getNode(p.getUniqueId()).setAttribute("y", p.getY());
                             parent.getMainGraph().getNode(p.getUniqueId()).setAttribute("weight", 3);
 
-                            ui.updatePoint(p, parent.getMainGraph());                            
+                            ui.updatePoint(p, parent.getMainGraph());
                             ui.getModel().getAutoLayout().refreshUI();
                             ui.repaintAutoLocList(false);
                             parent.setLastClickedNode(p.getName());
@@ -59,18 +66,21 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            "Error adding node.");
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorAddNode")
+                        );
                     }
                 }
-            }); 
+            });
 
             add(menuItem);
-
             addSeparator();
 
-            menuItem = new JMenuItem("Start Autonomous Operation");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuStartAutonomy")
+            );
+            menuItem.addActionListener(event ->
             {
                 try
                 {
@@ -78,29 +88,37 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(
+                        this,
+                        e.getMessage()
+                    );
                 }
             });
 
             add(menuItem);
-
             addSeparator();
 
-            menuItem = new JMenuItem("Clear Locomotives from Graph");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuClearLocomotives")
+            );
+            menuItem.addActionListener(event ->
             {
                 if (!ui.getModel().getAutoLayout().isRunning())
                 {
                     try
                     {
                         int dialogResult = JOptionPane.showConfirmDialog(
-                            (Component) parent.getSwingView(), "This will remove all locomotives from the graph \nexcept for those parked at reversing stations. Are you sure?" , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.confirmClearLocomotives"),
+                            I18n.t("autolayout.ui.confirmDeletionTitle"),
+                            JOptionPane.YES_NO_OPTION
+                        );
 
-                        if(dialogResult == JOptionPane.YES_OPTION)
+                        if (dialogResult == JOptionPane.YES_OPTION)
                         {
                             List<Locomotive> locs = new ArrayList<>(ui.getModel().getAutoLayout().getLocomotivesToRun());
 
-                            for (Locomotive l: locs)
+                            for (Locomotive l : locs)
                             {
                                 Point p = ui.getModel().getAutoLayout().getLocomotiveLocation(l);
 
@@ -116,7 +134,10 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(
+                            this,
+                            e.getMessage()
+                        );
                     }
                 }
             });
@@ -125,8 +146,10 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
         }
         else
         {
-            menuItem = new JMenuItem("Gracefully Stop Autonomy");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuStopAutonomyGracefully")
+            );
+            menuItem.addActionListener(event ->
             {
                 try
                 {
@@ -134,9 +157,12 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(
+                        this,
+                        e.getMessage()
+                    );
                 }
-            });    
+            });
 
             add(menuItem);
         }

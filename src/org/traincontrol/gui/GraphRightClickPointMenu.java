@@ -36,7 +36,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
             // Select the active locomotive
             if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
             {
-                menuItem = new JMenuItem("Edit Locomotive at " + nodeName);
+                menuItem = new JMenuItem(I18n.f("autolayout.ui.labelEditLocomotiveAt", nodeName));
                 menuItem.addActionListener(event -> 
                     {
                         GraphLocAssign edit = new GraphLocAssign(ui, p, false);
@@ -52,8 +52,10 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 add(menuItem);
             }
 
-            menuItem = new JMenuItem("Add new Locomotive to graph at " + nodeName);
-            menuItem.addActionListener(event -> 
+                menuItem = new JMenuItem(
+                    I18n.f("autolayout.ui.menuAddLocomotiveAtNode", nodeName)
+                );
+                menuItem.addActionListener(event -> 
                 {
                     if (ui.getModel().getLocomotives().isEmpty())
                     {
@@ -67,8 +69,9 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
                         if (edit.getNumLocs() == 0)
                         {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "All locomotives in the database have already been placed on the graph."
+                            JOptionPane.showMessageDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.infoAllLocomotivesPlaced")
                             );
                         }
                         else
@@ -87,7 +90,9 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
             if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && ui.getActiveLoc() != null)
             {
-                menuItem = new JMenuItem("Assign " + ui.getActiveLoc().getName() + " to Node");
+                menuItem = new JMenuItem(
+                    I18n.f("autolayout.ui.menuAssignLocomotiveToNode", ui.getActiveLoc().getName())
+                );
                 menuItem.setToolTipText("Control+V");
                 menuItem.addActionListener(event -> 
                     {
@@ -103,11 +108,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
             if (p.isOccupied())
             {
-                menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Node");
+                menuItem = new JMenuItem(
+                    I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", p.getCurrentLocomotive().getName())
+                );
                 menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); ui.repaintAutoLocList(false);});    
                 add(menuItem);
 
-                menuItem = new JMenuItem("Remove Locomotive " + p.getCurrentLocomotive().getName() + " from Graph");
+                menuItem = new JMenuItem(
+                    I18n.f("autolayout.ui.menuRemoveLocomotiveFromGraph", p.getCurrentLocomotive().getName())
+                );
                 menuItem.setToolTipText("Delete");
                 menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); ui.repaintAutoLocList(false); });    
                 add(menuItem);
@@ -117,7 +126,12 @@ final class GraphRightClickPointMenu extends JPopupMenu
         }
 
         // Edit sensor
-        menuItem = new JMenuItem("Edit s88 address (" + (p.hasS88() ? p.getS88() : "none") + ")");
+        menuItem = new JMenuItem(
+            I18n.f(
+                "autolayout.ui.menuEditS88Address",
+                (p.hasS88() ? p.getS88() : I18n.t("autolayout.ui.none"))
+            )
+        );
         menuItem.setToolTipText("Control+S");
         menuItem.addActionListener(event -> 
             {
@@ -128,94 +142,125 @@ final class GraphRightClickPointMenu extends JPopupMenu
         add(menuItem);
         
         // Create a submenu for the remaining items
-        JMenu submenu = new JMenu("Edit advanced parameters...");
-        
-        if (p.isDestination())
-        {              
-            menuItem = new JMenuItem("Maximum train length (" + (p.getMaxTrainLength() != 0 ? p.getMaxTrainLength() : "any") + ")"); //  at " + nodeName + "
-            menuItem.addActionListener(event -> 
-                {
-                    String dialogResult = JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                        "Enter the maximum length of a train that can stop at this station.",
-                        p.getMaxTrainLength());
+        JMenu submenu = new JMenu(
+            I18n.t("autolayout.ui.menuEditAdvancedParameters")
+        );
 
-                    if (dialogResult != null)
+        if (p.isDestination())
+        {
+            menuItem = new JMenuItem(
+                I18n.f(
+                    "autolayout.ui.menuMaxTrainLength",
+                    (p.getMaxTrainLength() != 0
+                        ? p.getMaxTrainLength()
+                        : I18n.t("autolayout.ui.any"))
+                )
+            );
+
+            menuItem.addActionListener(event ->
+            {
+                String dialogResult = JOptionPane.showInputDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.t("autolayout.ui.promptEnterMaxTrainLength"),
+                    p.getMaxTrainLength()
+                );
+
+                if (dialogResult != null)
+                {
+                    try
                     {
-                        try
-                        {
-                            int newLength = Math.abs(Integer.parseInt(dialogResult));
-                            p.setMaxTrainLength(newLength);
-                            ui.updatePoint(p, parent.getMainGraph());
-                            ui.repaintAutoLocList(false);
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "Invalid value (must be a positive integer, or 0 to disable)");
-                        }
+                        int newLength = Math.abs(Integer.parseInt(dialogResult));
+                        p.setMaxTrainLength(newLength);
+                        ui.updatePoint(p, parent.getMainGraph());
+                        ui.repaintAutoLocList(false);
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorInvalidTrainLength")
+                        );
                     }
                 }
-            );     
+            });
 
             submenu.add(menuItem);
         }
 
         // Edit Priority
         if (p.isDestination())
-        {    
-            menuItem = new JMenuItem("Station priority (" + (p.getPriority() != 0 ? (p.getPriority() > 0 ? "+" : "") + p.getPriority() : "default") + ")");
-            menuItem.addActionListener(event -> 
+        {
+            menuItem = new JMenuItem(
+                I18n.f(
+                    "autolayout.ui.menuStationPriority",
+                    (p.getPriority() != 0
+                        ? (p.getPriority() > 0 ? "+" : "") + p.getPriority()
+                        : I18n.t("autolayout.ui.default"))
+                )
+            );
+
+            menuItem.addActionListener(event ->
+            {
+                String dialogResult = JOptionPane.showInputDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.f("autolayout.ui.promptEnterStationPriority", nodeName),
+                    p.getPriority()
+                );
+
+                if (dialogResult != null)
                 {
-                    String dialogResult = JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                        "Enter the priority for " + nodeName + " (negative is lower, positive is higher):",
-                        p.getPriority());
+                    dialogResult = dialogResult.trim();
 
-                    if (dialogResult != null)
+                    try
                     {
-                        dialogResult = dialogResult.trim();
-
-                        try
+                        Integer value;
+                        if (dialogResult.equals(""))
                         {
-                            Integer value;
-                            if (dialogResult.equals(""))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                value = Integer.valueOf(dialogResult);
-                            }
-
-                            p.setPriority(value);
-
-                            ui.updatePoint(p, parent.getMainGraph());
-
-                            ui.repaintAutoLocList(false);
+                            value = null;
                         }
-                        catch (NumberFormatException e)
+                        else
                         {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "Invalid value (must be an integer, or 0 for default)");
+                            value = Integer.valueOf(dialogResult);
                         }
+
+                        p.setPriority(value);
+
+                        ui.updatePoint(p, parent.getMainGraph());
+                        ui.repaintAutoLocList(false);
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorInvalidPriority")
+                        );
                     }
                 }
-            );     
+            });
 
             submenu.add(menuItem);
         }
 
         // Excluded locomotives
-        menuItem = new JMenuItem("Excluded locomotives (" + p.getExcludedLocs().size() + ")");
-        menuItem.setToolTipText("Control+E/U to exclude/unexclude active locomotive");
-        menuItem.addActionListener(event -> 
+        menuItem = new JMenuItem(
+            I18n.f("autolayout.ui.menuExcludedLocomotives", p.getExcludedLocs().size())
+        );
+        menuItem.setToolTipText(
+            I18n.f("autolayout.ui.tooltip.ExcludedLocomotives", "Control+E/U")
+        );
+        menuItem.addActionListener(event ->
         {
             try
             {
                 GraphLocExclude edit = new GraphLocExclude(ui, p);
 
-                int dialogResult2 = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), edit, 
-                        "Edit Excluded Locomotives at " + p.getName(), 
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                int dialogResult2 = JOptionPane.showConfirmDialog(
+                    (Component) parent.getSwingView(),
+                    edit,
+                    I18n.f("autolayout.ui.dialogEditExcludedLocomotives", p.getName()),
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+                );
 
                 if (dialogResult2 == JOptionPane.OK_OPTION)
                 {
@@ -227,24 +272,27 @@ final class GraphRightClickPointMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    "Error editing point: " + e.getMessage());
+                JOptionPane.showMessageDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.f("autolayout.ui.errorEditPoint", e.getMessage())
+                );
             }
         });
 
         submenu.add(menuItem);
 
-        // Speed multiplier         
-        menuItem = new JMenuItem("Speed multiplier (" + p.getSpeedMultiplierPercent() + "%)");
+        // Speed multiplier
+        menuItem = new JMenuItem(
+            I18n.f("autolayout.ui.menuSpeedMultiplier", p.getSpeedMultiplierPercent())
+        );
         menuItem.addActionListener(event ->
         {
             try
             {
-                // Prefill the dialog with the current value
                 Object input = JOptionPane.showInputDialog(
                     (Component) parent.getSwingView(),
-                    "Enter speed multiplier (1-200%) for " + nodeName + ":",
-                    "Set Speed Multiplier",
+                    I18n.f("autolayout.ui.promptEnterSpeedMultiplier", nodeName),
+                    I18n.t("autolayout.ui.dialogSetSpeedMultiplier"),
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     null,
@@ -253,15 +301,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
                 if (input != null && input instanceof String)
                 {
-                    p.setSpeedMultiplier(Integer.parseInt(input.toString()) * 0.01); // Convert to multiplier
+                    p.setSpeedMultiplier(Integer.parseInt(input.toString()) * 0.01);
                 }
-            } 
+            }
             catch (NumberFormatException ex)
             {
                 JOptionPane.showMessageDialog(
                     (Component) parent.getSwingView(),
-                    "Invalid input. Please enter a valid integer.",
-                    "Error",
+                    I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"),
+                    I18n.t("error.error"),
                     JOptionPane.ERROR_MESSAGE
                 );
             }
@@ -270,13 +318,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 JOptionPane.showMessageDialog(
                     (Component) parent.getSwingView(),
                     ex.getMessage(),
-                    "Error",
+                    I18n.t("error.error"),
                     JOptionPane.ERROR_MESSAGE
                 );
             }
         });
 
-        menuItem.setToolTipText("Optionally adjust the speed of trains incoming to this point.");
+        menuItem.setToolTipText(
+            I18n.t("autolayout.ui.tooltip.SpeedMultiplier")
+        );
         submenu.add(menuItem);
 
         add(submenu);
@@ -306,13 +356,28 @@ final class GraphRightClickPointMenu extends JPopupMenu
         add(stationCheckbox);
 
         // Create "Terminus Station" checkbox
-        JCheckBoxMenuItem terminusCheckbox = new JCheckBoxMenuItem("Mark as Terminus Station", p.isTerminus());
-        JCheckBoxMenuItem reversingCheckbox = new JCheckBoxMenuItem("Mark as Reversing Point", p.isReversing());
-        
-        stationCheckbox.setToolTipText("Trains can stop at stations.");
-        terminusCheckbox.setToolTipText("Terminus stations act like stations but will change the direction of the train.");
-        reversingCheckbox.setToolTipText("Trains will change directions at reversing points, but will never end at them in autonomous operation.");
-        
+        JCheckBoxMenuItem terminusCheckbox = new JCheckBoxMenuItem(
+            I18n.t("autolayout.ui.checkboxMarkTerminusStation"),
+            p.isTerminus()
+        );
+
+        JCheckBoxMenuItem reversingCheckbox = new JCheckBoxMenuItem(
+            I18n.t("autolayout.ui.checkboxMarkReversingPoint"),
+            p.isReversing()
+        );
+
+        stationCheckbox.setToolTipText(
+            I18n.t("autolayout.ui.tooltip.Station")
+        );
+
+        terminusCheckbox.setToolTipText(
+            I18n.t("autolayout.ui.tooltip.TerminusStation")
+        );
+
+        reversingCheckbox.setToolTipText(
+            I18n.t("autolayout.ui.tooltip.ReversingPoint")
+        );
+
         terminusCheckbox.addItemListener(event ->
         {
             try
@@ -366,8 +431,14 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
         // Enable/disable point
         // Create a checkbox menu item for the active state
-        JCheckBoxMenuItem activeCheckbox = new JCheckBoxMenuItem("Active", p.isActive());
-        activeCheckbox.setToolTipText("Inactive points will not be traversed in autonomous operation.");
+        JCheckBoxMenuItem activeCheckbox = new JCheckBoxMenuItem(
+            I18n.t("autolayout.ui.checkboxActive"),
+            p.isActive()
+        );
+
+        activeCheckbox.setToolTipText(
+            I18n.t("autolayout.ui.tooltip.Active")
+        );
         activeCheckbox.addItemListener(event ->
         {
             try
