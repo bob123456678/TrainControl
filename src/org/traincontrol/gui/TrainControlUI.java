@@ -11618,10 +11618,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         String info = this.getLayoutPath(false);
         
-        if (!info.contains("None"))
+        if (isLocalLayout())
         {
-            int result = JOptionPane.showConfirmDialog(this, info + "\n\nDo you want to view the files?", "Layout Source Info", JOptionPane.YES_NO_OPTION);
-            
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                I18n.f("layout.ui.confirmViewLayoutSourceFiles", info),
+                I18n.t("ui.dialogLayoutSourceInfo"),
+                JOptionPane.YES_NO_OPTION
+            );
+
             if (result == JOptionPane.YES_OPTION)
             {
                 this.getLayoutPath(true);
@@ -11848,7 +11853,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
-                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
             }
             else
             {
@@ -11867,21 +11872,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (!this.getModel().getPowerState())
             {
-                JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
                 this.executeTimetable.setEnabled(true);
                 return;
-            }
+            } 
 
             if (this.getModel().getAutoLayout().isRunning())
             {
-                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 this.executeTimetable.setEnabled(true);
                 return;
             }
 
             if (this.model.getAutoLayout().getTimetable().isEmpty())
             {
-                JOptionPane.showMessageDialog(this, "There are no timetable entries. Capture some commands first.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("timetable.ui.errorNoEntriesCaptureCommandsFirst")
+                );
                 this.executeTimetable.setEnabled(true);
                 return;
             }
@@ -11893,13 +11901,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (r.isEnabled())
                 {
-                    this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+                    this.model.logf(
+                        "autolayout.warningActiveConditionalRouteUnpredictable",
+                        r.getName()
+                    );
 
                     if (!conditionalRouteWarningShown)
                     {
-                        int dialogResult = JOptionPane.showConfirmDialog(this,
-                            "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
-
+                        int dialogResult = JOptionPane.showConfirmDialog(
+                            this,
+                            I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
+                            I18n.t("ui.dialogConfirm"),
+                            JOptionPane.YES_NO_OPTION
+                        );
+                        
                         if (dialogResult == JOptionPane.NO_OPTION)
                         {
                             return;
@@ -11925,7 +11940,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
                     if (locLocation == null || !locLocation.equals(ttp.getStart()))
                     {
-                        JOptionPane.showMessageDialog(this, "Locomotive " + ttp.getLoc().getName() + " must be moved to " + ttp.getStart());
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.f(
+                                "timetable.ui.infoLocomotiveMustBeMovedToStart",
+                                ttp.getLoc().getName(),
+                                ttp.getStart()
+                            )
+                        );
                         this.executeTimetable.setEnabled(true);
                         return;
                     }
