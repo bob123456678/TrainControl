@@ -377,6 +377,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         initComponents();
         
+        // Set internationalized options
+        this.SizeList.setModel(new javax.swing.DefaultComboBoxModel<String>() {{
+            layoutSizes.keySet().forEach(this::addElement);
+        }});
+        
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
         this.labelMapping = new LinkedHashMap<>();
@@ -12042,7 +12047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(()->
         {
-            String proposedName = "Route %s";
+            String proposedName = I18n.t("route.ui.route") + " %s";
             int i = 1;
 
             while (this.model.getRoute(String.format(proposedName, i)) != null)
@@ -12052,13 +12057,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (routeEditor != null && routeEditor.isVisible())
             {
-                JOptionPane.showMessageDialog(this, "You can only edit one route at a time.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                );
                 routeEditor.requestFocus();
                 routeEditor.toFront();
             }
             else
             {
-                routeEditor = new RouteEditor("Add New Route", this, String.format(proposedName, i), "", false, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, "", false);
+                routeEditor = new RouteEditor(
+                    I18n.t("route.ui.dialogAddNewRoute"),
+                    this,
+                    String.format(proposedName, i),
+                    "",
+                    false,
+                    0,
+                    MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+                    "",
+                    false
+                );
             }
         }).start();
     }//GEN-LAST:event_AddRouteButtonActionPerformed
@@ -12134,8 +12152,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (!this.isLocalLayout())
         {
-            JOptionPane.showMessageDialog(this, "Editing is only supported for local layout files.\n\n"
-                + "Edit your layout via the Central Station, or see the Layouts menu to download this layout or initialize a new one.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles")
+            );
+            
             return;
         }
         
@@ -12203,12 +12224,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get("Small"));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.small")));
     }//GEN-LAST:event_smallButtonActionPerformed
 
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get("Large"));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.large")));
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeListActionPerformed
@@ -12349,7 +12370,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (this.model != null)
             {
-                this.model.log("Updated keyboard type to: " + TrainControlUI.KEYBOARD_TYPES[this.getSelectedKeyboardType()]);
+                this.model.logf(
+                    "ui.keyboardTypeUpdated",
+                    TrainControlUI.KEYBOARD_TYPES[this.getSelectedKeyboardType()]
+                );
                 this.repaintLoc(true, null);
             }
         }
@@ -12409,9 +12433,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
                         int dialogResult = JOptionPane.showConfirmDialog(
-                            this, "Autonomy graph state has changed.  Reloading the JSON configuration will reset any unsaved changes.  Proceed?"
-                            , "Confirm Reset", JOptionPane.YES_NO_OPTION);
-
+                            this,
+                            I18n.t("autolayout.ui.confirmReloadJsonResetsUnsavedChanges"),
+                            I18n.t("loc.ui.dialogConfirmReset"),
+                            JOptionPane.YES_NO_OPTION
+                        );
+                        
                         if (dialogResult == JOptionPane.NO_OPTION)
                         {
                             // Reopen the window
@@ -12447,7 +12474,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.startAutonomy.setEnabled(false);
 
-                JOptionPane.showMessageDialog(this, "JSON validation failed.  Check log for details.\n\n" + Layout.getLastError());
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.f(
+                        "autolayout.ui.errorJsonValidationFailedCheckLog",
+                        Layout.getLastError()
+                    )
+                );
 
                 this.KeyboardTab.requestFocus();
 
@@ -12455,9 +12488,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                locCommandPanels.addTab("Locomotive Commands", this.locCommandTab);
-                locCommandPanels.addTab("Timetable", this.timetablePanel);
-                locCommandPanels.addTab("Autonomy Settings", this.autoSettingsPanel);
+                locCommandPanels.addTab(
+                    I18n.t("autolayout.ui.tabLocomotiveCommands"),
+                    this.locCommandTab
+                );
+
+                locCommandPanels.addTab(
+                    I18n.t("autolayout.ui.tabTimetable"),
+                    this.timetablePanel
+                );
+
+                locCommandPanels.addTab(
+                    I18n.t("autolayout.ui.tabAutonomySettings"),
+                    this.autoSettingsPanel
+                );
                 loadAutoLayoutSettings();
 
                 this.startAutonomy.setEnabled(true);
@@ -12519,7 +12563,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
-            throw new Exception("Unable to start autonomy.  Wait for all trains to reach their stations.");
+            throw new Exception(
+                I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
+            );
         }
     }
     
@@ -12535,7 +12581,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
-            throw new Exception("Stop request already issued. Wait for all trains to reach their stations.");
+            throw new Exception(
+                I18n.t("autolayout.errorStopRequestAlreadyIssuedWaitForTrains")
+            );
         }
     }
     
@@ -12559,7 +12607,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (!this.model.getPowerState())
                 {
-                    JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
                     return;
                 }
 
@@ -12571,13 +12619,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (r.isEnabled())
                     {
-                        this.model.log("Autonomy warning: active conditional route " + r.getName() + " may lead to unpredictable behavior");
+                        this.model.logf(
+                            "autolayout.warningActiveConditionalRouteUnpredictable",
+                            r.getName()
+                        );
 
                         if (!conditionalRouteWarningShown)
                         {
-                            int dialogResult = JOptionPane.showConfirmDialog(this,
-                                "One or more conditional routes are active, which may cause unpredictable behavior. Proceed?", "Confirm", JOptionPane.YES_NO_OPTION);
-
+                            int dialogResult = JOptionPane.showConfirmDialog(
+                                this,
+                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
+                                I18n.t("ui.dialogConfirm"),
+                                JOptionPane.YES_NO_OPTION
+                            );
+                            
                             if (dialogResult == JOptionPane.NO_OPTION)
                             {
                                 return;
@@ -12593,7 +12648,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
                 {
-                    JOptionPane.showMessageDialog(this, "Please add some locomotives to the graph.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
+                    );
                     return;
                 }
 
@@ -12609,11 +12667,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 else if (this.model.getAutoLayout().isRunning())
                 {
-                    JOptionPane.showMessageDialog(this, "Please wait for active locomotives to stop.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
+                    );
                 }
                 else if (!this.model.getAutoLayout().isValid())
                 {
-                    JOptionPane.showMessageDialog(this, "Layout state is no longer valid due to new data from Central Station.  Please re-validate JSON.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
+                    );
                 }
             }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
@@ -14981,8 +15045,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Lap strings in the size dropdown to icon sizes
     Map<String, Integer> layoutSizes = Stream.of(new String[][] {
-        { "Small", "30" }, 
-        { "Large", "60" }, 
+        { I18n.t("layout.ui.small"), "30" }, 
+        { I18n.t("layout.ui.large"), "60" }, 
       }).collect(Collectors.toMap(data -> data[0], data -> Integer.valueOf(data[1])));
     
     /**
