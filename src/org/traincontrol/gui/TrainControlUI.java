@@ -795,7 +795,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (pageTitle.isEmpty())
         {
-            pageTitle = "Page " + tabNumber;
+            pageTitle = I18n.f("page.ui.pageNo", tabNumber);
         }
 
         if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TAB)
@@ -1021,11 +1021,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.model.log("Saving UI state to: " + new File(prefix + TrainControlUI.DATA_FILE_NAME).getAbsolutePath());
+            this.model.logf(
+                "ui.logSavingUiState",
+                new File(prefix + TrainControlUI.DATA_FILE_NAME).getAbsolutePath()
+            );
         } 
         catch (IOException iOException)
         {
-            this.model.log("Could not save UI state. " + iOException.getMessage());
+            this.model.logf(
+                "ui.errorSavingUiState",
+                iOException.getMessage()
+            );
         }
         
         if (this.autosave.isSelected() && this.model.hasAutoLayout() 
@@ -1034,38 +1040,52 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                this.model.log("Autonomy still running: skipping JSON auto-save.");
+                this.model.logf(
+                    "autolayout.infoAutonomyRunningSkippingAutosave"
+                );
             }
             else
             {
                 try
                 {
                     this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
-                    this.model.log("Auto-saving autonomy state...");
+
+                    this.model.logf(
+                        "autolayout.infoAutoSavingState"
+                    );
                 }
                 catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException ex)
                 {
-                    this.model.log("Failed to save auto layout JSON.");
+                    this.model.logf(
+                        "autolayout.errorSavingJson",
+                        ex.getMessage()
+                    );
                 }
             }
         }
         
         if (!this.autonomyJSON.getText().trim().equals(""))
         {
-            try 
+            try
             {
-                this.model.log("Saving autonomy JSON to: " + new File(prefix + TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath());
+                this.model.logf(
+                    "autolayout.infoSavingAutonomyJson",
+                    new File(prefix + TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath()
+                );
 
                 ObjectOutputStream obj_out = new ObjectOutputStream(
-                    new FileOutputStream(prefix + TrainControlUI.AUTONOMY_FILE_NAME));
+                    new FileOutputStream(prefix + TrainControlUI.AUTONOMY_FILE_NAME)
+                );
 
                 // Write object out to disk
-                obj_out.writeObject(this.autonomyJSON.getText());                
+                obj_out.writeObject(this.autonomyJSON.getText());
             }
             catch (IOException iOException)
             {
-                this.model.log("Could not save autonomy JSON. " 
-                    + iOException.getMessage());
+                this.model.logf(
+                    "autolayout.errorSavingAutonomyJson",
+                    iOException.getMessage()
+                );
             }
         }
         
@@ -1164,7 +1184,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Get all possible results
         LinkedHashSet<LocomotiveKeyboardMapping> results = this.getAllLocButtonMappingsMap(s);
                 
-        this.model.log("Found " + s + " mapped at: " + results);
+        this.model.logf(
+            "loc.ui.logLocomotiveMapped",
+            s,
+            results
+        );
 
         // Reset and loop around if all results already found
         if (this.lastResults.size() == results.size())
@@ -1213,26 +1237,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ObjectInputStream obj_in = new ObjectInputStream(
                 new FileInputStream(TrainControlUI.DATA_FILE_NAME)
             );
-            
+
             // Read an object
             Object obj = obj_in.readObject();
 
             if (obj instanceof List)
             {
                 // Cast object
-                instance = (List<Map<Integer,String>>) obj;
+                instance = (List<Map<Integer, String>>) obj;
             }
 
-            this.model.log("UI state loaded from file.");
-        } 
+            this.model.logf(
+                "ui.infoUiStateLoaded"
+            );
+        }
         catch (IOException iOException)
         {
-            this.model.log("No data file found, "
-                    + "UI initializing with default data");
-        } 
+            this.model.logf(
+                "ui.infoUiInitializingDefaultData"
+            );
+        }
         catch (ClassNotFoundException classNotFoundException)
         {
-            this.model.log("Bad data file for UI");            
+            this.model.logf(
+                "ui.errorBadUiDataFile"
+            );
         }
         
         return instance;
@@ -1304,8 +1333,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.locKeyTabs.setTitleAt(this.locMappingNumber - 1, getLocMappingPageTabTitle(this.locMappingNumber));
             
             // Display current mapping number in the tab label
-            this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control (Page " + this.locMappingNumber + ")");
-           
+            this.KeyboardTab.setToolTipTextAt(
+                0,
+                I18n.f("loc.ui.tooltip.locomotiveControlPage", this.locMappingNumber)
+            );
+
             // Add page number to icon
             BufferedImage textImage = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.WHITE, new Font("Segoe UI", Font.BOLD, 16), 
                 30, 30, 0, 0);
@@ -1388,8 +1420,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         name = name.substring(0, MAX_PAGE_NAME_LENGTH);
                     }
-                    
-                    name = "<html>" + name + "<br />Page " + mappingNumber + "</html>";
+
+                    name = I18n.f(
+                        "page.ui.htmlPageName",
+                        name,
+                        mappingNumber
+                    );
                 }
                 else
                 {
@@ -1397,8 +1433,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
                     }
-                    
-                    name = "Page " + mappingNumber + " (" + name + ")";
+
+                    name = I18n.f(
+                        "page.ui.plainPageName",
+                        mappingNumber,
+                        name
+                    );
                 }
             }
             
@@ -1412,7 +1452,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                return "Page " + mappingNumber;
+                return I18n.f("page.ui.pageNo", mappingNumber);
             }
         }
     }
@@ -1422,15 +1462,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void renameCurrentPage()
     {
-        String input = JOptionPane.showInputDialog(this, "Enter page " + this.locMappingNumber + " name: ", this.getPageName(this.locMappingNumber, true));
-        
+        String input = JOptionPane.showInputDialog(
+            this,
+            I18n.f("page.ui.promptEnterPageName", this.locMappingNumber),
+            this.getPageName(this.locMappingNumber, true)
+        );
+
         if (input != null)
         {
             input = input.trim();
-            
-            if (this.pageNames.containsValue(input) && !input.equals(this.getPageName(this.locMappingNumber, true).trim()))
+
+            if (this.pageNames.containsValue(input)
+                && !input.equals(this.getPageName(this.locMappingNumber, true).trim()))
             {
-                JOptionPane.showMessageDialog(this, "Another page with this name already exists.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("page.ui.errorDuplicatePageName")
+                );
             }
             else
             {
@@ -1466,7 +1514,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.NextKeyboard.setEnabled(true);
             }
 
-            this.KeyboardNumberLabel.setText("Keyboard " + this.keyboardNumber);
+            this.KeyboardNumberLabel.setText(
+                I18n.f("keyboard.ui.labelKeyboardNumber", this.keyboardNumber)
+            );
 
             Integer offset = this.getKeyboardOffset();
 
@@ -1546,7 +1596,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             catch (Exception e)
             {
-                this.model.log("Failed to parse stored mapping number or active button.");
+                this.model.logf(
+                    "ui.errorParseMappingOrButton"
+                );
             }
         }
              
@@ -1600,7 +1652,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (IOException | ClassNotFoundException e)
         {
-            this.model.log("Failed to read autonomy state from " + TrainControlUI.AUTONOMY_FILE_NAME);   
+            this.model.logf(
+                "autolayout.errorReadAutonomyState",
+                TrainControlUI.AUTONOMY_FILE_NAME
+            );
         }
                         
         // Add list of routes to tab
@@ -1622,7 +1677,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
              
-        this.latencyLabel.setText("Not Connected to Central Station");
+        this.latencyLabel.setText(
+            I18n.t("ui.labelNotConnectedToCentralStation")
+        );
 
         // Start with true to ensure keyboard events register properly
         // If we don't do this, initializing the UI from the EDT will cause issues
@@ -1645,22 +1702,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control");
         this.KeyboardTab.setTitleAt(0, "");
         this.KeyboardTab.setIconAt(1, TAB_ICON_LAYOUT);
-        this.KeyboardTab.setToolTipTextAt(1, "Layout");
+        this.KeyboardTab.setToolTipTextAt(
+            1,
+            I18n.t("ui.tooltip.Layout")
+        );
         this.KeyboardTab.setTitleAt(1, "");
         this.KeyboardTab.setIconAt(4, TAB_ICON_ROUTES);
-        this.KeyboardTab.setToolTipTextAt(4, "Routes");
+        this.KeyboardTab.setToolTipTextAt(
+            4,
+            I18n.t("ui.tooltip.Routes")
+        );
         this.KeyboardTab.setTitleAt(4, "");
         this.KeyboardTab.setIconAt(3, TAB_ICON_KEYBOARD);
-        this.KeyboardTab.setToolTipTextAt(3, "Signals & Switches");
+        this.KeyboardTab.setToolTipTextAt(
+            3,
+            I18n.t("ui.tooltip.SignalsAndSwitches")
+        );
         this.KeyboardTab.setTitleAt(3, "");
         this.KeyboardTab.setIconAt(2, TAB_ICON_AUTONOMY);
-        this.KeyboardTab.setToolTipTextAt(2, "Full Automation");
+        this.KeyboardTab.setToolTipTextAt(
+            2,
+            I18n.t("ui.tooltip.FullAutomation")
+        );
         this.KeyboardTab.setTitleAt(2, "");
         this.KeyboardTab.setIconAt(5, TAB_ICON_STATS);
-        this.KeyboardTab.setToolTipTextAt(5, "Statistics");
+        this.KeyboardTab.setToolTipTextAt(
+            5,
+            I18n.t("ui.tooltip.Statistics")
+        );
         this.KeyboardTab.setTitleAt(5, "");
         this.KeyboardTab.setIconAt(6, TAB_ICON_LOG);
-        this.KeyboardTab.setToolTipTextAt(6, "Log");
+        this.KeyboardTab.setToolTipTextAt(
+            6,
+            I18n.t("ui.tooltip.Log")
+        );
         this.KeyboardTab.setTitleAt(6, "");
         
         // Remove the default action for the up/down arrow keys
