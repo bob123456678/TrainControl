@@ -3,12 +3,10 @@ package org.traincontrol.gui;
 import org.traincontrol.base.Locomotive;
 import static org.traincontrol.gui.TrainControlUI.LAST_USED_ICON_FOLDER;
 import java.awt.Dimension;
-import java.awt.Image;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
@@ -18,6 +16,7 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicComboPopup;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.I18n;
 
 /**
  * UI for changing locomotive functions
@@ -59,7 +58,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         }
         catch (Exception e)
         {
-            this.parent.getModel().log("Error loading function icon 0");
+            this.parent.getModel().logf("loc.ui.errorLoadingFunctionIcon", 0);
         }
         
         for (int i = 0; i <= this.loc.getNumFnIcons(); i++)
@@ -97,7 +96,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.jSeparator1.setVisible(false);
             this.fNo.setVisible(false);
             this.fNoLabel.setVisible(false);
-            this.fIconlabel.setText("Function " + functionIndex + " Icon (Loading...)");
+            this.fIconlabel.setText(
+                I18n.f("loc.ui.functionIconLoading", functionIndex, I18n.t("loc.ui.loadingMessage"))
+            );
             this.setPreferredSize(new Dimension(390, 260));
         }
         else
@@ -106,7 +107,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.jSeparator1.setVisible(true);
             this.fNo.setVisible(true);
             this.fNoLabel.setVisible(true);
-            this.fIconlabel.setText("Function Icon (Loading...)");
+            this.fIconlabel.setText(
+                I18n.f("loc.ui.functionIconLoading", "", I18n.t("loc.ui.loadingMessage"))
+            );
             this.setPreferredSize(new Dimension(360, 375));
         }
         
@@ -134,12 +137,16 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         if (this.parent.getCopyTarget() == null)
         {
             this.copyCustomizations.setEnabled(false);
-            this.copyCustomizations.setText("Copy Icons from Clipboard Locomotive");
+            this.copyCustomizations.setText(
+                I18n.t("loc.ui.copyIconsFromClipboardLocomotive")
+            );
         }
         else
         {
             this.copyCustomizations.setEnabled(true);
-            this.copyCustomizations.setText("Copy Icons from " + this.parent.getCopyTarget().getName());
+            this.copyCustomizations.setText(
+                I18n.f("loc.ui.copyIconsFromLocomotive", this.parent.getCopyTarget().getName())
+            );
         }
         
         // Now load the actual icons        
@@ -158,7 +165,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
                 catch (Exception e)
                 {
                     iconModel.set(i, Integer.toString(i));
-                    this.parent.getModel().log("Error loading function icon " + i);
+                    this.parent.getModel().logf("loc.ui.errorLoadingFunctionIcon", i);
                 }
             }
                         
@@ -167,10 +174,20 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             );
             
             // Highlight the right one and grey out if needed
-            fIconlabel.setText(fIconlabel.getText().replace(" (Loading...)", ""));
+            fIconlabel.setText(fIconlabel.getText().replace(" " + I18n.t("loc.ui.loadingMessage"), ""));
             fNoItemStateChanged(null);
             displayCustomizationButtons();
         }));
+        
+        javax.swing.DefaultComboBoxModel<String> defaultModel = (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
+
+        // Replace item at index 0 with localized "Toggle"
+        defaultModel.removeElementAt(0);
+        defaultModel.insertElementAt(I18n.t("function.ui.toggle"), 0);
+
+        // Replace item at index 1 with localized "Momentary"
+        defaultModel.removeElementAt(1);
+        defaultModel.insertElementAt(I18n.t("function.ui.momentary"), 1);
     }
     
     /**
@@ -249,7 +266,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         fNoLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fNoLabel.setForeground(new java.awt.Color(0, 0, 115));
-        fNoLabel.setText("Function Number");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        fNoLabel.setText(bundle.getString("loc.ui.functionNumber")); // NOI18N
 
         fNo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fNo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
@@ -269,10 +287,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         fIconlabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIconlabel.setForeground(new java.awt.Color(0, 0, 115));
-        fIconlabel.setText("Function Icon");
+        fIconlabel.setText(bundle.getString("loc.ui.functionIcon")); // NOI18N
 
         applyButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        applyButton.setText("Apply");
+        applyButton.setText(bundle.getString("ui.apply")); // NOI18N
         applyButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 applyButtonActionPerformed(evt);
@@ -280,7 +298,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         });
 
         resetButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        resetButton.setText("Reset All Customizations");
+        resetButton.setText(bundle.getString("loc.ui.resetAllCustomizations")); // NOI18N
         resetButton.setFocusable(false);
         resetButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -290,13 +308,13 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         fIconlabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         fIconlabel1.setForeground(new java.awt.Color(0, 0, 115));
-        fIconlabel1.setText("Duration");
+        fIconlabel1.setText(bundle.getString("loc.ui.duration")); // NOI18N
 
         functionTriggerType.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         functionTriggerType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Toggle", "Momentary", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s", "16s", "17s", "18s", "19s", "20s", "21s", "22s", "23s", "24s", "25s", "26s", "27s", "28s", "29s", "30s" }));
 
         useCustomFunctionIcon.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        useCustomFunctionIcon.setText("Use Custom Icon");
+        useCustomFunctionIcon.setText(bundle.getString("loc.ui.useCustomIcon")); // NOI18N
         useCustomFunctionIcon.setFocusable(false);
         useCustomFunctionIcon.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -305,7 +323,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         });
 
         deleteCustomIcon.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        deleteCustomIcon.setText("Clear Custom Icon");
+        deleteCustomIcon.setText(bundle.getString("loc.ui.clearCustomIcon")); // NOI18N
         deleteCustomIcon.setFocusable(false);
         deleteCustomIcon.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -314,8 +332,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         });
 
         copyCustomizations.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        copyCustomizations.setText("Copy Customizations from ");
-        copyCustomizations.setToolTipText("Copy the locomotive from the main UI");
+        copyCustomizations.setText(bundle.getString("loc.ui.copyIconsFromClipboardLocomotive")); // NOI18N
+        copyCustomizations.setToolTipText(bundle.getString("loc.ui.toolip.copyIconHelp")); // NOI18N
         copyCustomizations.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 copyCustomizationsActionPerformed(evt);
@@ -411,8 +429,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         new Thread(() ->
         {  
             int dialogResult = JOptionPane.showConfirmDialog(
-                    this, "Do you want to reset the functions to the Central Station's settings?" ,"Confirm Reset", JOptionPane.YES_NO_OPTION
-                );
+                this,
+                I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
+                I18n.t("loc.ui.dialogConfirmReset"),
+                JOptionPane.YES_NO_OPTION
+            );
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -480,7 +501,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP images", "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
             fc.setFileFilter(filter);
 
             fc.setAcceptAllFileFilterUsed(false);
@@ -552,7 +573,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             }
             catch (Exception ex)
             {
-                this.parent.getModel().log("Error: invalid icon path: " + path);
+                this.parent.getModel().logf("loc.ui.errorInvalidIconPath", path);
             }      
         }
     }
@@ -567,10 +588,13 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         {
             this.loc.setLocalFunctionImageURL(this.getFNo(), this.customIconPath);
 
-            this.parent.getModel().log(("Set custom icon for " 
-                + loc.getName() + " function " 
-                + this.getFNo() + ": " + this.loc.getLocalFunctionImageURL(this.getFNo())));
-                                    
+            this.parent.getModel().logf(
+                "loc.ui.logSetCustomFunctionIcon",
+                loc.getName(),
+                this.getFNo(),
+                this.loc.getLocalFunctionImageURL(this.getFNo())
+            );
+            
             this.parent.repaintLoc(true, null);
         }
         

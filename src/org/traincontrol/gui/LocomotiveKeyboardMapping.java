@@ -2,6 +2,7 @@ package org.traincontrol.gui;
 
 import java.util.Objects;
 import javax.swing.JButton;
+import org.traincontrol.util.I18n;
 
 /**
  * Helper class for main UI
@@ -30,7 +31,11 @@ public class LocomotiveKeyboardMapping
     @Override
     public String toString()
     {
-        return button.getText() + " (" + "Page " + page + ")";
+        return I18n.f(
+            "loc.ui.buttonPageLabel",
+            button.getText(),
+            page
+        );
     }
     
     @Override

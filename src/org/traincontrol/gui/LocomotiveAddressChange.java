@@ -68,11 +68,12 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
 
         decoderTypeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         decoderTypeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        decoderTypeLabel.setText("Decoder Type");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        decoderTypeLabel.setText(bundle.getString("loc.ui.decoderType")); // NOI18N
 
         addressLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         addressLabel.setForeground(new java.awt.Color(0, 0, 115));
-        addressLabel.setText("Address");
+        addressLabel.setText(bundle.getString("layout.ui.address")); // NOI18N
 
         address.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         address.setText("jTextField1");
@@ -92,7 +93,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
 
         locNameLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locNameLabel.setForeground(new java.awt.Color(0, 0, 115));
-        locNameLabel.setText("Name");
+        locNameLabel.setText(bundle.getString("ui.name")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);

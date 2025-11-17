@@ -7,6 +7,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu on the track diagram, to control autonomy
@@ -22,7 +23,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 
         if (!ui.getModel().getAutoLayout().isAutoRunning())
         {
-            menuItem = new JMenuItem("Start Autonomous Operation");
+            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
             menuItem.addActionListener(event -> 
             {
                 try
@@ -74,7 +75,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 {
                                     if (!ui.getModel().getPowerState())
                                     {
-                                        JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
                                     }
                                     else
                                     {               
@@ -86,7 +87,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                                         if (!success)
                                         {
-                                            JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
+                                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
                                         }
                                     }
                                 }).start();
@@ -128,26 +129,38 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 add(menuItem);
                 
                 // Place a different locomotive at this station
-                if (ui.getActiveLoc() != null && !ui.getModel().getAutoLayout().isRunning() &&
-                        !ui.getActiveLoc().equals(locomotive)
-                )
+                if (ui.getActiveLoc() != null 
+                    && !ui.getModel().getAutoLayout().isRunning() 
+                    && !ui.getActiveLoc().equals(locomotive))
                 {
-                    menuItem = new JMenuItem("Place " + ui.getActiveLoc().getName());
-                    menuItem.addActionListener(event -> 
+                    menuItem = new JMenuItem(
+                        I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
+                    );
+                    menuItem.addActionListener(event ->
                     {
-                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), current.getName(), false);
+                        ui.getModel().getAutoLayout().moveLocomotive(
+                            ui.getActiveLoc().getName(),
+                            current.getName(),
+                            false
+                        );
                         ui.repaintAutoLocList(false);
                     });
-                    
+
                     add(menuItem);
                 }
-                       
+
                 if (current.getCurrentLocomotive() != null)
                 {
-                    menuItem = new JMenuItem("Remove " + current.getCurrentLocomotive().getName());
-                    menuItem.addActionListener(event -> 
+                    menuItem = new JMenuItem(
+                        I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
+                    );
+                    menuItem.addActionListener(event ->
                     {
-                        ui.getModel().getAutoLayout().moveLocomotive(null, current.getName(), false);
+                        ui.getModel().getAutoLayout().moveLocomotive(
+                            null,
+                            current.getName(),
+                            false
+                        );
                         ui.repaintAutoLocList(false);
                     });
 
@@ -157,7 +170,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
         else
         {
-            menuItem = new JMenuItem("Gracefully Stop Autonomy");
+            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
             menuItem.addActionListener(event -> 
             {
                 try
