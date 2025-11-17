@@ -26,6 +26,7 @@ import org.graphstream.ui.view.Viewer;
 import org.graphstream.ui.view.View;
 import org.graphstream.ui.view.camera.Camera;
 import org.graphstream.ui.view.util.InteractiveElement;
+import org.traincontrol.util.I18n;
 
 /**
  * Autonomy graph UI
@@ -43,9 +44,7 @@ final public class GraphViewer extends PositionAwareJFrame
     private String lastClickedNode;
     
     private Locomotive clipboard;
-    
-    public static final String WINDOW_TITLE = "Autonomy Graph";
- 
+     
     /**
      * Called externally - will return null if the window is hidden
      * @return 
@@ -68,9 +67,11 @@ final public class GraphViewer extends PositionAwareJFrame
     {
         if (p != null)
         {
-            String dialogResult = JOptionPane.showInputDialog((Component) swingView, 
-                "Enter the s88 sensor address for " + p.getName() + ":",
-                p.getS88());
+            String dialogResult = JOptionPane.showInputDialog(
+                (Component) swingView,
+                I18n.f("autolayout.ui.promptEnterS88Address", p.getName()),
+                p.getS88()
+            );
 
             if (dialogResult != null)
             {
@@ -87,7 +88,7 @@ final public class GraphViewer extends PositionAwareJFrame
                     {
                         value = Integer.valueOf(dialogResult);
                     }
-                    
+
                     // Reset station status
                     if (value == null)
                     {
@@ -98,13 +99,14 @@ final public class GraphViewer extends PositionAwareJFrame
                     p.setS88(value);
 
                     parent.updatePoint(p, mainGraph);
-
                     parent.repaintAutoLocList(false);
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog((Component) swingView,
-                        "Invalid value (must be a non-negative integer, or blank to disable if not a station)");
+                    JOptionPane.showMessageDialog(
+                        (Component) swingView,
+                        I18n.t("autolayout.ui.errorInvalidS88Address")
+                    );
                 }
             }
         }
@@ -226,8 +228,13 @@ final public class GraphViewer extends PositionAwareJFrame
                             parent.getModel().getAutoLayout().getPointById(node.getId()).setX(Double.valueOf(Toolkit.nodePosition(node)[0]).intValue());
                             parent.getModel().getAutoLayout().getPointById(node.getId()).setY(Double.valueOf(Toolkit.nodePosition(node)[1]).intValue());
 
-                            parent.getModel().log("Moved " + parent.getModel().getAutoLayout().getPointById(node.getId()).getName() + " to " + Double.valueOf(Toolkit.nodePosition(node)[0]).intValue() + "," + (Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()));
-                        
+                            parent.getModel().logf(
+                                "autolayout.info.pointMoved",
+                                parent.getModel().getAutoLayout().getPointById(node.getId()).getName(),
+                                Double.valueOf(Toolkit.nodePosition(node)[0]).intValue(),
+                                Double.valueOf(Toolkit.nodePosition(node)[1]).intValue()
+                            );
+
                             setLastClickedNode(parent.getModel().getAutoLayout().getPointById(node.getId()).getName());
                         }
                     }
@@ -279,7 +286,11 @@ final public class GraphViewer extends PositionAwareJFrame
 
                                     if (!locomotiveNames.isEmpty())
                                     {
-                                        ui.getModel().log("Excluded at " + p.getName() + ": " + locomotiveNames.toString().replace("[", "").replace("]", ""));
+                                        ui.getModel().logf(
+                                            "autolayout.info.locExcludedAtPoint",
+                                            p.getName(),
+                                            locomotiveNames.toString().replace("[", "").replace("]", "")
+                                        );
                                     }
                                 }
                                 
@@ -480,11 +491,10 @@ final public class GraphViewer extends PositionAwareJFrame
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        setTitle(WINDOW_TITLE);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        setTitle(bundle.getString("app.ui.autonomyGraphTitle")); // NOI18N
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMaximumSize(new java.awt.Dimension(2000, 2000));
         setMinimumSize(new java.awt.Dimension(400, 400));
-        setPreferredSize(new java.awt.Dimension(600, 600));
         setSize(new java.awt.Dimension(600, 572));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {

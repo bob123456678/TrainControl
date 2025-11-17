@@ -633,11 +633,11 @@ public class MarklinLayoutComponent
         
         if (this.isThreeWay())
         {
-            return I18n.f("layout.switchThreeWay", this.getAddress(), this.getAddress() + 1, digitalProtocol);
+            return I18n.f("layout.switchThreeWayAddr", this.getAddress(), this.getAddress() + 1, digitalProtocol);
         }
         else if (this.isSwitch())
         {
-            return I18n.f("layout.switch", this.getAddress(), digitalProtocol);
+            return I18n.f("layout.switchAddr", this.getAddress(), digitalProtocol);
         }
         else if (this.isUncoupler())
         {
@@ -651,7 +651,7 @@ public class MarklinLayoutComponent
         }
         else if (this.isSignal())
         {
-            return I18n.f(this.isLamp() ? "layout.accessory" : "layout.signal", this.getAddress(), digitalProtocol);
+            return I18n.f(this.isLamp() ? "layout.accessoryAddr" : "layout.signalAddr", this.getAddress(), digitalProtocol);
         }
         else if (this.isRoute() && this.getRoute() != null)
         {

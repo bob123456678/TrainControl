@@ -36,6 +36,7 @@ import org.traincontrol.base.Accessory;
 import static org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_PREFIX;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.util.I18n;
 
 /**
  * Track diagram editor
@@ -265,27 +266,39 @@ public class LayoutEditor extends PositionAwareJFrame
             
             if (lastHoveredX == -1)
             {
-                label.setToolTipText("Click to place a new " + label.getComponent().getUserFriendlyTypeName());
+                label.setToolTipText(
+                    I18n.f("layout.ui.tooltipPlaceNewComponent", label.getComponent().getUserFriendlyTypeName())
+                );
             }
             else
             {
-                String toolTipText = "Right-click for options";
+                String toolTipText = I18n.t("layout.ui.tooltipRightClickOptions");
 
                 String componentString = "";
-                
+
                 if (this.hasToolFlag())
                 {
-                    if (lastComponent != null) componentString = lastComponent.getUserFriendlyTypeName();
-                    if (!componentString.isEmpty()) componentString = " " + componentString;
+                    if (lastComponent != null)
+                    {
+                        componentString = lastComponent.getUserFriendlyTypeName();
+                    }
                     
-                    label.setToolTipText("Click to paste" + componentString + " tile\n" + toolTipText);
+                    if (!componentString.isEmpty())
+                    {
+                        label.setToolTipText(
+                            I18n.f("layout.ui.tooltipPasteTile", componentString, toolTipText)
+                        );
+                    }
                 }
                 else if (this.layout.getComponent(lastHoveredX, lastHoveredY) != null)
                 {
-                    componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getUserFriendlyTypeName();                    
-                    if (!componentString.isEmpty()) componentString = " " + componentString;
-                    
-                    label.setToolTipText("Click to cut" + componentString + " tile\n" + toolTipText);     
+                    componentString = this.layout.getComponent(lastHoveredX, lastHoveredY).getUserFriendlyTypeName();
+                    if (!componentString.isEmpty())
+                    {
+                        label.setToolTipText(
+                            I18n.f("layout.ui.tooltipCutTile", componentString, toolTipText)
+                        );
+                    }
                 }
                 else if (this.canUndo())
                 {
@@ -605,7 +618,7 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Deletes this label from the layout
-     * @param x 
+     * @param label 
      */
     synchronized public void delete(LayoutLabel label)
     {
@@ -669,11 +682,11 @@ public class LayoutEditor extends PositionAwareJFrame
                             
         if (lc != null)
         {       
-            String newText = (String) javax.swing.JOptionPane.showInputDialog(
-                this, 
-                "Enter text to be shown at this tile:", 
-                "Edit Label", 
-                javax.swing.JOptionPane.PLAIN_MESSAGE,
+            String newText = (String) JOptionPane.showInputDialog(
+                this,
+                I18n.t("layout.ui.promptEnterTileLabel"),
+                I18n.t("layout.ui.dialogEditLabel"),
+                JOptionPane.PLAIN_MESSAGE,
                 null,
                 null,
                 lc.getLabel() // Default value
@@ -720,15 +733,24 @@ public class LayoutEditor extends PositionAwareJFrame
             
             if (options.isEmpty())
             {
-                JOptionPane.showMessageDialog(this, "There are no stations on the autonomy graph yet. Open the graph UI to add some first.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("layout.ui.errorNoStationsInGraph")
+                );
                 parent.ensureGraphUIVisible();
             }
             else
             {
                 JPanel panel = new JPanel(new BorderLayout());
-                JLabel stationLabel = new JLabel("These labels will show train locations while in autonomy mode.");
-                JComboBox<String> comboBox = new JComboBox<>(options.toArray(new String[0]));
-                comboBox.setSelectedItem(lc.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
+                JLabel stationLabel = new JLabel(
+                    I18n.t("layout.ui.labelAutonomyStationInfo")
+                );
+                JComboBox<String> comboBox = new JComboBox<>(
+                    options.toArray(new String[0])
+                );
+                comboBox.setSelectedItem(
+                    lc.getLabel().replace(LAYOUT_STATION_PREFIX, "")
+                );
 
                 panel.add(stationLabel, BorderLayout.NORTH);
                 panel.add(comboBox, BorderLayout.CENTER);
@@ -736,7 +758,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 int result = JOptionPane.showConfirmDialog(
                     this,
                     panel,
-                    "Which station should be shown here?",
+                    I18n.t("layout.ui.dialogSelectStation"),
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE
                 );
@@ -747,18 +769,25 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     if (selectedOption != null)
                     {
-                       this.snapshotLayout();
+                        this.snapshotLayout();
 
-                       lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
+                        lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
 
                         try
                         {
-                           layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
-                           this.resetClipboard();
+                            layout.addComponent(
+                                lc,
+                                grid.getCoordinates(label)[0],
+                                grid.getCoordinates(label)[1]
+                            );
+                            this.resetClipboard();
                         }
                         catch (IOException ex)
                         {
-
+                            JOptionPane.showMessageDialog(
+                                this,
+                                I18n.t("layout.ui.errorAddStationComponent")
+                            );
                         }
 
                         refreshGrid();
@@ -820,7 +849,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 int result = JOptionPane.showConfirmDialog(
                     this,
                     addressPopup,
-                    "Edit Address",
+                    I18n.t("layout.ui.editAddress"),
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE
                 );
@@ -842,7 +871,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             catch (Exception ex)
             {
-                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, I18n.f("error.generic", ex.getMessage()));
                 this.parent.getModel().log(ex);
             }
 
@@ -968,7 +997,10 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
         {
-            JOptionPane.showMessageDialog(this, "No more than " + MAX_SIZE + " rows or columns are allowed.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.f("layout.ui.errorMaxSizeExceeded", MAX_SIZE)
+            );
             return;
         }
         
@@ -1084,8 +1116,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             int confirmation = JOptionPane.showConfirmDialog(
                 this,
-                "This will delete everything on the track diagram. Are you sure you want to proceed?",
-                "Please Confirm",
+                I18n.t("layout.ui.confirmDeleteTrackDiagram"),
+                I18n.t("layout.ui.dialogPleaseConfirm"),
                 JOptionPane.YES_NO_OPTION
             );
 
@@ -1273,7 +1305,9 @@ public class LayoutEditor extends PositionAwareJFrame
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
             drawGrid();
 
-            setTitle("Layout Editor: " + this.layout.getName());
+            setTitle(
+                I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName())
+            );
 
             // Scale the popup according to the size of the layout
             if (!this.isLoaded())
@@ -1318,10 +1352,12 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (canUndo())
         {
-            int result = JOptionPane.showConfirmDialog(this, 
-                "Are you sure you want to close the editor without saving changes?", 
-                "Exit Confirmation", 
-            JOptionPane.YES_NO_OPTION);
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                I18n.t("layout.ui.confirmExitWithoutSaving"),
+                I18n.t("layout.ui.dialogExitConfirmation"),
+                JOptionPane.YES_NO_OPTION
+            );
 
             if (result != JOptionPane.YES_OPTION)
             {
@@ -1414,7 +1450,8 @@ public class LayoutEditor extends PositionAwareJFrame
         );
 
         saveButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
-        saveButton.setText("Save Changes");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        saveButton.setText(bundle.getString("layout.ui.saveChanges")); // NOI18N
         saveButton.setFocusable(false);
         saveButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1423,7 +1460,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         cancelButton.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
-        cancelButton.setText("Cancel");
+        cancelButton.setText(bundle.getString("ui.cancel")); // NOI18N
         cancelButton.setFocusable(false);
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1433,11 +1470,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         jLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel1.setText("New Components");
+        jLabel1.setText(bundle.getString("layout.ui.newComponents")); // NOI18N
 
         showTextCheckbox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         showTextCheckbox.setSelected(true);
-        showTextCheckbox.setText("Text Labels");
+        showTextCheckbox.setText(bundle.getString("layout.ui.textLabels")); // NOI18N
         showTextCheckbox.setToolTipText("Control+L");
         showTextCheckbox.setFocusable(false);
         showTextCheckbox.addActionListener(new java.awt.event.ActionListener() {
@@ -1447,7 +1484,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         showAddressCheckbox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        showAddressCheckbox.setText("Addresses");
+        showAddressCheckbox.setText(bundle.getString("layout.ui.addresses")); // NOI18N
         showAddressCheckbox.setToolTipText("Control+D");
         showAddressCheckbox.setFocusable(false);
         showAddressCheckbox.addActionListener(new java.awt.event.ActionListener() {
@@ -1458,7 +1495,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel2.setText("Toggle Visibility");
+        jLabel2.setText(bundle.getString("layout.ui.toggleVisibility")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1596,7 +1633,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (Exception ex)
         {
-            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, I18n.f("error.generic", ex.getMessage()));
         }        
     }//GEN-LAST:event_saveButtonActionPerformed
 

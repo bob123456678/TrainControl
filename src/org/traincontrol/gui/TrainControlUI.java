@@ -2847,7 +2847,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             
                             if (this.graphViewer != null)
                             {
-                                this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE + windowTitleString);
+                                this.graphViewer.setTitle(I18n.f("app.ui.autonomyGraphTitleLoc", windowTitleString));
                             }
                             
                             for (LayoutPopupUI popup : this.popups)
@@ -3025,7 +3025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Clear locomotive from graph UI title
                         if (this.graphViewer != null)
                         {
-                            this.graphViewer.setTitle(GraphViewer.WINDOW_TITLE);
+                            this.graphViewer.setTitle(I18n.t("app.ui.autonomyGraphTitle"));
                         }
                         
                         for (LayoutPopupUI popup : this.popups)
