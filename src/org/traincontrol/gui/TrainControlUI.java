@@ -604,8 +604,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
                     
                     ((JToggleButton) e.getSource()).setToolTipText(
-                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getName() + " actuation count: " + 
-                                    model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getNumActuations()   
+                        I18n.f(
+                            "acc.ui.tooltip.actuationCount",
+                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getName(),
+                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getNumActuations()
+                        )
                     );
                 }
             });

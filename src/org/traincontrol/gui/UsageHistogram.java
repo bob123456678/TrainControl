@@ -198,7 +198,8 @@ public class UsageHistogram extends javax.swing.JFrame
         });
 
         reset.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        reset.setText("Reset");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        reset.setText(bundle.getString("stats.ui.reset")); // NOI18N
         reset.setFocusable(false);
         reset.setMaximumSize(new java.awt.Dimension(90, 20));
         reset.setMinimumSize(new java.awt.Dimension(90, 20));
