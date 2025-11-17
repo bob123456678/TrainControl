@@ -111,11 +111,13 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
             if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
             {
-                this.parent.getModel().log("Popup layout: updating or jumping to page " + page);
+                this.parent.getModel().logf("layout.ui.logPopupLayoutUpdate", page);
 
-                this.layout = this.parent.getModel().getLayout(this.parent.getModel().getLayoutList().get(index));
+                this.layout = this.parent.getModel().getLayout(
+                    this.parent.getModel().getLayoutList().get(index)
+                );
 
-                drawGrid();  
+                drawGrid();
                 this.repaint();
 
                 // Update saved index
@@ -123,7 +125,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             }
             else
             {
-                this.parent.getModel().log("Popup layout: page " + page + " does not exist");
+                this.parent.getModel().logf("layout.ui.logPopupLayoutPageNotExist", page);
             }
         }));
     }

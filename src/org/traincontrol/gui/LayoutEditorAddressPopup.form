@@ -72,7 +72,9 @@
     </Component>
     <Component class="javax.swing.JCheckBox" name="greenButton">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Controlled by Green Button"/>
+        <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+          <ResourceString bundle="org/traincontrol/resources/messages.properties" key="layout.ui.controlledByGreenBtn" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+        </Property>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="helpLabel">

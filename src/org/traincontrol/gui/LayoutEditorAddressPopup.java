@@ -8,6 +8,7 @@ import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.I18n;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
@@ -34,42 +35,61 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
         if (lc.isLink())
         {
-            this.helpLabel.setText("Select the page to link to. More can be added through the Layouts menu.");
-            
-            // Set the model for the addressSelector
-            this.addressSelector.setModel(new DefaultComboBoxModel<>(tcui.getModel().getLayoutList().toArray(new String[0])));        
+            this.helpLabel.setText(
+                I18n.t("layout.ui.helpSelectPageLink")
+            );
+
+            this.addressSelector.setModel(
+                new DefaultComboBoxModel<>(
+                    tcui.getModel().getLayoutList().toArray(new String[0])
+                )
+            );
             this.addressSelector.setVisible(true);
             this.address.setVisible(false);
         }
         else if (lc.isRoute())
         {
-            this.helpLabel.setText("Select the route this tile will trigger.  More can be added in the Routes tab.");
-            
-            // We set the selection by the string, so showing numbered routes won't work yet...
-            List<String> numberedRoutes = tcui.getModel().getRouteList().stream().map(this.tcui.getModel()::getRoute).map(this::addRouteId).collect(Collectors.toList());
-            
+            this.helpLabel.setText(
+                I18n.t("layout.ui.helpSelectRouteTrigger")
+            );
+
+            List<String> numberedRoutes = tcui.getModel()
+                .getRouteList()
+                .stream()
+                .map(this.tcui.getModel()::getRoute)
+                .map(this::addRouteId)
+                .collect(Collectors.toList());
+
             if (numberedRoutes.isEmpty())
             {
                 this.addressSelector.setEnabled(false);
             }
             else
             {
-                this.addressSelector.setModel(new DefaultComboBoxModel<>(numberedRoutes.toArray(new String[0])));
-            }     
-            
-            this.addressSelector.setVisible(true);
+                this.addressSelector.setModel(
+                    new DefaultComboBoxModel<>(
+                        numberedRoutes.toArray(new String[0])
+                    )
+                );
+            }
 
+            this.addressSelector.setVisible(true);
             this.address.setVisible(false);
         }
         else if (lc.isSwitch() || lc.isSignal() || lc.isLamp() || lc.isUncoupler())
         {
-            this.helpLabel.setText("Accessory addresses range from 1 to 320 (Marklin MM2) or 2048 (DCC).");
-            
+            this.helpLabel.setText(
+                I18n.t("layout.ui.helpAccessoryAddressRange")
+            );
+
             if (lc.isUncoupler())
             {
-                this.helpLabel.setText("<html>" + this.helpLabel.getText() + "<br>There can be two uncouplers on the same address.  The checkbox differentiates this.</html>");
+                this.helpLabel.setText(
+                    "<html>" + this.helpLabel.getText() + "<br>" +
+                    I18n.t("layout.ui.helpUncouplerNote") + "</html>"
+                );
             }
-            
+
             if (lc.getProtocol() == Accessory.accessoryDecoderType.MM2)
             {
                 this.mm2Radio.setSelected(true);
@@ -78,13 +98,15 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             {
                 this.dccRadio.setSelected(true);
             }
-            
+
             this.mm2Radio.setVisible(true);
             this.dccRadio.setVisible(true);
         }
         else if (lc.isFeedback())
         {
-            this.helpLabel.setText("Check your Central Station for S88 addresses/bus ranges.");
+            this.helpLabel.setText(
+                I18n.t("layout.ui.helpFeedbackS88")
+            );
         }
         else
         {
@@ -208,7 +230,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
         });
 
-        greenButton.setText("Controlled by Green Button");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        greenButton.setText(bundle.getString("layout.ui.controlledByGreenBtn")); // NOI18N
 
         helpLabel.setText("help text...");
 

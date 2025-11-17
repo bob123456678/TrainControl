@@ -16,6 +16,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /**
@@ -143,12 +144,16 @@ public final class LayoutLabel extends JLabel
                                 {
                                     if (!tcUI.getModel().getPowerState())
                                     {
-                                        Object[] options = {"Turn Power On & Proceed", "Proceed", "Cancel"};
+                                        Object[] options = {
+                                            I18n.t("layout.ui.optionTurnPowerOnAndProceed"),
+                                            I18n.t("layout.ui.optionProceed"),
+                                            I18n.t("ui.cancel")
+                                        };
 
                                         int choice = JOptionPane.showOptionDialog(
                                             tcUI,
-                                            "Switching this accessory will only update the UI because the power is off. Proceed?",
-                                            "Please Confirm",
+                                            I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
+                                            I18n.t("layout.ui.dialogPleaseConfirm"),
                                             JOptionPane.YES_NO_CANCEL_OPTION,
                                             JOptionPane.QUESTION_MESSAGE,
                                             null,

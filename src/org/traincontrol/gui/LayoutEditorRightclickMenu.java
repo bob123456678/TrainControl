@@ -1,6 +1,5 @@
 package org.traincontrol.gui;
 
-import java.awt.Color;
 import java.awt.Font;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -9,6 +8,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu on the track editor
@@ -30,9 +30,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        JMenu pasteSubMenu = new JMenu("Paste"); // Create the submenu
+        JMenu pasteSubMenu = new JMenu(I18n.t("ui.paste")); // Create the submenu
 
-        JMenuItem pasteMenuItem = new JMenuItem("Tile");
+        JMenuItem pasteMenuItem = new JMenuItem(I18n.t("layout.ui.tile"));
         pasteMenuItem.addActionListener(event -> 
         {
             try
@@ -48,7 +48,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         pasteSubMenu.add(pasteMenuItem);
 
-        JMenuItem pasteColumnMenuItem = new JMenuItem("Entire Column");
+        JMenuItem pasteColumnMenuItem = new JMenuItem(I18n.t("layout.ui.entireCol"));
         pasteColumnMenuItem.addActionListener(event -> 
         {
             try
@@ -69,7 +69,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         pasteSubMenu.add(pasteColumnMenuItem);
 
-        JMenuItem pasteRowMenuItem = new JMenuItem("Entire Row");
+        JMenuItem pasteRowMenuItem = new JMenuItem(I18n.t("layout.ui.entireRow"));
         pasteRowMenuItem.addActionListener(event -> 
         {
             try
@@ -97,7 +97,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         add(pasteSubMenu); // Add the submenu to the parent menu
         
-        menuItem = new JMenuItem("Undo");
+        menuItem = new JMenuItem(I18n.t("ui.undo"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -115,7 +115,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         add(menuItem);
         
-        menuItem = new JMenuItem("Redo");
+        menuItem = new JMenuItem(I18n.t("ui.redo"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -137,7 +137,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         {
             addSeparator();
             
-            menuItem = new JMenuItem("Cut");
+            menuItem = new JMenuItem(I18n.t("ui.cut"));
             menuItem.addActionListener(event -> 
             {
                 try
@@ -153,7 +153,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             add(menuItem);
 
-            menuItem = new JMenuItem("Copy");
+            menuItem = new JMenuItem(I18n.t("ui.copy"));
             menuItem.addActionListener(event -> 
             {
                 try
@@ -175,7 +175,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 && component.getNumOrientations() > 1
             )
             {
-                menuItem = new JMenuItem("Rotate");
+                menuItem = new JMenuItem(I18n.t("ui.rotate"));
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -203,22 +203,30 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     protocol = MarklinAccessory.getProtocolStringForName(component.getProtocol().toString());
                 }
                 
-                String addressLabel = "Address"; // component.getUserFriendlyTypeName() + " Address";
+                String addressLabel = I18n.t("layout.ui.address"); // component.getUserFriendlyTypeName() + " Address";
                 
                 if (component.isLink())
                 {
-                    addressLabel = "Linked Page";
+                    addressLabel = I18n.t("layout.ui.addressLabelLinkedPage");
                 }
                 else if (component.isRoute())
                 {
-                    addressLabel = "Route ID";
+                    addressLabel = I18n.t("layout.ui.addressLabelRouteId");
                 }
                 else if (component.isFeedback())
                 {
-                    addressLabel = "Feedback Address";
+                    addressLabel = I18n.t("layout.ui.addressLabelFeedbackAddress");
                 }
-                
-                menuItem = new JMenuItem("Edit " + addressLabel + " (" + component.getLogicalAddress() + protocol + ")");
+
+                menuItem = new JMenuItem(
+                    I18n.f(
+                        "layout.ui.menuEditAddressLabel",
+                        addressLabel,
+                        component.getLogicalAddress(),
+                        protocol
+                    )
+                );
+
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -242,7 +250,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     
                     if (route != null)
                     {         
-                        menuItem = new JMenuItem("Open in Route Editor...");
+                        menuItem = new JMenuItem(I18n.t("layout.ui.openInRouteEditor"));
                         menuItem.addActionListener(event -> 
                         {
                             try
@@ -258,7 +266,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                             }
                         });
                         
-                        menuItem.setToolTipText("Shortcut to edit: " + route.getName());
+                        menuItem.setToolTipText(
+                            I18n.f("layout.ui.tooltip.shortcutEditRoute", route.getName())
+                        );                        
                         add(menuItem);
                     }
                 }
@@ -266,7 +276,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             addSeparator();
 
-            menuItem = new JMenuItem("Edit Text Label");
+            menuItem = new JMenuItem(I18n.t("layout.ui.editTextLabel"));
             menuItem.addActionListener(event -> 
             {
                 try
@@ -283,7 +293,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             
             if (ui.getModel().hasAutoLayout() && !ui.getModel().getAutoLayout().getPoints().isEmpty())
             {     
-                menuItem = new JMenuItem("Place Autonomy Station Label");
+                menuItem = new JMenuItem(I18n.t("layout.ui.placeAutoStationLabel"));
                 menuItem.addActionListener(event -> 
                 {
                     try
@@ -301,7 +311,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             addSeparator();
             
-            menuItem = new JMenuItem("Delete");
+            menuItem = new JMenuItem(I18n.t("ui.delete"));
             menuItem.addActionListener(event -> 
             {
                 try
@@ -320,9 +330,18 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         addSeparator();
         
-        JMenu diagramSubmenu = new JMenu("Diagram"); // Create the submenu
-             
-        menuItem = new JMenuItem("Increase Size (" + edit.getMarklinLayout().getSx() + " x " + edit.getMarklinLayout().getSy() + ")");
+        JMenu diagramSubmenu = new JMenu(
+            I18n.t("layout.ui.menuDiagram")
+        ); // Create the submenu
+
+        menuItem = new JMenuItem(
+            I18n.f(
+                "layout.ui.menuIncreaseSize",
+                edit.getMarklinLayout().getSx(),
+                edit.getMarklinLayout().getSy()
+            )
+        );
+
         menuItem.addActionListener(event -> 
         {
             try
@@ -340,7 +359,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         diagramSubmenu.addSeparator();
         
-        menuItem = new JMenuItem("Shift Right");
+        menuItem = new JMenuItem(I18n.t("layout.ui.shiftRight"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -353,10 +372,12 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         
-        menuItem.setToolTipText("Shifts the entire diagram right from the highlighted column");
+        menuItem.setToolTipText(
+            I18n.t("layout.ui.tooltip.shiftDiagramRight")
+        );
         diagramSubmenu.add(menuItem);
                 
-        menuItem = new JMenuItem("Shift Down");
+        menuItem = new JMenuItem(I18n.t("layout.ui.shiftDown"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -369,10 +390,12 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         
-        menuItem.setToolTipText("Shifts the entire diagram down from the highlighted row");
+        menuItem.setToolTipText(
+            I18n.t("layout.ui.tooltip.shiftDiagramDown")
+        );
         diagramSubmenu.add(menuItem);
         
-                menuItem = new JMenuItem("Shift Left");
+        menuItem = new JMenuItem(I18n.t("layout.ui.shiftLeft"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -385,10 +408,12 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         
-        menuItem.setToolTipText("Shifts the entire diagram left from the highlighted column");
+        menuItem.setToolTipText(
+            I18n.t("layout.ui.tooltip.shiftDiagramLeft")
+        );
         diagramSubmenu.add(menuItem);
         
-        menuItem = new JMenuItem("Shift Up");
+        menuItem = new JMenuItem(I18n.t("layout.ui.shiftUp"));
         menuItem.addActionListener(event -> 
         {
             try
@@ -401,12 +426,14 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
         
-        menuItem.setToolTipText("Shifts the entire diagram up from the highlighted row");
+        menuItem.setToolTipText(
+            I18n.t("layout.ui.tooltip.shiftDiagramUp")
+        );
         diagramSubmenu.add(menuItem);
         
         diagramSubmenu.addSeparator();
         
-        menuItem = new JMenuItem("Clear Diagram");
+        menuItem = new JMenuItem(I18n.t("layout.ui.clearDiagram"));
         menuItem.addActionListener(event -> 
         {
             try

@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents the model for a track diagram
@@ -35,7 +36,7 @@ public class LayoutGrid
     
     // Prefix that denotes a station label
     // Used to show autonomy locations on the layout
-    public static final String LAYOUT_STATION_PREFIX = "Point:";
+    public static final String LAYOUT_STATION_PREFIX = I18n.t("layout.ui.autonomyStationPrefix");
     public static final String LAYOUT_STATION_EMPTY = "[---]";
     public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
@@ -386,7 +387,9 @@ public class LayoutGrid
     {
        if (colIndex < 0 || colIndex >= grid.length)
        {
-           throw new IndexOutOfBoundsException("Column index out of bounds: " + colIndex);
+            throw new IndexOutOfBoundsException(
+                I18n.f("error.columnIndexOutOfBounds", colIndex)
+            );
        }
        
        return Arrays.asList(grid[colIndex]);
@@ -402,7 +405,9 @@ public class LayoutGrid
     {
         if (grid.length == 0 || rowIndex < 0 || rowIndex >= grid[0].length)
         {
-            throw new IndexOutOfBoundsException("Row index out of bounds: " + rowIndex);
+            throw new IndexOutOfBoundsException(
+                I18n.f("error.rowIndexOutOfBounds", rowIndex)
+            );
         }
 
         List<LayoutLabel> column = new ArrayList<>();
