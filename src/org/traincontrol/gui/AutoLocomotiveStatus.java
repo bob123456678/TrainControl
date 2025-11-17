@@ -12,9 +12,9 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollBar;
 import javax.swing.SwingUtilities;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.I18n;
 
 /**
  * Displays the status of a locomotive in autonomous operation
@@ -135,13 +135,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 if (layout.getLocomotiveLocation(locomotive) != null)
                 {
-                    this.locDest.setText("No active path.");
+                    this.locDest.setText(I18n.t("autolayout.ui.noActivePath"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
                 }
                 else
                 {
                     this.locStation.setText("?????");
-                    this.locDest.setText("Locomotive is not placed on the graph.");
+                    this.locDest.setText(I18n.t("autolayout.ui.locNotOnGraph"));
                 }
                                 
                 this.locAvailPaths.setVisible(false);
@@ -154,7 +154,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 
                 if (!this.paths.isEmpty())
                 {
-                    this.locDest.setText("Double-click a path to execute");
+                    this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
@@ -163,7 +163,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {                    
-                    this.locDest.setText("No available paths.");
+                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
@@ -172,10 +172,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 else
                 {
                     this.locStation.setText("?????");
-                    this.locDest.setText("Locomotive is not placed on the graph.");
+                    this.locDest.setText(I18n.t("autolayout.ui.locNotOnGraph"));
                 }
                 
-                this.locStation.setToolTipText("Current location. * denotes timetable starting station.");
+                this.locStation.setToolTipText(I18n.t("autolayout.ui.tooltip.currentLocation"));
                 
                 // Sort the list
                 this.paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
@@ -320,7 +320,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {
                     if (!this.control.getPowerState())
                     {
-                        JOptionPane.showMessageDialog(this, "To start autonomy, please turn the track power on, or cycle the power.");
+                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
                         return;
                     }
 
@@ -345,7 +345,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                         if (!success)
                         {
-                            JOptionPane.showMessageDialog(this, "Auto route could not be executed: check log.");
+                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
                         }
                         
                     }).start();

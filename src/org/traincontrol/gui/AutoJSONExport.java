@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.traincontrol.util.I18n;
 
 /**
  * UI for exporting JSON or other state to a file
@@ -60,7 +61,8 @@ public class AutoJSONExport extends javax.swing.JPanel
         jScrollPane1.setViewportView(jsonTextArea);
 
         jsonSaveAs.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jsonSaveAs.setText("Save to File...");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        jsonSaveAs.setText(bundle.getString("ui.saveToFile")); // NOI18N
         jsonSaveAs.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jsonSaveAsActionPerformed(evt);
@@ -119,7 +121,7 @@ public class AutoJSONExport extends javax.swing.JPanel
             }
             catch (HeadlessException | IOException e)
             {
-                JOptionPane.showMessageDialog(this, "Error writing file.");
+                JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile"));
 
                 if (this.tcui.getModel().isDebug())
                 {

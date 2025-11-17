@@ -12,6 +12,7 @@ import javax.swing.JOptionPane;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.I18n;
 
 public class AddLocomotive extends javax.swing.JFrame
 {
@@ -74,11 +75,12 @@ public class AddLocomotive extends javax.swing.JFrame
         LocTypeMM2.setInheritsPopupMenu(true);
 
         jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel4.setText("Locomotive Type");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        jLabel4.setText(bundle.getString("ui.locType")); // NOI18N
         jLabel4.setFocusable(false);
 
         AddLocButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        AddLocButton.setText("Add");
+        AddLocButton.setText(bundle.getString("ui.add")); // NOI18N
         AddLocButton.setFocusable(false);
         AddLocButton.setInheritsPopupMenu(true);
         AddLocButton.addActionListener(new java.awt.event.ActionListener() {
@@ -97,12 +99,12 @@ public class AddLocomotive extends javax.swing.JFrame
         });
 
         jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel3.setText("Locomotive Address");
+        jLabel3.setText(bundle.getString("ui.locAddress")); // NOI18N
         jLabel3.setToolTipText("Enter as integer or hex for MFX, and integer to DCC/MM2.");
         jLabel3.setFocusable(false);
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel1.setText("Locomotive Name");
+        jLabel1.setText(bundle.getString("ui.locName")); // NOI18N
         jLabel1.setFocusable(false);
 
         LocNameInput.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -126,7 +128,7 @@ public class AddLocomotive extends javax.swing.JFrame
         LocTypeDCC.setFocusable(false);
 
         checkDuplicates.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        checkDuplicates.setText("Check Duplicates");
+        checkDuplicates.setText(bundle.getString("ui.checkDuplicates")); // NOI18N
         checkDuplicates.setFocusable(false);
         checkDuplicates.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -188,7 +190,7 @@ public class AddLocomotive extends javax.swing.JFrame
 
         AddNewLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         AddNewLocLabel.setForeground(new java.awt.Color(0, 0, 115));
-        AddNewLocLabel.setText("Add Locomotive to Database");
+        AddNewLocLabel.setText(bundle.getString("ui.addLocToDB")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -229,27 +231,33 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 if (locName.trim().length() == 0)
                 {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a locomotive name");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.errorNameMissing")
+                    );
                     return;
                 }
 
                 if (locName.length() >= TrainControlUI.MAX_LOC_NAME_DATABASE)
                 {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a locomotive name under " + TrainControlUI.MAX_LOC_NAME_DATABASE + " characters");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.f("loc.errorNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE)
+                    );
                     return;
                 }
 
                 if (this.model.getLocByName(locName) != null)
                 {
-                    JOptionPane.showMessageDialog(this,
-                        "A locomotive by this name already exists.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.errorNameExists")
+                    );
                     return;
                 }
 
                 decoderType type;
-
+                
                 if (this.LocTypeMFX.isSelected())
                 {
                     type = decoderType.MFX;
@@ -264,12 +272,15 @@ public class AddLocomotive extends javax.swing.JFrame
                 }
 
                 int locAddress;
-
+                
                 try
                 {
                     if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
                     {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
+                        locAddress = Integer.parseInt(
+                            this.LocAddressInput.getText().replace("0x", ""),
+                            16
+                        );
                     }
                     else
                     {
@@ -278,8 +289,10 @@ public class AddLocomotive extends javax.swing.JFrame
                 }
                 catch (NumberFormatException e)
                 {
-                    JOptionPane.showMessageDialog(this,
-                        "Please enter a numerical address");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.errorAddressNotNumeric")
+                    );
                     return;
                 }
 
@@ -289,37 +302,43 @@ public class AddLocomotive extends javax.swing.JFrame
                 {
                     if (locAddress > MarklinLocomotive.MM2_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(this,
-                            "MM2 address out of range");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("loc.errorMM2AddressOutOfRange")
+                        );
                         return;
                     }
                 }
 
-                if (type == MarklinLocomotive.decoderType.MM2)
+                if (type == decoderType.DCC)
                 {
                     if (locAddress > MarklinLocomotive.DCC_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(this,
-                            "DCC address out of range");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("loc.errorDCCAddressOutOfRange")
+                        );
                         return;
                     }
                 }
 
-                if (type == MarklinLocomotive.decoderType.MFX)
+                if (type == decoderType.MFX)
                 {
                     if (locAddress > MarklinLocomotive.MFX_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(this,
-                            "MFX address out of range");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("loc.errorMFXAddressOutOfRange")
+                        );
                         return;
                     }
                 }
 
-                if (type == MarklinLocomotive.decoderType.MFX)
+                if (type == decoderType.MFX)
                 {
                     this.model.newMFXLocomotive(locName, locAddress);
                 }
-                else if (type == MarklinLocomotive.decoderType.DCC)
+                else if (type == decoderType.DCC)
                 {
                     this.model.newDCCLocomotive(locName, locAddress);
                 }
@@ -328,11 +347,12 @@ public class AddLocomotive extends javax.swing.JFrame
                     this.model.newMM2Locomotive(locName, locAddress);
                 }
 
-                // Add list of locomotives to dropdown
                 this.parent.getLocSelector().refreshLocSelectorList();
 
-                // Reset form
-                JOptionPane.showMessageDialog(this, "Locomotive added successfully");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("loc.infoAddedSuccessfully")
+                );
 
                 this.LocAddressInput.setText("");
                 this.LocNameInput.setText("");
@@ -392,7 +412,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 List<Integer> sortedLocs = new ArrayList<>(locs.keySet());
                 Collections.sort(sortedLocs, Collections.reverseOrder());
 
-                this.model.log("=== MFX Locomotives ===");
+                this.model.logf("loc.reportMfxHeader");
                 for (Integer addr : sortedLocs)
                 {
                     List<MarklinLocomotive> mfxLocs = locs.get(addr).stream()
@@ -403,13 +423,13 @@ public class AddLocomotive extends javax.swing.JFrame
                     {
                         for (MarklinLocomotive l : mfxLocs)
                         {
-                            this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+                            this.model.logf("loc.reportLocEntry", l.getName(), l.getDecoderTypeLabel());
                         }
-                        this.model.log("---- Address " + addr + " ----");
+                        this.model.logf("loc.reportAddressSeparator", addr);
                     }
                 }
 
-                this.model.log("=== Non-MFX Locomotives ===");
+                this.model.logf("loc.reportNonMfxHeader");
                 for (Integer addr : sortedLocs)
                 {
                     List<MarklinLocomotive> nonMfxLocs = locs.get(addr).stream()
@@ -422,15 +442,16 @@ public class AddLocomotive extends javax.swing.JFrame
                         {
                             this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                         }
-                        this.model.log("---- Address " + addr + " ----");
+                        
+                        this.model.logf("loc.reportAddressSeparator", addr);
                     }
                 }
 
-                this.model.log("Duplicate locomotive address report:");
+                this.model.logf("loc.reportDuplicateSummary");
             }
             else
             {
-                this.model.log("There are no duplicate locomotive addresses in the database.");
+                this.model.logf("loc.reportNoDuplicates");
             }
             
             String message;
@@ -439,11 +460,11 @@ public class AddLocomotive extends javax.swing.JFrame
             {
                 if (locs.containsKey(locAddress))
                 {
-                    message = "Locomotive address is already in use. See log for details.";
+                    message = I18n.t("loc.errorAddressInUse");
                 }
                 else
                 {
-                    message = "Address is free. See log for details.";
+                    message = I18n.t("loc.infoAddressFree");
                 }
                 
                 JOptionPane.showMessageDialog(this, message);
