@@ -1755,12 +1755,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 && this.model.getNetworkCommState()
             )
             {
-                String message = "Warning: No CAN messages have been detected from the Central Station for " + CAN_MONITOR_DELAY + " seconds.";
+                String message = I18n.f(
+                    "ui.warningNoCanMessages",
+                    CAN_MONITOR_DELAY
+                );
+
                 this.model.log(message);
-                
-                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
-                    JOptionPane.showMessageDialog(this, message + "\n\nPlease check that broadcasting is enabled in your CS2/3 network settings.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.f("ui.warningNoCanMessagesDialog", message)
+                    );
                 }));
             }
         }).start();
@@ -1783,7 +1790,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         UPDATE_URL = Util.parseReleaseURL(updateInfo);
                     }
                     
-                    this.model.log("Latest available version is: " + LATEST_VERSION);
+                    this.model.logf(
+                        "ui.infoLatestAvailableVersion",
+                        LATEST_VERSION
+                    );
 
                     if (Conversion.compareVersions(LATEST_VERSION, MarklinControlStation.RAW_VERSION) > 0)
                     {
@@ -1797,8 +1807,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 catch (Exception e)
                 {
-                    this.model.log("Failed to fetch latest update information.");
-                    
+                    this.model.logf(
+                        "ui.errorFetchLatestUpdateInfo"
+                    );
+
                     if (this.model.isDebug())
                     {
                         this.model.log(e);
@@ -1823,7 +1835,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                             {
-                                latencyLabel.setText("Lost network connection");
+                                latencyLabel.setText(
+                                    I18n.t("ui.labelLostNetworkConnection")
+                                );
                                 latencyLabel.setForeground(Color.red);
                             }));
                             
@@ -1834,8 +1848,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     catch (Exception e)
                     {
-                        model.log("Error sending ping: " + e.getMessage());
-
+                        model.logf(
+                            "ui.errorSendingPing",
+                            e.getMessage()
+                        );
+                        
                         model.log(e);
                     }
                 }
@@ -1900,7 +1917,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Debug mode indicator
         if (this.model.isDebug())
         {
-            setTitle(this.getTitle() + " [Debug]");
+            setTitle(this.getTitle() + " [" + I18n.t("ui.debug") + "]");
         }
                 
         restoreLayoutTitles();
@@ -1955,7 +1972,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                this.latencyLabel.setText("CS" + (this.model.isCS3() ? "3" : "2") + " Network Latency: " + String.format("%.0f", latency) + "ms");
+                this.latencyLabel.setText(
+                    I18n.f(
+                        "ui.labelNetworkLatency",
+                        (this.model.isCS3() ? "3" : "2"),
+                        String.format("%.0f", latency)
+                    )
+                );
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
             }));
@@ -1976,15 +1999,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
             {
-                model.log("Turning off power because network latency exceeded " + l.getMaxLatency() + "ms while in autonomy mode.");
+                this.model.logf(
+                    "ui.errorPowerOffLatencyExceeded",
+                    l.getMaxLatency()
+                );
 
-                model.stop();
-                
+                this.model.stop();
+
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     JOptionPane.showMessageDialog(
-                        this, 
-                        "The power was turned off because the network latency exceeded " + l.getMaxLatency() + "ms while in autonomy mode.\n\nCheck your network connection before restoring power, or update this threshold in the autonomy settings."
+                        this,
+                        I18n.f("ui.errorPowerOffLatencyExceededDialog", l.getMaxLatency())
                     );
                 }));
             }
@@ -1999,35 +2025,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void createAndApplyEmptyLayout(String folderName, boolean verify)
     {
         boolean proceed;
-        
+
         if (!verify)
         {
             proceed = true;
         }
         else
-        {        
+        {
             // Attempt to create an empty layout if needed
             int dialogResult = JOptionPane.showConfirmDialog(
-                this, "Do you want to initialize a new track diagram?\n\nLayout files will be written to: \n" + 
-                        new File(folderName).getAbsolutePath(),
-                "Create New Track Diagram", JOptionPane.YES_NO_OPTION
+                this,
+                I18n.f("layout.ui.confirmInitializeTrackDiagram", new File(folderName).getAbsolutePath()),
+                I18n.t("layout.ui.dialogCreateNewTrackDiagram"),
+                JOptionPane.YES_NO_OPTION
             );
-            
+
             proceed = (dialogResult == JOptionPane.YES_OPTION);
         }
-        
+
         if (proceed)
         {
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
                 try
                 {
-                    this.model.log("No layout detected. Initializing local demo layout...");
+                    this.model.logf("layout.ui.infoInitializingDemoLayout");
+
                     String path = this.initializeEmptyLayout(folderName);
 
                     if (path != null)
                     {
-                        this.model.log("Layout initialized at: " + path);
+                        this.model.logf("layout.ui.infoLayoutInitializedAt", path);
                         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
                         this.model.syncWithCS2();
@@ -2040,18 +2068,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else
                     {
-                        this.model.log("Failed to initialize demo layout.");
-                        JOptionPane.showMessageDialog(this, "Failed to initialize demo layout.");
+                        this.model.logf("layout.ui.errorInitializeDemoLayout");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("layout.ui.errorInitializeDemoLayout")
+                        );
                     }
                 }
                 catch (Exception e)
                 {
-                    this.model.log("Critical error while initializing demo layout: " + e.getMessage());
-
+                    this.model.logf("layout.ui.errorCriticalInitializeDemoLayout", e.getMessage());
                     this.model.log(e);
                 }
-                
-                this.initializeLocalLayoutMenuItem.setEnabled(true);      
+
+                this.initializeLocalLayoutMenuItem.setEnabled(true);
             }));
         }
         else
@@ -2077,7 +2107,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                this.model.log("Model error: no layout loaded.");
+                this.model.logf(
+                    "layout.ui.errorNoLayoutLoaded"
+                );
             }
         }));
     }
@@ -2452,7 +2484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 for (int i = 0; i < locKeyTabs.getTabCount(); i++)
                 {
                     locKeyTabs.setTitleAt(i, getLocMappingPageTabTitle(i + 1));
-                    locKeyTabs.setToolTipTextAt(i, "Page " + (i + 1));
+                    locKeyTabs.setToolTipTextAt(i, I18n.f("ui.pageNo", i + 1));
                 }
                 
                 Set<JButton> update;
@@ -2838,8 +2870,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         noImageButton(b);
 
-                        this.model.log("Failed to load image " + l.getImageURL());
-                        
+                        this.model.logf(
+                            "ui.errorFailedToLoadImage",
+                            l.getImageURL()
+                        );
+
                         this.model.log(e);
                     }
                 }
@@ -3020,7 +3055,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         }
                                         catch (Exception e)
                                         {
-                                            this.model.log("Icon not found: " + targetURL);
+                                            this.model.logf(
+                                                "ui.errorIconNotFound",
+                                                targetURL
+                                            );                  
                                             //bt.setText("F" + Integer.toString(fNo));
                                         } 
                                     }));         
@@ -3086,8 +3124,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setText("");
 
-                        this.ActiveLocLabel.setText("No Locomotive (Click here)");
-
+                        this.ActiveLocLabel.setText(
+                            I18n.t("loc.ui.labelNoLocomotiveClickHere")
+                        );
+                        
                         this.CurrentKeyLabel.setText("<html><nobr>" + this.currentButton.getText() + " &#8226; " 
                                 + this.getPageName(currentButtonlocMappingNumber, false, false) + "</nobr></html>"    
                         );
