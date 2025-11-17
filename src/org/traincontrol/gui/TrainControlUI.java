@@ -2484,7 +2484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 for (int i = 0; i < locKeyTabs.getTabCount(); i++)
                 {
                     locKeyTabs.setTitleAt(i, getLocMappingPageTabTitle(i + 1));
-                    locKeyTabs.setToolTipTextAt(i, I18n.f("ui.pageNo", i + 1));
+                    locKeyTabs.setToolTipTextAt(i, I18n.f("page.ui.pageNo", i + 1));
                 }
                 
                 Set<JButton> update;
@@ -9579,9 +9579,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 gracefulStopActionPerformed(null);
                 int dialogResult = JOptionPane.showConfirmDialog(
-                        this, "Autonomy logic is still running.  "
-                                + "State will not be auto-saved unless all trains are gracefully stopped.  Are you use you want to quit?"
-                                , "Confirm Exit", JOptionPane.YES_NO_OPTION);
+                    this,
+                    I18n.t("autolayout.ui.confirmExitAutonomyRunning"),
+                    I18n.t("autolayout.ui.dialogConfirmExit"),
+                    JOptionPane.YES_NO_OPTION
+                );
                 
                 if(dialogResult == JOptionPane.NO_OPTION) return;
             }
@@ -9616,7 +9618,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (route != null)
         {            
-            int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Delete route " + route.getName() + "?", "Route Deletion", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(
+                RoutePanel,
+                I18n.f("route.ui.confirmDeleteRoute", route.getName()),
+                I18n.t("route.ui.dialogDeleteRoute"),
+                JOptionPane.YES_NO_OPTION
+            );
+            
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.model.deleteRoute(route.getName());
@@ -9640,13 +9648,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.LayoutList.getModel().getSize() > index && index >= 0)
         {
-            this.model.log("Jumping to layout page " + page);
+            this.model.logf(
+                "layout.ui.infoJumpingToLayoutPage",
+                page
+            );
             this.LayoutList.setSelectedIndex(index);
             this.repaintLayout();
         }
         else
         {
-            this.model.log("Layout page " + page + " does not exist.");
+            this.model.logf(
+                "layout.ui.errorLayoutPageDoesNotExist",
+                page
+            );
         }
     }
         
@@ -9723,11 +9737,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if ("-1".equals(r.toString()))
                     {
-                        JOptionPane.showMessageDialog(c, "Sync failed.  See log.");
+                        JOptionPane.showMessageDialog(
+                            c,
+                            I18n.t("ui.errorSyncFailedSeeLog")
+                        );
                     }
                     else
                     {
-                        JOptionPane.showMessageDialog(c, "Sync complete.  Items added: " + r.toString());
+                        JOptionPane.showMessageDialog(
+                            c,
+                            I18n.f("ui.infoSyncCompleteItemsAdded", r.toString())
+                        );
                     }
                 }
             }).start();
@@ -9749,7 +9769,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (pageCopied() && this.locMappingNumber != this.pageToCopy)
         {
-            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to replace the mappings on currently visible " + this.getPageName(this.locMappingNumber, false) + " with those from " + this.getPageName(this.pageToCopy, false) + "?", "Paste Mappings", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this,
+                I18n.f(
+                    "page.ui.confirmReplaceMappings",
+                    this.getPageName(this.locMappingNumber, false),
+                    this.getPageName(this.pageToCopy, false)
+                ),
+                I18n.t("page.ui.dialogPasteMappings"),
+                JOptionPane.YES_NO_OPTION
+            );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
@@ -9781,7 +9810,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(() ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to clear all key mappings\non the current page (" + this.locMappingNumber + ")?", "Reset Keyboard Mappings", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this,
+                I18n.f("page.ui.confirmClearKeyMappings", this.locMappingNumber),
+                I18n.t("page.ui.dialogResetKeyboardMappings"),
+                JOptionPane.YES_NO_OPTION
+            );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
                 doClearCurrentPage();
@@ -9812,7 +9846,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            String input = JOptionPane.showInputDialog(this, "Enter locomotive name to jump to:");
+            String input = JOptionPane.showInputDialog(
+                this,
+                I18n.t("loc.ui.promptEnterLocomotiveNameToJumpTo")
+            );
 
             if (input != null)
             {
@@ -9833,22 +9870,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (currentRoute != null)
             {
-                String input = JOptionPane.showInputDialog(this, "Enter new route ID:", currentRoute.getId());
+                String input = JOptionPane.showInputDialog(
+                    this,
+                    I18n.t("route.ui.promptEnterNewRouteId"),
+                    currentRoute.getId()
+                );
 
                 if (input != null)
                 {
                     int newId = Math.abs(Integer.parseInt(input));
 
                     if (newId != currentRoute.getId())
-                    {    
+                    {
                         if (!this.model.changeRouteId(routeName, newId))
                         {
-                            JOptionPane.showMessageDialog(this, "This ID already exists.  Delete the other route first.");
+                            JOptionPane.showMessageDialog(
+                                this,
+                                I18n.t("route.ui.errorDuplicateRouteId")
+                            );
                         }
 
                         this.model.syncWithCS2();
-                        this.repaintLayout();  
-                        
+                        this.repaintLayout();
                         this.refreshRouteList();
                     }
                 }
@@ -9856,7 +9899,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (HeadlessException | NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, "ID must be a positive integer.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("route.ui.errorIdMustBePositiveInteger")
+            );
         }
     }
     
@@ -9871,26 +9917,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model.isAutonomyRunning())
         {
-            JOptionPane.showMessageDialog(source, "Cannot edit locomotives while autonomy is running.");
+            JOptionPane.showMessageDialog(
+                source,
+                I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
+            );
             return;
         }
-        
+
         try
         {
             if (l != null)
             {
                 LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
                 int result = JOptionPane.showConfirmDialog(
-                    source, edit, "Change name/address for " + l.getName(),
-                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+                    source,
+                    edit,
+                    I18n.f("loc.ui.dialogChangeNameOrAddress", l.getName()),
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
                 );
-                
+
                 String newAddress = edit.getAddress();
                 decoderType newDecoderType = edit.getDecoderType();
                 Integer proposedAddress;
-                
+
                 if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
-                {           
+                {
                     if (newDecoderType == decoderType.MFX && newAddress.contains("0x"))
                     {
                         proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
@@ -9905,35 +9957,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
                     }
                 }
-                
+
                 String newName = edit.getLocName();
-                
+
                 if (result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName))
                 {
                     if (newName.trim().length() == 0)
                     {
-                        JOptionPane.showMessageDialog(source,
-                            "Please enter a locomotive name");
+                        JOptionPane.showMessageDialog(
+                            source,
+                            I18n.t("loc.ui.errorEmptyLocomotiveName")
+                        );
                         return;
                     }
 
                     if (newName.length() > MAX_LOC_NAME_DATABASE)
                     {
-                        JOptionPane.showMessageDialog(source,
-                            "Please enter a locomotive name no longer than " + MAX_LOC_NAME_DATABASE + " characters");
+                        JOptionPane.showMessageDialog(
+                            source,
+                            I18n.f("loc.ui.errorLocomotiveNameTooLong", MAX_LOC_NAME_DATABASE)
+                        );
                         return;
                     }
 
                     if (this.model.getLocByName(newName) != null)
                     {
-                        JOptionPane.showMessageDialog(source,
-                            "Locomotive " + newName + " already exists in the locomotive DB.  Rename or delete it first.");
+                        JOptionPane.showMessageDialog(
+                            source,
+                            I18n.f("loc.ui.errorLocomotiveAlreadyExists", newName)
+                        );
                         return;
                     }
 
                     this.model.renameLoc(l.getName(), newName);
                 }
-                
+
                 // Refresh everything
                 if (result == JOptionPane.OK_OPTION)
                 {
@@ -9942,7 +10000,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     repaintMappings(null, false);
                     this.refreshRouteList();
                     selector.refreshLocSelectorList();
-                    
+
                     // Update locomotive on graph
                     if (this.model.hasAutoLayout())
                     {
@@ -9955,8 +10013,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception e)
         {
             this.model.log(e);
-            
-            JOptionPane.showMessageDialog(source, "Error: " + e.getMessage());
+
+            JOptionPane.showMessageDialog(
+                source,
+                I18n.f("loc.ui.errorLocomotiveEditException", e.getMessage())
+            );
         }
     }
       
@@ -9971,19 +10032,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model.isLocLinkedToOthers(l) != null)
         {
-            JOptionPane.showMessageDialog(this, "This locomotive is already linked to " + this.model.isLocLinkedToOthers(l).getName() + " and cannot be made a Multi Unit.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.f(
+                    "loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit",
+                    this.model.isLocLinkedToOthers(l).getName()
+                )
+            );
             return;
         }
 
         if (this.model.isAutonomyRunning())
         {
-            JOptionPane.showMessageDialog(this, "Cannot edit Multi Units while autonomy is running.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning")
+            );
             return;
         }
-        
+
         if (this.model.getLocomotives().size() < 2)
         {
-            JOptionPane.showMessageDialog(this, "There need to be at least two locomotives in the database to create a multi-unit.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")
+            );
             return;
         }
 
@@ -10018,8 +10091,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         panel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         JTextField filterField = new JTextField();
-        filterField.setToolTipText("Filter by locomotive name");
-        
+        filterField.setToolTipText(
+            I18n.t("loc.ui.tooltip.filterByLocomotiveName")
+        );
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 3;
@@ -10034,13 +10109,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Add heading
         JPanel headingPanel = new JPanel(new GridLayout(1, 3));
-        JLabel nameLabel = new JLabel("Locomotive Name");
+
+        JLabel nameLabel = new JLabel(
+            I18n.t("loc.ui.labelLocomotiveName")
+        );
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        JLabel multiplierLabel = new JLabel("Speed Multiplier (%)");
-        multiplierLabel.setToolTipText("Adjust the relative speed of the linked locomotive?");
+
+        JLabel multiplierLabel = new JLabel(
+            I18n.t("loc.ui.labelSpeedMultiplierPercent")
+        );
+        multiplierLabel.setToolTipText(
+            I18n.t("loc.ui.tooltip.adjustRelativeSpeed")
+        );
         multiplierLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        JLabel reverseLabel = new JLabel("Reverse");
-        reverseLabel.setToolTipText("Swap the direction of the linked locomotive?");
+
+        JLabel reverseLabel = new JLabel(
+            I18n.t("loc.ui.labelReverse")
+        );
+        reverseLabel.setToolTipText(
+            I18n.t("loc.ui.tooltip.swapDirection")
+        );
         reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         headingPanel.add(nameLabel);
         headingPanel.add(multiplierLabel);
@@ -10190,7 +10278,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     headingPanel.setVisible(false);
                     scrollGbc.gridwidth = 3;
-                    scrollPanel.add(new JLabel("No locomotives found."), scrollGbc);
+                    scrollPanel.add(
+                        new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
+                        scrollGbc
+                    );
                 }
                 else
                 {
@@ -10238,11 +10329,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             headingPanel.setVisible(false);
             scrollGbc.gridwidth = 3;
-            scrollPanel.add(new JLabel("No locomotives found."), scrollGbc);
+            scrollPanel.add(
+                new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
+                scrollGbc
+            );
             filterField.setVisible(false);
         }   
 
-        int result = JOptionPane.showConfirmDialog(this, panel, "Multi Unit: Link locomotives to " + l.getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(
+            this,
+            panel,
+            I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", l.getName()),
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE
+        );
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
         {
@@ -10308,7 +10408,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if ((railway == null || railway.trim().isEmpty()) && startYear == 0)
         {
-            JOptionPane.showMessageDialog(source, "This locomotive has no railway and no start year.\nCannot perform similarity search.", "Insufficient Data", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(
+                source,
+                I18n.t("search.ui.errorNoRailwayOrStartYear"),
+                I18n.t("search.ui.dialogInsufficientData"),
+                JOptionPane.WARNING_MESSAGE
+            );
             return;
         }
 
@@ -10320,26 +10425,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         JTextField railroadsField = new JTextField("", 30);
         railroadsField.setText(railway);
 
-        JCheckBox currentPageOnly = new JCheckBox("Only Search Current Page");
+        JCheckBox currentPageOnly = new JCheckBox(
+            I18n.t("search.ui.checkboxOnlySearchCurrentPage")
+        );
         currentPageOnly.setSelected(false);
 
-        JRadioButton randomOrder = new JRadioButton("Random", true);
-        JRadioButton leastUsedOrder = new JRadioButton("Least Used");
+        JRadioButton randomOrder = new JRadioButton(
+            I18n.t("search.ui.radioRandom"),
+            true
+        );
+        JRadioButton leastUsedOrder = new JRadioButton(
+            I18n.t("search.ui.radioLeastUsed")
+        );
         ButtonGroup orderGroup = new ButtonGroup();
         orderGroup.add(randomOrder);
         orderGroup.add(leastUsedOrder);
 
         JPanel inputPanel = new JPanel(new GridLayout(0, 1));
-        inputPanel.add(new JLabel("Maximum Matches:"));
+        inputPanel.add(new JLabel(I18n.t("search.ui.labelMaximumMatches")));
         inputPanel.add(countDropdown);
-        inputPanel.add(new JLabel("Railroad Names (Comma-separated):"));
+        inputPanel.add(new JLabel(I18n.t("search.ui.labelRailroadNamesCommaSeparated")));
         inputPanel.add(railroadsField);
         inputPanel.add(currentPageOnly);
-        inputPanel.add(new JLabel("Ordering:"));
+        inputPanel.add(new JLabel(I18n.t("search.ui.labelOrdering")));
         inputPanel.add(randomOrder);
         inputPanel.add(leastUsedOrder);
 
-        int result = JOptionPane.showConfirmDialog(source, inputPanel, "Find Locomotives Similar to " + searchLoc.getName(), JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(
+            source,
+            inputPanel,
+            I18n.f("search.ui.dialogFindSimilarLocomotives", searchLoc.getName()),
+            JOptionPane.OK_CANCEL_OPTION
+        );
         if (result != JOptionPane.OK_OPTION) return;
 
         try
@@ -10365,24 +10482,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (matches.isEmpty())
             {
-                JOptionPane.showMessageDialog(source, "No similar locomotives found.", "Results", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(
+                    source,
+                    I18n.t("search.ui.infoNoSimilarLocomotivesFound"),
+                    I18n.t("search.ui.dialogResults"),
+                    JOptionPane.INFORMATION_MESSAGE
+                );
                 return;
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Target locomotive:\n- ").append(searchLoc.getNotesSummaryLine());
-            sb.append("\n\nSimilar locomotives:\n");
+            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ").append(searchLoc.getNotesSummaryLine());
+            sb.append("\n\n").append(I18n.t("search.ui.labelSimilarLocomotives")).append("\n");
             for (Locomotive match : matches)
             {
                 sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
-                this.model.log("Similar to " + searchLoc.getName() + ": " + match.getNotesSummaryLine());
+                this.model.logf(
+                    "loc.ui.infoSimilarLocomotive",
+                    searchLoc.getName(),
+                    match.getNotesSummaryLine()
+                );
             }
 
             // Custom dialog with OK and Map to Page
-            Object[] options = { "OK", "Map to Page..." };
-            int choice = JOptionPane.showOptionDialog(source, sb.toString(), "Results",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                null, options, options[0]);
+            Object[] options = {
+                I18n.t("ui.ok"),
+                I18n.t("page.ui.optionMapToPage")
+            };
+            int choice = JOptionPane.showOptionDialog(
+                source,
+                sb.toString(),
+                I18n.t("search.ui.dialogResults"),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]
+            );
 
             if (choice == 1) // Map to Page...
             {
@@ -10393,17 +10529,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     int oneBasedIndex = i + 1;
                     if (oneBasedIndex != this.getLocMappingNumber())
                     {
-                        String name = this.pageNames.getOrDefault(oneBasedIndex, "Page " + oneBasedIndex);
+                        String name = this.pageNames.getOrDefault(
+                            oneBasedIndex,
+                            I18n.f("page.ui.labelDefaultPageName", oneBasedIndex)
+                        );
                         pageDropdown.addItem(name);
                         pageNameToIndex.put(name, oneBasedIndex);
                     }
                 }
 
                 JPanel mapPanel = new JPanel(new GridLayout(0, 1));
-                mapPanel.add(new JLabel("Select page to map locomotives to:"));
+                mapPanel.add(new JLabel(I18n.t("page.ui.labelSelectPageToMapLocomotives")));
                 mapPanel.add(pageDropdown);
 
-                int mapResult = JOptionPane.showConfirmDialog(source, mapPanel, "Map Locomotives", JOptionPane.OK_CANCEL_OPTION);
+                int mapResult = JOptionPane.showConfirmDialog(
+                    source,
+                    mapPanel,
+                    I18n.t("page.ui.dialogMapLocomotives"),
+                    JOptionPane.OK_CANCEL_OPTION
+                );
                 if (mapResult == JOptionPane.OK_OPTION)
                 {
                     String selectedPageName = (String) pageDropdown.getSelectedItem();
@@ -10415,14 +10559,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else
                     {
-                        this.model.log("Invalid page selection: " + selectedPageName);
+                        this.model.logf(
+                            "page.ui.errorInvalidPageSelection",
+                            selectedPageName
+                        );
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            JOptionPane.showMessageDialog(source, "Please enter a valid number of matches.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(
+                source,
+                I18n.t("search.ui.errorInvalidNumberOfMatches"),
+                I18n.t("ui.dialogInputError"),
+                JOptionPane.ERROR_MESSAGE
+            );
             this.model.log(ex);
         }
     }
@@ -10444,9 +10596,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             String endYearText = existing.getEndYear() == 0 ? "" : String.valueOf(existing.getEndYear());
 
             JTextField startYearField = new JTextField(startYearText, 10);
-            startYearField.setToolTipText("The first year this locomotive operated in real life.");
+            startYearField.setToolTipText(I18n.t("loc.ui.tooltip.StartYear"));
             JTextField endYearField = new JTextField(endYearText, 10);
-            endYearField.setToolTipText("The last year this locomotive operated in real life.");
+            endYearField.setToolTipText(I18n.t("loc.ui.tooltip.EndYear"));
             JTextField railwayField = new JTextField(existing.getRailway(), 30);
 
             startYearField.addKeyListener(new KeyAdapter()
@@ -10503,31 +10655,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             gbc.gridx = 0;
             gbc.gridy = 0;
-            panel.add(new JLabel("Start Year:"), gbc);
+            panel.add(new JLabel(I18n.t("loc.ui.labelStartYear")), gbc);
             gbc.gridx = 1;
             panel.add(startYearField, gbc);
 
             gbc.gridx = 0;
             gbc.gridy++;
-            panel.add(new JLabel("End Year:"), gbc);
+            panel.add(new JLabel(I18n.t("loc.ui.labelEndYear")), gbc);
             gbc.gridx = 1;
             panel.add(endYearField, gbc);
 
             gbc.gridx = 0;
             gbc.gridy++;
-            panel.add(new JLabel("Railway Name:"), gbc);
+            panel.add(new JLabel(I18n.t("loc.ui.labelRailwayName")), gbc);
             gbc.gridx = 1;
             panel.add(railwayField, gbc);
-            
+
             gbc.gridx = 0;
             gbc.gridy++;
             gbc.gridwidth = 2;
-            panel.add(new JLabel("Notes:"), gbc);
+            panel.add(new JLabel(I18n.t("loc.ui.labelNotes")), gbc);
 
             gbc.gridy++;
             panel.add(new JScrollPane(textArea), gbc);
 
-            int confirm = JOptionPane.showConfirmDialog(source, panel, "Edit Locomotive Info: " + l.getName(), JOptionPane.OK_CANCEL_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(
+                source,
+                panel,
+                I18n.f("loc.ui.dialogEditLocomotiveInfo", l.getName()),
+                JOptionPane.OK_CANCEL_OPTION
+            );
 
             if (confirm == JOptionPane.YES_OPTION)
             {
@@ -10546,7 +10703,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 catch (NumberFormatException ex)
                 {
-                    JOptionPane.showMessageDialog(source, "Start and End Year must be valid integers.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(
+                        source,
+                        I18n.t("loc.ui.errorStartEndYearMustBeIntegers"),
+                        I18n.t("ui.dialogInputError"),
+                        JOptionPane.ERROR_MESSAGE
+                    );
                 }
             }
         }
@@ -10563,11 +10725,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model.isAutonomyRunning())
         {
-            JOptionPane.showMessageDialog(source, "Cannot edit locomotives while autonomy is running.");
+            JOptionPane.showMessageDialog(source, I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
             return;
         }
         
-        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(source, "Are you sure you want to delete " + value + " from the database?", "Please Confirm", JOptionPane.YES_NO_OPTION))
+        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(
+            source,
+            I18n.f("ui.confirmDeleteFromDatabase", value),
+            I18n.t("layout.ui.dialogPleaseConfirm"),
+            JOptionPane.YES_NO_OPTION
+        ))
         {
             Locomotive l = this.model.getLocByName(value);
 
@@ -10732,14 +10899,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {          
                 if (routeEditor != null && routeEditor.isVisible())
                 {
-                    JOptionPane.showMessageDialog(this, "You can only edit one route at a time.  Close the editor window first.");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                    );
                     routeEditor.requestFocus();
                 }
                 else
                 {
                     MarklinRoute currentRoute = this.model.getRoute(routeName);
                     
-                    routeEditor = new RouteEditor("Edit Route: " + routeName + " (ID: " + currentRoute.getId() + ")",
+                    routeEditor = new RouteEditor(
+                            I18n.f(
+                                "route.ui.dialogEditRouteWithId",
+                                routeName,
+                                currentRoute.getId()
+                            ),
                             this, routeName, currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
                         currentRoute.getConditionCSV(), currentRoute.isLocked());
                 }
@@ -10795,7 +10970,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (currentRoute != null && currentRoute instanceof MarklinRoute)
                 {
-                    String proposedName = currentRoute.getName() + " (Copy %s)";
+                    String proposedName = currentRoute.getName() + " (" + I18n.t("route.ui.copy") + " %s)";
 
                     int i = 1;
 
