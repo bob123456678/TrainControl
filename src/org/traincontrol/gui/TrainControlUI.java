@@ -10996,8 +10996,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(()->
         { 
-            String searchString = JOptionPane.showInputDialog(this, "Enter search string; matching routes with S88 will be " + (enable ? "enabled" : "disabled") +". * matches all.", "*");
-
+            String searchString = JOptionPane.showInputDialog(
+                this,
+                I18n.f(
+                    "route.ui.promptEnterSearchStringWithS88State",
+                    enable ? I18n.t("ui.stateEnabled") : I18n.t("ui.stateDisabled")
+                ),
+                "*"
+            );
+            
             if (!"".equals(searchString))
             {
                 for (String routeName : this.model.getRouteList())
@@ -11042,7 +11049,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                JOptionPane.showMessageDialog(this, "Route must have an S88 configured to fire automatically.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorS88RequiredForAutoFire")
+                );
             }
         }).start();
     }
@@ -11075,21 +11085,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             String from = RESOURCE_PATH + DEMO_LAYOUT_ZIP;
             File to = new File(DEMO_LAYOUT_ZIP);
-            
+
             copyResource(from, to);
-            
-            this.model.log("Attempting to extract " + to.getAbsolutePath());
-            
+
+            this.model.logf(
+                "layout.ui.infoAttemptingExtractDemoLayout",
+                to.getAbsolutePath()
+            );
+
             File outputFolder = new File(folderName);
             this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
             to.delete();
-                        
+
             return outputFolder.getAbsolutePath();
-        } 
-        catch (IOException ex) 
+        }
+        catch (IOException ex)
         {
-            this.model.log("Error during demo layout extraction.");
-            
+            this.model.logf(
+                "layout.ui.errorDemoLayoutExtraction",
+                ex.getMessage()
+            );
+
             this.model.log(ex);
         }
         
@@ -11140,7 +11156,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //We will unzip files in this folder
             if (!targetDir.toFile().isDirectory() && !targetDir.toFile().mkdirs()) 
             {
-              throw new IOException("failed to create directory " + targetDir);
+                throw new IOException(
+                    I18n.f("error.failedToCreateDirectory", targetDir)
+                );
             }
 
             //Iterate over entries
@@ -11155,7 +11173,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if (!f.isDirectory() && !f.mkdirs())
                     {
-                      throw new IOException("failed to create directory " + f);
+                        throw new IOException(
+                            I18n.f("error.failedToCreateDirectory", f)
+                        );
                     }
                 }
 
@@ -11163,17 +11183,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 else
                 {
                     File parent = f.getParentFile();
-                    if (!parent.isDirectory() && !parent.mkdirs()) {
-                      throw new IOException("failed to create directory " + parent);
+                    if (!parent.isDirectory() && !parent.mkdirs())
+                    {
+                        throw new IOException(
+                            I18n.f("error.failedToCreateDirectory", parent)
+                        );
                     }
 
                     try(InputStream in = zip.getInputStream(entry))
                     {
-                      Files.copy(in, f.toPath());
+                        Files.copy(in, f.toPath());
                     }
                     catch (Exception e)
                     {
-                      this.model.log(e);
+                        this.model.log(e);
                     }
                 }
             }
@@ -11216,8 +11239,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (Exception e)
         {
-            this.model.log("Error loading window locations.");
-            
+            this.model.logf("ui.errorLoadingWindowLocations");
+
             if (this.model.isDebug())
             {
                 this.model.log(e);
@@ -11273,7 +11296,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (Exception e)
         {
-            this.model.log("Error saving window locations.");
+            this.model.logf("ui.errorSavingWindowLocations");
             
             if (this.model.isDebug())
             {
@@ -11307,7 +11330,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model.isDebug())
         {
-            this.model.log("Currently active popups: " + this.popups.size());
+            this.model.logf(
+                "layout.ui.infoCurrentlyActivePopups",
+                this.popups.size()
+            );
         }
     }
     
@@ -11323,7 +11349,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 Integer fNumber = this.functionMapping.get(b);
 
                 LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
-                int result = JOptionPane.showConfirmDialog(this, edit, "Edit " + this.activeLoc.getName() + " Functions", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                int result = JOptionPane.showConfirmDialog(
+                    this,
+                    edit,
+                    I18n.f("loc.ui.dialogEditLocomotiveFunctions", this.activeLoc.getName()),
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+                );
                 edit.focusImages();
                 
                 if (result == JOptionPane.OK_OPTION)
@@ -11347,13 +11379,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
-                JOptionPane.showMessageDialog(this, "Please wait for all active locomotives to stop.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")
+                );
                 return;
             }
-            
+
             int dialogResult = JOptionPane.showConfirmDialog(
-                this, "This will remove all timetable entries. Continue?"
-                    , "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                this,
+                I18n.t("timetable.ui.confirmRemoveAllEntries"),
+                I18n.t("ui.dialogConfirmDeletion"),
+                JOptionPane.YES_NO_OPTION
+            );
 
             if(dialogResult == JOptionPane.NO_OPTION) return;
 
@@ -11371,7 +11409,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            int dialogResult = JOptionPane.showConfirmDialog(this, "This function will query the Central Station for the current function status and direction of all locomotives, and may take several minutes. Continue?", "Sync State", JOptionPane.YES_NO_OPTION);
+            int dialogResult = JOptionPane.showConfirmDialog(
+                this,
+                I18n.t("loc.ui.confirmQueryCentralStationFunctions"),
+                I18n.t("ui.dialogSyncState"),
+                JOptionPane.YES_NO_OPTION
+            );
             if(dialogResult == JOptionPane.YES_OPTION)
             {
                 this.syncMenuItem.setEnabled(false);
@@ -11450,8 +11493,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.saveState(true);
             this.model.saveState(true);
             this.backupDataMenuItem.setEnabled(true);
-            JOptionPane.showMessageDialog(this, "Backup complete: check log for file path.");
-            
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("ui.infoBackupCompleteCheckLog")
+            );
+
             // Advance to last tab (log)
             this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
         }).start();
@@ -11471,7 +11517,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
         
-        JOptionPane.showMessageDialog(this, new About(), "About", JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(this, new About(), I18n.t("ui.about"), JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed
@@ -11498,7 +11544,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             catch (Exception e)
             {
-                this.model.log("Error synchronizing layout from CS2.");
+                this.model.logf("layout.ui.errorSynchronizingLayoutFromCS2");
             }
             
             this.switchCSLayoutMenuItem.setEnabled(true);
@@ -11510,7 +11556,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            JOptionPane.showMessageDialog(this, "In the next window, please select a folder for the new layout.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("layout.ui.infoSelectFolderForNewLayout")
+            );
 
             JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -11557,7 +11606,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.repaintLoc();
                 this.repaintLayout();
-                JOptionPane.showMessageDialog(this, "Invalid path or corrupt data. Ensure this folder is the parent of the CS2's \"config\" layout folder hierarchy.");   
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("layout.ui.errorInvalidPathOrCorruptData")
+                );
             }    
         }).start();
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
