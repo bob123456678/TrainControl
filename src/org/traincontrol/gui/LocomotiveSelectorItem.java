@@ -6,6 +6,7 @@ import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.I18n;
 
 /**
  *
@@ -49,7 +50,10 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
                 }
                 catch (Exception e)
                 {
-                    this.selector.getUI().getModel().log("Failed to load image: " + loc.getImageURL());
+                    this.selector.getUI().getModel().logf(
+                        "loc.ui.errorImageLoad",
+                        loc.getImageURL()
+                    );                    
                     locIcon.setIcon(null);
                 }
             }));
@@ -69,8 +73,9 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         List<String> mappings = this.selector.getUI().getAllLocButtonMappings(loc);
         if (!mappings.isEmpty())
         {
-            locIcon.setToolTipText("Mapped to: " + String.join(", ", mappings));
-            
+            locIcon.setToolTipText(
+                I18n.f("loc.ui.tooltip.mappedTo", String.join(", ", mappings))
+            );            
             //this.setBackground(new Color(254, 255, 212));
             this.setBackground(new Color(222,255,222));
          
@@ -195,7 +200,15 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            JOptionPane.showMessageDialog(selector, "Check \"Click to Assign\" to map this locomotive to the active button (" + String.valueOf((char) this.selector.getUI().getKeyForCurrentButton().intValue()) +").");
+            JOptionPane.showMessageDialog(
+                selector,
+                I18n.f(
+                    "loc.ui.messageClickToAssign",
+                    String.valueOf(
+                        (char) this.selector.getUI().getKeyForCurrentButton().intValue()
+                    )
+                )
+            );
         }
     }//GEN-LAST:event_formMouseReleased
 

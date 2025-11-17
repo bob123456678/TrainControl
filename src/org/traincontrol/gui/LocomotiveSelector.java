@@ -149,7 +149,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         addLocomotive = new javax.swing.JButton();
         clickToAssign = new javax.swing.JCheckBox();
 
-        setTitle("Locomotive Selector");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        setTitle(bundle.getString("app.ui.locomotiveSelector")); // NOI18N
         setAutoRequestFocus(false);
         setBackground(new java.awt.Color(238, 238, 238));
         setForeground(new java.awt.Color(238, 238, 238));
@@ -197,7 +198,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
         locListLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         locListLabel.setForeground(new java.awt.Color(0, 0, 155));
-        locListLabel.setText("Assign Locomotive to Active Button");
+        locListLabel.setText(bundle.getString("loc.ui.assignToActiveButton")); // NOI18N
 
         LocFilterBox.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         LocFilterBox.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -211,7 +212,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
         renameLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         renameLabel.setForeground(new java.awt.Color(0, 0, 155));
-        renameLabel.setText("Filter List:");
+        renameLabel.setText(bundle.getString("loc.ui.filterList")); // NOI18N
 
         LocScroller.setHorizontalScrollBar(null);
         LocScroller.setMaximumSize(null);
@@ -242,7 +243,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         LocScroller.setViewportView(MainLocList);
 
         SyncWithCS.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        SyncWithCS.setText("Sync with Central Station DB");
+        SyncWithCS.setText(bundle.getString("loc.ui.syncWithCSDatabase")); // NOI18N
         SyncWithCS.setFocusable(false);
         SyncWithCS.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -252,11 +253,11 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
         closeOnLocSel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         closeOnLocSel.setSelected(true);
-        closeOnLocSel.setText("Close Window on Assignment");
+        closeOnLocSel.setText(bundle.getString("loc.ui.closeOnAssignment")); // NOI18N
         closeOnLocSel.setFocusPainted(false);
 
         addLocomotive.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        addLocomotive.setText("Add Locomotive");
+        addLocomotive.setText(bundle.getString("loc.ui.addLocomotive")); // NOI18N
         addLocomotive.setFocusable(false);
         addLocomotive.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -266,8 +267,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
         clickToAssign.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         clickToAssign.setSelected(true);
-        clickToAssign.setText("Click to Assign");
-        clickToAssign.setToolTipText("Uncheck this to prevent any assignments from this window.");
+        clickToAssign.setText(bundle.getString("loc.ui.clickToAssign")); // NOI18N
+        clickToAssign.setToolTipText(bundle.getString("loc.ui.tooltip.clickToAssignHelp")); // NOI18N
         clickToAssign.setFocusPainted(false);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());

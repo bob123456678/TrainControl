@@ -1085,7 +1085,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (l != null && l.equals(entry.getValue()))
                 {
-                    out.add(entry.getKey().getText() + " (Page " + Integer.toString(i + 1) + ")");
+                    out.add(
+                        I18n.f("loc.ui.buttonPageLabel", entry.getKey().getText(), Integer.toString(i + 1))
+                    );
                 }
             }
         }
