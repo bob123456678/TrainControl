@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
@@ -48,56 +49,72 @@ public class RightClickRouteMenu extends MouseAdapter
         public String getRouteTooltip(TrainControlUI ui, String route)
         {
             MarklinRoute currentRoute = ui.getModel().getRoute(route);
-            return currentRoute.getName() + " (ID: " + ui.getModel().getRouteId(route) + ")";
+            return currentRoute.getName() + " (" + I18n.t("route.ui.id") + ": " + ui.getModel().getRouteId(route) + ")";
         }
         
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {       
             MarklinRoute route = ui.getRouteAtCursor(e);
 
-            if (route != null)   
+            if (route != null)
             {
                 String routeName = route.getName();
-            
-                menuItem = new JMenuItem("Execute " + getRouteTooltip(ui, routeName));
-                menuItem.addActionListener(event -> ui.executeRoute(routeName));    
+
+                menuItem = new JMenuItem(
+                    I18n.f("route.ui.menuExecuteRoute", getRouteTooltip(ui, routeName))
+                );
+                menuItem.addActionListener(event -> ui.executeRoute(routeName));
                 add(menuItem);
                 addSeparator();
 
-                menuItem = new JMenuItem(route.isLocked() ? "View Route Details" : "Edit Route");
-                menuItem.addActionListener(event -> ui.editRoute(routeName));    
+                menuItem = new JMenuItem(
+                    route.isLocked()
+                        ? I18n.t("route.ui.menuViewRouteDetails")
+                        : I18n.t("route.ui.menuEditRoute")
+                );
+                menuItem.addActionListener(event -> ui.editRoute(routeName));
                 add(menuItem);
 
-                menuItem = new JMenuItem("Duplicate Route");
-                menuItem.addActionListener(event -> ui.duplicateRoute(routeName));    
+                menuItem = new JMenuItem(
+                    I18n.t("route.ui.menuDuplicateRoute")
+                );
+                menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
                 add(menuItem);
 
                 addSeparator();
 
                 if (!route.isEnabled())
                 {
-                    menuItem = new JMenuItem("Enable Auto Execution");
-                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));    
+                    menuItem = new JMenuItem(
+                        I18n.t("route.ui.menuEnableAutoExecution")
+                    );
+                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));
                     add(menuItem);
                 }
                 else
                 {
-                    menuItem = new JMenuItem("Disable Auto Execution");
-                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false)); 
+                    menuItem = new JMenuItem(
+                        I18n.t("route.ui.menuDisableAutoExecution")
+                    );
+                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));
                     add(menuItem);
                 }
-                
+
                 if (!route.isLocked())
-                {      
+                {
                     addSeparator();
 
-                    menuItem = new JMenuItem("Change Route ID");
-                    menuItem.addActionListener(event -> ui.changeRouteId(routeName));    
+                    menuItem = new JMenuItem(
+                        I18n.t("route.ui.menuChangeRouteId")
+                    );
+                    menuItem.addActionListener(event -> ui.changeRouteId(routeName));
                     add(menuItem);
 
-                    menuItem = new JMenuItem("Delete Route");
+                    menuItem = new JMenuItem(
+                        I18n.t("route.ui.menuDeleteRoute")
+                    );
                     menuItem.setForeground(Color.RED);
-                    menuItem.addActionListener(event -> ui.deleteRoute(routeName));    
+                    menuItem.addActionListener(event -> ui.deleteRoute(routeName));
                     add(menuItem);
                 }
             }

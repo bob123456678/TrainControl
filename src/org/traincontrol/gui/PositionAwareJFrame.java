@@ -10,6 +10,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import org.traincontrol.util.Conversion;
+import org.traincontrol.util.I18n;
 
 /**
  * Frame that remembers where it was located using Preferences
@@ -93,7 +94,9 @@ public class PositionAwareJFrame extends JFrame
         }
         catch (Exception e)
         {
-            System.out.println("Error saving window state: ");
+            System.out.println(
+                I18n.t("ui.errorSavingWindowState")
+            );
             e.printStackTrace();
         }
     }
@@ -154,7 +157,9 @@ public class PositionAwareJFrame extends JFrame
         }
         catch (Exception e)
         {
-            System.out.println("Error saving window state: ");
+            System.out.println(
+                I18n.t("ui.errorSavingWindowState")
+            );
             e.printStackTrace();
         }
     }

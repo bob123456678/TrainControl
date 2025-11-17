@@ -244,7 +244,8 @@ public class LocomotiveStats extends javax.swing.JPanel
         jScrollPane1.setViewportView(statsTable);
 
         exportData.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        exportData.setText("Export Raw Data");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        exportData.setText(bundle.getString("stats.ui.exportRawData")); // NOI18N
         exportData.setFocusable(false);
         exportData.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -253,7 +254,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         });
 
         refresh.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        refresh.setText("Refresh");
+        refresh.setText(bundle.getString("ui.refresh")); // NOI18N
         refresh.setFocusable(false);
         refresh.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -263,7 +264,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
         filterLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         filterLabel.setForeground(new java.awt.Color(0, 0, 115));
-        filterLabel.setText("Filter List:");
+        filterLabel.setText(bundle.getString("loc.ui.filterList")); // NOI18N
 
         filterField.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         filterField.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -280,39 +281,39 @@ public class LocomotiveStats extends javax.swing.JPanel
 
         todaysRuntimeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         todaysRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        todaysRuntimeLabel.setText("Today's runtime:");
+        todaysRuntimeLabel.setText(bundle.getString("stats.ui.todaysRuntime")); // NOI18N
 
         cumulativeRuntimeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         cumulativeRuntimeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        cumulativeRuntimeLabel.setText("Cumulative runtime:");
+        cumulativeRuntimeLabel.setText(bundle.getString("stats.ui.cumulativeRuntime")); // NOI18N
 
         cumulativeRuntimeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         cumulativeRuntimeVal.setText("jLabel5");
 
         byLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         byLabel.setForeground(new java.awt.Color(0, 0, 115));
-        byLabel.setText("by");
+        byLabel.setText(bundle.getString("ui.by")); // NOI18N
 
         locCountVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         locCountVal.setText("jLabel2");
 
         locomotivesLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locomotivesLabel.setForeground(new java.awt.Color(0, 0, 115));
-        locomotivesLabel.setText("locomotives");
+        locomotivesLabel.setText(bundle.getString("loc.locomotives")); // NOI18N
 
         byLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         byLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        byLabel1.setText("by");
+        byLabel1.setText(bundle.getString("ui.by")); // NOI18N
 
         locCountCumulativeVal.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         locCountCumulativeVal.setText("jLabel2");
 
         locomotivesCumulativeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         locomotivesCumulativeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        locomotivesCumulativeLabel.setText("locomotives");
+        locomotivesCumulativeLabel.setText(bundle.getString("loc.locomotives")); // NOI18N
 
         viewUsageGraph.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        viewUsageGraph.setText("30-day Usage Graph");
+        viewUsageGraph.setText(bundle.getString("stats.ui.usageGraph30Day")); // NOI18N
         viewUsageGraph.setFocusable(false);
         viewUsageGraph.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

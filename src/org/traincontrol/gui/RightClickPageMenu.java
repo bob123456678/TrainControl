@@ -4,6 +4,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions for locomotive mapping pages
@@ -42,40 +43,50 @@ public class RightClickPageMenu extends MouseAdapter
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {
-            menuItem = new JMenuItem("Rename Page " + ui.getLocMappingNumber());
-            menuItem.addActionListener(event -> ui.renameCurrentPage());    
+            menuItem = new JMenuItem(
+                I18n.f("page.ui.menuRenamePage", ui.getLocMappingNumber())
+            );
+            menuItem.addActionListener(event -> ui.renameCurrentPage());
             add(menuItem);
-            
+
             addSeparator();
 
-            menuItem = new JMenuItem("Copy Mappings");
-            menuItem.addActionListener(event -> ui.copyCurrentPage());    
+            menuItem = new JMenuItem(
+                I18n.t("page.ui.menuCopyMappings")
+            );
+            menuItem.addActionListener(event -> ui.copyCurrentPage());
             add(menuItem);
-            
-            menuItem = new JMenuItem("Paste Mappings");
-            
+
+            menuItem = new JMenuItem(
+                I18n.t("page.ui.menuPasteMappings")
+            );
+
             if (ui.pageCopied())
             {
-                menuItem.addActionListener(event -> ui.pasteCopiedPage());    
+                menuItem.addActionListener(event -> ui.pasteCopiedPage());
             }
             else
             {
                 menuItem.setEnabled(false);
             }
-            
+
             add(menuItem);
-            
+
             addSeparator();
-            
-            menuItem = new JMenuItem("Map Unassigned Locomotives");
+
+            menuItem = new JMenuItem(
+                I18n.t("page.ui.menuMapUnassignedLocomotives")
+            );
             menuItem.addActionListener(event -> ui.mapUnassignedLocomotives());
-            menuItem.setToolTipText("Finds locomotives not mapped to any key, and maps them to free keys on this page.");
+            menuItem.setToolTipText(I18n.t("page.ui.tooltip.fillHint"));
             add(menuItem);
-            
+
             addSeparator();
-            
-            menuItem = new JMenuItem("Reset Current Mappings");
-            menuItem.addActionListener(event -> ui.clearCurrentPage());    
+
+            menuItem = new JMenuItem(
+                I18n.t("page.ui.menuResetCurrentMappings")
+            );
+            menuItem.addActionListener(event -> ui.clearCurrentPage());
             add(menuItem);
         }
     }

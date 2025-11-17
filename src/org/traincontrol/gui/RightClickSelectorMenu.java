@@ -6,6 +6,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any locomotive DB tile is right-clicked
@@ -16,60 +17,75 @@ public class RightClickSelectorMenu extends JPopupMenu
     JMenuItem menuItem;
 
     public RightClickSelectorMenu(TrainControlUI ui, MouseEvent e, Locomotive loc)
-    {       
+    {
         menuItem = new JMenuItem(loc.getName());
         menuItem.setEnabled(false);
         add(menuItem);
-        
+
         addSeparator();
-        
-        menuItem = new JMenuItem("Assign to Button " + String.valueOf((char) ui.getKeyForCurrentButton().intValue()));
+
+        menuItem = new JMenuItem(
+            I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) ui.getKeyForCurrentButton().intValue()))
+        );
         menuItem.addActionListener(event -> {
             ui.mapLocToCurrentButton(loc.getName());
             ui.getLocSelector().refreshToolTips();
         });
-        add(menuItem);   
-        
-        menuItem = new JMenuItem("Set Local Locomotive Icon");
+        add(menuItem);
+
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuSetLocalLocomotiveIcon")
+        );
         menuItem.addActionListener(event -> ui.setLocIcon(loc, e));
         add(menuItem);
 
         if (loc.getLocalImageURL() != null)
         {
-            menuItem = new JMenuItem("Clear Local Locomotive Icon");
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuClearLocalLocomotiveIcon")
+            );
             menuItem.addActionListener(event -> ui.clearLocIcon(loc));
-
             add(menuItem);
         }
-        
-        menuItem = new JMenuItem("Customize Function Icons");
+
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuCustomizeFunctionIcons")
+        );
         menuItem.addActionListener(event -> ui.setFunctionIcon(loc, null, e));
         add(menuItem);
-        
-        addSeparator();
-        
-        menuItem = new JMenuItem("Edit Name/Address/Decoder");
-        menuItem.addActionListener(event -> {ui.changeLocAddress((MarklinLocomotive) loc, e);});
-        add(menuItem);
-        
-        menuItem = new JMenuItem("Edit Notes");
-        menuItem.addActionListener(event -> {ui.changeLocNotes(loc, e);});
-        add(menuItem);
-        
+
         addSeparator();
 
-        menuItem = new JMenuItem("Find Similar Locomotives");
-        menuItem.addActionListener(event -> {ui.findSimilarLocs(loc, e);});
-        menuItem.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuEditNameAddressDecoder")
+        );
+        menuItem.addActionListener(event -> ui.changeLocAddress((MarklinLocomotive) loc, e));
+        add(menuItem);
+
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuEditNotes")
+        );
+        menuItem.addActionListener(event -> ui.changeLocNotes(loc, e));
         add(menuItem);
 
         addSeparator();
-        
-        menuItem = new JMenuItem("Delete from Database");
+
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuFindSimilarLocomotives")
+        );
+        menuItem.addActionListener(event -> ui.findSimilarLocs(loc, e));
+        menuItem.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
+        add(menuItem);
+
+        addSeparator();
+
+        menuItem = new JMenuItem(
+            I18n.t("loc.ui.menuDeleteFromDatabase")
+        );
         menuItem.setForeground(Color.RED);
-        menuItem.addActionListener(event -> { 
+        menuItem.addActionListener(event -> {
             ui.deleteLoc(loc.getName(), e);
-        });    
+        });
         add(menuItem);
     }
 }

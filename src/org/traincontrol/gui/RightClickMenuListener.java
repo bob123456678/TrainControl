@@ -8,6 +8,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
@@ -47,48 +48,59 @@ public class RightClickMenuListener extends MouseAdapter
         JMenuItem menuItem;
 
         public RightClickMenu(TrainControlUI ui)
-        {       
+        {
             // Select the active locomotive
-            menuItem = new JMenuItem("Assign Locomotive");
-            menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));    
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuAssignLocomotive")
+            );
+            menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));
             menuItem.setToolTipText("Control+A");
-
             add(menuItem);
-                        
+
             addSeparator();
-            
+
             // Option to copy
             if (ui.buttonHasLocomotive(source))
-            {                
-                menuItem = new JMenuItem("Copy " + ui.getButtonLocomotive(source).getName());
+            {
+                menuItem = new JMenuItem(
+                    I18n.f("loc.ui.menuCopyLocomotive", ui.getButtonLocomotive(source).getName())
+                );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
                 menuItem.setToolTipText("Control+C");
             }
             else
             {
-                menuItem = new JMenuItem("Copy Locomotive");
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuCopyLocomotive")
+                );
                 menuItem.setEnabled(false);
             }
-     
             add(menuItem);
-            
+
             // Option to paste
             if (ui.hasCopyTarget())
             {
-                menuItem = new JMenuItem("Paste " + ui.getCopyTarget().getName());
+                menuItem = new JMenuItem(
+                    I18n.f("loc.ui.menuPasteLocomotive", ui.getCopyTarget().getName())
+                );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
                 menuItem.setToolTipText("Control+V");
                 add(menuItem);
-                
-                menuItem = new JMenuItem("Move " + ui.getCopyTarget().getName());
+
+                menuItem = new JMenuItem(
+                    I18n.f("loc.ui.menuMoveLocomotive", ui.getCopyTarget().getName())
+                );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, true));
                 menuItem.setToolTipText("Control+B");
                 add(menuItem);
-                
-                // Show swap menu if triggered on a different button than where the copy command was triggered
-                if (ui.getSwapTarget() != null && ui.getButtonLocomotive(source) != null && !ui.getButtonLocomotive(source).getName().equals(ui.getCopyTarget().getName()))
+
+                if (ui.getSwapTarget() != null
+                    && ui.getButtonLocomotive(source) != null
+                    && !ui.getButtonLocomotive(source).getName().equals(ui.getCopyTarget().getName()))
                 {
-                    menuItem = new JMenuItem("Swap with " + ui.getCopyTarget().getName());
+                    menuItem = new JMenuItem(
+                        I18n.f("loc.ui.menuSwapLocomotive", ui.getCopyTarget().getName())
+                    );
                     menuItem.addActionListener(event -> ui.doPaste(source, true, false));
                     menuItem.setToolTipText("Control+S");
                     add(menuItem);
@@ -96,140 +108,166 @@ public class RightClickMenuListener extends MouseAdapter
             }
             else
             {
-                menuItem = new JMenuItem("Paste Locomotive");
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuPasteLocomotive")
+                );
                 menuItem.setEnabled(false);
                 add(menuItem);
-
             }
-            
+
             if (ui.buttonHasLocomotive(source))
-            {  
+            {
                 addSeparator();
-    
-                menuItem = new JMenuItem("Copy to next page");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuCopyToNextPage")
+                );
                 menuItem.addActionListener(event -> ui.copyToNextPage(source));
                 add(menuItem);
-                
-                menuItem = new JMenuItem("Copy to previous page");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuCopyToPreviousPage")
+                );
                 menuItem.addActionListener(event -> ui.copyToPrevPage(source));
                 add(menuItem);
-            
+
                 addSeparator();
-                
-                menuItem = new JMenuItem("Apply Saved Function Preset");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuApplySavedFunctionPreset")
+                );
                 menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-P");
                 add(menuItem);
-                
-                menuItem = new JMenuItem("Apply Saved Speed Preset (" + Integer.toString(ui.getButtonLocomotive(source).getPreferredSpeed()) + ")" ) ;
+
+                menuItem = new JMenuItem(
+                    I18n.f("loc.ui.menuApplySavedSpeedPreset", ui.getButtonLocomotive(source).getPreferredSpeed())
+                );
                 menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-V");
                 add(menuItem);
 
                 addSeparator();
-                
-                menuItem = new JMenuItem("Save Current Functions as Preset");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuSaveFunctionsAsPreset")
+                );
                 menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-S");
                 add(menuItem);
-                
-                menuItem = new JMenuItem("Save Current Speed as Preset");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuSaveSpeedAsPreset")
+                );
                 menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-U");
-
                 add(menuItem);
-                
-                // Option to turn off functions and sync with station
-                
-                menuItem = new JMenuItem("Turn Off Functions");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuTurnOffFunctions")
+                );
                 menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-O");
                 add(menuItem);
 
-                menuItem = new JMenuItem("Sync w/ Central Station");
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuSyncCentralStation")
+                );
                 menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
                 add(menuItem);
-                
+
                 addSeparator();
-                   
-                // Multi-unit
+
                 menuItem = new JMenuItem(
-                        !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives() ?
-                        "Set as Multi Unit..." : "Edit Multi Unit Locomotives"
+                    !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives()
+                        ? I18n.t("loc.ui.menuSetAsMultiUnit")
+                        : I18n.t("loc.ui.menuEditMultiUnitLocomotives")
                 );
-                menuItem.addActionListener(event -> {ui.changeLinkedLocomotives((MarklinLocomotive) ui.getButtonLocomotive(source));});
+                menuItem.addActionListener(event -> ui.changeLinkedLocomotives((MarklinLocomotive) ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Control+L");
-                
+
                 if (((MarklinLocomotive) ui.getButtonLocomotive(source)).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
                 {
-                    menuItem.setText("View Multi Unit Locomotives");
+                    menuItem.setText(
+                        I18n.t("loc.ui.menuViewMultiUnitLocomotives")
+                    );
                 }
-                
                 add(menuItem);
-                
-                // Consolidate all editing functions
-                addSeparator();                
-                JMenu submenu = new JMenu("Manage Locomotive...");
-                
+
+                addSeparator();
+
+                JMenu submenu = new JMenu(
+                    I18n.t("loc.ui.submenuManageLocomotive")
+                );
+
                 menuItem = new JMenuItem(ui.getButtonLocomotive(source).getName());
                 menuItem.setEnabled(false);
                 submenu.add(menuItem);
                 submenu.addSeparator();
-                
-                menuItem = new JMenuItem("Set Local Locomotive Icon");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuSetLocalLocomotiveIcon")
+                );
                 menuItem.addActionListener(event -> ui.setLocIcon(ui.getButtonLocomotive(source)));
-                
                 submenu.add(menuItem);
-                
+
                 if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
                 {
-                    menuItem = new JMenuItem("Clear Local Locomotive Icon");
+                    menuItem = new JMenuItem(
+                        I18n.t("loc.ui.menuClearLocalLocomotiveIcon")
+                    );
                     menuItem.addActionListener(event -> ui.clearLocIcon(ui.getButtonLocomotive(source)));
-
                     submenu.add(menuItem);
                 }
-                
-                menuItem = new JMenuItem("Customize Function Icons");
-                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
 
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuCustomizeFunctionIcons")
+                );
+                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
                 submenu.add(menuItem);
                 submenu.addSeparator();
-                
-                menuItem = new JMenuItem("Edit Name/Address/Decoder");
-                menuItem.addActionListener(event -> {ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source));});
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuEditNameAddressDecoder")
+                );
+                menuItem.addActionListener(event -> ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Control+R");
                 submenu.add(menuItem);
-                
-                menuItem = new JMenuItem("Edit Notes");
-                menuItem.addActionListener(event -> {ui.changeLocNotes(ui.getButtonLocomotive(source));});
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuEditNotes")
+                );
+                menuItem.addActionListener(event -> ui.changeLocNotes(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Control+N");
                 submenu.add(menuItem);
-                
+
                 submenu.addSeparator();
-                
-                menuItem = new JMenuItem("Find Similar Locomotives");
-                menuItem.addActionListener(event -> {ui.findSimilarLocs(ui.getButtonLocomotive(source), null);});
-                menuItem.setToolTipText("Finds locomotives that fall within the same year range and/or railroad.");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuFindSimilarLocomotives")
+                );
+                menuItem.addActionListener(event -> ui.findSimilarLocs(ui.getButtonLocomotive(source), null));
+                menuItem.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
                 submenu.add(menuItem);
-                
+
                 submenu.addSeparator();
-                
-                menuItem = new JMenuItem("Delete from Database");
+
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuDeleteFromDatabase")
+                );
                 menuItem.setForeground(Color.RED);
                 menuItem.setToolTipText("Control+Delete");
-                menuItem.addActionListener(event -> { 
-                    ui.deleteLoc(ui.getButtonLocomotive(source).getName());
-                });
-                
+                menuItem.addActionListener(event -> ui.deleteLoc(ui.getButtonLocomotive(source).getName()));
                 submenu.add(menuItem);
-                
+
                 add(submenu);
-                     
-                // Option to clear the mapping
+
                 addSeparator();
 
-                menuItem = new JMenuItem("Clear Button / Cut");
-                menuItem.addActionListener(event -> {ui.setCopyTarget(source, true);});
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuClearButtonCut")
+                );
+                menuItem.addActionListener(event -> ui.setCopyTarget(source, true));
                 menuItem.setToolTipText("Control+X");
                 add(menuItem);
             }
