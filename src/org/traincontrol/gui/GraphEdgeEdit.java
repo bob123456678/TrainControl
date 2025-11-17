@@ -15,6 +15,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.graphstream.graph.Graph;
 import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.util.I18n;
 
 /**
  *
@@ -166,7 +167,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         
         if (test && this.configCommands.getText().length() == 0)
         {
-            throw new Exception("To test that a configuration matches the intended segment of track, enter the necessary switch and signal commands first.");
+            throw new Exception(I18n.t("autolayout.ui.edgeConfigEdit"));
         }
                 
         for (String s : commands)
@@ -180,7 +181,9 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             }
             else if (s.trim().length() > 0)
             {
-                throw new Exception("Command " + s + " must be comma-separated. Example: Signal 1,turn");
+                throw new Exception(
+                    I18n.f("autolayout.ui.errorCommandMustBeCommaSeparated", s)
+                );
             }
         }
         
@@ -282,17 +285,18 @@ public class GraphEdgeEdit extends javax.swing.JFrame
 
         arrivalFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         arrivalFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
-        arrivalFuncLabel.setText("Signal/Switch Commands");
-        arrivalFuncLabel.setToolTipText("The combination of commands needed to connect the start and end of this track segment.  This is effectively a route.");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        arrivalFuncLabel.setText(bundle.getString("autolayout.ui.signalSwitchCommands")); // NOI18N
+        arrivalFuncLabel.setToolTipText(bundle.getString("autolayout.ui.tooltip.signalSwitchCommands")); // NOI18N
 
         departureFuncLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel.setForeground(new java.awt.Color(0, 0, 115));
-        departureFuncLabel.setText("Edge Length");
+        departureFuncLabel.setText(bundle.getString("autolayout.ui.edgeLength")); // NOI18N
 
         configCommands.setColumns(10);
         configCommands.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         configCommands.setRows(5);
-        configCommands.setToolTipText("Format: Signal 1,red/green or Switch 2,turn/straight");
+        configCommands.setToolTipText(bundle.getString("autolayout.ui.tooltip.signalSwitchCommandsHint")); // NOI18N
         jScrollPane2.setViewportView(configCommands);
 
         lockEdges.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -310,16 +314,16 @@ public class GraphEdgeEdit extends javax.swing.JFrame
 
         departureFuncLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        departureFuncLabel1.setText("Lock Edges");
-        departureFuncLabel1.setToolTipText("Select all other edges that should be locked when this one is occupied.");
+        departureFuncLabel1.setText(bundle.getString("autolayout.ui.lockEdges")); // NOI18N
+        departureFuncLabel1.setToolTipText(bundle.getString("autolayout.ui.tooltip.lockEdges")); // NOI18N
 
         edgeLength.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         edgeLength.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" }));
-        edgeLength.setToolTipText("Specify the maximum train length that can fit on this edge.");
+        edgeLength.setToolTipText(bundle.getString("autolayout.ui.tooltip.maxTrainLengthOnEdge")); // NOI18N
         edgeLength.setFocusable(false);
 
         okButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        okButton.setText("OK");
+        okButton.setText(bundle.getString("ui.ok")); // NOI18N
         okButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 okButtonActionPerformed(evt);
@@ -327,20 +331,20 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         });
 
         cancelButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        cancelButton.setText("Cancel");
+        cancelButton.setText(bundle.getString("ui.cancel")); // NOI18N
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelButtonActionPerformed(evt);
             }
         });
 
-        captureCommands.setText("Capture Commands");
-        captureCommands.setToolTipText("Select this to automatically capture commands from the track diagram and keyboard.");
+        captureCommands.setText(bundle.getString("autolayout.ui.captureCommands")); // NOI18N
+        captureCommands.setToolTipText(bundle.getString("autolayout.ui.tooltip.captureCommands")); // NOI18N
         captureCommands.setFocusable(false);
 
         testCommands.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        testCommands.setText("Test");
-        testCommands.setToolTipText("Execute the commands for verification on the track diagram.");
+        testCommands.setText(bundle.getString("ui.test")); // NOI18N
+        testCommands.setToolTipText(bundle.getString("autolayout.ui.tooltip.executeCommandTest")); // NOI18N
         testCommands.setFocusable(false);
         testCommands.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -350,12 +354,12 @@ public class GraphEdgeEdit extends javax.swing.JFrame
 
         departureFuncLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         departureFuncLabel2.setForeground(new java.awt.Color(0, 0, 115));
-        departureFuncLabel2.setText("Command Options");
-        departureFuncLabel2.setToolTipText("Select all other edges that should be locked when this one is occupied.");
+        departureFuncLabel2.setText(bundle.getString("autolayout.ui.commandOptions")); // NOI18N
+        departureFuncLabel2.setToolTipText(bundle.getString("autolayout.ui.tooltip.commandOptions")); // NOI18N
 
         testCommands1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        testCommands1.setText("Highlight");
-        testCommands1.setToolTipText("Highlights the selected accessories on the track diagram.");
+        testCommands1.setText(bundle.getString("ui.highlight")); // NOI18N
+        testCommands1.setToolTipText(bundle.getString("autolayout.ui.tooltip.highlightOnTrackDiagram")); // NOI18N
         testCommands1.setFocusable(false);
         testCommands1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -461,8 +465,10 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this,
-                "Error editing edge: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.f("autolayout.ui.errorEditingEdge", e.getMessage())
+            );
         }
     }//GEN-LAST:event_okButtonActionPerformed
 
@@ -495,7 +501,8 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this,
-                    "Error: " + e.getMessage());
+                    I18n.f("error.generic",  e.getMessage())
+                );
             }
         }));
     }//GEN-LAST:event_testCommandsActionPerformed
