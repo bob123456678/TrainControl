@@ -464,16 +464,22 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
         if (lastClickedNode != null && !lastClickedNode.equals(p.getName()))
         {
-            menuItem = new JMenuItem("Connect to " + lastClickedNode);
-            menuItem.setToolTipText("Last node that was left-clicked.");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.f("autolayout.ui.menuConnectToNode", lastClickedNode)
+            );
+            menuItem.setToolTipText(
+                I18n.t("autolayout.ui.tooltip.lastClickedNode")
+            );
+            menuItem.addActionListener(event ->
             {
                 try
                 {
                     if (ui.getModel().getAutoLayout().getPoint(lastClickedNode) == null)
                     {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            "This point name does not exist.");
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorPointDoesNotExist")
+                        );
                     }
                     else
                     {
@@ -490,16 +496,20 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                        "Error adding edge: " + e.getMessage());
+                    JOptionPane.showMessageDialog(
+                        (Component) parent.getSwingView(),
+                        I18n.f("autolayout.ui.errorAddEdge", e.getMessage())
+                    );
                 }
             });
 
             add(menuItem);
         }
 
-        menuItem = new JMenuItem("Connect to Point...");
-        menuItem.addActionListener(event -> 
+        menuItem = new JMenuItem(
+            I18n.t("autolayout.ui.menuConnectToPoint")
+        );
+        menuItem.addActionListener(event ->
         {
             // Get all point names except this one
             Collection<Point> points = ui.getModel().getAutoLayout().getPoints();
@@ -522,11 +532,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
             if (!pointNames.isEmpty())
             {
-                String dialogResult = (String) JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                        "Choose the name of the station/point you want to connect " + nodeName + " to:",
-                        "Add New Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                        pointNames.toArray(), // Array of choices
-                        pointNames.get(0));
+                String dialogResult = (String) JOptionPane.showInputDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.f("autolayout.ui.promptChooseConnectionTarget", nodeName),
+                    I18n.t("autolayout.ui.dialogAddNewEdge"),
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    pointNames.toArray(),
+                    pointNames.get(0)
+                );
 
                 if (dialogResult != null && !"".equals(dialogResult))
                 {
@@ -534,8 +548,10 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     {
                         if (ui.getModel().getAutoLayout().getPoint(dialogResult) == null)
                         {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "This point name does not exist.");
+                            JOptionPane.showMessageDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.errorPointDoesNotExist")
+                            );
                         }
                         else
                         {
@@ -551,86 +567,105 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            "Error adding edge.");
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorAddEdge")
+                        );
                     }
                 }
             }
             else
             {
-                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                    "No other points to connect to.  Add more points to the graph.");
+                JOptionPane.showMessageDialog(
+                    (Component) parent.getSwingView(),
+                    I18n.t("autolayout.ui.infoNoOtherPointsToConnect")
+                );
             }
-        }); 
+        });
 
         add(menuItem);
 
         if (!ui.getModel().getAutoLayout().getNeighborsAndIncoming(p).isEmpty())
         {
-            menuItem = new JMenuItem("Edit Edge...");
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuEditEdge")
+            );
 
-            menuItem.addActionListener(event -> 
+            menuItem.addActionListener(event ->
+            {
+                // This will return not null if the window is visible
+                if (parent.getGraphEdgeEditor() != null)
                 {
-                    // This will return not null if the window is visible
-                    if (parent.getGraphEdgeEditor() != null)
-                    {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            "Only one edge can be edited at a time.");
-                        parent.getGraphEdgeEditor().toFront();
-                        parent.getGraphEdgeEditor().requestFocus();
-                        return;
-                    }
-
-                    // Get all point names except this one
-                    List<String> edgeNames = new LinkedList<>();
-
-                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
-                    {
-                        edgeNames.add(e2.getName());
-                    }
-
-                    // Collections.sort(edgeNames);
-
-                    String dialogResult;
-
-                    // Only prompt if there are multiple outgoing edges
-                    if (edgeNames.size() > 1)
-                    {
-                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Select an edge to edit");
-                    }
-                    else
-                    {
-                        dialogResult = edgeNames.get(0);
-                    }
-
-                    if (dialogResult != null && !"".equals(dialogResult))
-                    {
-                        try
-                        {
-                            if (ui.getModel().getAutoLayout().getEdge(dialogResult) == null)
-                            {
-                                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                    "This edge name does not exist.");
-                            }
-                            else
-                            {
-                                parent.setGraphEdgeEdit(new GraphEdgeEdit(ui, parent.getMainGraph(), ui.getModel().getAutoLayout().getEdge(dialogResult)));
-                                // Align with main window.  Graph window coordinates are not correct for some reason
-                                parent.getGraphEdgeEdit().setLocation(
-                                    ui.getX() + (ui.getWidth() - parent.getGraphEdgeEdit().getWidth()) / 2,
-                                    ui.getY() + (ui.getHeight() - parent.getGraphEdgeEdit().getHeight()) / 2
-                                );
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "Error editing edge: " + e.getMessage());
-                        }
-                    }
-
+                    JOptionPane.showMessageDialog(
+                        (Component) parent.getSwingView(),
+                        I18n.t("autolayout.ui.errorOnlyOneEdgeEditor")
+                    );
+                    parent.getGraphEdgeEditor().toFront();
+                    parent.getGraphEdgeEditor().requestFocus();
+                    return;
                 }
-            ); 
+
+                // Get all point names except this one
+                List<String> edgeNames = new LinkedList<>();
+
+                for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
+                {
+                    edgeNames.add(e2.getName());
+                }
+
+                String dialogResult;
+
+                // Only prompt if there are multiple outgoing edges
+                if (edgeNames.size() > 1)
+                {
+                    dialogResult = showEdgeSelectionDialog(
+                        parent,
+                        edgeNames,
+                        I18n.t("autolayout.ui.promptSelectEdgeToEdit")
+                    );
+                }
+                else
+                {
+                    dialogResult = edgeNames.get(0);
+                }
+
+                if (dialogResult != null && !"".equals(dialogResult))
+                {
+                    try
+                    {
+                        if (ui.getModel().getAutoLayout().getEdge(dialogResult) == null)
+                        {
+                            JOptionPane.showMessageDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.errorEdgeDoesNotExist")
+                            );
+                        }
+                        else
+                        {
+                            parent.setGraphEdgeEdit(
+                                new GraphEdgeEdit(
+                                    ui,
+                                    parent.getMainGraph(),
+                                    ui.getModel().getAutoLayout().getEdge(dialogResult)
+                                )
+                            );
+
+                            // Align with main window. Graph window coordinates are not correct for some reason
+                            parent.getGraphEdgeEdit().setLocation(
+                                ui.getX() + (ui.getWidth() - parent.getGraphEdgeEdit().getWidth()) / 2,
+                                ui.getY() + (ui.getHeight() - parent.getGraphEdgeEdit().getHeight()) / 2
+                            );
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.f("autolayout.ui.errorEditEdge", e.getMessage())
+                        );
+                    }
+                }
+            });
 
             add(menuItem);
         }
@@ -638,204 +673,243 @@ final class GraphRightClickPointMenu extends JPopupMenu
         // Copy edge
         if (!ui.getModel().getAutoLayout().getNeighbors(p).isEmpty())
         {
-            menuItem = new JMenuItem("Copy outgoing Edge...");
-            menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuCopyOutgoingEdge")
+            );
+            menuItem.addActionListener(event ->
+            {
+                // Get all point names except this one
+                List<String> edgeNames = new LinkedList<>();
+
+                for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
                 {
-                    // Get all point names except this one
-                    List<String> edgeNames = new LinkedList<>();
+                    edgeNames.add(e2.getName());
+                }
 
-                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
+                Collections.sort(edgeNames);
+
+                String dialogResult;
+
+                // Only prompt if there are multiple outgoing edges
+                if (edgeNames.size() > 1)
+                {
+                    dialogResult = showEdgeSelectionDialog(
+                        parent,
+                        edgeNames,
+                        I18n.t("autolayout.ui.promptSelectEdgeToCopy")
+                    );
+                }
+                else
+                {
+                    dialogResult = edgeNames.get(0);
+                }
+
+                if (dialogResult != null && !"".equals(dialogResult))
+                {
+                    try
                     {
-                        edgeNames.add(e2.getName());
-                    }
-
-                    Collections.sort(edgeNames);
-
-                    String dialogResult;
-
-                    // Only prompt if there are multiple outgoing edges
-                    if (edgeNames.size() > 1)
-                    {
-                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Select an edge to copy");
-                    }
-                    else
-                    {
-                        dialogResult = edgeNames.get(0);
-                    }
-
-                    if (dialogResult != null && !"".equals(dialogResult))
-                    {
-                        try
+                        if (ui.getModel().getAutoLayout().getEdge(dialogResult) == null)
                         {
-                            if (ui.getModel().getAutoLayout().getEdge(dialogResult) == null)
+                            JOptionPane.showMessageDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.errorEdgeDoesNotExist")
+                            );
+                        }
+                        else
+                        {
+                            Edge original = ui.getModel().getAutoLayout().getEdge(dialogResult);
+
+                            ui.highlightLockedEdges(original, new LinkedList<>());
+
+                            String[] options = {
+                                I18n.t("autolayout.ui.optionStart"),
+                                I18n.t("autolayout.ui.optionEnd")
+                            };
+
+                            int res = JOptionPane.showOptionDialog(
+                                (Component) parent.getSwingView(),
+                                I18n.t("autolayout.ui.promptChangeWhichPoint"),
+                                I18n.t("autolayout.ui.dialogCopyType"),
+                                JOptionPane.DEFAULT_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                options,
+                                options[0]
+                            );
+
+                            // Do nothing after pressing escape
+                            if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION)
                             {
-                                JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                    "This edge name does not exist.");
+                                ui.highlightLockedEdges(null, null);
+                                return;
+                            }
+
+                            boolean changeEnd = (res == 1);
+
+                            // Get all point names except this one
+                            Collection<Point> points = ui.getModel().getAutoLayout().getPoints();
+                            List<String> pointNames = new LinkedList<>();
+
+                            for (Point p2 : points)
+                            {
+                                pointNames.add(p2.getName());
+                            }
+
+                            Collections.sort(pointNames);
+
+                            // Remove self and all existing neighbors
+                            pointNames.remove(nodeName);
+
+                            if (changeEnd)
+                            {
+                                for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
+                                {
+                                    pointNames.remove(e2.getEnd().getName());
+                                }
                             }
                             else
                             {
-                                Edge original = ui.getModel().getAutoLayout().getEdge(dialogResult);
-                                
-                                ui.highlightLockedEdges(original, new LinkedList<>());
+                                // Remove current end
+                                pointNames.remove(original.getEnd().getName());
+                            }
 
-                                String[] options = {"Start", "End"};
-                                int res = JOptionPane.showOptionDialog((Component) parent.getSwingView(), "Change which point?", "Copy Type",
-                                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, 
-                                    options, options[0]);
+                            if (!pointNames.isEmpty())
+                            {
+                                dialogResult = (String) JOptionPane.showInputDialog(
+                                    (Component) parent.getSwingView(),
+                                    I18n.f(
+                                        "autolayout.ui.promptChooseConnectionTargetCopy",
+                                        (changeEnd
+                                            ? I18n.t("autolayout.ui.wordTo")
+                                            : I18n.t("autolayout.ui.wordFrom"))
+                                    ),
+                                    I18n.t("autolayout.ui.dialogCopyEdge"),
+                                    JOptionPane.QUESTION_MESSAGE,
+                                    null,
+                                    pointNames.toArray(),
+                                    pointNames.get(0)
+                                );
 
-                                // Do nothing after pressing escape
-                                if (res != JOptionPane.YES_OPTION && res != JOptionPane.NO_OPTION)
+                                if (dialogResult != null && !"".equals(dialogResult))
                                 {
-                                    ui.highlightLockedEdges(null, null);
-                                    return;
-                                }
+                                    Edge e = ui.getModel().getAutoLayout().copyEdge(original, dialogResult, changeEnd);
 
-                                boolean changeEnd = (res == 1);
-
-                                // Get all point names except this one
-                                Collection<Point> points = ui.getModel().getAutoLayout().getPoints();
-                                List<String> pointNames = new LinkedList<>();
-
-                                for (Point p2 : points)
-                                {
-                                    pointNames.add(p2.getName());
-                                }
-
-                                Collections.sort(pointNames);
-
-                                // Remove self and all existing neighbors
-                                pointNames.remove(nodeName);
-
-                                if (changeEnd)
-                                {
-                                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighbors(p))
-                                    {
-                                        pointNames.remove(e2.getEnd().getName());
-                                    }
-                                }
-                                else
-                                {
-                                    // Remove current end
-                                    pointNames.remove(original.getEnd().getName());
-                                }
-
-                                if (!pointNames.isEmpty())
-                                {
-                                    dialogResult = (String) JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                                            "Choose the name of the station/point you wish to connect " + (changeEnd ? "to" : "from") + ":",
-                                            "Copy Edge", JOptionPane.QUESTION_MESSAGE, null, 
-                                            pointNames.toArray(), // Array of choices
-                                            pointNames.get(0));
-
-                                    if (dialogResult != null && !"".equals(dialogResult))
-                                    {
-                                        Edge e = ui.getModel().getAutoLayout().copyEdge(original, dialogResult, changeEnd);
-
-                                        ui.addEdge(e, parent.getMainGraph());
-                                        ui.repaintAutoLocList(false);
-                                        ui.getModel().getAutoLayout().refreshUI();
-                                    }
-                                }
-                                else
-                                {
-                                    throw new Exception("There are no other valid points to connect to.");
+                                    ui.addEdge(e, parent.getMainGraph());
+                                    ui.repaintAutoLocList(false);
+                                    ui.getModel().getAutoLayout().refreshUI();
                                 }
                             }
+                            else
+                            {
+                                throw new Exception(
+                                    I18n.t("autolayout.ui.errorNoValidPointsToConnect")
+                                );
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "Error copying edge: " + e.getMessage());
-                        }
-                        
-                        ui.highlightLockedEdges(null, null);
                     }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.f("autolayout.ui.errorCopyEdge", e.getMessage())
+                        );
+                    }
+
+                    ui.highlightLockedEdges(null, null);
                 }
-            ); 
+            });
 
             add(menuItem);
         }
 
         // Delete edges
-        List<Edge> neighbors =  ui.getModel().getAutoLayout().getNeighborsAndIncoming(p);
+        List<Edge> neighbors = ui.getModel().getAutoLayout().getNeighborsAndIncoming(p);
         if (!neighbors.isEmpty())
-        {                    
+        {
             addSeparator();
 
-            menuItem = new JMenuItem("Delete Edge...");
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.menuDeleteEdge")
+            );
             menuItem.setForeground(Color.RED);
-            menuItem.addActionListener(event -> 
+            menuItem.addActionListener(event ->
+            {
+                List<String> edgeNames = new LinkedList<>();
+
+                for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
                 {
-                    // Get all point names except this one
-                    List<String> edgeNames = new LinkedList<>();
-
-                    for (Edge e2 : ui.getModel().getAutoLayout().getNeighborsAndIncoming(p))
-                    {
-                        edgeNames.add(e2.getName());
-                    }
-
-                    // No longer necessary as getNeighborsAndIncoming sorts by outgoing first
-                    // Collections.sort(edgeNames);
-
-                    String dialogResult;
-
-                    // Only prompt if there are multiple outgoing edges
-                    if (edgeNames.size() > 1)
-                    {
-                        dialogResult = showEdgeSelectionDialog(parent, edgeNames, "Which edge do you want to delete?");
-                    }
-                    else
-                    {
-                        dialogResult = edgeNames.get(0);
-                    }
-
-                    if (dialogResult != null && !"".equals(dialogResult))
-                    {                            
-                        try
-                        {
-                            Edge e = ui.getModel().getAutoLayout().getEdge(dialogResult);
-
-                            List<Edge> highlight = new LinkedList<>();
-                            highlight.add(e);
-                            
-                            ui.highlightLockedEdges(null, highlight);
-
-                            int confirmation = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), 
-                                "This will permanently remove the edge from " + e.getStart().getName() + " to " + e.getEnd().getName() + " from the graph.  Proceed?", 
-                                "Edge Deletion", JOptionPane.YES_NO_OPTION
-                            );
-                                           
-                            if (confirmation == JOptionPane.YES_OPTION)
-                            {
-                                ui.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
-                                parent.getMainGraph().removeEdge(e.getUniqueId());
-                                ui.getModel().getAutoLayout().refreshUI();
-                                ui.repaintAutoLocList(false);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                                "Error deleting edge: " + e.getMessage());
-                        }
-                        
-                        ui.highlightLockedEdges(null, null);
-                    }   
+                    edgeNames.add(e2.getName());
                 }
-            ); 
+
+                String dialogResult;
+
+                if (edgeNames.size() > 1)
+                {
+                    dialogResult = showEdgeSelectionDialog(
+                        parent,
+                        edgeNames,
+                        I18n.t("autolayout.ui.promptSelectEdgeToDelete")
+                    );
+                }
+                else
+                {
+                    dialogResult = edgeNames.get(0);
+                }
+
+                if (dialogResult != null && !"".equals(dialogResult))
+                {
+                    try
+                    {
+                        Edge e = ui.getModel().getAutoLayout().getEdge(dialogResult);
+
+                        List<Edge> highlight = new LinkedList<>();
+                        highlight.add(e);
+
+                        ui.highlightLockedEdges(null, highlight);
+
+                        int confirmation = JOptionPane.showConfirmDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.f("autolayout.ui.confirmDeleteEdge", e.getStart().getName(), e.getEnd().getName()),
+                            I18n.t("autolayout.ui.dialogEdgeDeletion"),
+                            JOptionPane.YES_NO_OPTION
+                        );
+
+                        if (confirmation == JOptionPane.YES_OPTION)
+                        {
+                            ui.getModel().getAutoLayout().deleteEdge(e.getStart().getName(), e.getEnd().getName());
+                            parent.getMainGraph().removeEdge(e.getUniqueId());
+                            ui.getModel().getAutoLayout().refreshUI();
+                            ui.repaintAutoLocList(false);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.f("autolayout.ui.errorDeleteEdge", e.getMessage())
+                        );
+                    }
+
+                    ui.highlightLockedEdges(null, null);
+                }
+            });
 
             add(menuItem);
         }
-        
+
         // Rename option applicable to all nodes
         addSeparator();
 
-        menuItem = new JMenuItem("Rename " + nodeName);
-        menuItem.addActionListener(event -> 
+        menuItem = new JMenuItem(
+            I18n.f("autolayout.ui.menuRenamePoint", nodeName)
+        );
+        menuItem.addActionListener(event ->
         {
-            String dialogResult = JOptionPane.showInputDialog((Component) parent.getSwingView(), 
-                "Enter the new point name.",
-                nodeName);
+            String dialogResult = JOptionPane.showInputDialog(
+                (Component) parent.getSwingView(),
+                I18n.t("autolayout.ui.promptEnterNewPointName"),
+                nodeName
+            );
 
             if (dialogResult != null && !"".equals(dialogResult))
             {
@@ -843,8 +917,10 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 {
                     if (ui.getModel().getAutoLayout().getPoint(dialogResult) != null)
                     {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            "This station name is already in use.  Pick another.");
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.errorStationNameInUse")
+                        );
                     }
                     else
                     {
@@ -855,40 +931,51 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                        "Error renaming node.");
+                    JOptionPane.showMessageDialog(
+                        (Component) parent.getSwingView(),
+                        I18n.t("autolayout.ui.errorRenameNode")
+                    );
                 }
             }
-        });  
+        });
 
         add(menuItem);
 
         // Delete point
         addSeparator();
 
-        menuItem = new JMenuItem("Delete Point");
+        menuItem = new JMenuItem(
+            I18n.t("autolayout.ui.menuDeletePoint")
+        );
         menuItem.setForeground(Color.RED);
-        menuItem.addActionListener(event -> 
+        menuItem.addActionListener(event ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), 
-                    "This will entirely remove " + nodeName + " from the graph.  Proceed?", 
-                    "Point Deletion", JOptionPane.YES_NO_OPTION);
-            if(dialogResult == JOptionPane.YES_OPTION)
+            int dialogResult = JOptionPane.showConfirmDialog(
+                (Component) parent.getSwingView(),
+                I18n.f("autolayout.ui.confirmDeletePoint", nodeName),
+                I18n.t("autolayout.ui.dialogPointDeletion"),
+                JOptionPane.YES_NO_OPTION
+            );
+
+            if (dialogResult == JOptionPane.YES_OPTION)
             {
-                try 
+                try
                 {
                     parent.setLastClickedNode(null);
                     parent.setLastHoveredNode(null);
                     ui.getModel().getAutoLayout().deletePoint(p.getName());
                     parent.getMainGraph().removeNode(p.getUniqueId());
                     ui.repaintAutoLocList(false);
-                } 
+                }
                 catch (Exception e)
                 {
-                   JOptionPane.showMessageDialog((Component) parent.getSwingView(), e.getMessage());
+                    JOptionPane.showMessageDialog(
+                        (Component) parent.getSwingView(),
+                        I18n.f("autolayout.ui.errorDeletePoint", e.getMessage())
+                    );
                 }
-            } 
-        });    
+            }
+        });   
 
         add(menuItem);    
     }
