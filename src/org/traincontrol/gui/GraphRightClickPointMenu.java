@@ -41,7 +41,21 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     {
                         GraphLocAssign edit = new GraphLocAssign(ui, p, false);
 
-                        int dialogResult = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), edit, "Edit / Assign Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                        Object[] options = {
+                            I18n.t("ui.ok"),
+                            I18n.t("ui.cancel")
+                        };
+
+                        int dialogResult = JOptionPane.showOptionDialog(
+                            (Component) parent.getSwingView(),
+                            edit,
+                            I18n.t("autolayout.ui.dialogEditOrAssignLocomotive"),
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            options,
+                            options[0]
+                        );
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
                             edit.commitChanges();
@@ -76,8 +90,22 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         }
                         else
                         {
-                            int dialogResult = JOptionPane.showConfirmDialog((Component) parent.getSwingView(), edit, "Place New Locomotive", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                            if(dialogResult == JOptionPane.OK_OPTION)
+                            Object[] options = {
+                                I18n.t("ui.ok"),
+                                I18n.t("ui.cancel")
+                            };
+
+                            int dialogResult = JOptionPane.showOptionDialog(
+                                (Component) parent.getSwingView(),
+                                edit,
+                                I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
+                                JOptionPane.OK_CANCEL_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                options,
+                                options[0]
+                            );
+                            if (dialogResult == JOptionPane.OK_OPTION)
                             {
                                 edit.commitChanges();
                             }
