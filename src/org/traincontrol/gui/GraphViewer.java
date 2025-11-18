@@ -342,10 +342,22 @@ final public class GraphViewer extends PositionAwareJFrame
                                         parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
                                     );
 
-                                    int dialogResult = JOptionPane.showConfirmDialog(
-                                        (Component) swingView, edit, 
-                                        !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() ? "Edit / Assign Locomotive" : "Place New Locomotive", 
-                                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+                                    Object[] options = {
+                                        I18n.t("ui.ok"),
+                                        I18n.t("ui.cancel")
+                                    };
+
+                                    int dialogResult = JOptionPane.showOptionDialog(
+                                        (Component) swingView,
+                                        edit,
+                                        !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
+                                            ? I18n.t("autolayout.ui.dialogEditOrAssignLocomotive")
+                                            : I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
+                                        JOptionPane.OK_CANCEL_OPTION,
+                                        JOptionPane.PLAIN_MESSAGE,
+                                        null,
+                                        options,
+                                        options[0]
                                     );
 
                                     if (dialogResult == JOptionPane.OK_OPTION)
