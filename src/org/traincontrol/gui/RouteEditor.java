@@ -155,7 +155,9 @@ public class RouteEditor extends PositionAwareJFrame
         
         if (locked)
         {
-            this.saveButton.setToolTipText("To ensure consistency, routes from the Central Station cannot be edited.  Duplicate the route instead.");
+            this.saveButton.setToolTipText(
+                I18n.t("layout.ui.tooltipCentralStationRoutesCannotBeEditedDuplicateInstead")
+            );
         }
         else
         {
@@ -1350,7 +1352,10 @@ public class RouteEditor extends PositionAwareJFrame
             catch (Exception e)
             {
                 this.parent.getModel().log(e);
-                JOptionPane.showMessageDialog(this, "Invalid address specified - must be an integer");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorInvalidAddressMustBeInteger")
+                );
                 this.accAddr.setText("");
             }
         }
@@ -1397,36 +1402,42 @@ public class RouteEditor extends PositionAwareJFrame
         };
         
         String selectedValue = (String) JOptionPane.showInputDialog(
-                this,
-                "Add to route: ",
-                "Special Route Commands",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]
+            this,
+            I18n.t("route.ui.promptAddToRoute"),
+            I18n.t("route.ui.dialogSpecialRouteCommands"),
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
         );
-        
+
         // Prompt the user to choose the route to invoke
         if (RouteCommand.COMMAND_ROUTE_PREFIX.equals(selectedValue))
         {
             // Get list of routes
             List<String> routes = this.parent.getModel().getRouteList();
-            
+
             if (routes.isEmpty())
             {
-                JOptionPane.showMessageDialog(this, "There are no other routes in the database.  Add one first.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorNoOtherRoutesInDatabaseAddFirst")
+                );
+                this.parent.getModel().logf(
+                    I18n.f("route.ui.logNoOtherRoutesInDatabase")
+                );
                 return;
             }
 
             // Show second dialog to select a route
             String selectedRoute = (String) JOptionPane.showInputDialog(
-                    this,
-                    "Choose a route:",
-                    "Select Route",
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    routes.toArray(new String[0]), // Convert List<String> to String[]
-                    routes.isEmpty() ? null : routes.get(0) // Default selection (first route if available)
+                this,
+                I18n.t("route.ui.promptChooseRoute"),
+                I18n.t("route.ui.dialogSelectRoute"),
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                routes.toArray(new String[0]),
+                routes.isEmpty() ? null : routes.get(0)
             );
 
             if (selectedRoute != null)
@@ -1434,14 +1445,20 @@ public class RouteEditor extends PositionAwareJFrame
                 // Get route ID and append to selectedValue
                 String otherRouteName = this.parent.getModel().getRoute(selectedRoute).getName();
                 selectedValue = selectedValue + " " + otherRouteName;
-                
+
                 if (isEdit())
                 {
                     MarklinRoute thisRoute = this.parent.getModel().getRoute(this.getOriginalRouteName());
-                    
+
                     if (thisRoute != null && thisRoute.getName().equals(otherRouteName))
                     {
-                        JOptionPane.showMessageDialog(this, "A route cannot trigger itself. Please pick a different route.");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("route.ui.errorRouteCannotTriggerItselfPickDifferent")
+                        );
+                        this.parent.getModel().logf(
+                            I18n.f("route.ui.logRouteTriedToTriggerItself", otherRouteName)
+                        );
                         return;
                     }
                 }
@@ -1510,7 +1527,10 @@ public class RouteEditor extends PositionAwareJFrame
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, "Invalid address specified - must be an integer");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorInvalidAddressMustBeInteger")
+                );                
                 this.s88CondAddr.setText("");
             }
         }
@@ -1527,7 +1547,7 @@ public class RouteEditor extends PositionAwareJFrame
             // Sanity check
             if (((String) locNameList.getSelectedItem()).contains(","))
             {
-                JOptionPane.showMessageDialog(this, "Locomotive names with commas are not supported.  Renamed the locomotive first.");
+                JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorCommaLoc"));
                 return;
             }
             
@@ -1560,7 +1580,7 @@ public class RouteEditor extends PositionAwareJFrame
             }
             catch (NumberFormatException e)
             {
-                JOptionPane.showMessageDialog(this, "Invalid delay specified - must be an integer");
+                JOptionPane.showMessageDialog(this, I18n.t("route.ui.invalidDelay"));
             }
         }
     }//GEN-LAST:event_addLocCommandActionPerformed
@@ -1592,7 +1612,7 @@ public class RouteEditor extends PositionAwareJFrame
     }//GEN-LAST:event_commandTypeListItemStateChanged
 
     private void locNameListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_locNameListItemStateChanged
-        List<String> dropdownModel = new ArrayList<>(Arrays.asList("Speed", "Forward", "Backward"));
+        List<String> dropdownModel = new ArrayList<>(Arrays.asList(I18n.t("route.ui.speed"), I18n.t("route.ui.forward"), I18n.t("route.ui.backward")));
             
         if (this.locNameList.getModel().getSize() > 0)
         {
@@ -1686,25 +1706,35 @@ public class RouteEditor extends PositionAwareJFrame
         try
         {
             Boolean status = parent.getModel().getFeedbackState(this.getS88().getText().trim());
-            
+
             NodeExpression conditionExpression;  
             boolean result = true;
-            
+
             if (!conditionAccs.getText().trim().isEmpty())
             {      
-                conditionExpression = NodeExpression.fromTextRepresentation(conditionAccs.getText().trim(), parent.getModel());
+                conditionExpression = NodeExpression.fromTextRepresentation(
+                    conditionAccs.getText().trim(),
+                    parent.getModel()
+                );
                 result = conditionExpression.evaluate(parent.getModel());
             }
-            
-            JOptionPane.showMessageDialog(this, 
-                "Triggering S88 condition is: " + (status ? "TRUE" : "false") + "\n"
-                + "Optional condition is: " + (result ? "TRUE" : "false") + "\n\n"
-                + "Route " + ((status && result) ? "WOULD" : "would not") + " be triggered."
+
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.f(
+                    "route.ui.messageTriggeringConditionSummary",
+                    (status ? I18n.t("route.ui.valueTrue") : I18n.t("route.ui.valueFalse")),
+                    (result ? I18n.t("route.ui.valueTrue") : I18n.t("route.ui.valueFalse")),
+                    ((status && result) ? I18n.t("route.ui.valueWould") : I18n.t("route.ui.valueWouldNot"))
+                )
             );
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, "There is an error in the condition expression.");
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("route.ui.errorConditionExpressionInvalid")
+            );
         }
     }//GEN-LAST:event_testButtonActionPerformed
 
@@ -1733,7 +1763,10 @@ public class RouteEditor extends PositionAwareJFrame
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, "Invalid s88 address specified - must be an integer");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorInvalidS88AddressMustBeInteger")
+                );                
                 this.autoLocS88.setText(this.s88.getText());
             }
         }
@@ -1772,8 +1805,11 @@ public class RouteEditor extends PositionAwareJFrame
 
         if ("".equals(routeName)  || "".equals(routeContent))
         {
-            JOptionPane.showMessageDialog(this, "The route name and commands cannot be empty.");
-
+            JOptionPane.showMessageDialog(
+                this,
+                I18n.t("route.ui.errorRouteNameAndCommandsCannotBeEmpty")
+            );
+            
             return false;
         }
                                       
@@ -1791,7 +1827,9 @@ public class RouteEditor extends PositionAwareJFrame
                     // Nice to have, but we technically don't need this check as the route won't fire itself 
                     if (rc.isRoute() && rc.getName().equals(routeName))
                     {
-                        throw new Exception("The route cannot reference itself");
+                        throw new Exception(
+                            I18n.t("route.ui.errorRouteCannotReferenceItself")
+                        );
                     }
 
                     newRoute.add(rc);
@@ -1814,7 +1852,10 @@ public class RouteEditor extends PositionAwareJFrame
                     // Renaming to the same name as an existing route
                     if (!origName.equals(routeName) && this.parent.getModel().getRoute(routeName) != null)
                     {
-                        JOptionPane.showMessageDialog(this, "A route called " + routeName + " already exists.  Please pick a different name.");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.f("route.ui.errorRouteAlreadyExistsPickDifferentName", routeName)
+                        );
                         return false;
                     }
                     
@@ -1833,7 +1874,10 @@ public class RouteEditor extends PositionAwareJFrame
                 {
                     if (parent.getModel().getRouteList().contains(routeName))
                     {
-                        JOptionPane.showMessageDialog(this, "A route called " + routeName + " already exists.  Please pick a different name.");
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.f("route.ui.errorRouteAlreadyExistsPickDifferentName", routeName)
+                        );
                         return false;
                     }
                                         
@@ -1857,11 +1901,17 @@ public class RouteEditor extends PositionAwareJFrame
             String message = e.getMessage();
             if (message != null)
             {
-                JOptionPane.showMessageDialog(this, "Error parsing route (" + message + ").\n\nBe sure to enter comma-separated values, one pair per line.\n\nTrigger S88 must be an integer and Condition S88s must be comma-separated.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.f("route.ui.errorParsingRouteWithMessage", message)
+                );
             }
             else
             {
-                JOptionPane.showMessageDialog(this, "Error parsing logic.  Ensure parentheses are matched and OR tokens aren't dangling.");
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("route.ui.errorParsingLogicEnsureParenthesesAndOrTokens")
+                );
             }
             
             parent.log(e.toString());

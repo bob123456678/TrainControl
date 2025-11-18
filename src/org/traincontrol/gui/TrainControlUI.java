@@ -5046,7 +5046,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         UpArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         UpArrow.setText("↑");
-        UpArrow.setToolTipText("Increase Speed (+Control to fine-tune, +Alt for 2x increment)");
+        UpArrow.setToolTipText(bundle.getString("ui.main.tooltip.incrSpeed")); // NOI18N
         UpArrow.setFocusable(false);
         UpArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5056,7 +5056,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         DownArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         DownArrow.setText("↓");
-        DownArrow.setToolTipText("Decrease Speed (+Control to fine-tune, +Alt for 2x increment)");
+        DownArrow.setToolTipText(bundle.getString("ui.main.tooltip.decSpeed")); // NOI18N
         DownArrow.setFocusable(false);
         DownArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5066,7 +5066,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         RightArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         RightArrow.setText("→");
-        RightArrow.setToolTipText("Switch Direction (+Control to force forward)");
+        RightArrow.setToolTipText(bundle.getString("ui.main.tooltip.switchDirFwd")); // NOI18N
         RightArrow.setFocusable(false);
         RightArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5076,7 +5076,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         LeftArrow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         LeftArrow.setText("←");
-        LeftArrow.setToolTipText("Switch Direction (+Control to force reverse)");
+        LeftArrow.setToolTipText(bundle.getString("ui.main.tooltip.switchDir")); // NOI18N
         LeftArrow.setFocusable(false);
         LeftArrow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5491,6 +5491,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         editLayoutButton.setText(bundle.getString("ui.main.editLayout")); // NOI18N
         editLayoutButton.setToolTipText(bundle.getString("ui.main.tooltip.editLayout")); // NOI18N
         editLayoutButton.setFocusable(false);
+        editLayoutButton.setMaximumSize(new java.awt.Dimension(120, 24));
         editLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 editLayoutButtonActionPerformed(evt);
@@ -5514,17 +5515,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(editLayoutButton, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
+                        .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(smallButton, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(smallButton, javax.swing.GroupLayout.PREFERRED_SIZE, 78, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 78, Short.MAX_VALUE)
                         .addGap(11, 11, 11)
                         .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(allButton, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(allButton, javax.swing.GroupLayout.PREFERRED_SIZE, 53, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
@@ -7600,7 +7601,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Backward.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         Backward.setText("<<<<<<<");
-        Backward.setToolTipText("Reverse");
+        Backward.setToolTipText(bundle.getString("ui.main.tooltip.reverse")); // NOI18N
         Backward.setFocusable(false);
         Backward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7610,7 +7611,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Forward.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         Forward.setText(">>>>>>>");
-        Forward.setToolTipText("Forward");
+        Forward.setToolTipText(bundle.getString("ui.main.tooltip.forward")); // NOI18N
         Forward.setFocusable(false);
         Forward.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
