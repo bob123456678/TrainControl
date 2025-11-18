@@ -47,7 +47,9 @@
       <SubComponents>
         <Menu class="javax.swing.JMenu" name="fileMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="File"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.file" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="fileMenuKeyPressed"/>
@@ -55,7 +57,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="backupDataMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Backup TrainControl Data"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.backupData" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="backupDataMenuItemActionPerformed"/>
@@ -63,7 +67,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="changeIPMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Change Central Station IP"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.changeIP" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="changeIPMenuItemActionPerformed"/>
@@ -73,7 +79,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="exitMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Exit"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.exit" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="exitMenuItemActionPerformed"/>
@@ -83,7 +91,9 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="locomotiveMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Locomotives"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.locomotives" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="locomotiveMenuKeyPressed"/>
@@ -91,7 +101,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="quickFindMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Quick Find Locomotive"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.quickFindLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
                 <Property name="toolTipText" type="java.lang.String" value="Control+F"/>
               </Properties>
               <Events>
@@ -102,7 +114,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="viewDatabaseMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Browse Database"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.browseDatabase" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
                 <Property name="toolTipText" type="java.lang.String" value="Control+A"/>
               </Properties>
               <Events>
@@ -111,7 +125,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="addLocomotiveMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Add Locomotive"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.addLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
                 <Property name="toolTipText" type="java.lang.String" value="Control+D"/>
               </Properties>
               <Events>
@@ -122,7 +138,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="syncMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Sync Database w/ Central Station"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.syncDBWithCS" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncMenuItemActionPerformed"/>
@@ -130,8 +148,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="checkForRenameMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Check for Renamed Locomotives"/>
-                <Property name="toolTipText" type="java.lang.String" value="Checks if there are any locomotives in the Central Station with the same address but different name in TrainControl."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.checkForRenamedLocs" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.checkForRenamedLocs" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForRenameMenuItemActionPerformed"/>
@@ -141,8 +163,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="exportLocsToCSVMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Export to CSV"/>
-                <Property name="toolTipText" type="java.lang.String" value="Save the locomotive database to a file for reference."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.exportToCSV" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.exportToCSV" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="exportLocsToCSVMenuItemActionPerformed"/>
@@ -152,7 +178,9 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="functionsMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Functions"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.functions" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="functionsMenuKeyReleased"/>
@@ -160,8 +188,12 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="turnOnLightsMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Turn On All Lights"/>
-                <Property name="toolTipText" type="java.lang.String" value="Turns on lights for all mapped locomotives."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.turnOnLights" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.turnOnLights" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="turnOnLightsMenuItemActionPerformed"/>
@@ -169,7 +201,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="turnOffFunctionsMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Turn Off All Functions"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.turnOffFunctions" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="turnOffFunctionsMenuItemActionPerformed"/>
@@ -179,7 +213,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="syncFullLocStateMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Sync Full Function State w/ Central Station"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.syncFullFunctionState" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="syncFullLocStateMenuItemActionPerformed"/>
@@ -189,7 +225,9 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="layoutMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Layouts"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.layouts" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="layoutMenuKeyPressed"/>
@@ -197,8 +235,12 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="showCurrentLayoutFolderMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Show Current Data Source"/>
-                <Property name="toolTipText" type="java.lang.String" value="Shows where the layout is being loaded from."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.showDataSource" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.showDataSource" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showCurrentLayoutFolderMenuItemActionPerformed"/>
@@ -208,8 +250,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="chooseLocalDataFolderMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Open Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Select the location of your existing layout files on your computer.  Lets you switch between diagrams."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.openLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.openLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="chooseLocalDataFolderMenuItemActionPerformed"/>
@@ -217,13 +263,19 @@
             </MenuItem>
             <Menu class="javax.swing.JMenu" name="modifyLocalLayoutMenu">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Modify Current Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Lets you change the track diagram."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.modifyLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.modifyLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JMenuItem" name="addBlankPageMenuItem">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Add Blank Page"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.addBlackPage" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addBlankPageMenuItemActionPerformed"/>
@@ -231,7 +283,9 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="renameLayoutMenuItem">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Rename Current Page"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.renameCurrentPage" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="renameLayoutMenuItemActionPerformed"/>
@@ -239,7 +293,9 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="duplicateLayoutMenuItem">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Duplicate Current Page"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.duplicateCurrentPage" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="duplicateLayoutMenuItemActionPerformed"/>
@@ -249,7 +305,9 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="editCurrentPageActionPerformed">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Edit Current Page"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.editCurrentPage" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="editCurrentPageActionPerformedActionPerformed"/>
@@ -257,7 +315,9 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="openLegacyTrackDiagramEditor">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Edit w/ Legacy Editor"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.editWithLegacy" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="openLegacyTrackDiagramEditorActionPerformed"/>
@@ -267,7 +327,9 @@
                 </MenuItem>
                 <MenuItem class="javax.swing.JMenuItem" name="deleteLayoutMenuItem">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Delete Current Page"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.deleteCurrentPage" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteLayoutMenuItemActionPerformed"/>
@@ -277,8 +339,12 @@
             </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="initializeLocalLayoutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Create New Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Creates a blank track diagram that you can edit visually."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.createLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.createLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="initializeLocalLayoutMenuItemActionPerformed"/>
@@ -288,8 +354,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="switchCSLayoutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Switch to Central Station Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Reverts to using the track diagram on your Central Station, if any."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.switchToCSLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.switchToCSLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="switchCSLayoutMenuItemActionPerformed"/>
@@ -297,8 +367,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="downloadCSLayoutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Download Central Station Layout"/>
-                <Property name="toolTipText" type="java.lang.String" value="Save the Central Station&apos;s layout to the local filesystem."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.downloadCSLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.downloadCSLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="downloadCSLayoutMenuItemActionPerformed"/>
@@ -306,7 +380,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="openCS3AppMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Open CS3 Web App"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.openCS3WebApp" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="openCS3AppMenuItemActionPerformed"/>
@@ -316,13 +392,19 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="routesMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Routes"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.routes" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="exportRoutesMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Export"/>
-                <Property name="toolTipText" type="java.lang.String" value="Exports all current routes into a file."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.export" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.routeExport" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="exportRoutesMenuItemActionPerformed"/>
@@ -330,8 +412,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="importRoutesMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Import"/>
-                <Property name="toolTipText" type="java.lang.String" value="Replace all existing routes with those from a file."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.import" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.routeImport" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="importRoutesMenuItemActionPerformed"/>
@@ -341,13 +427,17 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="interfaceMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Preferences"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.preferences" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <SubComponents>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="windowAlwaysOnTopMenuItem">
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>
-                <Property name="text" type="java.lang.String" value="Window Always on Top"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.winOnTop" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="windowAlwaysOnTopMenuItemActionPerformed"/>
@@ -356,8 +446,12 @@
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="rememberLocationMenuItem">
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>
-                <Property name="text" type="java.lang.String" value="Remember Window Locations"/>
-                <Property name="toolTipText" type="java.lang.String" value="Restore program windows in the same place on startup?"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.rememberWindowLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.rememberWindowLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="rememberLocationMenuItemActionPerformed"/>
@@ -367,14 +461,20 @@
             </MenuItem>
             <Menu class="javax.swing.JMenu" name="locomotiveControlMenu">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Locomotive Control"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.locControl" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="slidersChangeActiveLocMenuItem">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Sliders Change Active Loc"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Change the active locomotive when using the sliders on the Locomotive Control page."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.slidersChangeActiveLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.slidersChangeActiveLoc" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="slidersChangeActiveLocMenuItemActionPerformed"/>
@@ -383,7 +483,9 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showKeyboardHintsMenuItem">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Show Keyboard Control Hints"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.showKeyboardControlHints" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showKeyboardHintsMenuItemActionPerformed"/>
@@ -392,8 +494,12 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="activeLocInTitle">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Active Locomotive in Popup Titles"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Shows the name of the active locomotive in popup windows."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.activeLocInPopupTitles" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.activeLocInPopupTitles" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="activeLocInTitleActionPerformed"/>
@@ -402,8 +508,12 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showPageTabsPreference">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Show Locomotive Pages as Tabs"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Shows a tab for each locomotive page, and hides the linear navigation buttons."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.showPagesAsTabs" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.showPagesAsTabs" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showPageTabsPreferenceActionPerformed"/>
@@ -417,8 +527,12 @@
                       <ComponentRef name="buttonGroup3"/>
                     </Property>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="QWERTY Keyboard"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Select the type of keyboard your computer has."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.qwertyKeyboard" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.selKeyboardType" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                     <Property name="actionCommand" type="java.lang.String" value="0"/>
                     <Property name="name" type="java.lang.String" value="0" noResource="true"/>
                   </Properties>
@@ -431,8 +545,12 @@
                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                       <ComponentRef name="buttonGroup3"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="QWERTZ Keyboard"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Select the type of keyboard your computer has."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.qwertzKeyboard" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.selKeyboardType" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                     <Property name="actionCommand" type="java.lang.String" value="1"/>
                     <Property name="name" type="java.lang.String" value="1" noResource="true"/>
                   </Properties>
@@ -445,8 +563,12 @@
                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                       <ComponentRef name="buttonGroup3"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="AZERTY Keyboard"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Select the type of keyboard your computer has."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.azertyKeyboard" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.selKeyboardType" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                     <Property name="actionCommand" type="java.lang.String" value="2"/>
                     <Property name="name" type="java.lang.String" value="2" noResource="true"/>
                   </Properties>
@@ -458,7 +580,9 @@
             </Menu>
             <Menu class="javax.swing.JMenu" name="jMenu1">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Startup"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.startup" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JRadioButtonMenuItem" name="powerOnStartup">
@@ -467,7 +591,9 @@
                       <ComponentRef name="buttonGroup4"/>
                     </Property>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Power On"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.powerOn" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerOnStartupActionPerformed"/>
@@ -478,7 +604,9 @@
                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                       <ComponentRef name="buttonGroup4"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="Power Off"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.powerOff" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerOffStartupActionPerformed"/>
@@ -489,7 +617,9 @@
                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                       <ComponentRef name="buttonGroup4"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="Do Nothing"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.doNothing" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="powerNoChangeStartupActionPerformed"/>
@@ -500,8 +630,12 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="AutoLoadAutonomyMenuItem">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Load Autonomy"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Attempts to parse the autonomy graph at startup."/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.loadAutonomy" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.loadAutonomy" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AutoLoadAutonomyMenuItemActionPerformed"/>
@@ -512,8 +646,12 @@
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="checkForUpdates">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Check for Updates"/>
-                    <Property name="toolTipText" type="java.lang.String" value="At startup, should we check for a new release of TrainControl?"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.checkForUpdates" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.checkForUpdates" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkForUpdatesActionPerformed"/>
@@ -523,14 +661,20 @@
             </Menu>
             <Menu class="javax.swing.JMenu" name="layoutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Layouts"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.layouts" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="menuItemShowLayoutAddresses">
                   <Properties>
                     <Property name="selected" type="boolean" value="true"/>
-                    <Property name="text" type="java.lang.String" value="Show Addresses"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Show accessory address labels in the track diagram?"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.showAddresses" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                      <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.tooltip.showAddresses" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                    </Property>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="menuItemShowLayoutAddressesActionPerformed"/>
@@ -542,7 +686,9 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="helpMenu">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Help"/>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.toolbar.help" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
           </Properties>
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="viewReleasesMenuItem">

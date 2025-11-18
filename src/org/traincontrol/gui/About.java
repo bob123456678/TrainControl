@@ -58,7 +58,7 @@ public class About extends javax.swing.JPanel
         });
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel2.setText(bundle.getString("ui.about")); // NOI18N
+        jLabel2.setText(bundle.getString("ui.aboutText")); // NOI18N
 
         versionLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         versionLabel.setText(bundle.getString("ui.versionAboutString")); // NOI18N
