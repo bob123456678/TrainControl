@@ -381,7 +381,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.SizeList.setModel(new javax.swing.DefaultComboBoxModel<String>() {{
             layoutSizes.keySet().forEach(this::addElement);
         }});
-        
+                
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
         this.labelMapping = new LinkedHashMap<>();
@@ -15307,10 +15307,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // End of variables declaration//GEN-END:variables
 
     // Lap strings in the size dropdown to icon sizes
-    Map<String, Integer> layoutSizes = Stream.of(new String[][] {
-        { I18n.t("layout.ui.small"), "30" }, 
-        { I18n.t("layout.ui.large"), "60" }, 
-      }).collect(Collectors.toMap(data -> data[0], data -> Integer.valueOf(data[1])));
+    Map<String, Integer> layoutSizes = Stream.of(new String[][] 
+        {
+            { I18n.t("layout.ui.small"), "30" },
+            { I18n.t("layout.ui.large"), "60" }
+        })
+        .collect(Collectors.toMap(
+            data -> data[0],
+            data -> Integer.valueOf(data[1]),
+            (v1, v2) -> v1,
+            LinkedHashMap::new
+        ));
     
     /**
      * Checks if layout files are being loaded from the local filesystem

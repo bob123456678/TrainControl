@@ -36,7 +36,7 @@ public class LayoutGrid
     
     // Prefix that denotes a station label
     // Used to show autonomy locations on the layout
-    public static final String LAYOUT_STATION_PREFIX = I18n.t("layout.ui.autonomyStationPrefix");
+    public static final String LAYOUT_STATION_PREFIX = "Point:"; // todo use layout.ui.autonomyStationPrefix and use non static import
     public static final String LAYOUT_STATION_EMPTY = "[---]";
     public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
@@ -58,7 +58,7 @@ public class LayoutGrid
      * @param ui
      */
     public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
-    {  
+    {          
         // Calculate boundaries
         int offsetX = layout.getMinx();
         int offsetY = layout.getMiny();

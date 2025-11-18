@@ -755,12 +755,20 @@ public class LayoutEditor extends PositionAwareJFrame
                 panel.add(stationLabel, BorderLayout.NORTH);
                 panel.add(comboBox, BorderLayout.CENTER);
 
-                int result = JOptionPane.showConfirmDialog(
+                Object[] optionsBtn = {
+                    I18n.t("ui.ok"),
+                    I18n.t("ui.cancel")
+                };
+
+                int result = JOptionPane.showOptionDialog(
                     this,
                     panel,
                     I18n.t("layout.ui.dialogSelectStation"),
                     JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    optionsBtn,
+                    optionsBtn[0]
                 );
 
                 if (result == JOptionPane.OK_OPTION)
@@ -846,12 +854,20 @@ public class LayoutEditor extends PositionAwareJFrame
                     addressPopup.getGreenButton().setSelected(false);
                 }
                 
-                int result = JOptionPane.showConfirmDialog(
+                Object[] options = {
+                    I18n.t("ui.ok"),
+                    I18n.t("ui.cancel")
+                };
+
+                int result = JOptionPane.showOptionDialog(
                     this,
                     addressPopup,
                     I18n.t("layout.ui.editAddress"),
                     JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0]
                 );
 
                 // Process the input when OK is clicked

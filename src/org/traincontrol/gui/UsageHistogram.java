@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.swing.JComponent;
 import org.traincontrol.util.Conversion;
+import org.traincontrol.util.I18n;
 
 /**
  * A basic locomotive usage graph
@@ -129,18 +130,27 @@ public class UsageHistogram extends javax.swing.JFrame
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.rotate(Math.toRadians(270), 17, y / 2 + 65);
                 g2d.setFont(new Font("Tahoma", Font.BOLD, 12)); 
-                g2d.drawString("Hours (# Locs)", 32, y / 2 + 65);
-                g2d.rotate(-Math.toRadians(270), 17, y / 2 + 65); 
-                
+                // Axis label
+                g2d.drawString(
+                    I18n.t("stats.ui.axisHoursLocs"),
+                    32,
+                    y / 2 + 65
+                );
+                g2d.rotate(-Math.toRadians(270), 17, y / 2 + 65);
+
                 int numLocs = tcui.getModel().getTotalLocStats(perPage, offset);
-                
-                setTitle(String.format("Cumulative Runtime: %s locomotive%s, %s hours over past %s to %s days", 
-                    numLocs, 
-                    numLocs != 1 ? "s" : "",
-                    Conversion.convertSecondsToHMm(cumulativeHours),        
-                    offset, 
-                    offset + perPage
-                ));
+
+                // Window title
+                setTitle(
+                    I18n.f(
+                        "stats.ui.titleCumulativeRuntime",
+                        numLocs,
+                        numLocs != 1 ? I18n.t("stats.ui.valuePluralSuffix") : "",
+                        Conversion.convertSecondsToHMm(cumulativeHours),
+                        offset,
+                        offset + perPage
+                    )
+                );
             }
         };
 
