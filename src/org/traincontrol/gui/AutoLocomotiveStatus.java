@@ -261,7 +261,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         locStation.setFocusable(false);
 
         pauseButton.setText("P");
-        pauseButton.setToolTipText("Temporarily pause this locomotive from automatically running.");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        pauseButton.setToolTipText(bundle.getString("autolayout.ui.tooltip.tempPauseLoc")); // NOI18N
         pauseButton.setFocusable(false);
         pauseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

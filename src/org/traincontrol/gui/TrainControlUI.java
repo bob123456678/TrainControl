@@ -3824,8 +3824,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locMappingLabel.setFont(new java.awt.Font("Segoe UI Semibold", 1, 13)); // NOI18N
         locMappingLabel.setForeground(new java.awt.Color(0, 0, 155));
-        locMappingLabel.setText("Locomotive Key Mapping");
-        locMappingLabel.setToolTipText("Right-click any button for options");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        locMappingLabel.setText(bundle.getString("ui.main.locKeyMapping")); // NOI18N
+        locMappingLabel.setToolTipText(bundle.getString("ui.main.tooltip.locKeyMapping")); // NOI18N
 
         LocContainer.setBackground(new java.awt.Color(255, 255, 255));
         LocContainer.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
@@ -4088,7 +4089,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         LocMappingNumberLabel.setBackground(new java.awt.Color(255, 255, 255));
         LocMappingNumberLabel.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
-        LocMappingNumberLabel.setText("Page");
+        LocMappingNumberLabel.setText(bundle.getString("ui.main.pageLabel")); // NOI18N
         LocMappingNumberLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         LocMappingNumberLabel.setFocusable(false);
         LocMappingNumberLabel.setMaximumSize(new java.awt.Dimension(135, 18));
@@ -5084,8 +5085,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         SpacebarButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        SpacebarButton.setText("Spacebar");
-        SpacebarButton.setToolTipText("Spacebar: emergency stop of current locomotive.");
+        SpacebarButton.setText(bundle.getString("ui.main.spaceBar")); // NOI18N
+        SpacebarButton.setToolTipText(bundle.getString("ui.main.tooltip.spaceBar")); // NOI18N
         SpacebarButton.setFocusable(false);
         SpacebarButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5094,14 +5095,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         SlowStopLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        SlowStopLabel.setText("Slow Stop");
+        SlowStopLabel.setText(bundle.getString("ui.main.slowStop")); // NOI18N
 
         EStopLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        EStopLabel.setText("Stop All");
+        EStopLabel.setText(bundle.getString("ui.main.stopAll")); // NOI18N
 
         ShiftButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        ShiftButton.setText("Shift");
-        ShiftButton.setToolTipText("Shift: stop locomotive");
+        ShiftButton.setText(bundle.getString("ui.main.shiftButton")); // NOI18N
+        ShiftButton.setToolTipText(bundle.getString("ui.main.tooltip.shiftButton")); // NOI18N
         ShiftButton.setFocusable(false);
         ShiftButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5110,14 +5111,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         DirectionLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        DirectionLabel.setText("Direction");
+        DirectionLabel.setText(bundle.getString("ui.main.direction")); // NOI18N
 
         jLabel7.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel7.setText("Increment Speed");
+        jLabel7.setText(bundle.getString("ui.main.incrementSpeed")); // NOI18N
 
         AltEmergencyStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        AltEmergencyStop.setText("Enter");
-        AltEmergencyStop.setToolTipText("Enter: stops all running locomotives.");
+        AltEmergencyStop.setText(bundle.getString("ui.main.enterButton")); // NOI18N
+        AltEmergencyStop.setToolTipText(bundle.getString("ui.main.tooltip.enterButton")); // NOI18N
         AltEmergencyStop.setFocusable(false);
         AltEmergencyStop.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5126,7 +5127,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         jLabel8.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel8.setText("Instant Stop");
+        jLabel8.setText(bundle.getString("ui.main.instantStop")); // NOI18N
 
         ZeroButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         ZeroButton.setText("0");
@@ -5138,7 +5139,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         FullSpeedLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        FullSpeedLabel.setText("100% Speed");
+        FullSpeedLabel.setText(bundle.getString("ui.main.fullPercSpeed")); // NOI18N
 
         EightButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         EightButton.setText("8");
@@ -5222,7 +5223,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         ZeroPercentSpeedLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        ZeroPercentSpeedLabel.setText("0% Speed");
+        ZeroPercentSpeedLabel.setText(bundle.getString("ui.main.zeroPercSpeed")); // NOI18N
 
         javax.swing.GroupLayout controlsPanelLayout = new javax.swing.GroupLayout(controlsPanel);
         controlsPanel.setLayout(controlsPanelLayout);
@@ -5336,16 +5337,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         PrimaryControls.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         PrimaryControls.setForeground(new java.awt.Color(0, 0, 155));
-        PrimaryControls.setText("Primary Keyboard Controls");
+        PrimaryControls.setText(bundle.getString("ui.main.primaryKeyboardControls")); // NOI18N
 
         latencyLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         latencyLabel.setForeground(new java.awt.Color(255, 0, 0));
         latencyLabel.setText("Latency:");
-        latencyLabel.setToolTipText("Network latency should consistently be low to ensure a stable connection.");
+        latencyLabel.setToolTipText(bundle.getString("ui.main.tooltip.latency")); // NOI18N
 
         toggleMenuBar.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         toggleMenuBar.setSelected(true);
-        toggleMenuBar.setText("Toggle Menu Bar");
+        toggleMenuBar.setText(bundle.getString("ui.main.toggleMenuBar")); // NOI18N
         toggleMenuBar.setToolTipText("Control+M");
         toggleMenuBar.setFocusable(false);
         toggleMenuBar.addActionListener(new java.awt.event.ActionListener() {
@@ -5415,7 +5416,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         layoutListLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         layoutListLabel.setForeground(new java.awt.Color(0, 0, 115));
-        layoutListLabel.setText("Layout");
+        layoutListLabel.setText(bundle.getString("ui.main.layoutLabel")); // NOI18N
         layoutListLabel.setToolTipText("+ / -");
 
         LayoutArea.setBackground(new java.awt.Color(255, 255, 255));
@@ -5440,7 +5441,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         sizeLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         sizeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        sizeLabel.setText("Size");
+        sizeLabel.setText(bundle.getString("ui.main.sizeLabel")); // NOI18N
 
         SizeList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Small", "Large" }));
@@ -5454,7 +5455,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         layoutNewWindow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        layoutNewWindow.setText("Large");
+        layoutNewWindow.setText(bundle.getString("ui.main.largeLayout")); // NOI18N
         layoutNewWindow.setFocusable(false);
         layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5463,7 +5464,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         smallButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        smallButton.setText("Small");
+        smallButton.setText(bundle.getString("ui.main.smallLayout")); // NOI18N
         smallButton.setFocusable(false);
         smallButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5472,11 +5473,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel19.setText("Pop-up:");
-        jLabel19.setToolTipText("Show the current track diagram in a pop-up window");
+        jLabel19.setText(bundle.getString("ui.main.popUpLabel")); // NOI18N
+        jLabel19.setToolTipText(bundle.getString("ui.main.tooltip.popUpLabel")); // NOI18N
 
         allButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        allButton.setText("All");
+        allButton.setText(bundle.getString("ui.main.allLayout")); // NOI18N
         allButton.setFocusable(false);
         allButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5487,8 +5488,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         editLayoutButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        editLayoutButton.setText("Edit");
-        editLayoutButton.setToolTipText("Launch the layout editor");
+        editLayoutButton.setText(bundle.getString("ui.main.editLayout")); // NOI18N
+        editLayoutButton.setToolTipText(bundle.getString("ui.main.tooltip.editLayout")); // NOI18N
         editLayoutButton.setFocusable(false);
         editLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5573,7 +5574,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
 
         exportJSON.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        exportJSON.setText("Export Current Graph");
+        exportJSON.setText(bundle.getString("ui.main.exportCurrentGraph")); // NOI18N
         exportJSON.setEnabled(false);
         exportJSON.setFocusable(false);
         exportJSON.addActionListener(new java.awt.event.ActionListener() {
@@ -5583,7 +5584,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        loadJSONButton.setText("Import Configuration from File");
+        loadJSONButton.setText(bundle.getString("ui.main.importAutoConfigFromFile")); // NOI18N
         loadJSONButton.setFocusable(false);
         loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5593,8 +5594,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autosave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         autosave.setSelected(true);
-        autosave.setText("Auto-save on exit");
-        autosave.setToolTipText("If unchecked, be sure to manually export the graph prior to exiting.");
+        autosave.setText(bundle.getString("ui.main.autoSaveOnExit")); // NOI18N
+        autosave.setToolTipText(bundle.getString("ui.main.tooltip.autoSaveOnExit")); // NOI18N
         autosave.setFocusable(false);
         autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -5609,7 +5610,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jsonDocumentationButton.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jsonDocumentationButton.setForeground(new java.awt.Color(0, 0, 155));
-        jsonDocumentationButton.setText("Documentation");
+        jsonDocumentationButton.setText(bundle.getString("ui.main.documentation")); // NOI18N
         jsonDocumentationButton.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
         jsonDocumentationButton.setBorderPainted(false);
         jsonDocumentationButton.setContentAreaFilled(false);
@@ -5623,8 +5624,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
-        loadDefaultBlankGraph.setText("Initialize New Configuration");
-        loadDefaultBlankGraph.setToolTipText("Creates a blank graph that you can edit visually.");
+        loadDefaultBlankGraph.setText(bundle.getString("ui.main.initNewAutoConfig")); // NOI18N
+        loadDefaultBlankGraph.setToolTipText(bundle.getString("ui.main.tooltip.initNewAutoConfig")); // NOI18N
         loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
         loadDefaultBlankGraph.setContentAreaFilled(false);
         loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -5637,8 +5638,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         validateButton.setBackground(new java.awt.Color(204, 255, 204));
         validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        validateButton.setText("Validate Configuration & Open Graph UI");
-        validateButton.setToolTipText("Parses the JSON configuration data and displays the graph UI.  Force stops any running trains.");
+        validateButton.setText(bundle.getString("ui.main.validateConfigOpenGraphUI")); // NOI18N
+        validateButton.setToolTipText(bundle.getString("ui.main.tooltip.validateConfigOpenGraphUI")); // NOI18N
         validateButton.setFocusable(false);
         validateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5700,7 +5701,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap(519, Short.MAX_VALUE))
         );
 
-        locCommandPanels.addTab("Autonomy Configuration", autonomyPanel);
+        locCommandPanels.addTab(bundle.getString("ui.main.autoConfig"), autonomyPanel); // NOI18N
 
         locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
         locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
@@ -5718,8 +5719,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         gracefulStop.setBackground(new java.awt.Color(255, 204, 204));
         gracefulStop.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        gracefulStop.setText("Graceful Stop");
-        gracefulStop.setToolTipText("Active locomotives will stop at the next station.");
+        gracefulStop.setText(bundle.getString("ui.main.gracefulStop")); // NOI18N
+        gracefulStop.setToolTipText(bundle.getString("ui.main.tooltip.gracefulStop")); // NOI18N
         gracefulStop.setEnabled(false);
         gracefulStop.setFocusable(false);
         gracefulStop.addActionListener(new java.awt.event.ActionListener() {
@@ -5730,8 +5731,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         startAutonomy.setBackground(new java.awt.Color(204, 255, 204));
         startAutonomy.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        startAutonomy.setText("Start Autonomous Operation");
-        startAutonomy.setToolTipText("Continuously runs active locomotives within the graph.");
+        startAutonomy.setText(bundle.getString("ui.main.startAutonomy")); // NOI18N
+        startAutonomy.setToolTipText(bundle.getString("ui.main.tooltip.startAutonomy")); // NOI18N
         startAutonomy.setEnabled(false);
         startAutonomy.setFocusable(false);
         startAutonomy.addActionListener(new java.awt.event.ActionListener() {
@@ -5766,7 +5767,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap())
         );
 
-        locCommandPanels.addTab("Locomotive Commands", locCommandTab);
+        locCommandPanels.addTab(bundle.getString("ui.main.locCommandsTab"), locCommandTab); // NOI18N
 
         timetablePanel.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -5787,8 +5788,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         executeTimetable.setBackground(new java.awt.Color(204, 255, 204));
         executeTimetable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        executeTimetable.setText("Execute Timetable");
-        executeTimetable.setToolTipText("Sequentially executes the timetable.");
+        executeTimetable.setText(bundle.getString("ui.main.executeTimetable")); // NOI18N
+        executeTimetable.setToolTipText(bundle.getString("ui.main.tooltip.executeTimetable")); // NOI18N
         executeTimetable.setFocusable(false);
         executeTimetable.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5797,8 +5798,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         timetableCapture.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        timetableCapture.setText("Capture Locomotive Commands");
-        timetableCapture.setToolTipText("Press this, then start autonomous operation or run locomotive commands to add them to the timetable.  Try to end where you started!");
+        timetableCapture.setText(bundle.getString("ui.main.captureLocCommands")); // NOI18N
+        timetableCapture.setToolTipText(bundle.getString("ui.main.tooltip.captureLocCommands")); // NOI18N
         timetableCapture.setFocusable(false);
         timetableCapture.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5832,7 +5833,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap())
         );
 
-        locCommandPanels.addTab("Timetable", timetablePanel);
+        locCommandPanels.addTab(bundle.getString("ui.main.timetableTab"), timetablePanel); // NOI18N
 
         autoSettingsPanel.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -5841,7 +5842,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel46.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel46.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel46.setText("Minimum Action Delay (s)");
+        jLabel46.setText(bundle.getString("ui.main.minActionDelay")); // NOI18N
         jLabel46.setFocusable(false);
 
         minDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -5850,7 +5851,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         minDelay.setMinorTickSpacing(1);
         minDelay.setPaintLabels(true);
         minDelay.setPaintTicks(true);
-        minDelay.setToolTipText("Minimum number of seconds to sleep before a locomotive moves.");
+        minDelay.setToolTipText(bundle.getString("ui.main.tooltip.minActionDelay")); // NOI18N
         minDelay.setFocusable(false);
         minDelay.setMaximumSize(new java.awt.Dimension(230, 55));
         minDelay.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -5867,7 +5868,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel48.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel48.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel48.setText("Prioritize Locomotives After (min)");
+        jLabel48.setText(bundle.getString("ui.main.prioLocAfter")); // NOI18N
         jLabel48.setFocusable(false);
 
         maxLocInactiveSeconds.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -5876,7 +5877,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         maxLocInactiveSeconds.setMinorTickSpacing(1);
         maxLocInactiveSeconds.setPaintLabels(true);
         maxLocInactiveSeconds.setPaintTicks(true);
-        maxLocInactiveSeconds.setToolTipText("When >0, locomotives idle for longer than this will be prioritized.");
+        maxLocInactiveSeconds.setToolTipText(bundle.getString("ui.main.tooltip.prioLocAfter")); // NOI18N
         maxLocInactiveSeconds.setFocusable(false);
         maxLocInactiveSeconds.setMaximumSize(new java.awt.Dimension(230, 55));
         maxLocInactiveSeconds.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -5888,7 +5889,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel47.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel47.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel47.setText("Maximum Action Delay (s)");
+        jLabel47.setText(bundle.getString("ui.main.maxActionDelay")); // NOI18N
         jLabel47.setFocusable(false);
 
         maxDelay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -5897,7 +5898,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         maxDelay.setMinorTickSpacing(1);
         maxDelay.setPaintLabels(true);
         maxDelay.setPaintTicks(true);
-        maxDelay.setToolTipText("Maximum number of seconds to sleep before a locomotive moves.");
+        maxDelay.setToolTipText(bundle.getString("ui.main.tooltip.maxActionDelay")); // NOI18N
         maxDelay.setFocusable(false);
         maxDelay.setMaximumSize(new java.awt.Dimension(230, 55));
         maxDelay.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -5909,7 +5910,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel43.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel43.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel43.setText("Default Locomotive Speed (%)");
+        jLabel43.setText(bundle.getString("ui.main.defaultLocSpeed")); // NOI18N
         jLabel43.setFocusable(false);
 
         defaultLocSpeed.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -5917,7 +5918,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         defaultLocSpeed.setMinorTickSpacing(5);
         defaultLocSpeed.setPaintLabels(true);
         defaultLocSpeed.setPaintTicks(true);
-        defaultLocSpeed.setToolTipText("The speed at which locomotives will run at by defualt.");
+        defaultLocSpeed.setToolTipText(bundle.getString("ui.main.tooltip.defaultLocSpeed")); // NOI18N
         defaultLocSpeed.setFocusable(false);
         defaultLocSpeed.setMaximumSize(new java.awt.Dimension(230, 55));
         defaultLocSpeed.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -5929,7 +5930,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel49.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel49.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel49.setText("Pre-arrival Speed Multiplier (%)");
+        jLabel49.setText(bundle.getString("ui.main.preSpeedMulti")); // NOI18N
         jLabel49.setFocusable(false);
 
         preArrivalSpeedReduction.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -5938,7 +5939,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         preArrivalSpeedReduction.setMinorTickSpacing(5);
         preArrivalSpeedReduction.setPaintLabels(true);
         preArrivalSpeedReduction.setPaintTicks(true);
-        preArrivalSpeedReduction.setToolTipText("Locomotives slow down when they are about to reach their station.  This controls by how much to slow them down.");
+        preArrivalSpeedReduction.setToolTipText(bundle.getString("ui.main.tooltip.preSpeedMulti")); // NOI18N
         preArrivalSpeedReduction.setFocusable(false);
         preArrivalSpeedReduction.setMaximumSize(new java.awt.Dimension(230, 55));
         preArrivalSpeedReduction.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -5950,12 +5951,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel50.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel50.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel50.setText("Other Settings");
+        jLabel50.setText(bundle.getString("ui.main.otherSettings")); // NOI18N
         jLabel50.setFocusable(false);
 
         atomicRoutes.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        atomicRoutes.setText("Atomic Routes");
-        atomicRoutes.setToolTipText("When unchecked, edges will unlock as trains pass them, for a more dynamic experience.  Edge and train lengths need to be set for best results.");
+        atomicRoutes.setText(bundle.getString("ui.main.atomicRoutes")); // NOI18N
+        atomicRoutes.setToolTipText(bundle.getString("ui.main.tooltip.atomicRoutes")); // NOI18N
         atomicRoutes.setFocusable(false);
         atomicRoutes.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -5964,8 +5965,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         turnOffFunctionsOnArrival.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        turnOffFunctionsOnArrival.setText("Turn Off Functions on Arrival");
-        turnOffFunctionsOnArrival.setToolTipText("Controls whether preset functions are turned off when a locomotive reaches its station.");
+        turnOffFunctionsOnArrival.setText(bundle.getString("ui.main.turnOffFuncArrival")); // NOI18N
+        turnOffFunctionsOnArrival.setToolTipText(bundle.getString("ui.main.tooltip.turnOffFuncArrival")); // NOI18N
         turnOffFunctionsOnArrival.setFocusable(false);
         turnOffFunctionsOnArrival.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -5974,8 +5975,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         simulate.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        simulate.setText("Simulate");
-        simulate.setToolTipText("Enable simulation of routes in debug mode.");
+        simulate.setText(bundle.getString("ui.main.simulate")); // NOI18N
+        simulate.setToolTipText(bundle.getString("ui.main.tooltip.simulate")); // NOI18N
         simulate.setFocusable(false);
         simulate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -5984,8 +5985,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         turnOnFunctionsOnDeparture.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        turnOnFunctionsOnDeparture.setText("Turn On Functions on Departure");
-        turnOnFunctionsOnDeparture.setToolTipText("Controls whether preset functions are turned on when a locomotive departs its station.");
+        turnOnFunctionsOnDeparture.setText(bundle.getString("ui.main.turnOnFuncsDeparture")); // NOI18N
+        turnOnFunctionsOnDeparture.setToolTipText(bundle.getString("ui.main.tooltip.turnOnFuncsDeparture")); // NOI18N
         turnOnFunctionsOnDeparture.setFocusable(false);
         turnOnFunctionsOnDeparture.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -5999,7 +6000,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         maximumLatency.setMinorTickSpacing(250);
         maximumLatency.setPaintLabels(true);
         maximumLatency.setPaintTicks(true);
-        maximumLatency.setToolTipText("If greater than 0, the power will automatically be turned off if the network latency exceeds this value.");
+        maximumLatency.setToolTipText(bundle.getString("ui.main.tooltip.maxNetworkLatency")); // NOI18N
         maximumLatency.setValue(0);
         maximumLatency.setFocusable(false);
         maximumLatency.setMaximumSize(new java.awt.Dimension(230, 55));
@@ -6012,7 +6013,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel44.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel44.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel44.setText("Maximum Network Latency (ms)");
+        jLabel44.setText(bundle.getString("ui.main.maxNetworkLatency")); // NOI18N
         jLabel44.setFocusable(false);
 
         maxActiveTrains.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -6021,7 +6022,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         maxActiveTrains.setMinorTickSpacing(1);
         maxActiveTrains.setPaintLabels(true);
         maxActiveTrains.setPaintTicks(true);
-        maxActiveTrains.setToolTipText("Controls the maximum number of concurrent trains (0 to disable).");
+        maxActiveTrains.setToolTipText(bundle.getString("ui.main.tooltip.maxActiveTrains")); // NOI18N
         maxActiveTrains.setFocusable(false);
         maxActiveTrains.setMaximumSize(new java.awt.Dimension(230, 55));
         maxActiveTrains.setPreferredSize(new java.awt.Dimension(230, 55));
@@ -6033,7 +6034,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel53.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel53.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel53.setText("Maximum Active Trains");
+        jLabel53.setText(bundle.getString("ui.main.maxActiveTrains")); // NOI18N
         jLabel53.setToolTipText("");
         jLabel53.setFocusable(false);
 
@@ -6124,14 +6125,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel51.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel51.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel51.setText("Train Behavior");
+        jLabel51.setText(bundle.getString("ui.main.autoTrainBehaviorLabel")); // NOI18N
 
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
         hideReversing.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideReversing.setText("Hide Reversing Stations");
-        hideReversing.setToolTipText("Temporarily hides reversing stations from view in the graph.");
+        hideReversing.setText(bundle.getString("ui.main.hideReversingStations")); // NOI18N
+        hideReversing.setToolTipText(bundle.getString("ui.main.tooltip.hideReversingStations")); // NOI18N
         hideReversing.setFocusable(false);
         hideReversing.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -6140,8 +6141,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         hideInactive.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideInactive.setText("Hide Inactive Points");
-        hideInactive.setToolTipText("Temporarily hides manually deactivated points from view in the graph.");
+        hideInactive.setText(bundle.getString("ui.main.hideInactivePoints")); // NOI18N
+        hideInactive.setToolTipText(bundle.getString("ui.main.tooltip.hideInactivePoints")); // NOI18N
         hideInactive.setFocusable(false);
         hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -6150,8 +6151,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         showStationLengths.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        showStationLengths.setText("Show Lengths & Exclusions");
-        showStationLengths.setToolTipText("Displays edge lengths, maximum train lengths next to each station name, and highlights locomotive exclusions.");
+        showStationLengths.setText(bundle.getString("ui.main.showLengthsExclusions")); // NOI18N
+        showStationLengths.setToolTipText(bundle.getString("ui.main.tooltip.showLengthsExclusions")); // NOI18N
         showStationLengths.setFocusable(false);
         showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
@@ -6185,7 +6186,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel52.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel52.setText("Graph UI Options");
+        jLabel52.setText(bundle.getString("ui.main.graphUIOptions")); // NOI18N
 
         javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
         autoSettingsPanel.setLayout(autoSettingsPanelLayout);
@@ -6216,7 +6217,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGap(94, 94, 94))
         );
 
-        locCommandPanels.addTab("Autonomy Settings", autoSettingsPanel);
+        locCommandPanels.addTab(bundle.getString("ui.main.autoSettings"), autoSettingsPanel); // NOI18N
 
         javax.swing.GroupLayout autoPanelLayout = new javax.swing.GroupLayout(autoPanel);
         autoPanel.setLayout(autoPanelLayout);
@@ -6232,6 +6233,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
         );
 
+        locCommandPanels.getAccessibleContext().setAccessibleName(bundle.getString("ui.main.autoConfig")); // NOI18N
+
         KeyboardTab.addTab("Auto", autoPanel);
 
         KeyboardPanel.setBackground(new java.awt.Color(255, 255, 255));
@@ -6243,7 +6246,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KeyboardLabel.setForeground(new java.awt.Color(0, 0, 115));
-        KeyboardLabel.setText("Control Accessories by Address");
+        KeyboardLabel.setText(bundle.getString("ui.main.controlAccByAddress")); // NOI18N
         KeyboardLabel.setFocusable(false);
 
         keyboardButtonPanel.setBackground(new java.awt.Color(255, 255, 255));
@@ -7244,7 +7247,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         KeyboardNumberLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        KeyboardNumberLabel.setText("Keyboard ");
+        KeyboardNumberLabel.setText(bundle.getString("ui.main.keyboardLabel")); // NOI18N
         KeyboardNumberLabel.setFocusable(false);
 
         NextKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -7282,7 +7285,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         KeyboardLabel1.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         KeyboardLabel1.setForeground(new java.awt.Color(0, 0, 115));
-        KeyboardLabel1.setText("Change Page");
+        KeyboardLabel1.setText(bundle.getString("ui.main.changePage")); // NOI18N
         KeyboardLabel1.setFocusable(false);
 
         buttonGroup5.add(MM2);
@@ -7354,7 +7357,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         routeLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         routeLabel.setForeground(new java.awt.Color(0, 0, 115));
-        routeLabel.setText("Routes (Click to Execute / Right-click to Edit)");
+        routeLabel.setText(bundle.getString("ui.main.routeLabelHeader")); // NOI18N
 
         routeScrollPane.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
@@ -7390,7 +7393,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         routeScrollPane.setViewportView(RouteList);
 
         AddRouteButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        AddRouteButton.setText("Add Route");
+        AddRouteButton.setText(bundle.getString("ui.main.addRoute")); // NOI18N
         AddRouteButton.setFocusable(false);
         AddRouteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7400,7 +7403,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         buttonGroup2.add(sortByName);
         sortByName.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByName.setText("Name");
+        sortByName.setText(bundle.getString("ui.main.sortByName")); // NOI18N
         sortByName.setFocusable(false);
         sortByName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7410,7 +7413,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         buttonGroup2.add(sortByID);
         sortByID.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        sortByID.setText("Route ID");
+        sortByID.setText(bundle.getString("ui.main.sortByRouteID")); // NOI18N
         sortByID.setFocusable(false);
         sortByID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7419,7 +7422,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         BulkEnable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        BulkEnable.setText("Bulk Enable");
+        BulkEnable.setText(bundle.getString("ui.main.bulkEnable")); // NOI18N
         BulkEnable.setFocusable(false);
         BulkEnable.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7428,7 +7431,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         BulkDisable.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        BulkDisable.setText("Bulk Disable");
+        BulkDisable.setText(bundle.getString("ui.main.bulkDisable")); // NOI18N
         BulkDisable.setFocusable(false);
         BulkDisable.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7442,7 +7445,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel1.setText("Sort by:");
+        jLabel1.setText(bundle.getString("ui.main.sortBy")); // NOI18N
 
         javax.swing.GroupLayout RoutePanelLayout = new javax.swing.GroupLayout(RoutePanel);
         RoutePanel.setLayout(RoutePanelLayout);
@@ -7540,7 +7543,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         OnButton.setBackground(new java.awt.Color(204, 255, 204));
         OnButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        OnButton.setText("ON");
+        OnButton.setText(bundle.getString("ui.main.powerON")); // NOI18N
         OnButton.setToolTipText("Alt-G");
         OnButton.setFocusable(false);
         OnButton.addActionListener(new java.awt.event.ActionListener() {
@@ -7551,7 +7554,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         PowerOff.setBackground(new java.awt.Color(255, 204, 204));
         PowerOff.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        PowerOff.setText("Power OFF");
+        PowerOff.setText(bundle.getString("ui.main.powerOFF")); // NOI18N
         PowerOff.setToolTipText("Escape");
         PowerOff.setFocusable(false);
         PowerOff.setMaximumSize(new java.awt.Dimension(200, 22));
@@ -7565,7 +7568,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         ActiveLocLabel.setFont(new java.awt.Font("Segoe UI Semibold", 0, 20)); // NOI18N
         ActiveLocLabel.setText("Locomotive Name");
-        ActiveLocLabel.setToolTipText("Click to change mapping");
+        ActiveLocLabel.setToolTipText(bundle.getString("ui.main.tooltip.locName")); // NOI18N
         ActiveLocLabel.setFocusable(false);
         ActiveLocLabel.setMaximumSize(new java.awt.Dimension(296, 25));
         ActiveLocLabel.setMinimumSize(new java.awt.Dimension(296, 25));
@@ -7626,7 +7629,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         CurrentKeyLabel.setPreferredSize(new java.awt.Dimension(296, 18));
 
         locIcon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        locIcon.setToolTipText("Right-click to change icon");
+        locIcon.setToolTipText(bundle.getString("ui.main.tooltip.locIcon")); // NOI18N
         locIcon.setFocusable(false);
         locIcon.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         locIcon.setMaximumSize(new java.awt.Dimension(296, 116));
@@ -8665,7 +8668,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
         fileMenu.setText(bundle.getString("ui.main.toolbar.file")); // NOI18N
         fileMenu.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
@@ -13543,6 +13545,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
+            if (!this.model.getNetworkCommState())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("ui.labelNotConnectedToCentralStation"));
+                return;
+            }
+            
             if (this.model.isAutonomyRunning())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
