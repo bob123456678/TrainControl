@@ -113,7 +113,7 @@ public class MarklinFeedback extends Feedback
             this.network.logf(
                 "acc.feedbackState",
                 name,
-                " manually",
+                " " + I18n.t("acc.manually"),
                 (val ? I18n.t("acc.stateSet") : I18n.t("acc.stateNotSet"))
             );
             

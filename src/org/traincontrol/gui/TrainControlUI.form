@@ -693,8 +693,12 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="viewReleasesMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="View Releases"/>
-                <Property name="toolTipText" type="java.lang.String" value="Read about the latest version of TrainControl."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.viewReleases" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.tooltip.viewReleases" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="viewReleasesMenuItemActionPerformed"/>
@@ -702,8 +706,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="downloadUpdateMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Download Update"/>
-                <Property name="toolTipText" type="java.lang.String" value="Download the update file to your computer."/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.downloadUpdate" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.tooltip.downloadUpdate" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="downloadUpdateMenuItemActionPerformed"/>
@@ -711,7 +719,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="aboutMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="About / Readme"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.aboutReadme" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="aboutMenuItemActionPerformed"/>

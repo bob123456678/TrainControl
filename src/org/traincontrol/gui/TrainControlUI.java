@@ -9118,8 +9118,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         helpMenu.setText(bundle.getString("ui.main.toolbar.help")); // NOI18N
 
-        viewReleasesMenuItem.setText("View Releases");
-        viewReleasesMenuItem.setToolTipText("Read about the latest version of TrainControl.");
+        viewReleasesMenuItem.setText(bundle.getString("ui.main.viewReleases")); // NOI18N
+        viewReleasesMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.viewReleases")); // NOI18N
         viewReleasesMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 viewReleasesMenuItemActionPerformed(evt);
@@ -9127,8 +9127,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         helpMenu.add(viewReleasesMenuItem);
 
-        downloadUpdateMenuItem.setText("Download Update");
-        downloadUpdateMenuItem.setToolTipText("Download the update file to your computer.");
+        downloadUpdateMenuItem.setText(bundle.getString("ui.main.downloadUpdate")); // NOI18N
+        downloadUpdateMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.downloadUpdate")); // NOI18N
         downloadUpdateMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 downloadUpdateMenuItemActionPerformed(evt);
@@ -9136,7 +9136,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         helpMenu.add(downloadUpdateMenuItem);
 
-        aboutMenuItem.setText("About / Readme");
+        aboutMenuItem.setText(bundle.getString("ui.main.aboutReadme")); // NOI18N
         aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 aboutMenuItemActionPerformed(evt);
@@ -9937,12 +9937,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (l != null)
             {
                 LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
-                int result = JOptionPane.showConfirmDialog(
+                Object[] options = {
+                    I18n.t("ui.ok"),
+                    I18n.t("ui.cancel")
+                };
+
+                int result = JOptionPane.showOptionDialog(
                     source,
                     edit,
                     I18n.f("loc.ui.dialogChangeNameOrAddress", l.getName()),
                     JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0] // default selection
                 );
 
                 String newAddress = edit.getAddress();
@@ -10344,12 +10352,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             filterField.setVisible(false);
         }   
 
-        int result = JOptionPane.showConfirmDialog(
+        Object[] options = {
+            I18n.t("ui.ok"),
+            I18n.t("ui.cancel")
+        };
+
+        int result = JOptionPane.showOptionDialog(
             this,
             panel,
             I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", l.getName()),
             JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            options,
+            options[0] // default selection
         );
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
@@ -10459,11 +10475,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         inputPanel.add(randomOrder);
         inputPanel.add(leastUsedOrder);
 
-        int result = JOptionPane.showConfirmDialog(
+        Object[] optionsOKCancel = {
+            I18n.t("ui.ok"),
+            I18n.t("ui.cancel")
+        };
+
+        int result = JOptionPane.showOptionDialog(
             source,
             inputPanel,
             I18n.f("search.ui.dialogFindSimilarLocomotives", searchLoc.getName()),
-            JOptionPane.OK_CANCEL_OPTION
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            optionsOKCancel,
+            optionsOKCancel[0] // default selection
         );
         if (result != JOptionPane.OK_OPTION) return;
 
@@ -10550,11 +10575,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 mapPanel.add(new JLabel(I18n.t("page.ui.labelSelectPageToMapLocomotives")));
                 mapPanel.add(pageDropdown);
 
-                int mapResult = JOptionPane.showConfirmDialog(
+                int mapResult = JOptionPane.showOptionDialog(
                     source,
                     mapPanel,
                     I18n.t("page.ui.dialogMapLocomotives"),
-                    JOptionPane.OK_CANCEL_OPTION
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    optionsOKCancel,
+                    optionsOKCancel[0] // default selection
                 );
                 if (mapResult == JOptionPane.OK_OPTION)
                 {
@@ -10687,11 +10716,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             gbc.gridy++;
             panel.add(new JScrollPane(textArea), gbc);
 
-            int confirm = JOptionPane.showConfirmDialog(
+            Object[] options = {
+                I18n.t("ui.ok"),
+                I18n.t("ui.cancel")
+            };
+
+            int confirm = JOptionPane.showOptionDialog(
                 source,
                 panel,
                 I18n.f("loc.ui.dialogEditLocomotiveInfo", l.getName()),
-                JOptionPane.OK_CANCEL_OPTION
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0] // default selection
             );
 
             if (confirm == JOptionPane.YES_OPTION)
@@ -11357,12 +11395,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 Integer fNumber = this.functionMapping.get(b);
 
                 LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
-                int result = JOptionPane.showConfirmDialog(
+                Object[] options =
+                {
+                    I18n.t("ui.ok"),
+                    I18n.t("ui.cancel")
+                };
+
+                int result = JOptionPane.showOptionDialog(
                     this,
                     edit,
                     I18n.f("loc.ui.dialogEditLocomotiveFunctions", this.activeLoc.getName()),
                     JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0] // default selection
                 );
                 edit.focusImages();
                 
@@ -13134,12 +13181,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         textField.requestFocusInWindow();
         
         // Display the input dialog
-        int result = JOptionPane.showConfirmDialog(
+        Object[] options = {
+            I18n.t("ui.ok"),
+            I18n.t("ui.cancel")
+        };
+
+        int result = JOptionPane.showOptionDialog(
             this,
             textField,
             I18n.t("layout.ui.enterLayoutName"),
             JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            options,
+            options[0] // default selection
         );
         
         if (result == JOptionPane.OK_OPTION && textField.getText() != null && textField.getText().trim().length() > 0)

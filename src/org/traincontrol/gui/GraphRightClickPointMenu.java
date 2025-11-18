@@ -335,7 +335,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
         // Allow changes because locomotives on non-stations will by design not run
         //if (!p.isDestination() || !p.isOccupied())        
-        JCheckBoxMenuItem stationCheckbox = new JCheckBoxMenuItem("Mark as Station", p.isDestination());
+        JCheckBoxMenuItem stationCheckbox = new JCheckBoxMenuItem(I18n.t("autolayout.ui.markAsStation"), p.isDestination());
         stationCheckbox.addItemListener(event ->
         {
             try
