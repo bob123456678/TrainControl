@@ -20,6 +20,7 @@ import javax.swing.table.TableRowSorter;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.Conversion;
+import org.traincontrol.util.I18n;
 
 /**
  *
@@ -84,7 +85,14 @@ public class LocomotiveStats extends javax.swing.JPanel
                 Long totalRuntime = 0L;
                 int totalLocsRun = 0;
 
-                String col[] = {"Locomotive", "Overall Runtime", "Today's Runtime", "Last Run", "First Run", "Days Run"};
+                String col[] = {
+                    I18n.t("stats.ui.columnLocomotive"),
+                    I18n.t("stats.ui.columnOverallRuntime"),
+                    I18n.t("stats.ui.columnTodaysRuntime"),
+                    I18n.t("stats.ui.columnLastRun"),
+                    I18n.t("stats.ui.columnFirstRun"),
+                    I18n.t("stats.ui.columnDaysRun")
+                };
 
                 // Ensure correct sorting
                 DefaultTableModel tableModel = new DefaultTableModel(col, 0)
@@ -130,7 +138,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                     boolean isMultiUnit = ((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT ||
                             ((MarklinLocomotive) l).hasLinkedLocomotives();
                     
-                    Object[] data = {l.getName() + (isMultiUnit ? " (Multi Unit)" : ""),
+                    Object[] data = {l.getName() + (isMultiUnit ? " (" + I18n.t("loc.multiUnit") + ")" : ""),
                         new TimestampString(l.getTotalRuntime()), new TimestampString(l.getRuntimeToday()), 
                         l.getOperatingDate(true), l.getOperatingDate(false), l.getNumDaysRun()};
 
@@ -152,13 +160,25 @@ public class LocomotiveStats extends javax.swing.JPanel
                     }
                 }
 
-                this.todaysRuntimeVal.setText(Conversion.convertSecondsToHMmSs(todaysTotalRuntime));
+                this.todaysRuntimeVal.setText(
+                    Conversion.convertSecondsToHMmSs(todaysTotalRuntime)
+                );
                 this.locCountVal.setText(Integer.toString(todaysLocsRun));
-                this.locomotivesLabel.setText(todaysLocsRun == 1 ? "locomotive" : "locomotives");
+                this.locomotivesLabel.setText(
+                    todaysLocsRun == 1
+                        ? I18n.t("stats.ui.labelLocomotiveSingular")
+                        : I18n.t("stats.ui.labelLocomotivePlural")
+                );
 
-                this.cumulativeRuntimeVal.setText(Conversion.convertSecondsToHMmSs(totalRuntime));
+                this.cumulativeRuntimeVal.setText(
+                    Conversion.convertSecondsToHMmSs(totalRuntime)
+                );
                 this.locCountCumulativeVal.setText(Integer.toString(totalLocsRun));
-                this.locomotivesCumulativeLabel.setText(totalLocsRun == 1 ? "locomotive" : "locomotives");
+                this.locomotivesCumulativeLabel.setText(
+                    totalLocsRun == 1
+                        ? I18n.t("stats.ui.labelLocomotiveSingular")
+                        : I18n.t("stats.ui.labelLocomotivePlural")
+                );
 
                 this.statsTable.setModel(tableModel);
                 this.statsTable.setAutoCreateRowSorter(true);
@@ -169,7 +189,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
             catch (Exception e)
             {
-                this.tcui.getModel().log("Error rendering locomotive stats page.");
+                this.tcui.getModel().logf("stats.ui.errorRenderingLocomotiveStatsPage");  
                 
                 if (this.tcui.getModel().isDebug())
                 {
@@ -422,7 +442,7 @@ public class LocomotiveStats extends javax.swing.JPanel
             }
             catch (HeadlessException | IOException e)
             {
-                JOptionPane.showMessageDialog(this, "Error writing file.");
+                JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile"));
 
                 this.tcui.getModel().log(e);
             }
