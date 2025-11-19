@@ -230,6 +230,30 @@ public class Layout
     }
     
     /**
+     * Returns all accessories along active routes
+     * @return 
+     */
+    synchronized public Set<Accessory> getActiveAccs()
+    {
+        Set<Accessory> activeAccessories = new HashSet<>();
+        
+        for (List<Edge> activeEdges : this.activeLocomotives.values())
+        {
+            for (Edge e : activeEdges)
+            {
+                for (String acc : e.getConfigCommands().keySet())
+                {
+                    Accessory a = this.control.getAccessoryByName(acc);
+                    
+                    if (a != null) activeAccessories.add(a);
+                }
+            }
+        }
+        
+        return activeAccessories;
+    }
+    
+    /**
      * To be called externally when a locomotive is deleted from the database
      * @param l
      */

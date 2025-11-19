@@ -8,6 +8,7 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -15,6 +16,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinLayoutComponent;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
@@ -184,6 +186,41 @@ public final class LayoutLabel extends JLabel
                                             default:
                                                 break;
                                         }
+                                    }
+                                    // Warn user of switching accessories along active routes
+                                    else if (tcUI.getModel().getAutoLayout() != null && tcUI.getModel().isAutonomyRunning())
+                                    {
+                                        Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
+                                        
+                                        if (activeAccs.contains(c.getAccessory()) || 
+                                                (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2())))
+                                        {
+                                            Object[] options = {
+                                                I18n.t("ui.ok"),
+                                                I18n.t("ui.cancel")
+                                            };
+
+                                            int choice = JOptionPane.showOptionDialog(
+                                                tcUI,
+                                                I18n.t("layout.ui.confirmAccessoryActiveRoute"),
+                                                I18n.t("layout.ui.dialogPleaseConfirm"),
+                                                JOptionPane.YES_NO_CANCEL_OPTION,
+                                                JOptionPane.QUESTION_MESSAGE,
+                                                null,
+                                                options,
+                                                options[0]
+                                            );
+                                            
+                                            switch (choice)
+                                            {
+                                                case 0: // ok
+                                                    break;
+                                                case 1: // cancel
+                                                    return;                                                    
+                                                default:
+                                                    break;
+                                            }
+                                        }                                
                                     }
 
                                     lastClicked = System.currentTimeMillis();

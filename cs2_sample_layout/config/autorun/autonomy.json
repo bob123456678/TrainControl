@@ -5,22 +5,21 @@
             "station": false,
             "s88": 14,
             "excludedLocs": [
-                "EA 3005 DSB",
-                "MY 1150 DSB",
-                "MZ 1425 DSB"
+                "MZ 1425 DSB",
+                "MY 1150 DSB"
             ],
             "x": 505,
             "y": 255
         },
         {
-            "name": "BottomExitVIrt",
+            "name": "BottomExitVirt",
             "station": false,
             "excludedLocs": [
-                "ER 2035 DSB",
+                "MZ 1425 DSB",
+                "EU07-314",
                 "MF 5028 DSB",
-                "EA 3005 DSB",
-                "MY 1150 DSB",
-                "MZ 1425 DSB"
+                "ER 2035 DSB",
+                "MY 1150 DSB"
             ],
             "x": 455,
             "y": 110
@@ -31,12 +30,16 @@
             "s88": 1011,
             "maxTrainLength": 0,
             "priority": -3,
+            "loc": {
+                "name": "06 001 DRG",
+                "reversible": false,
+                "speed": 35
+            },
             "excludedLocs": [
-                "ER 2035 DSB",
+                "MZ 1425 DSB",
                 "MF 5028 DSB",
-                "EA 3005 DSB",
-                "MY 1150 DSB",
-                "MZ 1425 DSB"
+                "ER 2035 DSB",
+                "MY 1150 DSB"
             ],
             "x": 567,
             "y": 182
@@ -47,12 +50,19 @@
             "s88": 2011,
             "maxTrainLength": 3,
             "priority": -2,
+            "loc": {
+                "name": "BR 232 241-0",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 11,
+                "trainLength": 2
+            },
             "excludedLocs": [
-                "ER 2035 DSB",
+                "MZ 1425 DSB",
                 "MF 5028 DSB",
-                "EA 3005 DSB",
-                "MY 1150 DSB",
-                "MZ 1425 DSB"
+                "ER 2035 DSB",
+                "MY 1150 DSB"
             ],
             "x": 612,
             "y": 298
@@ -62,6 +72,14 @@
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "SU46-035",
+                "reversible": false,
+                "speed": 52,
+                "arrivalFunc": 3,
+                "departureFunc": 20,
+                "trainLength": 3
+            },
             "x": 836,
             "y": 51
         },
@@ -92,6 +110,11 @@
             "station": true,
             "s88": 4,
             "maxTrainLength": 2,
+            "loc": {
+                "name": "065 001-0 DB",
+                "reversible": false,
+                "speed": 35
+            },
             "x": 1025,
             "y": -11
         },
@@ -108,6 +131,11 @@
             "maxTrainLength": 2,
             "terminus": true,
             "priority": 1,
+            "loc": {
+                "name": "1116 228railjet",
+                "reversible": false,
+                "speed": 49
+            },
             "x": 285,
             "y": 0
         },
@@ -157,7 +185,6 @@
         {
             "name": "LowerDown",
             "station": false,
-            "active": false,
             "s88": 2001,
             "x": 779,
             "y": 234
@@ -165,7 +192,6 @@
         {
             "name": "LowerDownPre",
             "station": false,
-            "active": false,
             "s88": 1001,
             "x": 780,
             "y": 196
@@ -175,6 +201,11 @@
             "station": true,
             "s88": 5,
             "maxTrainLength": 0,
+            "loc": {
+                "name": "MY 1147 DSB",
+                "reversible": false,
+                "speed": 35
+            },
             "x": 973,
             "y": 233
         },
@@ -212,7 +243,6 @@
         {
             "name": "LowerUp",
             "station": true,
-            "active": false,
             "s88": 1001,
             "maxTrainLength": 0,
             "x": 908,
@@ -327,7 +357,7 @@
             "station": false,
             "s88": 1027,
             "x": 1182,
-            "y": 610
+            "y": 647
         },
         {
             "name": "TopMainPost",
@@ -350,6 +380,11 @@
             "maxTrainLength": 0,
             "terminus": true,
             "priority": 1,
+            "loc": {
+                "name": "02 0314-1 DDR",
+                "reversible": false,
+                "speed": 35
+            },
             "x": 590,
             "y": 377
         },
@@ -360,8 +395,8 @@
             "s88": 1010,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 600,
-            "y": 425
+            "x": 634,
+            "y": 430
         },
         {
             "name": "TopMainR1",
@@ -369,7 +404,7 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
-            "x": 401,
+            "x": 391,
             "y": 406
         },
         {
@@ -385,15 +420,15 @@
             "s88": 1015,
             "maxTrainLength": 4,
             "priority": -2,
-            "x": 479,
-            "y": 562
+            "x": 429,
+            "y": 561
         },
         {
             "name": "TopMainR1Pre",
             "station": false,
             "s88": 1012,
-            "x": 378,
-            "y": 504
+            "x": 426,
+            "y": 482
         },
         {
             "name": "TopMainR2",
@@ -402,7 +437,7 @@
             "maxTrainLength": 0,
             "priority": 1,
             "x": 297,
-            "y": 418
+            "y": 440
         },
         {
             "name": "TopMainR2Bypass",
@@ -417,23 +452,28 @@
             "s88": 1016,
             "maxTrainLength": 4,
             "priority": -1,
-            "x": 476,
-            "y": 620
+            "loc": {
+                "name": "1047 005-2",
+                "reversible": false,
+                "speed": 35
+            },
+            "x": 355,
+            "y": 653
         },
         {
             "name": "TopMainR2Pre",
             "station": false,
             "s88": 1013,
-            "x": 359,
-            "y": 557
+            "x": 296,
+            "y": 580
         },
         {
             "name": "TopParkReversing",
             "station": false,
             "s88": 2012,
             "reversing": true,
-            "x": 599,
-            "y": 481
+            "x": 636,
+            "y": 494
         },
         {
             "name": "TopR1ParkLong",
@@ -442,8 +482,8 @@
             "s88": 1024,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 689,
-            "y": 563
+            "x": 637,
+            "y": 570
         },
         {
             "name": "TopR1ParkShort",
@@ -452,8 +492,8 @@
             "s88": 1017,
             "maxTrainLength": 0,
             "reversing": true,
-            "x": 581,
-            "y": 532
+            "x": 533,
+            "y": 468
         },
         {
             "name": "Tunnel",
@@ -481,14 +521,6 @@
             "s88": 1028,
             "maxTrainLength": 0,
             "reversing": true,
-            "loc": {
-                "name": "EN57-203",
-                "reversible": true,
-                "speed": 44,
-                "arrivalFunc": 2,
-                "departureFunc": 15,
-                "trainLength": 2
-            },
             "x": 483,
             "y": -41
         },
@@ -602,7 +634,7 @@
             ]
         },
         {
-            "start": "BottomExitVIrt",
+            "start": "BottomExitVirt",
             "end": "Tunnel",
             "length": 0
         },
@@ -641,7 +673,7 @@
         },
         {
             "start": "BottomInner",
-            "end": "BottomExitVIrt",
+            "end": "BottomExitVirt",
             "length": 6,
             "commands": [
                 {
@@ -1825,9 +1857,38 @@
             "start": "RampUp",
             "end": "TopMainR1Inter",
             "length": 6,
-            "commands": [{
-                "acc": "Switch 9",
-                "state": "turn"
+            "commands": [
+                {
+                    "acc": "Switch 9",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 107",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [{
+                "start": "RampUp",
+                "end": "TopMainR1Pre"
+            }]
+        },
+        {
+            "start": "RampUp",
+            "end": "TopMainR1Pre",
+            "length": 6,
+            "commands": [
+                {
+                    "acc": "Switch 9",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 107",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [{
+                "start": "RampUp",
+                "end": "TopMainR1Inter"
             }]
         },
         {
@@ -1842,8 +1903,39 @@
                 {
                     "acc": "Switch 128",
                     "state": "turn"
+                },
+                {
+                    "acc": "Signal 108",
+                    "state": "red"
                 }
-            ]
+            ],
+            "lockedges": [{
+                "start": "RampUp",
+                "end": "TopMainR2Pre"
+            }]
+        },
+        {
+            "start": "RampUp",
+            "end": "TopMainR2Pre",
+            "length": 6,
+            "commands": [
+                {
+                    "acc": "Switch 9",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 128",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 108",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [{
+                "start": "BottomMainAPre",
+                "end": "BottomMainA"
+            }]
         },
         {
             "start": "TopMainPost",
@@ -1889,10 +1981,6 @@
                 {
                     "start": "TopMainPost",
                     "end": "RampDown"
-                },
-                {
-                    "start": "TopMainR1Pre",
-                    "end": "TopMainR1"
                 },
                 {
                     "start": "TopParkReversing",
@@ -2453,15 +2541,11 @@
                 {
                     "acc": "Switch 41",
                     "state": "turn"
-                },
-                {
-                    "acc": "Signal 62",
-                    "state": "red"
                 }
             ],
             "lockedges": [
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -2470,15 +2554,11 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
                     "start": "BottomInner",
                     "end": "BottomInnerOtherside"
-                },
-                {
-                    "start": "TunnelPre",
-                    "end": "Tunnel"
                 }
             ]
         },
@@ -2503,8 +2583,8 @@
             ]
         }
     ],
-    "minDelay": 3,
-    "maxDelay": 13,
+    "minDelay": 1,
+    "maxDelay": 1,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
     "maxLatency": 0,
@@ -2525,10 +2605,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 }
             ]
@@ -2809,10 +2889,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -2855,10 +2935,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -2913,10 +2993,10 @@
                 },
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 },
                 {
@@ -3107,10 +3187,10 @@
             "path": [
                 {
                     "start": "BottomInner",
-                    "end": "BottomExitVIrt"
+                    "end": "BottomExitVirt"
                 },
                 {
-                    "start": "BottomExitVIrt",
+                    "start": "BottomExitVirt",
                     "end": "Tunnel"
                 }
             ]
