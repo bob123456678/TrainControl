@@ -5478,6 +5478,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         allButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         allButton.setText(bundle.getString("ui.main.allLayout")); // NOI18N
+        allButton.setToolTipText(bundle.getString("ui.main.tooltip.allLayout")); // NOI18N
         allButton.setFocusable(false);
         allButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

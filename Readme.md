@@ -323,7 +323,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.6.0 [Beta]
     - Added internationalizaiton support
-        - Available languages: English, Danish
+        - Available languages: English, Danish, German
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
 
