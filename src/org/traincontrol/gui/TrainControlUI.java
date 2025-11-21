@@ -3472,8 +3472,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutNewWindow = new javax.swing.JButton();
         smallButton = new javax.swing.JButton();
         jLabel19 = new javax.swing.JLabel();
-        allButton = new javax.swing.JButton();
-        jSeparator1 = new javax.swing.JSeparator();
         editLayoutButton = new javax.swing.JButton();
         autoPanel = new javax.swing.JPanel();
         locCommandPanels = new javax.swing.JTabbedPane();
@@ -5481,23 +5479,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel19.setText(bundle.getString("ui.main.popUpLabel")); // NOI18N
         jLabel19.setToolTipText(bundle.getString("ui.main.tooltip.popUpLabel")); // NOI18N
 
-        allButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        allButton.setText(bundle.getString("ui.main.allLayout")); // NOI18N
-        allButton.setToolTipText(bundle.getString("ui.main.tooltip.allLayout")); // NOI18N
-        allButton.setFocusable(false);
-        allButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                allButtonActionPerformed(evt);
-            }
-        });
-
-        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
-
         editLayoutButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         editLayoutButton.setText(bundle.getString("ui.main.editLayout")); // NOI18N
         editLayoutButton.setToolTipText(bundle.getString("ui.main.tooltip.editLayout")); // NOI18N
         editLayoutButton.setFocusable(false);
-        editLayoutButton.setMaximumSize(new java.awt.Dimension(120, 24));
+        editLayoutButton.setMaximumSize(new java.awt.Dimension(140, 24));
+        editLayoutButton.setMinimumSize(new java.awt.Dimension(95, 24));
         editLayoutButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 editLayoutButtonActionPerformed(evt);
@@ -5521,17 +5508,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
+                        .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 60, Short.MAX_VALUE)
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(smallButton, javax.swing.GroupLayout.PREFERRED_SIZE, 78, Short.MAX_VALUE)
+                        .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, 94, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 78, Short.MAX_VALUE)
-                        .addGap(11, 11, 11)
-                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(allButton, javax.swing.GroupLayout.PREFERRED_SIZE, 53, Short.MAX_VALUE)))
+                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 92, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
@@ -5547,11 +5530,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addComponent(layoutListLabel)
                         .addComponent(sizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(allButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator1))
+                    .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -5666,7 +5647,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
                         .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(autonomyPanelLayout.createSequentialGroup()
-                                .addComponent(validateButton)
+                                .addComponent(validateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(loadDefaultBlankGraph)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -5677,9 +5658,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel6))
                     .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(loadJSONButton)
+                        .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportJSON, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 221, Short.MAX_VALUE)
                         .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap())))
@@ -8900,7 +8881,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(initializeLocalLayoutMenuItem);
         layoutMenu.add(jSeparator24);
 
-        popUpAllMenuItem.setText("Pop-up all Layout Pages");
+        popUpAllMenuItem.setText(bundle.getString("ui.main.allLayouts")); // NOI18N
         popUpAllMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.openAllLayouts")); // NOI18N
         popUpAllMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -13735,16 +13716,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_popUpAllMenuItemActionPerformed
 
-    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
-
-        for (int i = 0; i < this.LayoutList.getItemCount(); i++)
-        {
-            String layoutName = LayoutList.getItemAt(i).toString();
-
-            showLayoutPopup(layoutName, this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
-        }
-    }//GEN-LAST:event_allButtonActionPerformed
-
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -15139,7 +15110,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBoxMenuItem activeLocInTitle;
     private javax.swing.JMenuItem addBlankPageMenuItem;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
-    private javax.swing.JButton allButton;
     private javax.swing.JCheckBox atomicRoutes;
     private javax.swing.JPanel autoLocPanel;
     private javax.swing.JScrollPane autoLocScroll;
@@ -15238,7 +15208,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane6;
-    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
     private javax.swing.JSeparator jSeparator12;

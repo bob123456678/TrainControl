@@ -354,7 +354,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="popUpAllMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Pop-up all Layout Pages"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.allLayouts" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
                 <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.tooltip.openAllLayouts" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
@@ -3410,17 +3412,13 @@
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="SizeList" min="-2" pref="76" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="editLayoutButton" max="32767" attributes="0"/>
-                              <EmptySpace pref="29" max="32767" attributes="0"/>
+                              <Component id="editLayoutButton" pref="109" max="32767" attributes="0"/>
+                              <EmptySpace pref="60" max="32767" attributes="0"/>
                               <Component id="jLabel19" min="-2" max="-2" attributes="0"/>
                               <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="smallButton" pref="78" max="32767" attributes="0"/>
+                              <Component id="smallButton" pref="94" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="layoutNewWindow" pref="78" max="32767" attributes="0"/>
-                              <EmptySpace min="-2" pref="11" max="-2" attributes="0"/>
-                              <Component id="jSeparator1" min="-2" pref="10" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="allButton" pref="53" max="32767" attributes="0"/>
+                              <Component id="layoutNewWindow" pref="92" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
@@ -3441,11 +3439,9 @@
                               <Component id="sizeLabel" alignment="3" min="-2" pref="22" max="-2" attributes="0"/>
                           </Group>
                           <Component id="editLayoutButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="allButton" alignment="0" max="32767" attributes="0"/>
                           <Component id="jLabel19" alignment="0" max="32767" attributes="0"/>
                           <Component id="layoutNewWindow" alignment="0" max="32767" attributes="0"/>
                           <Component id="smallButton" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace min="-2" max="-2" attributes="0"/>
                   </Group>
@@ -3619,28 +3615,6 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="allButton">
-              <Properties>
-                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                  <Font name="Segoe UI" size="12" style="1"/>
-                </Property>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.allLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-                <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="org/traincontrol/resources/messages.properties" key="ui.main.tooltip.allLayout" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-                <Property name="focusable" type="boolean" value="false"/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="allButtonActionPerformed"/>
-              </Events>
-            </Component>
-            <Component class="javax.swing.JSeparator" name="jSeparator1">
-              <Properties>
-                <Property name="orientation" type="int" value="1"/>
-              </Properties>
-            </Component>
             <Component class="javax.swing.JButton" name="editLayoutButton">
               <Properties>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
@@ -3654,7 +3628,10 @@
                 </Property>
                 <Property name="focusable" type="boolean" value="false"/>
                 <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="[120, 24]"/>
+                  <Dimension value="[140, 24]"/>
+                </Property>
+                <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                  <Dimension value="[95, 24]"/>
                 </Property>
               </Properties>
               <Events>
@@ -3749,7 +3726,7 @@
                                   <Group type="102" alignment="1" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Group type="102" alignment="0" attributes="0">
-                                              <Component id="validateButton" min="-2" max="-2" attributes="0"/>
+                                              <Component id="validateButton" max="32767" attributes="0"/>
                                               <EmptySpace max="32767" attributes="0"/>
                                               <Component id="loadDefaultBlankGraph" min="-2" max="-2" attributes="0"/>
                                               <EmptySpace max="-2" attributes="0"/>
@@ -3763,9 +3740,9 @@
                                       <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="0" attributes="0">
-                                      <Component id="loadJSONButton" min="-2" max="-2" attributes="0"/>
+                                      <Component id="loadJSONButton" max="32767" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="exportJSON" min="-2" pref="158" max="-2" attributes="0"/>
+                                      <Component id="exportJSON" max="32767" attributes="0"/>
                                       <EmptySpace pref="221" max="32767" attributes="0"/>
                                       <Component id="autosave" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
