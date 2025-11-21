@@ -3731,6 +3731,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jSeparator21 = new javax.swing.JPopupMenu.Separator();
         deleteLayoutMenuItem = new javax.swing.JMenuItem();
         initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
+        jSeparator24 = new javax.swing.JPopupMenu.Separator();
+        popUpAllMenuItem = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JPopupMenu.Separator();
         switchCSLayoutMenuItem = new javax.swing.JMenuItem();
         downloadCSLayoutMenuItem = new javax.swing.JMenuItem();
@@ -5456,6 +5458,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         layoutNewWindow.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         layoutNewWindow.setText(bundle.getString("ui.main.largeLayout")); // NOI18N
+        layoutNewWindow.setToolTipText(bundle.getString("ui.main.tooltip.popupLarge")); // NOI18N
         layoutNewWindow.setFocusable(false);
         layoutNewWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5465,6 +5468,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         smallButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         smallButton.setText(bundle.getString("ui.main.smallLayout")); // NOI18N
+        smallButton.setToolTipText(bundle.getString("ui.main.tooltip.smallPopup")); // NOI18N
         smallButton.setFocusable(false);
         smallButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -5473,6 +5477,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel19.setForeground(new java.awt.Color(0, 0, 115));
         jLabel19.setText(bundle.getString("ui.main.popUpLabel")); // NOI18N
         jLabel19.setToolTipText(bundle.getString("ui.main.tooltip.popUpLabel")); // NOI18N
 
@@ -8893,6 +8898,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         layoutMenu.add(initializeLocalLayoutMenuItem);
+        layoutMenu.add(jSeparator24);
+
+        popUpAllMenuItem.setText("Pop-up all Layout Pages");
+        popUpAllMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.openAllLayouts")); // NOI18N
+        popUpAllMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                popUpAllMenuItemActionPerformed(evt);
+            }
+        });
+        layoutMenu.add(popUpAllMenuItem);
         layoutMenu.add(jSeparator8);
 
         switchCSLayoutMenuItem.setText(bundle.getString("ui.main.toolbar.switchToCSLayout")); // NOI18N
@@ -12263,17 +12278,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
     }
     
-    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
-
-        int size = this.LayoutList.getItemCount();
-        for (int i = 0; i < size; i++)
-        {
-            String layoutName = LayoutList.getItemAt(i).toString();
-
-            showLayoutPopup(layoutName, this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
-        }
-    }//GEN-LAST:event_allButtonActionPerformed
-
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
 
         showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.small")));
@@ -13721,6 +13725,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }).start();
     }//GEN-LAST:event_exportLocsToCSVMenuItemActionPerformed
+
+    private void popUpAllMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_popUpAllMenuItemActionPerformed
+        for (int i = 0; i < this.LayoutList.getItemCount(); i++)
+        {
+            String layoutName = LayoutList.getItemAt(i).toString();
+
+            showLayoutPopup(layoutName, this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
+        }
+    }//GEN-LAST:event_popUpAllMenuItemActionPerformed
+
+    private void allButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allButtonActionPerformed
+
+        for (int i = 0; i < this.LayoutList.getItemCount(); i++)
+        {
+            String layoutName = LayoutList.getItemAt(i).toString();
+
+            showLayoutPopup(layoutName, this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
+        }
+    }//GEN-LAST:event_allButtonActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -15231,6 +15254,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator21;
     private javax.swing.JPopupMenu.Separator jSeparator22;
     private javax.swing.JPopupMenu.Separator jSeparator23;
+    private javax.swing.JPopupMenu.Separator jSeparator24;
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
@@ -15269,6 +15293,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu modifyLocalLayoutMenu;
     private javax.swing.JMenuItem openCS3AppMenuItem;
     private javax.swing.JMenuItem openLegacyTrackDiagramEditor;
+    private javax.swing.JMenuItem popUpAllMenuItem;
     private javax.swing.JRadioButtonMenuItem powerNoChangeStartup;
     private javax.swing.JRadioButtonMenuItem powerOffStartup;
     private javax.swing.JRadioButtonMenuItem powerOnStartup;
@@ -15414,6 +15439,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.switchCSLayoutMenuItem.setEnabled(false);
                 this.modifyLocalLayoutMenu.setEnabled(false);
                 this.downloadCSLayoutMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
+                this.popUpAllMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
             }
             else
             {
@@ -15421,6 +15447,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.switchCSLayoutMenuItem.setEnabled(true);
                 this.modifyLocalLayoutMenu.setEnabled(true);
                 this.downloadCSLayoutMenuItem.setEnabled(false);
+                this.popUpAllMenuItem.setEnabled(true);
             }
         }));
     }
