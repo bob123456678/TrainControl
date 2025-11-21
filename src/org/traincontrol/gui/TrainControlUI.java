@@ -5557,6 +5557,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autonomyJSON.setColumns(20);
         autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
         autonomyJSON.setRows(5);
+        autonomyJSON.setToolTipText("");
         jScrollPane2.setViewportView(autonomyJSON);
 
         jLabel6.setForeground(new java.awt.Color(0, 0, 115));
@@ -12140,7 +12141,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);
                 
-                int dialogResult = JOptionPane.showConfirmDialog(RoutePanel, "Execute route " + route.getName() + "? (ID: " + this.model.getRouteId(route.getName()) + ")", "Route Execution", JOptionPane.YES_NO_OPTION);
+                Object[] options = {
+                    I18n.t("ui.yes"),
+                    I18n.t("ui.no")
+                };
+
+                int dialogResult = JOptionPane.showOptionDialog(
+                    RoutePanel,
+                    I18n.f("route.ui.confirmExecuteRouteWithId", route.getName(), this.model.getRouteId(route.getName())),
+                    I18n.t("route.ui.dialogExecution"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0] // default selection
+                );
+
                 if (dialogResult == JOptionPane.YES_OPTION)
                 {
                     new Thread(() ->
@@ -12469,11 +12485,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
-                        int dialogResult = JOptionPane.showConfirmDialog(
+                        Object[] options = {
+                            I18n.t("ui.yes"), // localized Yes
+                            I18n.t("ui.no")   // localized No
+                        };
+
+                        int dialogResult = JOptionPane.showOptionDialog(
                             this,
                             I18n.t("autolayout.ui.confirmReloadJsonResetsUnsavedChanges"),
                             I18n.t("loc.ui.dialogConfirmReset"),
-                            JOptionPane.YES_NO_OPTION
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            options,
+                            options[0] // default selection
                         );
                         
                         if (dialogResult == JOptionPane.NO_OPTION)
@@ -12663,11 +12688,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (!conditionalRouteWarningShown)
                         {
-                            int dialogResult = JOptionPane.showConfirmDialog(
+                            Object[] options = {
+                                I18n.t("ui.yes"), // localized Yes
+                                I18n.t("ui.no")   // localized No
+                            };
+
+                            int dialogResult = JOptionPane.showOptionDialog(
                                 this,
-                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
-                                I18n.t("ui.dialogConfirm"),
-                                JOptionPane.YES_NO_OPTION
+                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"), // message
+                                I18n.t("ui.dialogConfirm"),                               // title
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                options,
+                                options[0] // default selection
                             );
                             
                             if (dialogResult == JOptionPane.NO_OPTION)

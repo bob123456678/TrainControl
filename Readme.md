@@ -304,7 +304,9 @@ Examples:
 * ```java -jar TrainControl.jar 192.168.50.10``` (Will attempt to connect to the Central Station at 192.168.50.10)
 * ```java -jar TrainControl.jar 192.168.50.10 debug``` (Same as above, but with debug mode: extra error logging)
 * ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
-* ```java -Duser.language=da -Duser.country=DK -jar TrainControl.jar``` (Force a specific locale/language)
+* ```java -Duser.language=da -Duser.country=DK -jar TrainControl.jar``` (Force Danish locale/language)
+* ```java -Duser.language=de -Duser.country=DE -jar TrainControl.jar``` (Force German locale/language)
+* ```java -Duser.language=en -Duser.country=US -jar TrainControl.jar``` (Force English locale/language)
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
@@ -324,8 +326,12 @@ Requires JDK 1.8+ and the following libraries:
 * v2.6.0 [Beta]
     - Added internationalizaiton support
         - Available languages: English, Danish, German
+        - Language is automatically set based on system settings, or can be manually overriden via command line
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
+    - UI
+        - Simplified Layout pop-up controls ("all" now in menu bar)
+        - Minor tweaks and improvements
 
 * v2.5.16 [9/20/2025]
     - Autonomy graph
