@@ -360,6 +360,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String lastCapturedAccessoryCommand;
     private long lastCapturedAccessoryCommandTime;
     private static final int CAPTURE_COMMAND_THROTTLE = 5000;
+    
+    // Text strings
+    public static final Object[] YES_NO_OPTS = {
+        I18n.t("ui.yes"), // localized Yes
+        I18n.t("ui.no")   // localized No
+    };
+    
+    public static final Object[] OK_CANCEL_OPTS = {
+        I18n.t("ui.ok"),
+        I18n.t("ui.cancel")
+    };
         
     /**
      * Creates new form MarklinUI
@@ -2038,11 +2049,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         else
         {
             // Attempt to create an empty layout if needed
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
-                I18n.f("layout.ui.confirmInitializeTrackDiagram", new File(folderName).getAbsolutePath()),
+                I18n.f(
+                    "layout.ui.confirmInitializeTrackDiagram",
+                    new File(folderName).getAbsolutePath()
+                ),
                 I18n.t("layout.ui.dialogCreateNewTrackDiagram"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
 
             proceed = (dialogResult == JOptionPane.YES_OPTION);
@@ -9585,11 +9603,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (this.model.getAutoLayout().isRunning())
             {
                 gracefulStopActionPerformed(null);
-                int dialogResult = JOptionPane.showConfirmDialog(
+                int dialogResult = JOptionPane.showOptionDialog(
                     this,
                     I18n.t("autolayout.ui.confirmExitAutonomyRunning"),
                     I18n.t("autolayout.ui.dialogConfirmExit"),
-                    JOptionPane.YES_NO_OPTION
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    YES_NO_OPTS,
+                    YES_NO_OPTS[0]
                 );
                 
                 if(dialogResult == JOptionPane.NO_OPTION) return;
@@ -9625,11 +9647,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (route != null)
         {            
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 RoutePanel,
                 I18n.f("route.ui.confirmDeleteRoute", route.getName()),
                 I18n.t("route.ui.dialogDeleteRoute"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
             
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -9776,7 +9802,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (pageCopied() && this.locMappingNumber != this.pageToCopy)
         {
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.f(
                     "page.ui.confirmReplaceMappings",
@@ -9784,7 +9810,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.getPageName(this.pageToCopy, false)
                 ),
                 I18n.t("page.ui.dialogPasteMappings"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -9817,11 +9847,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(() ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.f("page.ui.confirmClearKeyMappings", this.locMappingNumber),
                 I18n.t("page.ui.dialogResetKeyboardMappings"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -9936,10 +9970,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (l != null)
             {
                 LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
-                Object[] options = {
-                    I18n.t("ui.ok"),
-                    I18n.t("ui.cancel")
-                };
 
                 int result = JOptionPane.showOptionDialog(
                     source,
@@ -9948,8 +9978,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    options,
-                    options[0] // default selection
+                    OK_CANCEL_OPTS,
+                    OK_CANCEL_OPTS[0] // default selection
                 );
 
                 String newAddress = edit.getAddress();
@@ -10351,11 +10381,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             filterField.setVisible(false);
         }   
 
-        Object[] options = {
-            I18n.t("ui.ok"),
-            I18n.t("ui.cancel")
-        };
-
         int result = JOptionPane.showOptionDialog(
             this,
             panel,
@@ -10363,8 +10388,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
-            options,
-            options[0] // default selection
+            OK_CANCEL_OPTS,
+            OK_CANCEL_OPTS[0] // default selection
         );
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
@@ -10474,11 +10499,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         inputPanel.add(randomOrder);
         inputPanel.add(leastUsedOrder);
 
-        Object[] optionsOKCancel = {
-            I18n.t("ui.ok"),
-            I18n.t("ui.cancel")
-        };
-
         int result = JOptionPane.showOptionDialog(
             source,
             inputPanel,
@@ -10486,8 +10506,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
-            optionsOKCancel,
-            optionsOKCancel[0] // default selection
+            OK_CANCEL_OPTS,
+            OK_CANCEL_OPTS[0] // default selection
         );
         if (result != JOptionPane.OK_OPTION) return;
 
@@ -10581,8 +10601,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    optionsOKCancel,
-                    optionsOKCancel[0] // default selection
+                    OK_CANCEL_OPTS,
+                    OK_CANCEL_OPTS[0] // default selection
                 );
                 if (mapResult == JOptionPane.OK_OPTION)
                 {
@@ -10715,11 +10735,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             gbc.gridy++;
             panel.add(new JScrollPane(textArea), gbc);
 
-            Object[] options = {
-                I18n.t("ui.ok"),
-                I18n.t("ui.cancel")
-            };
-
             int confirm = JOptionPane.showOptionDialog(
                 source,
                 panel,
@@ -10727,8 +10742,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
                 null,
-                options,
-                options[0] // default selection
+                OK_CANCEL_OPTS,
+                OK_CANCEL_OPTS[0] // default selection
             );
 
             if (confirm == JOptionPane.YES_OPTION)
@@ -10774,12 +10789,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
-        if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(
-            source,
-            I18n.f("ui.confirmDeleteFromDatabase", value),
-            I18n.t("layout.ui.dialogPleaseConfirm"),
-            JOptionPane.YES_NO_OPTION
-        ))
+        if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
+                source,
+                I18n.f("ui.confirmDeleteFromDatabase", value),
+                I18n.t("layout.ui.dialogPleaseConfirm"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
+            ))
         {
             Locomotive l = this.model.getLocByName(value);
 
@@ -11394,11 +11413,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 Integer fNumber = this.functionMapping.get(b);
 
                 LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
-                Object[] options =
-                {
-                    I18n.t("ui.ok"),
-                    I18n.t("ui.cancel")
-                };
 
                 int result = JOptionPane.showOptionDialog(
                     this,
@@ -11407,8 +11421,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    options,
-                    options[0] // default selection
+                    OK_CANCEL_OPTS,
+                    OK_CANCEL_OPTS[0] // default selection
                 );
                 edit.focusImages();
                 
@@ -11440,11 +11454,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("timetable.ui.confirmRemoveAllEntries"),
                 I18n.t("ui.dialogConfirmDeletion"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
 
             if(dialogResult == JOptionPane.NO_OPTION) return;
@@ -11463,11 +11481,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("loc.ui.confirmQueryCentralStationFunctions"),
                 I18n.t("ui.dialogSyncState"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0] // default selection = "No"
             );
             if(dialogResult == JOptionPane.YES_OPTION)
             {
@@ -11674,13 +11696,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (isLocalLayout())
         {
-            int result = JOptionPane.showConfirmDialog(
+            int result = JOptionPane.showOptionDialog(
                 this,
                 I18n.f("layout.ui.confirmViewLayoutSourceFiles", info),
                 I18n.t("ui.dialogLayoutSourceInfo"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0] // default selection = "No"
             );
-
             if (result == JOptionPane.YES_OPTION)
             {
                 this.getLayoutPath(true);
@@ -11962,11 +11987,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (!conditionalRouteWarningShown)
                     {
-                        int dialogResult = JOptionPane.showConfirmDialog(
+                        int dialogResult = JOptionPane.showOptionDialog(
                             this,
                             I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
                             I18n.t("ui.dialogConfirm"),
-                            JOptionPane.YES_NO_OPTION
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            YES_NO_OPTS,
+                            YES_NO_OPTS[0]
                         );
                         
                         if (dialogResult == JOptionPane.NO_OPTION)
@@ -12141,11 +12170,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);
                 
-                Object[] options = {
-                    I18n.t("ui.yes"),
-                    I18n.t("ui.no")
-                };
-
                 int dialogResult = JOptionPane.showOptionDialog(
                     RoutePanel,
                     I18n.f("route.ui.confirmExecuteRouteWithId", route.getName(), this.model.getRouteId(route.getName())),
@@ -12153,8 +12177,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    options,
-                    options[0] // default selection
+                    YES_NO_OPTS,
+                    YES_NO_OPTS[0] // default selection
                 );
 
                 if (dialogResult == JOptionPane.YES_OPTION)
@@ -12485,11 +12509,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
                     {
-                        Object[] options = {
-                            I18n.t("ui.yes"), // localized Yes
-                            I18n.t("ui.no")   // localized No
-                        };
-
                         int dialogResult = JOptionPane.showOptionDialog(
                             this,
                             I18n.t("autolayout.ui.confirmReloadJsonResetsUnsavedChanges"),
@@ -12497,8 +12516,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             JOptionPane.YES_NO_OPTION,
                             JOptionPane.PLAIN_MESSAGE,
                             null,
-                            options,
-                            options[0] // default selection
+                            YES_NO_OPTS,
+                            YES_NO_OPTS[0] // default selection
                         );
                         
                         if (dialogResult == JOptionPane.NO_OPTION)
@@ -12688,11 +12707,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (!conditionalRouteWarningShown)
                         {
-                            Object[] options = {
-                                I18n.t("ui.yes"), // localized Yes
-                                I18n.t("ui.no")   // localized No
-                            };
-
                             int dialogResult = JOptionPane.showOptionDialog(
                                 this,
                                 I18n.t("route.ui.confirmConditionalRoutesActiveProceed"), // message
@@ -12700,8 +12714,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 JOptionPane.YES_NO_OPTION,
                                 JOptionPane.PLAIN_MESSAGE,
                                 null,
-                                options,
-                                options[0] // default selection
+                                YES_NO_OPTS,
+                                YES_NO_OPTS[0] // default selection
                             );
                             
                             if (dialogResult == JOptionPane.NO_OPTION)
@@ -13202,11 +13216,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         textField.requestFocusInWindow();
         
         // Display the input dialog
-        Object[] options = {
-            I18n.t("ui.ok"),
-            I18n.t("ui.cancel")
-        };
-
         int result = JOptionPane.showOptionDialog(
             this,
             textField,
@@ -13214,8 +13223,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
-            options,
-            options[0] // default selection
+            OK_CANCEL_OPTS,
+            OK_CANCEL_OPTS[0] // default selection
         );
         
         if (result == JOptionPane.OK_OPTION && textField.getText() != null && textField.getText().trim().length() > 0)
@@ -13348,14 +13357,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.f(
                     "layout.ui.confirmDeleteLayoutPageAreYouSure",
                     this.LayoutList.getSelectedItem().toString()
                 ),
                 I18n.t("layout.ui.dialogConfirmDeletion"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
 
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -13652,7 +13665,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String currentName = pair[0];
                         String newName = pair[1];
 
-                        int response = JOptionPane.showConfirmDialog(
+                        int response = JOptionPane.showOptionDialog(
                             this,
                             I18n.f(
                                 "loc.ui.confirmRenameLocomotive",
@@ -13660,7 +13673,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 newName
                             ),
                             I18n.t("loc.ui.dialogConfirmRename"),
-                            JOptionPane.YES_NO_OPTION
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            YES_NO_OPTS,
+                            YES_NO_OPTS[0] 
                         );
 
                         if (response == JOptionPane.YES_OPTION)
@@ -13780,7 +13797,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (index >= 0)
             {
-                int dialogResult = JOptionPane.showConfirmDialog(
+                int dialogResult = JOptionPane.showOptionDialog(
                     this,
                     I18n.f(
                         "timetable.ui.confirmRemoveEntryContinue",
@@ -13788,7 +13805,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.getTimetableEntryAtCursor(evt)
                     ),
                     I18n.t("timetable.ui.dialogConfirmDeletion"),
-                    JOptionPane.YES_NO_OPTION
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    YES_NO_OPTS,
+                    YES_NO_OPTS[0] // default selection = "No"
                 );
 
                 if (dialogResult == JOptionPane.NO_OPTION) return;
@@ -13866,11 +13887,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("timetable.ui.confirmRestartMarkEntriesUnvisited"),
                 I18n.t("timetable.ui.dialogConfirmRestart"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
             );
 
             if(dialogResult == JOptionPane.NO_OPTION) return;

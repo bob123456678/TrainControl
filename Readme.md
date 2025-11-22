@@ -22,6 +22,10 @@ which when paired with S88 sensors, enables tracking train locations for *fully 
 as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
 automate switch and signal commands while operating trains manually.
 
+Translations are now available:
+* Jetzt auf Deutsch verfügbar
+* Nu tilgængelig på tysk
+
 ## Overview
 
 **Main UI**
@@ -325,7 +329,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.6.0 [Beta]
     - Added internationalizaiton support
-        - Available languages: English, Danish, German
+        - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources]))
         - Language is automatically set based on system settings, or can be manually overriden via command line
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation

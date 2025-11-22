@@ -428,11 +428,15 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         new Thread(() ->
         {  
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
                 I18n.t("loc.ui.dialogConfirmReset"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
             );
 
             if (dialogResult == JOptionPane.YES_OPTION)

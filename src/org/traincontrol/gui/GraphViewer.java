@@ -342,11 +342,6 @@ final public class GraphViewer extends PositionAwareJFrame
                                         parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
                                     );
 
-                                    Object[] options = {
-                                        I18n.t("ui.ok"),
-                                        I18n.t("ui.cancel")
-                                    };
-
                                     int dialogResult = JOptionPane.showOptionDialog(
                                         (Component) swingView,
                                         edit,
@@ -356,8 +351,8 @@ final public class GraphViewer extends PositionAwareJFrame
                                         JOptionPane.OK_CANCEL_OPTION,
                                         JOptionPane.PLAIN_MESSAGE,
                                         null,
-                                        options,
-                                        options[0]
+                                        TrainControlUI.OK_CANCEL_OPTS,
+                                        TrainControlUI.OK_CANCEL_OPTS[0]
                                     );
 
                                     if (dialogResult == JOptionPane.OK_OPTION)

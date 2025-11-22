@@ -755,11 +755,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 panel.add(stationLabel, BorderLayout.NORTH);
                 panel.add(comboBox, BorderLayout.CENTER);
 
-                Object[] optionsBtn = {
-                    I18n.t("ui.ok"),
-                    I18n.t("ui.cancel")
-                };
-
                 int result = JOptionPane.showOptionDialog(
                     this,
                     panel,
@@ -767,8 +762,8 @@ public class LayoutEditor extends PositionAwareJFrame
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    optionsBtn,
-                    optionsBtn[0]
+                    TrainControlUI.OK_CANCEL_OPTS,
+                    TrainControlUI.OK_CANCEL_OPTS[0]
                 );
 
                 if (result == JOptionPane.OK_OPTION)
@@ -854,11 +849,6 @@ public class LayoutEditor extends PositionAwareJFrame
                     addressPopup.getGreenButton().setSelected(false);
                 }
                 
-                Object[] options = {
-                    I18n.t("ui.ok"),
-                    I18n.t("ui.cancel")
-                };
-
                 int result = JOptionPane.showOptionDialog(
                     this,
                     addressPopup,
@@ -866,8 +856,8 @@ public class LayoutEditor extends PositionAwareJFrame
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    options,
-                    options[0]
+                    TrainControlUI.OK_CANCEL_OPTS,
+                    TrainControlUI.OK_CANCEL_OPTS[0]
                 );
 
                 // Process the input when OK is clicked
@@ -1130,11 +1120,15 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            int confirmation = JOptionPane.showConfirmDialog(
+            int confirmation = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("layout.ui.confirmDeleteTrackDiagram"),
                 I18n.t("layout.ui.dialogPleaseConfirm"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
             );
 
             if (confirmation == JOptionPane.YES_OPTION)
@@ -1368,11 +1362,15 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (canUndo())
         {
-            int result = JOptionPane.showConfirmDialog(
+            int result = JOptionPane.showOptionDialog(
                 this,
                 I18n.t("layout.ui.confirmExitWithoutSaving"),
                 I18n.t("layout.ui.dialogExitConfirmation"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
             );
 
             if (result != JOptionPane.YES_OPTION)

@@ -107,11 +107,15 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                 {
                     try
                     {
-                        int dialogResult = JOptionPane.showConfirmDialog(
+                        int dialogResult = JOptionPane.showOptionDialog(
                             (Component) parent.getSwingView(),
                             I18n.t("autolayout.ui.confirmClearLocomotives"),
                             I18n.t("autolayout.ui.confirmDeletionTitle"),
-                            JOptionPane.YES_NO_OPTION
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            TrainControlUI.YES_NO_OPTS,
+                            TrainControlUI.YES_NO_OPTS[0]
                         );
 
                         if (dialogResult == JOptionPane.YES_OPTION)

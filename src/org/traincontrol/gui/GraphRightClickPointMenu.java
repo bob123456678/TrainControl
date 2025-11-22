@@ -41,11 +41,6 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     {
                         GraphLocAssign edit = new GraphLocAssign(ui, p, false);
 
-                        Object[] options = {
-                            I18n.t("ui.ok"),
-                            I18n.t("ui.cancel")
-                        };
-
                         int dialogResult = JOptionPane.showOptionDialog(
                             (Component) parent.getSwingView(),
                             edit,
@@ -53,8 +48,8 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.PLAIN_MESSAGE,
                             null,
-                            options,
-                            options[0]
+                            TrainControlUI.OK_CANCEL_OPTS,
+                            TrainControlUI.OK_CANCEL_OPTS[0]
                         );
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
@@ -90,11 +85,6 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         }
                         else
                         {
-                            Object[] options = {
-                                I18n.t("ui.ok"),
-                                I18n.t("ui.cancel")
-                            };
-
                             int dialogResult = JOptionPane.showOptionDialog(
                                 (Component) parent.getSwingView(),
                                 edit,
@@ -102,8 +92,8 @@ final class GraphRightClickPointMenu extends JPopupMenu
                                 JOptionPane.OK_CANCEL_OPTION,
                                 JOptionPane.PLAIN_MESSAGE,
                                 null,
-                                options,
-                                options[0]
+                                TrainControlUI.OK_CANCEL_OPTS,
+                                TrainControlUI.OK_CANCEL_OPTS[0]
                             );
                             if (dialogResult == JOptionPane.OK_OPTION)
                             {
@@ -282,12 +272,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
             {
                 GraphLocExclude edit = new GraphLocExclude(ui, p);
 
-                int dialogResult2 = JOptionPane.showConfirmDialog(
+                int dialogResult2 = JOptionPane.showOptionDialog(
                     (Component) parent.getSwingView(),
                     edit,
                     I18n.f("autolayout.ui.dialogEditExcludedLocomotives", p.getName()),
                     JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    TrainControlUI.OK_CANCEL_OPTS,
+                    TrainControlUI.OK_CANCEL_OPTS[0]
                 );
 
                 if (dialogResult2 == JOptionPane.OK_OPTION)
@@ -895,11 +888,19 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
                         ui.highlightLockedEdges(null, highlight);
 
-                        int confirmation = JOptionPane.showConfirmDialog(
+                        int confirmation = JOptionPane.showOptionDialog(
                             (Component) parent.getSwingView(),
-                            I18n.f("autolayout.ui.confirmDeleteEdge", e.getStart().getName(), e.getEnd().getName()),
+                            I18n.f(
+                                "autolayout.ui.confirmDeleteEdge",
+                                e.getStart().getName(),
+                                e.getEnd().getName()
+                            ),
                             I18n.t("autolayout.ui.dialogEdgeDeletion"),
-                            JOptionPane.YES_NO_OPTION
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            TrainControlUI.YES_NO_OPTS,
+                            TrainControlUI.YES_NO_OPTS[0]
                         );
 
                         if (confirmation == JOptionPane.YES_OPTION)
@@ -978,11 +979,15 @@ final class GraphRightClickPointMenu extends JPopupMenu
         menuItem.setForeground(Color.RED);
         menuItem.addActionListener(event ->
         {
-            int dialogResult = JOptionPane.showConfirmDialog(
+            int dialogResult = JOptionPane.showOptionDialog(
                 (Component) parent.getSwingView(),
                 I18n.f("autolayout.ui.confirmDeletePoint", nodeName),
                 I18n.t("autolayout.ui.dialogPointDeletion"),
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
             );
 
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -1026,11 +1031,16 @@ final class GraphRightClickPointMenu extends JPopupMenu
         });
 
         // Show the JComboBox in a JOptionPane
-        int result = JOptionPane.showConfirmDialog(parent, 
-            edgeDropdown, 
-            message, 
-            JOptionPane.OK_CANCEL_OPTION, 
-            JOptionPane.QUESTION_MESSAGE);
+        int result = JOptionPane.showOptionDialog(
+            parent,
+            edgeDropdown,
+            message,
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            TrainControlUI.OK_CANCEL_OPTS,
+            TrainControlUI.OK_CANCEL_OPTS[0]
+        );
         
         tcui.highlightLockedEdges(null, null);
 
