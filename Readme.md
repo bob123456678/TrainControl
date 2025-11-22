@@ -318,7 +318,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json (json-20250107.jar) (from v1.6.0)
+* org.json (json-20250517.jar) (from v1.6.0)
 * org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
 * com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.4.jar) (from v2.3.0)
 * jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
@@ -333,9 +333,11 @@ Requires JDK 1.8+ and the following libraries:
         - Language is automatically set based on system settings, or can be manually overriden via command line
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
+        - Added button to reopen graph UI to the Autonomy Settings tab
     - UI
         - Simplified Layout pop-up controls ("all" now in menu bar)
         - Minor tweaks and improvements
+    - Updated JSON library to `json-20250517.jar`
 
 * v2.5.16 [9/20/2025]
     - Autonomy graph
