@@ -24,7 +24,7 @@ automate switch and signal commands while operating trains manually.
 
 Translations are now available:
 * Jetzt auf Deutsch verfügbar
-* Nu tilgængelig på tysk
+* Nu tilgængelig på dansk
 
 ## Overview
 
