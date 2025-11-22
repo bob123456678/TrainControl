@@ -329,7 +329,7 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.6.0 [Beta]
     - Added internationalizaiton support
-        - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources]))
+        - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources))
         - Language is automatically set based on system settings, or can be manually overriden via command line
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
