@@ -375,7 +375,7 @@ public class LayoutEditor extends PositionAwareJFrame
             dragWindow.setBackground(new Color(0,0,0,0)); // transparent
             dragWindow.getContentPane().add(ghostLabel);
             dragWindow.pack();
-            dragWindow.setVisible(true);
+            dragWindow.setVisible(false);
         }
     }
 
@@ -385,6 +385,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             java.awt.Point screenPoint = e.getLocationOnScreen();
             dragWindow.setLocation(screenPoint.x + 10, screenPoint.y + 10);
+            dragWindow.setVisible(true);
         }
     }
 
