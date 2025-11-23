@@ -344,6 +344,8 @@ Requires JDK 1.8+ and the following libraries:
         - Control+plus/minus now cycles keyboards faster
         - Minor tweaks and improvements
     - Updated JSON library to `json-20250517.jar`
+    - Backward-incompatible changes:
+        - Save files from v2.4.2 and older are no longer compatible. Open and save data from v2.4.3+ prior to upgrading.
 
 * v2.5.16 [9/20/2025]
     - Autonomy graph

@@ -51,11 +51,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean routeEnabled; 
     private NodeExpression conditions;
     
-    // Legacy
-    private Map<Integer, Boolean> conditionS88s; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
-    private List<RouteCommand> conditionAccessoroes;
-    // End legacy
-    
     // Route state
     private Object route; // If we use a different data structure, this can be changed to Object to avoid unserialization issues 
 
@@ -229,29 +224,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
             return (NodeExpression) this.conditions;
         }
         
-        // Legacy
-        List<RouteCommand> output = new ArrayList<>();
-        
-        if (this.conditions != null && this.conditions instanceof List)
-        {
-            output.addAll((List<RouteCommand>) this.conditions);
-        }
-        
-        if (this.conditionAccessoroes != null)
-        {
-            output.addAll(this.conditionAccessoroes);
-        }
-        
-        if (this.conditionS88s != null)
-        {
-            for (Entry<Integer, Boolean> e: this.conditionS88s.entrySet())
-            {
-                output.add(RouteCommand.RouteCommandFeedback(e.getKey(), e.getValue()));
-            }
-        }
-        
-        return NodeExpression.fromList(output);
-        // End legacy
+        return null;
     }
         
     public MarklinRoute.s88Triggers getS88TriggerType()
