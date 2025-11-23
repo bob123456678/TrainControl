@@ -7,6 +7,7 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -63,20 +64,47 @@ public final class LayoutLabel extends JLabel
         if (edit)
         {
             LayoutLabel clicked = this;
-            this.addMouseListener(new MouseAdapter()  
-                {  
-                    @Override
-                    public void mouseClicked(MouseEvent e)  
-                    {  
-                        ((LayoutEditor) parent).receiveClickEvent(e, clicked);
+            this.addMouseListener(new MouseAdapter()
+            {
+                @Override
+                public void mouseClicked(MouseEvent e)
+                {
+                    ((LayoutEditor) parent).receiveClickEvent(e, clicked);
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e)
+                {
+                    ((LayoutEditor) parent).receiveMoveEvent(e, clicked);
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e)
+                {
+                    if (e.getButton() == MouseEvent.BUTTON1)
+                    {
+                        ((LayoutEditor) parent).beginDrag(e, clicked);
                     }
-                    
-                    @Override
-                    public void mouseEntered(MouseEvent e)  
-                    {  
-                        ((LayoutEditor) parent).receiveMoveEvent(e, clicked);
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e)
+                {
+                    if (e.getButton() == MouseEvent.BUTTON1)
+                    {
+                        ((LayoutEditor) parent).endDrag(e, clicked);
                     }
-                });
+                }
+            });
+            
+            this.addMouseMotionListener(new MouseMotionAdapter()
+            {
+                @Override
+                public void mouseDragged(MouseEvent e)
+                {
+                    ((LayoutEditor) parent).updateDrag(e, clicked); 
+                }
+            });
 
             // Add a border around the icons
             Border blackBorder = BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1); 

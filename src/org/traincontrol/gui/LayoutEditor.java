@@ -29,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.JWindow;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import org.traincontrol.automation.Point;
@@ -63,6 +64,10 @@ public class LayoutEditor extends PositionAwareJFrame
     private int lastHoveredX = -1;
     private int lastHoveredY = -1;
     //private LayoutLabel lastHoveredLabel = null;
+    
+    // Floating ghost for drag and drop
+    private JWindow dragWindow; 
+    private JLabel ghostLabel;
     
     // Default size of new layouts
     public static final int DEFAULT_NEW_SIZE_ROWS = 16;
@@ -339,6 +344,60 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         
         // lastHoveredLabel = label;
+    }
+    
+    public void beginDrag(MouseEvent e, LayoutLabel label)
+    {
+        if (label != null && label.getComponent() != null)
+        {
+            if (getX(label) == -1 && getY(label) == -1)
+            {
+                this.initCopy(label, label.getComponent(), false);
+                this.highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
+            }
+            else
+            {
+                this.initCopy(label, null, true);
+            }
+          
+            // Create a floating window with a copy of the label
+            ghostLabel = new JLabel(label.getIcon());
+            ghostLabel.setText(label.getComponent().getLabel());
+            ghostLabel.setSize(label.getSize());
+            
+            // Only show border if there is no label
+            if ("".equals(label.getComponent().getLabel()))
+            {
+                ghostLabel.setBorder(new LineBorder(Color.BLACK, 1));
+            }
+            
+            dragWindow = new JWindow();
+            dragWindow.setBackground(new Color(0,0,0,0)); // transparent
+            dragWindow.getContentPane().add(ghostLabel);
+            dragWindow.pack();
+            dragWindow.setVisible(true);
+        }
+    }
+
+    public void updateDrag(MouseEvent e, LayoutLabel label)
+    {
+        if (dragWindow != null)
+        {
+            java.awt.Point screenPoint = e.getLocationOnScreen();
+            dragWindow.setLocation(screenPoint.x + 10, screenPoint.y + 10);
+        }
+    }
+
+    public void endDrag(MouseEvent e, LayoutLabel label)
+    {
+        if (dragWindow != null)
+        {
+            dragWindow.dispose();
+            dragWindow = null;
+            
+            // Snap to grid logic
+            executeTool(getLastHoveredLabel(), null);
+        }
     }
     
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
