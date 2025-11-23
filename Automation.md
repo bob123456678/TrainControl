@@ -153,6 +153,20 @@ In these lambda functions, `loc` is a reference to the locomotive itself.
     data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(1, 3).lightsOff();});
     data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(1, 3).lightsOff();});
 
+    // Progress through intermediate stations
+    data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_PROG, (lc) -> 
+    {
+        Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
+
+        for (Edge e : layout.getActiveLocomotives().get(lc))
+        {
+            if (!layout.getReachedMilestones(lc).contains(e.getEnd()))
+            {
+                ((MarklinLocomotive) lc).getModel().log("UPDATE: Loc " + lc.getName() + " is at " + e.getStart());
+            }
+        }
+    });
+
 Now we have everything we need to proceed.
 When the code in `FullAutonomyExample.java` is executed, the following things will happen:
 * For both locomotives, the graph will try to pick a path to an unoccupied destination station, as long as that path is not blocked by other trains

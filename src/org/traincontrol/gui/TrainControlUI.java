@@ -1507,9 +1507,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            if (keyboardNum <= TrainControlUI.NUM_KEYBOARDS && keyboardNum >= 1)
+            int tarKeyboard = keyboardNum;
+            
+            // Ensure bounds
+            if (keyboardNum < 1)
             {
-                this.keyboardNumber = keyboardNum;
+                tarKeyboard = 1;
+            }
+            
+            if (keyboardNum > TrainControlUI.NUM_KEYBOARDS)
+            {
+                tarKeyboard = TrainControlUI.NUM_KEYBOARDS;
+            }
+            
+            if (tarKeyboard <= TrainControlUI.NUM_KEYBOARDS && tarKeyboard >= 1)
+            {
+                this.keyboardNumber = tarKeyboard;
             }
 
             if (this.keyboardNumber == 1)
@@ -7259,6 +7272,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         PrevKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         PrevKeyboard.setText("<<< -");
+        PrevKeyboard.setToolTipText(bundle.getString("ui.main.tooltip.keyboardMinus")); // NOI18N
         PrevKeyboard.setFocusable(false);
         PrevKeyboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -7272,6 +7286,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         NextKeyboard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         NextKeyboard.setText("+ >>>");
+        NextKeyboard.setToolTipText(bundle.getString("ui.main.tooltip.keyboardPlus")); // NOI18N
         NextKeyboard.setFocusable(false);
         NextKeyboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -9405,7 +9420,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                this.PrevKeyboardActionPerformed(null);
+                if (controlPressed)
+                {
+                    this.switchKeyboard(this.keyboardNumber - 4);
+                }
+                else
+                {
+                    this.PrevKeyboardActionPerformed(null);
+                }
             }
         }
         else if (keyCode == KeyEvent.VK_EQUALS || keyCode == KeyEvent.VK_PLUS || keyCode == KeyEvent.VK_LEFT_PARENTHESIS || keyCode == KeyEvent.VK_CLOSE_BRACKET)
@@ -9421,7 +9443,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                this.NextKeyboardActionPerformed(null);
+                if (controlPressed)
+                {
+                    this.switchKeyboard(this.keyboardNumber + 4);
+                }
+                else
+                {
+                    this.NextKeyboardActionPerformed(null);
+                }
             } 
         }
         else if ((keyCode == KeyEvent.VK_COMMA && altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && altPressed))

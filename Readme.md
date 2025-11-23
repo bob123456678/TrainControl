@@ -208,7 +208,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
-    * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages)
+    * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages, Control+plus/minus jumps 4 keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
 * Layout editor
     * Control+Z (undo)
@@ -334,8 +334,10 @@ Requires JDK 1.8+ and the following libraries:
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
         - Added button to reopen graph UI to the Autonomy Settings tab
+        - Added `Layout.CB_ROUTE_PROG` callback that fires at intermediate stations between the start and end
     - UI
         - Simplified Layout pop-up controls ("all" now in menu bar)
+        - Control+plus/minus now cycles keyboards faster
         - Minor tweaks and improvements
     - Updated JSON library to `json-20250517.jar`
 

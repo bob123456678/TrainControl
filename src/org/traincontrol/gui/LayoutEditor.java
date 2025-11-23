@@ -125,6 +125,7 @@ public class LayoutEditor extends PositionAwareJFrame
         gbc.weighty = 0; // Components won't stretch vertically
         gbc.gridx = 0; // Starting column
         gbc.gridy = 0; // Starting row
+        gbc.anchor = GridBagConstraints.NORTH; // Anchor to top
         gbc.insets = new java.awt.Insets(2, 2, 2, 2); // Top, left, bottom, right padding
 
         int cols = 3;
@@ -142,6 +143,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 gbc.gridy++;
             }
         }
+        
+        // Add a filler at the bottom to push everything up
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = cols;
+        gbc.weighty = 1; // absorbs vertical space
+        
+        JPanel filler = new JPanel();
+        filler.setOpaque(false);                // transparent
+        filler.setPreferredSize(new Dimension(0, 0)); // no default height
+        filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
+        this.newComponents.add(filler, gbc);
     }
     
     public boolean hasToolFlag()
@@ -1322,10 +1335,10 @@ public class LayoutEditor extends PositionAwareJFrame
             // Scale the popup according to the size of the layout
             if (!this.isLoaded())
             {
-                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 150));
+                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 160));
                 this.setMinimumSize(new Dimension(
                         550 + (this.size == 60 ? 200 : 0), 
-                        620 + (this.size == 60 ? 320 : 0))
+                        630 + (this.size == 60 ? 320 : 0))
                 );
                 pack();
             }

@@ -35,6 +35,7 @@ public class Layout
 {
     // Callback names
     public static final String CB_ROUTE_END = "routeEnd";
+    public static final String CB_ROUTE_PROG = "routeProg";
     public static final String CB_ROUTE_START = "routeStart";
     public static final String CB_PRE_ARRIVAL = "preArrival";
     
@@ -2070,7 +2071,7 @@ public class Layout
                         .waitForSpeedAtOrAbove(speed);
                 }
                 
-                // We can also clear this edges dynamically 
+                // We can also clear the edges dynamically 
                 // This can be useful, but extra care needs to be taken if any paths cross over
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
@@ -2117,6 +2118,12 @@ public class Layout
                             }
                         }
                     }
+                }
+                
+                // Route is in progress but not yet complete
+                if (loc.hasCallback(CB_ROUTE_PROG))
+                {
+                    loc.getCallback(CB_ROUTE_PROG).accept(loc);
                 }
             }
             else
@@ -2595,7 +2602,7 @@ public class Layout
      * @param l 
      */
     public void applyDefaultLocCallbacks(Locomotive l)
-    {
+    {        
         l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
         {
             // Optionally skip turning on the functions
