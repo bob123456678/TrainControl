@@ -2,17 +2,21 @@ package org.traincontrol.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.util.I18n;
@@ -605,7 +609,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
         });
 
         add(menuItem);
-
+        
         if (!ui.getModel().getAutoLayout().getNeighborsAndIncoming(p).isEmpty())
         {
             menuItem = new JMenuItem(
@@ -837,6 +841,152 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     }
 
                     ui.highlightLockedEdges(null, null);
+                }
+            });
+
+            add(menuItem);
+        }
+        
+        if (p.isOccupied())
+        {
+            menuItem = new JMenuItem(
+                I18n.t("autolayout.ui.testconnection")
+            );
+            menuItem.addActionListener(event ->
+            {
+                // Get all point names except this one
+                Collection<Point> points = ui.getModel().getAutoLayout().getPoints();
+                List<String> pointNames = new LinkedList<>();
+
+                for (Point p2 : points)
+                {
+                    if (p2.isDestination())
+                    {
+                        pointNames.add(p2.getName());
+                    }
+                }
+
+                Collections.sort(pointNames);
+
+                // Remove self
+                pointNames.remove(nodeName);
+
+                if (!pointNames.isEmpty())
+                {
+                    String dialogResult = (String) JOptionPane.showInputDialog(
+                        null,//(Component) parent.getSwingView(),
+                        I18n.f("autolayout.ui.promptChooseConnectionTarget", nodeName),
+                        I18n.t("autolayout.ui.dialogSelectPoint"),
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        pointNames.toArray(),
+                        pointNames.get(0)
+                    );
+
+                    if (dialogResult != null && !"".equals(dialogResult))
+                    {
+                        try
+                        {
+                            if (ui.getModel().getAutoLayout().getPoint(dialogResult) == null)
+                            {
+                                JOptionPane.showMessageDialog(
+                                    (Component) parent.getSwingView(),
+                                    I18n.t("autolayout.ui.errorPointDoesNotExist")
+                                );
+                            }
+                            else
+                            {
+                                Map<List<Edge>, String> output =
+                                    ui.getModel()
+                                      .getAutoLayout()
+                                      .debugPath(
+                                          p.getCurrentLocomotive(),
+                                          p,
+                                          ui.getModel().getAutoLayout().getPoint(dialogResult)
+                                      );
+
+                                StringBuilder sb = new StringBuilder();
+
+                                // === Valid Paths ===
+                                sb.append(I18n.t("autolayout.ui.labelValidPaths")).append("\n");
+
+                                long validCount = output.entrySet()
+                                    .stream()
+                                    .filter(e -> e.getValue() == null)
+                                    .peek(e ->
+                                    {
+                                        sb.append(
+                                            ui.getModel().getAutoLayout().pathToString(e.getKey())
+                                        ).append("\n\n");
+                                    })
+                                    .count();
+
+                                if (validCount == 0)
+                                {
+                                    sb.append(I18n.t("autolayout.ui.labelNone")).append("\n");
+                                }
+
+                                sb.append("\n").append(I18n.t("autolayout.ui.labelInvalidPaths")).append("\n");
+
+                                long invalidCount = output.entrySet()
+                                    .stream()
+                                    .filter(e -> e.getValue() != null)
+                                    .peek(e ->
+                                    {
+                                        sb.append(
+                                            ui.getModel().getAutoLayout().pathToString(e.getKey())
+                                        )
+                                          .append("\n")
+                                          .append(I18n.t("autolayout.ui.labelReason"))
+                                          .append(" ")
+                                          .append(e.getValue())
+                                          .append("\n\n");
+                                    })
+                                    .count();
+
+                                if (invalidCount == 0)
+                                {
+                                    sb.append(I18n.t("autolayout.ui.labelNone")).append("\n");
+                                }
+
+                                // Prepare scrollable text area
+                                JTextArea textArea = new JTextArea(sb.toString());
+                                textArea.setEditable(false);
+                                textArea.setLineWrap(true);
+                                textArea.setWrapStyleWord(true);
+
+                                JScrollPane scrollPane = new JScrollPane(textArea);
+                                scrollPane.setPreferredSize(new Dimension(800, 400));
+
+                                // Build label with start and end
+                                String title =
+                                    I18n.f(
+                                        "autolayout.ui.dialogPathDebugResults",
+                                        p.getName(),
+                                        ui.getModel().getAutoLayout().getPoint(dialogResult).getName()
+                                    );
+
+                                // Show dialog
+                                JOptionPane.showMessageDialog(
+                                    ui,
+                                    scrollPane,
+                                    title,
+                                    JOptionPane.INFORMATION_MESSAGE
+                                );
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            // handle/log exception if needed
+                        }
+                    }
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(
+                        (Component) parent.getSwingView(),
+                        I18n.t("autolayout.ui.infoNoOtherPointsToConnect")
+                    );
                 }
             });
 

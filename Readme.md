@@ -335,6 +335,8 @@ Requires JDK 1.8+ and the following libraries:
         - Toggling signals and switches along an active route now requires confirmation
         - Added button to reopen graph UI to the Autonomy Settings tab
         - Added `Layout.CB_ROUTE_PROG` callback that fires at intermediate stations between the start and end
+    - Autonomy Graph
+        - Added right-click menu option to test connections between stations
     - Track Diagram Editor
         - Added drag-and-drop functionality for moving icons
     - UI

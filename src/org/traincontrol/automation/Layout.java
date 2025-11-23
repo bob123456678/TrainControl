@@ -829,6 +829,8 @@ public class Layout
      */
     private void logPathError(Locomotive loc, List<Edge> path, String message)
     {
+        lastError = message;
+        
         if (control.isDebug())
         {
             this.control.logf(
@@ -1211,7 +1213,7 @@ public class Layout
         
         if (p == null)
         {
-            throw new Exception(I18n.f("autolayout.errorPointDoesNotExist", name));
+            throw new Exception(I18n.f("autolayout.errorPointDoesNotExist2", name));
         }
         
         // Update the point name
@@ -1607,6 +1609,57 @@ public class Layout
         loc.delay(minDelay, maxDelay);
         
         return null;
+    }
+    
+    /**
+     * Debugs a connection between two points.  Output value will be null for valid paths
+     * @param loc
+     * @param start
+     * @param end
+     * @return
+     * @throws Exception 
+     */
+    public Map<List<Edge>, String> debugPath(Locomotive loc, Point start, Point end) throws Exception
+    {
+        Map<List<Edge>, String> output = new HashMap<>();
+        
+        List<Edge> path;
+        List<List<Edge>> seenPaths = new LinkedList<>();
+
+        // Get all possible paths
+        do 
+        {
+            path = this.bfs(start, end, seenPaths);
+
+            if (path != null)
+            {
+                seenPaths.add(path);
+            }
+
+        } while (path != null);
+        
+        for (List<Edge> p : seenPaths)
+        {
+            try
+            {
+                boolean result = this.isPathClear(p, loc);
+
+                if (!result)
+                {
+                    output.put(p, lastError != null ? lastError : "");
+                }
+                else
+                {
+                    output.put(p, null);
+                }
+            }
+            catch (Exception e)
+            {
+                output.put(p, e.getMessage());
+            }
+        }
+        
+        return output;
     }
     
     /**
