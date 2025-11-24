@@ -97,7 +97,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.fNo.setVisible(false);
             this.fNoLabel.setVisible(false);
             this.fIconlabel.setText(
-                I18n.f("loc.ui.functionIconLoading", functionIndex, I18n.t("loc.ui.loadingMessage"))
+                I18n.f("loc.ui.functionIconLoading", fNo.getSelectedIndex(), I18n.t("loc.ui.loadingMessage"))
             );
             this.setPreferredSize(new Dimension(390, 260));
         }
@@ -108,7 +108,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.fNo.setVisible(true);
             this.fNoLabel.setVisible(true);
             this.fIconlabel.setText(
-                I18n.f("loc.ui.functionIconLoading", "", I18n.t("loc.ui.loadingMessage"))
+                I18n.f("loc.ui.functionIconLoading", fNo.getSelectedIndex(), I18n.t("loc.ui.loadingMessage"))
             );
             this.setPreferredSize(new Dimension(360, 375));
         }
@@ -472,6 +472,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         {
             this.functionTriggerType.setSelectedIndex(0);
         }  
+        
+        this.fIconlabel.setText(
+            I18n.f("loc.ui.functionIconLoading", targetFNo, "")
+        );
         
         displayCustomizationButtons();
     }

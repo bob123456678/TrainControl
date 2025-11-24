@@ -223,7 +223,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Maximum page name length
     public static final Integer MAX_PAGE_NAME_LENGTH = 40;
     public static final Integer MAX_PAGE_NAME_LENGTH_TAB = 14;
-    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 10;
+    public static final Integer MAX_PAGE_NAME_LENGTH_TOP = 12;
 
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
