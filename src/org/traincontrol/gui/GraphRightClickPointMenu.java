@@ -58,6 +58,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         if(dialogResult == JOptionPane.OK_OPTION)
                         {
                             edit.commitChanges();
+                            ui.updateVisiblePoints();
                         }
                     }
                 );    
@@ -102,6 +103,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             if (dialogResult == JOptionPane.OK_OPTION)
                             {
                                 edit.commitChanges();
+                                ui.updateVisiblePoints();
                             }
                         }
                     }
@@ -119,6 +121,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 menuItem.addActionListener(event -> 
                     {
                         ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), nodeName, false);
+                        ui.updateVisiblePoints();
                         ui.repaintAutoLocList(false);
                     }
                 );    
@@ -133,14 +136,14 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 menuItem = new JMenuItem(
                     I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", p.getCurrentLocomotive().getName())
                 );
-                menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); ui.repaintAutoLocList(false);});    
+                menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); ui.updateVisiblePoints(); ui.repaintAutoLocList(false);});    
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.f("autolayout.ui.menuRemoveLocomotiveFromGraph", p.getCurrentLocomotive().getName())
                 );
                 menuItem.setToolTipText("Delete");
-                menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); ui.repaintAutoLocList(false); });    
+                menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); ui.updateVisiblePoints(); ui.repaintAutoLocList(false); });    
                 add(menuItem);
 
                 addSeparator();
@@ -874,7 +877,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 if (!pointNames.isEmpty())
                 {
                     String dialogResult = (String) JOptionPane.showInputDialog(
-                        null,//(Component) parent.getSwingView(),
+                        (Component) parent.getSwingView(),
                         I18n.f("autolayout.ui.promptChooseConnectionTarget", nodeName),
                         I18n.t("autolayout.ui.dialogSelectPoint"),
                         JOptionPane.QUESTION_MESSAGE,
@@ -977,7 +980,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         }
                         catch (Exception e)
                         {
-                            // handle/log exception if needed
+                            
                         }
                     }
                 }

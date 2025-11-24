@@ -532,6 +532,7 @@ final public class GraphViewer extends PositionAwareJFrame
             {
                 parent.getModel().getAutoLayout().moveLocomotive(this.clipboard != null ? this.clipboard.getName() : parent.getActiveLoc().getName(), this.lastHoveredNode, false);
                 this.clipboard = null;
+                parent.updateVisiblePoints();
                 parent.repaintAutoLocList(false);
             }
         }
@@ -546,6 +547,7 @@ final public class GraphViewer extends PositionAwareJFrame
                 }
                 
                 parent.getModel().getAutoLayout().moveLocomotive(null, this.getLastHoveredNode(), true);
+                parent.updateVisiblePoints();
                 parent.repaintAutoLocList(false);
             }
         }

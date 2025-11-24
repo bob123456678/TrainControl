@@ -337,6 +337,7 @@ Requires JDK 1.8+ and the following libraries:
         - Added `Layout.CB_ROUTE_PROG` callback that fires at intermediate stations between the start and end
     - Autonomy Graph
         - Added right-click menu option to test connections between stations
+        - Fixed bug where newly added or removed locomotives might not always be shown on the graph labels
     - Track Diagram Editor
         - Added drag-and-drop functionality for moving icons
     - UI

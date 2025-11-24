@@ -14227,7 +14227,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 g.getEdge(e.getUniqueId()).removeAttribute("ui.hide");
             }   
-            
         }
     }
     
