@@ -15,10 +15,10 @@
             "name": "BottomExitVirt",
             "station": false,
             "excludedLocs": [
+                "ER 2035 DSB",
+                "MF 5028 DSB",
                 "MZ 1425 DSB",
                 "EU07-314",
-                "MF 5028 DSB",
-                "ER 2035 DSB",
                 "MY 1150 DSB"
             ],
             "x": 455,
@@ -36,9 +36,9 @@
                 "speed": 35
             },
             "excludedLocs": [
-                "MZ 1425 DSB",
-                "MF 5028 DSB",
                 "ER 2035 DSB",
+                "MF 5028 DSB",
+                "MZ 1425 DSB",
                 "MY 1150 DSB"
             ],
             "x": 567,
@@ -50,36 +50,20 @@
             "s88": 2011,
             "maxTrainLength": 3,
             "priority": -2,
-            "loc": {
-                "name": "BR 232 241-0",
-                "reversible": false,
-                "speed": 35,
-                "arrivalFunc": 3,
-                "departureFunc": 11,
-                "trainLength": 2
-            },
             "excludedLocs": [
-                "MZ 1425 DSB",
-                "MF 5028 DSB",
                 "ER 2035 DSB",
+                "MF 5028 DSB",
+                "MZ 1425 DSB",
                 "MY 1150 DSB"
             ],
-            "x": 612,
-            "y": 298
+            "x": 613,
+            "y": 297
         },
         {
             "name": "BottomMainA",
             "station": true,
             "s88": 9,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "SU46-035",
-                "reversible": false,
-                "speed": 52,
-                "arrivalFunc": 3,
-                "departureFunc": 20,
-                "trainLength": 3
-            },
             "x": 836,
             "y": 51
         },
@@ -110,11 +94,6 @@
             "station": true,
             "s88": 4,
             "maxTrainLength": 2,
-            "loc": {
-                "name": "065 001-0 DB",
-                "reversible": false,
-                "speed": 35
-            },
             "x": 1025,
             "y": -11
         },
@@ -131,11 +110,6 @@
             "maxTrainLength": 2,
             "terminus": true,
             "priority": 1,
-            "loc": {
-                "name": "1116 228railjet",
-                "reversible": false,
-                "speed": 49
-            },
             "x": 285,
             "y": 0
         },
@@ -201,11 +175,6 @@
             "station": true,
             "s88": 5,
             "maxTrainLength": 0,
-            "loc": {
-                "name": "MY 1147 DSB",
-                "reversible": false,
-                "speed": 35
-            },
             "x": 973,
             "y": 233
         },
@@ -380,13 +349,8 @@
             "maxTrainLength": 0,
             "terminus": true,
             "priority": 1,
-            "loc": {
-                "name": "02 0314-1 DDR",
-                "reversible": false,
-                "speed": 35
-            },
-            "x": 590,
-            "y": 377
+            "x": 601,
+            "y": 466
         },
         {
             "name": "TopMainR0Park",
@@ -420,8 +384,8 @@
             "s88": 1015,
             "maxTrainLength": 4,
             "priority": -2,
-            "x": 429,
-            "y": 561
+            "x": 490,
+            "y": 543
         },
         {
             "name": "TopMainR1Pre",
@@ -452,11 +416,6 @@
             "s88": 1016,
             "maxTrainLength": 4,
             "priority": -1,
-            "loc": {
-                "name": "1047 005-2",
-                "reversible": false,
-                "speed": 35
-            },
             "x": 355,
             "y": 653
         },
@@ -751,6 +710,10 @@
                 {
                     "acc": "Switch 69",
                     "state": "straight"
+                },
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
                 },
                 {
                     "acc": "Signal 116",
@@ -2584,7 +2547,7 @@
         }
     ],
     "minDelay": 1,
-    "maxDelay": 1,
+    "maxDelay": 3,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
     "maxLatency": 0,
@@ -3238,7 +3201,7 @@
             ]
         },
         {
-            "executionTime": 1733815789328,
+            "executionTime": 1533815789328,
             "secondsToNext": 0,
             "loc": "SP45-204",
             "path": [
