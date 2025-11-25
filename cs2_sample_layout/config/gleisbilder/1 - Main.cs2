@@ -2,130 +2,39 @@
 version
  .major=1
 element
+ .typ=pfeil
+ .drehung=1
+ .artikel=2
+element
+ .id=0x100
  .typ=rechtsweiche
  .artikel=256
 element
- .id=0x1
+ .id=0x101
  .typ=linksweiche
  .drehung=1
  .artikel=18
  .zustand=1
 element
- .id=0x2
+ .id=0x102
  .typ=s88kontakt
  .artikel=1027
 element
- .id=0x3
- .typ=gerade
- .artikel=-1
-element
- .id=0x4
- .typ=gerade
- .artikel=-1
-element
- .id=0x5
- .typ=gerade
- .artikel=-1
-element
- .id=0x6
- .typ=s88kontakt
- .artikel=2014
-element
- .id=0x7
- .typ=gerade
- .artikel=-1
-element
- .id=0x8
- .typ=gerade
- .artikel=-1
-element
- .id=0x9
- .typ=gerade
- .artikel=-1
-element
- .id=0xa
- .typ=gerade
- .artikel=-1
-element
- .id=0xb
- .typ=gerade
- .artikel=-1
-element
- .id=0xc
- .typ=gerade
- .artikel=-1
-element
- .id=0xd
- .typ=gerade
- .artikel=-1
-element
- .id=0xe
- .typ=gerade
- .artikel=-1
-element
- .id=0xf
- .typ=gerade
- .artikel=-1
-element
- .id=0x10
- .typ=gerade
- .artikel=-1
-element
- .id=0x11
- .typ=gerade
- .artikel=-1
-element
- .id=0x12
- .typ=gerade
- .artikel=-1
-element
- .id=0x13
- .typ=gerade
- .artikel=-1
-element
- .id=0x14
- .typ=gerade
- .artikel=-1
-element
- .id=0x15
- .typ=bogen
- .drehung=3
- .artikel=-1
-element
- .id=0x100
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x101
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x102
- .typ=signal
- .artikel=162
- .zustand=1
-element
  .id=0x103
- .typ=dreiwegweiche
- .drehung=1
- .artikel=36
- .zustand=2
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x104
- .typ=linksweiche
- .drehung=1
- .artikel=6
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x105
- .typ=linksweiche
- .drehung=1
- .artikel=150
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x106
  .typ=s88kontakt
- .artikel=2015
+ .artikel=2014
 element
  .id=0x107
  .typ=gerade
@@ -180,45 +89,48 @@ element
  .artikel=-1
 element
  .id=0x114
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x115
  .typ=bogen
  .drehung=3
  .artikel=-1
 element
- .id=0x115
+ .id=0x200
  .typ=gerade
  .drehung=1
  .artikel=-1
 element
- .id=0x200
- .typ=s88kontakt
- .drehung=1
- .artikel=1025
-element
  .id=0x201
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1026
+ .artikel=-1
+element
+ .id=0x202
+ .typ=signal
+ .artikel=162
+ .zustand=1
 element
  .id=0x203
- .typ=s88kontakt
+ .typ=dreiwegweiche
  .drehung=1
- .artikel=1021
+ .artikel=36
+ .zustand=2
 element
  .id=0x204
- .typ=signal
- .drehung=3
- .artikel=126
- .zustand=1
+ .typ=linksweiche
+ .drehung=1
+ .artikel=6
 element
  .id=0x205
- .typ=signal
- .drehung=3
- .artikel=128
- .zustand=1
+ .typ=linksweiche
+ .drehung=1
+ .artikel=150
 element
  .id=0x206
- .typ=rechtsweiche
- .artikel=82
+ .typ=s88kontakt
+ .artikel=2015
 element
  .id=0x207
  .typ=gerade
@@ -233,27 +145,24 @@ element
  .artikel=-1
 element
  .id=0x20a
- .typ=rechtsweiche
- .drehung=3
- .artikel=20
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x20b
- .typ=linksweiche
- .drehung=1
- .artikel=180
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x20c
  .typ=gerade
  .artikel=-1
 element
  .id=0x20d
- .typ=s88kontakt
- .artikel=2011
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x20e
  .typ=gerade
  .artikel=-1
- .text=Point:BottomInnerOtherside
 element
  .id=0x20f
  .typ=gerade
@@ -264,19 +173,20 @@ element
  .artikel=-1
 element
  .id=0x211
- .typ=rechtsweiche
- .drehung=3
- .artikel=104
- .zustand=1
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x212
- .typ=bogen
- .drehung=3
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x213
+ .typ=gerade
  .artikel=-1
 element
  .id=0x214
- .typ=gerade
- .drehung=1
+ .typ=bogen
+ .drehung=3
  .artikel=-1
 element
  .id=0x215
@@ -285,78 +195,88 @@ element
  .artikel=-1
 element
  .id=0x300
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1025
 element
  .id=0x301
- .typ=rechtsweiche
- .artikel=136
- .zustand=1
-element
- .id=0x302
- .typ=dreiwegweiche
- .drehung=3
- .artikel=46
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1026
 element
  .id=0x303
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1021
 element
  .id=0x304
- .typ=s88kontakt
- .drehung=1
- .artikel=1022
+ .typ=signal
+ .drehung=3
+ .artikel=126
+ .zustand=1
 element
  .id=0x305
- .typ=s88kontakt
- .drehung=1
- .artikel=1023
+ .typ=signal
+ .drehung=3
+ .artikel=128
+ .zustand=1
 element
  .id=0x306
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=82
 element
  .id=0x307
- .typ=fahrstrasse
- .artikel=21
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x308
- .typ=fahrstrasse
- .artikel=22
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x309
- .typ=fahrstrasse
- .artikel=23
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x30a
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=20
 element
  .id=0x30b
- .typ=gerade
+ .typ=linksweiche
  .drehung=1
- .artikel=-1
+ .artikel=180
 element
  .id=0x30c
- .typ=fahrstrasse
- .artikel=6
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x30d
+ .typ=s88kontakt
+ .artikel=2011
+element
+ .id=0x30e
+ .typ=gerade
  .artikel=-1
- .text=Inner Loop
+ .text=Point:BottomInnerOtherside
+element
+ .id=0x30f
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x310
+ .typ=gerade
+ .artikel=-1
 element
  .id=0x311
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=104
+ .zustand=1
 element
  .id=0x312
- .typ=gerade
- .drehung=1
+ .typ=bogen
+ .drehung=3
  .artikel=-1
 element
  .id=0x314
@@ -376,28 +296,28 @@ element
 element
  .id=0x401
  .typ=rechtsweiche
- .artikel=194
+ .artikel=136
  .zustand=1
 element
  .id=0x402
- .typ=fahrstrasse
- .artikel=47
+ .typ=dreiwegweiche
+ .drehung=3
+ .artikel=46
 element
  .id=0x403
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1010
+ .artikel=-1
 element
  .id=0x404
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1022
 element
  .id=0x405
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
- .text=Point:TopMainR2
+ .artikel=1023
 element
  .id=0x406
  .typ=gerade
@@ -405,43 +325,34 @@ element
  .artikel=-1
 element
  .id=0x407
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=21
 element
  .id=0x408
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=22
 element
  .id=0x409
- .typ=prellbock
- .drehung=2
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=23
 element
  .id=0x40a
- .typ=linksweiche
- .drehung=2
- .artikel=208
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x40b
- .typ=linksweiche
- .artikel=206
-element
- .id=0x40e
- .typ=pfeil
- .drehung=2
- .artikel=1
-element
- .id=0x40f
- .typ=signal
- .artikel=74
- .zustand=1
-element
- .id=0x410
- .typ=bogen
- .drehung=3
+ .typ=gerade
+ .drehung=1
  .artikel=-1
+element
+ .id=0x40c
+ .typ=fahrstrasse
+ .artikel=6
+element
+ .id=0x40d
+ .artikel=-1
+ .text=Inner Loop
 element
  .id=0x411
  .typ=gerade
@@ -469,25 +380,29 @@ element
  .artikel=-1
 element
  .id=0x501
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=rechtsweiche
+ .artikel=194
+ .zustand=1
+element
+ .id=0x502
+ .typ=fahrstrasse
+ .artikel=47
 element
  .id=0x503
- .typ=pfeil
- .drehung=3
- .artikel=2
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1010
 element
  .id=0x504
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR1
 element
  .id=0x505
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR2
 element
  .id=0x506
  .typ=gerade
@@ -495,46 +410,48 @@ element
  .artikel=-1
 element
  .id=0x507
- .typ=s88kontakt
- .drehung=1
- .artikel=1028
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
 element
  .id=0x508
- .typ=s88kontakt
- .drehung=1
- .artikel=1031
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
 element
  .id=0x509
- .typ=s88kontakt
- .drehung=1
- .artikel=1029
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
 element
  .id=0x50a
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=linksweiche
+ .drehung=2
+ .artikel=208
 element
  .id=0x50b
- .typ=gerade
- .drehung=1
- .artikel=-1
+ .typ=linksweiche
+ .artikel=206
 element
- .id=0x50c
- .typ=fahrstrasse
- .artikel=8
+ .id=0x50e
+ .typ=pfeil
+ .drehung=2
+ .artikel=1
 element
- .id=0x50d
- .artikel=-1
- .text=Lower return
+ .id=0x50f
+ .typ=signal
+ .artikel=74
+ .zustand=1
 element
  .id=0x510
  .typ=bogen
- .drehung=1
+ .drehung=3
  .artikel=-1
 element
  .id=0x511
- .typ=linksweiche
- .artikel=100
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x512
  .typ=gerade
@@ -542,14 +459,14 @@ element
  .artikel=-1
 element
  .id=0x514
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=2012
+ .artikel=-1
 element
  .id=0x515
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=2013
+ .artikel=-1
 element
  .id=0x600
  .typ=gerade
@@ -557,87 +474,87 @@ element
  .artikel=-1
 element
  .id=0x601
- .typ=rechtsweiche
- .artikel=146
- .zustand=1
-element
- .id=0x602
- .typ=fahrstrasse
- .artikel=48
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x603
- .typ=fahrstrasse
- .artikel=1
+ .typ=pfeil
+ .drehung=3
+ .artikel=2
 element
  .id=0x604
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR1
 element
  .id=0x605
- .typ=fahrstrasse
- .artikel=56
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x606
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1032
+ .artikel=-1
 element
  .id=0x607
- .typ=bogen
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1028
 element
  .id=0x608
- .typ=dreiwegweiche
- .artikel=158
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1031
 element
  .id=0x609
- .typ=bogen
- .drehung=2
- .artikel=-1
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1029
 element
  .id=0x60a
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1030
+ .artikel=-1
 element
  .id=0x60b
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1008
+ .artikel=-1
 element
  .id=0x60c
  .typ=fahrstrasse
- .artikel=9
+ .artikel=8
 element
  .id=0x60d
  .artikel=-1
- .text=Lower circuit
+ .text=Lower return
+element
+ .id=0x610
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
 element
  .id=0x611
- .typ=s88kontakt
- .drehung=1
- .artikel=14
+ .typ=linksweiche
+ .artikel=100
 element
  .id=0x612
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=15
-element
- .id=0x613
- .typ=lampe
- .artikel=186
+ .artikel=-1
 element
  .id=0x614
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=2012
 element
  .id=0x615
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=2013
 element
  .id=0x700
  .typ=gerade
@@ -645,66 +562,77 @@ element
  .artikel=-1
 element
  .id=0x701
- .typ=gerade
- .drehung=1
- .artikel=-1
- .text=Point:TopMainR1Inter
-element
- .id=0x704
- .typ=fahrstrasse
- .artikel=55
-element
- .id=0x705
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x706
  .typ=rechtsweiche
- .artikel=98
+ .artikel=146
  .zustand=1
 element
+ .id=0x702
+ .typ=fahrstrasse
+ .artikel=48
+element
+ .id=0x703
+ .typ=fahrstrasse
+ .artikel=1
+element
+ .id=0x704
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x705
+ .typ=fahrstrasse
+ .artikel=56
+element
+ .id=0x706
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1032
+element
  .id=0x707
- .typ=signal
- .drehung=2
- .artikel=232
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
 element
  .id=0x708
+ .typ=dreiwegweiche
+ .artikel=158
+element
+ .id=0x709
  .typ=bogen
  .drehung=2
  .artikel=-1
 element
- .id=0x709
- .typ=fahrstrasse
- .artikel=24
-element
  .id=0x70a
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1030
 element
  .id=0x70b
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1008
+element
+ .id=0x70c
+ .typ=fahrstrasse
+ .artikel=9
 element
  .id=0x70d
- .typ=fahrstrasse
- .artikel=7
-element
- .id=0x70e
  .artikel=-1
- .text=Cross down
+ .text=Lower circuit
 element
  .id=0x711
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=14
 element
  .id=0x712
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=15
+element
+ .id=0x713
+ .typ=lampe
+ .artikel=186
 element
  .id=0x714
  .typ=gerade
@@ -720,49 +648,58 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR2Inter
 element
  .id=0x801
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR1Inter
 element
  .id=0x804
- .typ=s88kontakt
- .drehung=1
- .artikel=1012
+ .typ=fahrstrasse
+ .artikel=55
 element
  .id=0x805
- .typ=s88kontakt
- .drehung=1
- .artikel=1013
-element
- .id=0x806
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:Tunnel
 element
- .id=0x809
- .typ=s88kontakt
- .drehung=1
- .artikel=1018
-element
- .id=0x80a
- .typ=signal
- .drehung=3
- .artikel=124
+ .id=0x806
+ .typ=rechtsweiche
+ .artikel=98
  .zustand=1
 element
- .id=0x80b
- .typ=linksweiche
+ .id=0x807
+ .typ=signal
  .drehung=2
- .artikel=118
+ .artikel=232
 element
- .id=0x80c
- .typ=s88bogen
- .drehung=3
- .artikel=1011
+ .id=0x808
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x809
+ .typ=fahrstrasse
+ .artikel=24
+element
+ .id=0x80a
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x80b
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x80d
+ .typ=fahrstrasse
+ .artikel=7
+element
+ .id=0x80e
+ .artikel=-1
+ .text=Cross down
 element
  .id=0x811
  .typ=gerade
@@ -774,15 +711,10 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0x813
- .typ=bogen
- .artikel=-1
-element
  .id=0x814
- .typ=rechtsweiche
- .drehung=2
- .artikel=24
- .zustand=1
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x815
  .typ=gerade
@@ -793,127 +725,102 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
+ .text=Point:TopMainR2Inter
 element
  .id=0x901
- .typ=s88bogen
- .drehung=1
- .artikel=1015
-element
- .id=0x902
  .typ=gerade
+ .drehung=1
  .artikel=-1
-element
- .id=0x903
- .typ=signal
- .drehung=2
- .artikel=214
 element
  .id=0x904
- .typ=bogen
- .drehung=2
- .artikel=-1
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1012
 element
  .id=0x905
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1013
 element
  .id=0x906
  .typ=gerade
  .drehung=1
  .artikel=-1
-element
- .id=0x908
- .typ=lampe
- .artikel=170
+ .text=Point:Tunnel
 element
  .id=0x909
- .typ=signal
- .drehung=3
- .artikel=162
- .zustand=1
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=1018
 element
  .id=0x90a
- .typ=gerade
- .drehung=1
- .artikel=-1
-element
- .id=0x90b
  .typ=signal
  .drehung=3
- .artikel=122
+ .artikel=124
+ .zustand=1
+element
+ .id=0x90b
+ .typ=linksweiche
+ .drehung=2
+ .artikel=118
 element
  .id=0x90c
- .typ=bogen
- .drehung=1
- .artikel=-1
-element
- .id=0x90d
- .typ=gerade
- .artikel=-1
- .text=Point:BottomInner
-element
- .id=0x90e
- .typ=fahrstrasse
- .artikel=58
-element
- .id=0x90f
- .typ=entkuppler
- .artikel=70
-element
- .id=0x910
- .typ=s88kontakt
- .artikel=8
+ .typ=s88bogen
+ .drehung=3
+ .artikel=1011
 element
  .id=0x911
- .typ=kreuzung
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
  .id=0x912
- .typ=linksweiche
- .drehung=3
- .artikel=12
- .zustand=1
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0x913
- .typ=doppelbogen
+ .typ=bogen
  .artikel=-1
 element
  .id=0x914
- .typ=doppelbogen
- .artikel=-1
-element
- .id=0x915
  .typ=rechtsweiche
  .drehung=2
- .artikel=22
+ .artikel=24
  .zustand=1
 element
- .id=0xa00
- .typ=s88bogen
+ .id=0x915
+ .typ=gerade
  .drehung=1
- .artikel=1016
+ .artikel=-1
+element
+ .id=0xa00
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
 element
  .id=0xa01
- .typ=gerade
- .artikel=-1
+ .typ=s88bogen
+ .drehung=1
+ .artikel=1015
 element
  .id=0xa02
  .typ=gerade
  .artikel=-1
 element
  .id=0xa03
- .typ=gerade
- .artikel=-1
-element
- .id=0xa04
  .typ=signal
  .drehung=2
- .artikel=216
+ .artikel=214
 element
- .id=0xa05
+ .id=0xa04
  .typ=bogen
  .drehung=2
+ .artikel=-1
+element
+ .id=0xa05
+ .typ=gerade
+ .drehung=1
  .artikel=-1
 element
  .id=0xa06
@@ -921,215 +828,232 @@ element
  .drehung=1
  .artikel=-1
 element
- .id=0xa07
- .typ=fahrstrasse
- .artikel=25
-element
  .id=0xa08
- .typ=prellbock
- .drehung=3
- .artikel=-1
+ .typ=lampe
+ .artikel=170
 element
  .id=0xa09
- .typ=rechtsweiche
- .drehung=1
- .artikel=196
+ .typ=signal
+ .drehung=3
+ .artikel=162
+ .zustand=1
 element
  .id=0xa0a
- .typ=doppelbogen
+ .typ=gerade
  .drehung=1
  .artikel=-1
 element
  .id=0xa0b
+ .typ=signal
+ .drehung=3
+ .artikel=122
+element
+ .id=0xa0c
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0xa0d
+ .typ=gerade
+ .artikel=-1
+ .text=Point:BottomInner
+element
+ .id=0xa0e
+ .typ=fahrstrasse
+ .artikel=58
+element
+ .id=0xa0f
+ .typ=entkuppler
+ .artikel=70
+element
+ .id=0xa10
+ .typ=s88kontakt
+ .artikel=8
+element
+ .id=0xa11
+ .typ=kreuzung
+ .artikel=-1
+element
+ .id=0xa12
+ .typ=linksweiche
+ .drehung=3
+ .artikel=12
+ .zustand=1
+element
+ .id=0xa13
+ .typ=doppelbogen
+ .artikel=-1
+element
+ .id=0xa14
+ .typ=doppelbogen
+ .artikel=-1
+element
+ .id=0xa15
+ .typ=rechtsweiche
+ .drehung=2
+ .artikel=22
+ .zustand=1
+element
+ .id=0xb00
+ .typ=s88bogen
+ .drehung=1
+ .artikel=1016
+element
+ .id=0xb01
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xb02
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xb03
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xb04
+ .typ=signal
+ .drehung=2
+ .artikel=216
+element
+ .id=0xb05
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0xb06
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0xb07
+ .typ=fahrstrasse
+ .artikel=25
+element
+ .id=0xb08
+ .typ=prellbock
+ .drehung=3
+ .artikel=-1
+element
+ .id=0xb09
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=196
+element
+ .id=0xb0a
+ .typ=doppelbogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0xb0b
  .typ=rechtsweiche
  .drehung=1
  .artikel=116
  .zustand=1
 element
- .id=0xa0c
+ .id=0xb0c
  .typ=s88kontakt
  .artikel=1009
 element
- .id=0xa0d
+ .id=0xb0d
  .typ=linksweiche
  .drehung=1
  .artikel=198
  .zustand=1
 element
- .id=0xa0e
+ .id=0xb0e
  .typ=gerade
  .artikel=-1
  .text=Point:BottomSecondary
 element
- .id=0xa0f
+ .id=0xb0f
  .typ=gerade
  .artikel=-1
 element
- .id=0xa10
+ .id=0xb10
  .typ=fahrstrasse
  .artikel=57
 element
- .id=0xa11
+ .id=0xb11
  .typ=linksweiche
  .drehung=3
  .artikel=102
  .zustand=1
 element
- .id=0xa12
+ .id=0xb12
  .typ=signal
  .artikel=78
  .zustand=1
 element
- .id=0xa13
+ .id=0xb13
  .typ=linksweiche
  .drehung=3
  .artikel=4
 element
- .id=0xa14
+ .id=0xb14
  .typ=bogen
  .drehung=2
  .artikel=-1
 element
- .id=0xa15
+ .id=0xb15
  .typ=gerade
  .drehung=1
  .artikel=-1
  .text=Point:BottomExitVIrt
 element
- .id=0xb06
+ .id=0xc06
  .typ=linksweiche
  .drehung=2
  .artikel=2
 element
- .id=0xb07
+ .id=0xc07
  .typ=signal
  .drehung=2
  .artikel=172
  .zustand=1
 element
- .id=0xb08
+ .id=0xc08
  .typ=s88kontakt
  .artikel=1007
 element
- .id=0xb09
+ .id=0xc09
  .typ=gerade
  .drehung=2
  .artikel=-1
 element
- .id=0xb0a
+ .id=0xc0a
  .typ=rechtsweiche
  .drehung=1
  .artikel=138
 element
- .id=0xb0b
+ .id=0xc0b
  .typ=gerade
  .drehung=2
  .artikel=-1
 element
- .id=0xb0c
+ .id=0xc0c
  .typ=gerade
  .drehung=2
  .artikel=-1
 element
- .id=0xb0d
+ .id=0xc0d
  .typ=linksweiche
  .drehung=3
  .artikel=200
  .zustand=1
 element
- .id=0xb0e
- .typ=gerade
- .artikel=-1
-element
- .id=0xb0f
- .typ=fahrstrasse
- .artikel=52
-element
- .id=0xb10
- .typ=gerade
- .artikel=-1
- .text=Point:BottomMainA
-element
- .id=0xb11
- .typ=gerade
- .artikel=-1
-element
- .id=0xb12
- .typ=gerade
- .artikel=-1
-element
- .id=0xb13
- .typ=s88kontakt
- .artikel=9
-element
- .id=0xb14
- .typ=signal
- .artikel=80
- .zustand=1
-element
- .id=0xb15
- .typ=rechtsweiche
- .drehung=2
- .artikel=144
- .zustand=1
-element
- .id=0xc01
- .typ=fahrstrasse
- .artikel=20
-element
- .id=0xc02
- .artikel=-1
- .text=Reset
-element
- .id=0xc06
- .typ=bogen
- .drehung=1
- .artikel=-1
-element
- .id=0xc07
- .typ=gerade
- .artikel=-1
-element
- .id=0xc08
- .typ=signal
- .drehung=2
- .artikel=174
- .zustand=1
-element
- .id=0xc09
- .typ=s88kontakt
- .artikel=1006
-element
- .id=0xc0a
- .typ=gerade
- .artikel=-1
-element
- .id=0xc0b
- .typ=rechtsweiche
- .drehung=3
- .artikel=120
- .zustand=1
-element
- .id=0xc0c
- .typ=gerade
- .artikel=-1
-element
- .id=0xc0d
- .typ=gerade
- .artikel=-1
-element
  .id=0xc0e
- .typ=fahrstrasse
- .artikel=53
+ .typ=gerade
+ .artikel=-1
 element
  .id=0xc0f
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=52
 element
  .id=0xc10
  .typ=gerade
  .artikel=-1
- .text=Point:BottomMainB
+ .text=Point:BottomMainA
 element
  .id=0xc11
  .typ=gerade
@@ -1141,53 +1065,76 @@ element
 element
  .id=0xc13
  .typ=s88kontakt
- .artikel=10
+ .artikel=9
 element
  .id=0xc14
  .typ=signal
- .artikel=76
+ .artikel=80
  .zustand=1
 element
  .id=0xc15
  .typ=rechtsweiche
  .drehung=2
- .artikel=148
+ .artikel=144
  .zustand=1
 element
- .id=0xd02
+ .id=0xd01
  .typ=fahrstrasse
- .artikel=51
+ .artikel=20
 element
- .id=0xd03
+ .id=0xd02
  .artikel=-1
- .text=Turn off parking
+ .text=Reset
 element
- .id=0xd0b
+ .id=0xd06
  .typ=bogen
  .drehung=1
  .artikel=-1
+element
+ .id=0xd07
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xd08
+ .typ=signal
+ .drehung=2
+ .artikel=174
+ .zustand=1
+element
+ .id=0xd09
+ .typ=s88kontakt
+ .artikel=1006
+element
+ .id=0xd0a
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xd0b
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=120
+ .zustand=1
 element
  .id=0xd0c
  .typ=gerade
  .artikel=-1
 element
  .id=0xd0d
- .typ=fahrstrasse
- .artikel=54
-element
- .id=0xd0e
  .typ=gerade
  .artikel=-1
 element
+ .id=0xd0e
+ .typ=fahrstrasse
+ .artikel=53
+element
  .id=0xd0f
  .typ=gerade
- .drehung=2
  .artikel=-1
 element
  .id=0xd10
  .typ=gerade
  .artikel=-1
- .text=Point:BottomMainC
+ .text=Point:BottomMainB
 element
  .id=0xd11
  .typ=gerade
@@ -1199,23 +1146,81 @@ element
 element
  .id=0xd13
  .typ=s88kontakt
- .artikel=4
+ .artikel=10
 element
  .id=0xd14
  .typ=signal
- .artikel=188
+ .artikel=76
+ .zustand=1
 element
  .id=0xd15
+ .typ=rechtsweiche
+ .drehung=2
+ .artikel=148
+ .zustand=1
+element
+ .id=0xe02
+ .typ=fahrstrasse
+ .artikel=51
+element
+ .id=0xe03
+ .artikel=-1
+ .text=Turn off parking
+element
+ .id=0xe0b
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0xe0c
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xe0d
+ .typ=fahrstrasse
+ .artikel=54
+element
+ .id=0xe0e
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xe0f
+ .typ=gerade
+ .drehung=2
+ .artikel=-1
+element
+ .id=0xe10
+ .typ=gerade
+ .artikel=-1
+ .text=Point:BottomMainC
+element
+ .id=0xe11
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xe12
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0xe13
+ .typ=s88kontakt
+ .artikel=4
+element
+ .id=0xe14
+ .typ=signal
+ .artikel=188
+element
+ .id=0xe15
  .typ=linksweiche
  .drehung=3
  .artikel=140
  .zustand=1
 element
- .id=0xd16
+ .id=0xe16
  .typ=prellbock
  .drehung=1
  .artikel=-1
 element
- .id=0xe10
+ .id=0xf10
  .artikel=-1
  .text=Point:BottomMainCTerm

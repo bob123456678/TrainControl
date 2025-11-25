@@ -333,7 +333,7 @@ final public class GraphViewer extends PositionAwareJFrame
                             if (element != null)
                             {
                                 Point p = (Point) parent.getModel().getAutoLayout().getPointById(element.getId());
-
+                                
                                 if (p != null && p.isDestination() && !parent.getModel().getLocomotives().isEmpty())
                                 {    
                                     // Select the active locomotive
@@ -346,7 +346,7 @@ final public class GraphViewer extends PositionAwareJFrame
                                         (Component) swingView,
                                         edit,
                                         !parent.getModel().getAutoLayout().getLocomotivesToRun().isEmpty()
-                                            ? I18n.t("autolayout.ui.dialogEditOrAssignLocomotive")
+                                            ? I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", p.getName())
                                             : I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
                                         JOptionPane.OK_CANCEL_OPTION,
                                         JOptionPane.PLAIN_MESSAGE,

@@ -48,7 +48,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         int dialogResult = JOptionPane.showOptionDialog(
                             (Component) parent.getSwingView(),
                             edit,
-                            I18n.t("autolayout.ui.dialogEditOrAssignLocomotive"),
+                            I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", p.getName()),
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.PLAIN_MESSAGE,
                             null,
@@ -66,49 +66,48 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 add(menuItem);
             }
 
-                menuItem = new JMenuItem(
-                    I18n.f("autolayout.ui.menuAddLocomotiveAtNode", nodeName)
-                );
-                menuItem.addActionListener(event -> 
+            menuItem = new JMenuItem(
+                I18n.f("autolayout.ui.menuAddLocomotiveAtNode", nodeName)
+            );
+            menuItem.addActionListener(event -> 
+            {
+                if (ui.getModel().getLocomotives().isEmpty())
                 {
-                    if (ui.getModel().getLocomotives().isEmpty())
+                    JOptionPane.showMessageDialog((Component) parent.getSwingView(),
+                        I18n.t("error.noLocs")
+                    );
+                }
+                else
+                {
+                    GraphLocAssign edit = new GraphLocAssign(ui, p, true);
+
+                    if (edit.getNumLocs() == 0)
                     {
-                        JOptionPane.showMessageDialog((Component) parent.getSwingView(),
-                            I18n.t("error.noLocs")
+                        JOptionPane.showMessageDialog(
+                            (Component) parent.getSwingView(),
+                            I18n.t("autolayout.ui.infoAllLocomotivesPlaced")
                         );
                     }
                     else
                     {
-                        GraphLocAssign edit = new GraphLocAssign(ui, p, true);
-
-                        if (edit.getNumLocs() == 0)
+                        int dialogResult = JOptionPane.showOptionDialog(
+                            (Component) parent.getSwingView(),
+                            edit,
+                            I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            TrainControlUI.OK_CANCEL_OPTS,
+                            TrainControlUI.OK_CANCEL_OPTS[0]
+                        );
+                        if (dialogResult == JOptionPane.OK_OPTION)
                         {
-                            JOptionPane.showMessageDialog(
-                                (Component) parent.getSwingView(),
-                                I18n.t("autolayout.ui.infoAllLocomotivesPlaced")
-                            );
-                        }
-                        else
-                        {
-                            int dialogResult = JOptionPane.showOptionDialog(
-                                (Component) parent.getSwingView(),
-                                edit,
-                                I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
-                                JOptionPane.OK_CANCEL_OPTION,
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                TrainControlUI.OK_CANCEL_OPTS,
-                                TrainControlUI.OK_CANCEL_OPTS[0]
-                            );
-                            if (dialogResult == JOptionPane.OK_OPTION)
-                            {
-                                edit.commitChanges();
-                                ui.updateVisiblePoints();
-                            }
+                            edit.commitChanges();
+                            ui.updateVisiblePoints();
                         }
                     }
                 }
-            ); 
+            }); 
 
             add(menuItem);
 
