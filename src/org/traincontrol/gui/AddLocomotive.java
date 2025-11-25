@@ -401,8 +401,8 @@ public class AddLocomotive extends javax.swing.JFrame
             }
             catch (NumberFormatException e)
             {
-                //JOptionPane.showMessageDialog(this, "Please enter a numerical address");
-                //return;
+                JOptionPane.showMessageDialog(this, "Please enter a numerical address");
+                return;
             }
 
             Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
@@ -423,9 +423,9 @@ public class AddLocomotive extends javax.swing.JFrame
                     {
                         for (MarklinLocomotive l : mfxLocs)
                         {
-                            this.model.logf("loc.reportLocEntry", l.getName(), l.getDecoderTypeLabel());
+                            this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                         }
-                        this.model.logf("loc.reportAddressSeparator", addr);
+                        this.model.logf("loc.reportAddressSeparator", Integer.toString(addr));
                     }
                 }
 
