@@ -327,7 +327,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.6.0 [Beta]
+* v2.6.0 [11/24/2025]
     - Added internationalizaiton support
         - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources))
         - Language is automatically set based on system settings, or can be manually overriden via command line
