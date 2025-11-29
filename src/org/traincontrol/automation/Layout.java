@@ -83,6 +83,10 @@ public class Layout
     private boolean timetableCapture = false;
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
+    
+    // Route-related settings
+    private boolean activateRoutes = false;
+    private List<Integer> activateRouteIDs;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
@@ -138,6 +142,7 @@ public class Layout
         this.locomotiveMilestones = new HashMap<>();
         this.timetable = new LinkedList<>();
         this.locomotivePendingS88 = new HashMap<>();
+        this.activateRouteIDs = new LinkedList<>();
         
         Layout.layoutVersion += 1;
         Layout.lastError = "";
@@ -2620,6 +2625,34 @@ public class Layout
     }
     
     /**
+     * If false, we skip route-related settings
+     * @return 
+     */
+    public boolean isActivateRoutes()
+    {
+        return activateRoutes;
+    }
+
+    /**
+     * Route IDs to activate with this layout (those listed are deactivated)
+     * @return 
+     */
+    public List<Integer> getActivateRouteIDs()
+    {
+        return activateRouteIDs;
+    }
+
+    public void setActivateRoutes(boolean activateRoutes)
+    {
+        this.activateRoutes = activateRoutes;
+    }
+
+    public void setActivateRouteIDs(List<Integer> activateRouteIDs)
+    {
+        this.activateRouteIDs = activateRouteIDs;
+    }
+    
+    /**
      * Returns a concise string representing a path
      * @param path
      * @return 
@@ -2756,7 +2789,9 @@ public class Layout
         jsonObj.put("maxActiveTrains", this.maxActiveTrains);
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         jsonObj.put("timetable", timeTableJson);
-        
+        jsonObj.put("activateRoutes", this.isActivateRoutes());
+        jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
+
         if (this.simulate)
         {
             jsonObj.put("simulate", true);
@@ -3568,6 +3603,39 @@ public class Layout
             );
         }
         
+        // Read boolean safely
+        if (o.has("activateRoutes"))
+        {
+            layout.setActivateRoutes(o.optBoolean("activateRoutes", false));
+        }
+        
+        if (o.has("activateRouteIDs"))
+        {
+            JSONArray arr = o.optJSONArray("activateRouteIDs");
+            List<Integer> ids = new ArrayList<>();
+
+            try
+            {
+                if (arr != null)
+                {
+                    for (int i = 0; i < arr.length(); i++)
+                    {
+                        ids.add(arr.getInt(i));
+                    }   
+                }
+            }
+            catch (Exception e)
+            {
+                control.logf(
+                    "autolayout.warnRouteConfig",
+                    "activateRouteIDs",
+                    e.getMessage()
+                );
+            }
+            
+            layout.setActivateRouteIDs(ids);
+        }
+  
         /*if (locomotives.isEmpty())
         {
             control.log("Auto layout error: No locomotives placed.");

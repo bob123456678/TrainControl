@@ -330,6 +330,8 @@ Requires JDK 1.8+ and the following libraries:
 * v2.6.1 [Beta]
     - Autonomy Graph
         - Moved all display options from the "Autonomy Settings" tab in the main UI to the right-click menu in the graph UI
+    - Autonomy
+        - Routes can now be enabled together with autonomy configurations via the JSON keys activateRoutes` and `activateRouteIDs`, and corresponding UI options
 
 * v2.6.0 [11/24/2025]
     - Added internationalizaiton support

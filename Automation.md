@@ -480,3 +480,7 @@ From v2.4.9, if you want locomotives to also show up on the track diagram (not j
 # Locomotive concurrency
 
 From v2.4.11, use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
+
+# Enabling routes
+
+If your autonomy configuration also requires certain routes, set `activateRoutes` to true, then specify the numerical route IDs in `activateRouteIDs`.  These settings are also available in the UI autonomy options tab.  Listed routes will be activated, while others will be deactivated.

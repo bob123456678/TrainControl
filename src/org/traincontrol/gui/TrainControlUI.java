@@ -3519,6 +3519,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autoLocPanel = new javax.swing.JPanel();
         gracefulStop = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
+        reopenGraphButton = new javax.swing.JButton();
         timetablePanel = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
         timetable = new javax.swing.JTable();
@@ -3547,7 +3548,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel53 = new javax.swing.JLabel();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
-        reopenGraphButton = new javax.swing.JButton();
         jLabel52 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
@@ -5756,6 +5756,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        reopenGraphButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        reopenGraphButton.setText(bundle.getString("ui.main.reopenGraph")); // NOI18N
+        reopenGraphButton.setFocusable(false);
+        reopenGraphButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reopenGraphButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
         locCommandTab.setLayout(locCommandTabLayout);
         locCommandTabLayout.setHorizontalGroup(
@@ -5767,6 +5776,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addGroup(locCommandTabLayout.createSequentialGroup()
                         .addComponent(gracefulStop)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(reopenGraphButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(startAutonomy)))
                 .addContainerGap())
         );
@@ -5776,9 +5787,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap()
                 .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(startAutonomy)
-                    .addComponent(gracefulStop))
+                    .addComponent(gracefulStop)
+                    .addComponent(reopenGraphButton, javax.swing.GroupLayout.DEFAULT_SIZE, 24, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
+                .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 510, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -6145,30 +6157,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
-        reopenGraphButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        reopenGraphButton.setText(bundle.getString("ui.main.reopenGraph")); // NOI18N
-        reopenGraphButton.setFocusable(false);
-        reopenGraphButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                reopenGraphButtonActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(reopenGraphButton, javax.swing.GroupLayout.PREFERRED_SIZE, 196, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGap(0, 208, Short.MAX_VALUE)
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(reopenGraphButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGap(0, 34, Short.MAX_VALUE)
         );
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
@@ -11111,7 +11108,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JOptionPane.showMessageDialog(
                     this,
-                    I18n.t("route.ui.errorS88RequiredForAutoFire")
+                    I18n.f("route.ui.errorS88RequiredForAutoFire", r.getName())
                 );
             }
         }).start();
@@ -12521,6 +12518,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
+                // Need to repaint route UI if we are making changes
+                if (this.model.getAutoLayout().isActivateRoutes())
+                {
+                    this.refreshRouteList();
+                }
+                
                 locCommandPanels.addTab(
                     I18n.t("autolayout.ui.tabLocomotiveCommands"),
                     this.locCommandTab
@@ -13722,7 +13725,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void reopenGraphButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reopenGraphButtonActionPerformed
         this.ensureGraphUIVisible();
         
-        if (this.graphViewer != null && this.graphViewer.isVisible()) this.graphViewer.requestFocus();
+        if (this.graphViewer != null && this.graphViewer.isVisible())
+        {
+            this.graphViewer.requestFocus();
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorConfigurationInvalidMustReload"));
+        }
     }//GEN-LAST:event_reopenGraphButtonActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)

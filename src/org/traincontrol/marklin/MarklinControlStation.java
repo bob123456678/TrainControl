@@ -509,6 +509,44 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.autoLayout = Layout.fromJSON(s, this);
+        
+        // Handle auto layout route definitions
+        if (this.autoLayout != null)
+        {
+            // Layout specifies settings for routes
+            if (this.autoLayout.isActivateRoutes())
+            {
+                // Disable or enable routes
+                for (MarklinRoute r : this.getRoutes())
+                {
+                    if (!this.autoLayout.getActivateRouteIDs().contains(r.getId()))
+                    {
+                        if (r.isEnabled())
+                        {
+                            r.disable();
+                            
+                            this.logf("route.autolayoutDisabledRoute", r.getId());
+                        }
+                    }
+                    else
+                    {
+                        if (r.hasS88())
+                        {
+                            if (!r.isEnabled())
+                            {
+                                r.enable();
+                                r.executeAutoRoute();
+                                this.logf("route.autolayoutEnabledRoute", r.getId());
+                            }
+                        }
+                        else
+                        {
+                            this.logf("route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
+                        }
+                    }
+                }
+            }
+        }
     }
     
     /**
