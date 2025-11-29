@@ -26,6 +26,7 @@ import org.graphstream.ui.view.Viewer;
 import org.graphstream.ui.view.View;
 import org.graphstream.ui.view.camera.Camera;
 import org.graphstream.ui.view.util.InteractiveElement;
+import static org.traincontrol.gui.TrainControlUI.SHOW_STATION_LENGTH;
 import org.traincontrol.util.I18n;
 
 /**
@@ -278,7 +279,7 @@ final public class GraphViewer extends PositionAwareJFrame
                             if (!p.getName().equals(getLastHoveredNode()))
                             {
                                 // Last hovered node will be used by key listener, so put this condition here instead of above
-                                if (parent.isShowStationLengthsSelected())
+                                if (TrainControlUI.getPrefs().getBoolean(SHOW_STATION_LENGTH, true))
                                 {
                                     List<String> locomotiveNames = p.getExcludedLocs().stream()
                                         .map(Locomotive::getName)

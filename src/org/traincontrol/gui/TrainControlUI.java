@@ -642,9 +642,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
-        this.hideReversing.setSelected(prefs.getBoolean(HIDE_REVERSING_PREF, false));
-        this.hideInactive.setSelected(prefs.getBoolean(HIDE_INACTIVE_PREF, false));
-        this.showStationLengths.setSelected(prefs.getBoolean(SHOW_STATION_LENGTH, true));
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
@@ -3550,9 +3547,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel53 = new javax.swing.JLabel();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
-        hideReversing = new javax.swing.JCheckBox();
-        hideInactive = new javax.swing.JCheckBox();
-        showStationLengths = new javax.swing.JCheckBox();
         reopenGraphButton = new javax.swing.JButton();
         jLabel52 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
@@ -6151,36 +6145,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
-        hideReversing.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideReversing.setText(bundle.getString("ui.main.hideReversingStations")); // NOI18N
-        hideReversing.setToolTipText(bundle.getString("ui.main.tooltip.hideReversingStations")); // NOI18N
-        hideReversing.setFocusable(false);
-        hideReversing.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                hideReversingMouseReleased(evt);
-            }
-        });
-
-        hideInactive.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        hideInactive.setText(bundle.getString("ui.main.hideInactivePoints")); // NOI18N
-        hideInactive.setToolTipText(bundle.getString("ui.main.tooltip.hideInactivePoints")); // NOI18N
-        hideInactive.setFocusable(false);
-        hideInactive.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                hideInactiveMouseReleased(evt);
-            }
-        });
-
-        showStationLengths.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        showStationLengths.setText(bundle.getString("ui.main.showLengthsExclusions")); // NOI18N
-        showStationLengths.setToolTipText(bundle.getString("ui.main.tooltip.showLengthsExclusions")); // NOI18N
-        showStationLengths.setFocusable(false);
-        showStationLengths.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                showStationLengthsMouseReleased(evt);
-            }
-        });
-
         reopenGraphButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         reopenGraphButton.setText(bundle.getString("ui.main.reopenGraph")); // NOI18N
         reopenGraphButton.setFocusable(false);
@@ -6196,25 +6160,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(hideReversing)
-                    .addComponent(hideInactive)
-                    .addComponent(showStationLengths, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(reopenGraphButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(reopenGraphButton, javax.swing.GroupLayout.PREFERRED_SIZE, 196, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(hideReversing)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(hideInactive)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(showStationLengths, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(reopenGraphButton)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
@@ -11514,12 +11468,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.repaintAutoLocListLite();
         }));
     }
-    
-    public boolean isShowStationLengthsSelected()
-    {
-        return this.showStationLengths.isSelected();
-    }
-    
+        
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
         {
@@ -11789,45 +11738,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
         this.KeyboardTab.requestFocus();
     }//GEN-LAST:event_locCommandPanelsMouseClicked
-
-    private void showStationLengthsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_showStationLengthsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.ensureGraphUIVisible();
-            this.updateVisiblePoints();
-            prefs.putBoolean(SHOW_STATION_LENGTH, this.showStationLengths.isSelected());
-        }
-        else
-        {
-            this.showStationLengths.setSelected(!this.showStationLengths.isSelected());
-        }
-    }//GEN-LAST:event_showStationLengthsMouseReleased
-
-    private void hideInactiveMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideInactiveMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.ensureGraphUIVisible();
-            this.updateVisiblePoints();
-            prefs.putBoolean(HIDE_INACTIVE_PREF, this.hideInactive.isSelected());
-        }
-        else
-        {
-            this.hideInactive.setSelected(!this.hideInactive.isSelected());
-        }
-    }//GEN-LAST:event_hideInactiveMouseReleased
-
-    private void hideReversingMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_hideReversingMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            this.ensureGraphUIVisible();
-            this.updateVisiblePoints();
-            prefs.putBoolean(HIDE_REVERSING_PREF, this.hideReversing.isSelected());
-        }
-        else
-        {
-            this.hideReversing.setSelected(!this.hideReversing.isSelected());
-        }
-    }//GEN-LAST:event_hideReversingMouseReleased
 
     private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
         if (!this.isAutoLayoutRunning())
@@ -13811,6 +13721,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void reopenGraphButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reopenGraphButtonActionPerformed
         this.ensureGraphUIVisible();
+        
+        if (this.graphViewer != null && this.graphViewer.isVisible()) this.graphViewer.requestFocus();
     }//GEN-LAST:event_reopenGraphButtonActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
@@ -14151,7 +14063,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void updateEdgeLength(Edge e, Graph graph)
     {
-        if (e.getLength() > 0 && this.isShowStationLengthsSelected())
+        if (e.getLength() > 0 && prefs.getBoolean(SHOW_STATION_LENGTH, true))
         {
             graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getLength());
         }
@@ -14189,7 +14101,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {    
             this.updatePoint(p, g);
 
-            if (this.hideReversing.isSelected() && 
+            if (prefs.getBoolean(HIDE_REVERSING_PREF, false) && 
                     (p.isReversing() 
                     && (this.model.getAutoLayout().hasOnlyReversingIncoming(p)
                     || this.model.getAutoLayout().hasOnlyReversingNeighbors(p))
@@ -14198,7 +14110,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
             }
-            else if (this.hideInactive.isSelected() && 
+            else if (prefs.getBoolean(HIDE_INACTIVE_PREF, false) && 
                     (!p.isActive()
                     && (this.model.getAutoLayout().hasOnlyInactiveIncoming(p) 
                     || this.model.getAutoLayout().hasOnlyInactiveNeighbors(p))
@@ -14241,12 +14153,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         String lengthSuffix = "";
         String additionalStyle = "";
         
-        if (p.getMaxTrainLength() > 0 && this.showStationLengths.isSelected())
+        if (p.getMaxTrainLength() > 0 && prefs.getBoolean(SHOW_STATION_LENGTH, true))
         {
             lengthSuffix = " (" + p.getMaxTrainLength() + ")";
         }
         
-        if (!p.getExcludedLocs().isEmpty() && this.showStationLengths.isSelected())
+        if (!p.getExcludedLocs().isEmpty() && prefs.getBoolean(SHOW_STATION_LENGTH, true))
         {
             additionalStyle = "shadow-mode:plain; shadow-color:rgb(255,102,0); shadow-width: 4; shadow-offset:0;";
         }
@@ -15283,8 +15195,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu functionsMenu;
     private javax.swing.JButton gracefulStop;
     private javax.swing.JMenu helpMenu;
-    private javax.swing.JCheckBox hideInactive;
-    private javax.swing.JCheckBox hideReversing;
     private javax.swing.JMenuItem importRoutesMenuItem;
     private javax.swing.JMenuItem initializeLocalLayoutMenuItem;
     private javax.swing.JMenu interfaceMenu;
@@ -15381,7 +15291,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem showCurrentLayoutFolderMenuItem;
     private javax.swing.JCheckBoxMenuItem showKeyboardHintsMenuItem;
     private javax.swing.JCheckBoxMenuItem showPageTabsPreference;
-    private javax.swing.JCheckBox showStationLengths;
     private javax.swing.JCheckBox simulate;
     private javax.swing.JLabel sizeLabel;
     private javax.swing.JCheckBoxMenuItem slidersChangeActiveLocMenuItem;

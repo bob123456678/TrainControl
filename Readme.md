@@ -327,6 +327,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.6.1 [Beta]
+    - Autonomy Graph
+        - Moved all display options from the "Autonomy Settings" tab in the main UI to the right-click menu in the graph UI
+
 * v2.6.0 [11/24/2025]
     - Added internationalizaiton support
         - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources))

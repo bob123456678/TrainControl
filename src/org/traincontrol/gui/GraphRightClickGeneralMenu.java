@@ -3,11 +3,16 @@ package org.traincontrol.gui;
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import static org.traincontrol.gui.TrainControlUI.HIDE_INACTIVE_PREF;
+import static org.traincontrol.gui.TrainControlUI.HIDE_REVERSING_PREF;
+import static org.traincontrol.gui.TrainControlUI.SHOW_STATION_LENGTH;
 import org.traincontrol.util.I18n;
 
 /**
@@ -170,6 +175,90 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
 
             add(menuItem);
         }
+        
+        // Display options
+        addSeparator();
+        JMenu submenu = new JMenu(
+            I18n.t("autolayout.ui.menuDisplayOptions")
+        );
+        
+        if (!running)
+        {
+            JCheckBoxMenuItem hideRev = new JCheckBoxMenuItem(
+                I18n.t("ui.main.hideReversingStations"), 
+                TrainControlUI.getPrefs().getBoolean(HIDE_REVERSING_PREF, false)
+            );
+            hideRev.setToolTipText(I18n.t("ui.main.tooltip.hideReversingStations"));
+            hideRev.addItemListener(event ->
+            {
+                try
+                {
+                    TrainControlUI.getPrefs().putBoolean(HIDE_REVERSING_PREF, 
+                        !TrainControlUI.getPrefs().getBoolean(HIDE_REVERSING_PREF, false)
+                    );
+                    
+                    ui.updateVisiblePoints();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(parent, ex.getMessage());
+                }
+            });
+           
+            submenu.add(hideRev);
+            
+            JCheckBoxMenuItem hideInactive = new JCheckBoxMenuItem(
+                I18n.t("ui.main.hideInactivePoints"), 
+                TrainControlUI.getPrefs().getBoolean(HIDE_INACTIVE_PREF, false)
+            );
+            hideInactive.setToolTipText(I18n.t("ui.main.tooltip.hideInactivePoints"));
+            hideInactive.addItemListener(event ->
+            {
+                try
+                {
+                    TrainControlUI.getPrefs().putBoolean(HIDE_INACTIVE_PREF, 
+                        !TrainControlUI.getPrefs().getBoolean(HIDE_INACTIVE_PREF, false)
+                    );
+                    
+                    ui.updateVisiblePoints();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(parent, ex.getMessage());
+                }
+            });
+           
+            submenu.add(hideInactive);
+            
+            JCheckBoxMenuItem showLengths = new JCheckBoxMenuItem(
+                I18n.t("ui.main.showLengthsExclusions"), 
+                TrainControlUI.getPrefs().getBoolean(SHOW_STATION_LENGTH, true)
+            );
+            showLengths.setToolTipText(I18n.t("ui.main.tooltip.showLengthsExclusions"));
+            showLengths.addItemListener(event ->
+            {
+                try
+                {
+                    TrainControlUI.getPrefs().putBoolean(SHOW_STATION_LENGTH, 
+                        !TrainControlUI.getPrefs().getBoolean(SHOW_STATION_LENGTH, true)
+                    );
+                    
+                    ui.updateVisiblePoints();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(parent, ex.getMessage());
+                }
+            });
+           
+            submenu.add(showLengths);
+        }
+        else
+        {
+            submenu.setEnabled(false);
+        }
+        
+        add(submenu);
     }
 }
    
