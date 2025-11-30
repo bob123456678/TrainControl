@@ -5681,7 +5681,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
                         .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(autonomyPanelLayout.createSequentialGroup()
-                                .addComponent(validateButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(validateButton)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(loadDefaultBlankGraph)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -12623,20 +12623,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Need to repaint route UI if we are making changes
                 this.refreshRouteList();
                                 
-                locCommandPanels.addTab(
+                locCommandPanels.insertTab(
                     I18n.t("autolayout.ui.tabLocomotiveCommands"),
-                    this.locCommandTab
+                    null,                  // optional icon
+                    this.locCommandTab,
+                    null,                  // optional tooltip
+                    0                      // index position
                 );
 
-                locCommandPanels.addTab(
+                locCommandPanels.insertTab(
                     I18n.t("autolayout.ui.tabTimetable"),
-                    this.timetablePanel
+                    null,
+                    this.timetablePanel,
+                    null,
+                    1
                 );
 
-                locCommandPanels.addTab(
+                locCommandPanels.insertTab(
                     I18n.t("autolayout.ui.tabAutonomySettings"),
-                    this.autoSettingsPanel
+                    null,
+                    this.autoSettingsPanel,
+                    null,
+                    2
                 );
+
                 loadAutoLayoutSettings();
 
                 this.startAutonomy.setEnabled(true);
@@ -12644,7 +12654,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Advance to locomotive tab
                 this.locCommandPanels.setSelectedIndex(
-                    1
+                    0 //1
                     //(this.locCommandPanels.getSelectedIndex() + 1)
                     //% this.locCommandPanels.getComponentCount()
                 );

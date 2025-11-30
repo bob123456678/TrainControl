@@ -334,6 +334,7 @@ Requires JDK 1.8+ and the following libraries:
         - Routes can now be enabled together with autonomy configurations via the JSON keys activateRoutes` and `activateRouteIDs`, and corresponding UI options
         - Moved button to reopen graph UI to the Locomotive Control tab
         - The reopen graph UI button will now reopen minimized graph windows
+        - Rearranged the order of autonomy UI tabs
     - Improved translations
 
 * v2.6.0 [11/24/2025]
