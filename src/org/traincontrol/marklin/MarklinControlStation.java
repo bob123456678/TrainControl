@@ -533,7 +533,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         {
                             r.disable();
                             
-                            this.logf("route.autolayoutDisabledRoute", r.getId());
+                            this.logf("route.autolayoutDisabledRoute", r.getId() + ". " + r.getName());
                         }
                     }
                     else
@@ -544,7 +544,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             {
                                 r.enable();
                                 r.executeAutoRoute();
-                                this.logf("route.autolayoutEnabledRoute", r.getId());
+                                this.logf("route.autolayoutEnabledRoute", r.getId() + ". " + r.getName());
                             }
                         }
                         else

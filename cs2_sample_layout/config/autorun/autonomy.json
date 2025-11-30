@@ -15,11 +15,11 @@
             "name": "BottomExitVirt",
             "station": false,
             "excludedLocs": [
-                "ER 2035 DSB",
                 "MF 5028 DSB",
-                "MZ 1425 DSB",
                 "EU07-314",
-                "MY 1150 DSB"
+                "MZ 1425 DSB",
+                "MY 1150 DSB",
+                "ER 2035 DSB"
             ],
             "x": 455,
             "y": 110
@@ -30,16 +30,11 @@
             "s88": 1011,
             "maxTrainLength": 0,
             "priority": -3,
-            "loc": {
-                "name": "06 001 DRG",
-                "reversible": false,
-                "speed": 35
-            },
             "excludedLocs": [
-                "ER 2035 DSB",
                 "MF 5028 DSB",
                 "MZ 1425 DSB",
-                "MY 1150 DSB"
+                "MY 1150 DSB",
+                "ER 2035 DSB"
             ],
             "x": 567,
             "y": 182
@@ -51,10 +46,10 @@
             "maxTrainLength": 3,
             "priority": -2,
             "excludedLocs": [
-                "ER 2035 DSB",
                 "MF 5028 DSB",
                 "MZ 1425 DSB",
-                "MY 1150 DSB"
+                "MY 1150 DSB",
+                "ER 2035 DSB"
             ],
             "x": 613,
             "y": 297
@@ -368,6 +363,11 @@
             "s88": 1022,
             "maxTrainLength": 3,
             "priority": 2,
+            "loc": {
+                "name": "06 001 DRG",
+                "reversible": false,
+                "speed": 35
+            },
             "x": 391,
             "y": 406
         },
@@ -3215,5 +3215,10 @@
                 }
             ]
         }
+    ],
+    "activateRoutes": true,
+    "activateRouteIDs": [
+        61,
+        62
     ]
 }

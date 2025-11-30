@@ -7,6 +7,8 @@ There are three types of automation described on this page:
 * Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
 * Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
 
+The only hardware requirement is that you have feedback modules (S88 sensors) configured at your stations.  The minimum is one S88 per station, but we recommend having sensors before, at, and after the stopping point for the smoothest and most versatile operation.
+
 ## API
 
 Before jumping into layout automation, it is important to understand the basics of the TrainControl Java API.  
@@ -444,43 +446,47 @@ Unless the `speed` is specified within the `loc` array, each locomotive's prefer
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking on any point within the graph UI.
 
-## Speed adjustments
+## Timetables  (v2.1.0+)
 
-From v2.4.8, the `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
-
-The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
-
-## Ensuring network stability 
-
-From v2.4.7, the `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
-
-If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
-
-The lowest allowed nonzero threshold is 100ms.
-
-# Timetables
-
-From v2.1.0, TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
+TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
 
 To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points can be traversed in semi-autonomous mode, but not in timetable/fully autonomous mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
 
 The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.addTimetableEntry` or `Layout.setTimetable`.
 
-# Locomotive exclusions
+## Locomotive exclusions (v2.1.5+)
 
-From v2.1.5, you can prevent locomotives from stopping at a given station by adding them to the list within the 
+You can prevent locomotives from stopping at a given station by adding them to the list within the 
 `excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
 
 However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
 
-# Displaying locomotive locations on track diagrams
+## Ensuring network stability (v2.4.7+)
 
-From v2.4.9, if you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
+The `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
 
-# Locomotive concurrency
+If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
 
-From v2.4.11, use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
+The lowest allowed nonzero threshold is 100ms.
 
-# Enabling routes
+## Speed adjustments (v2.4.8+)
 
-If your autonomy configuration also requires certain routes, set `activateRoutes` to true, then specify the numerical route IDs in `activateRouteIDs`.  These settings are also available in the UI autonomy options tab.  Listed routes will be activated, while others will be deactivated.
+The `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
+
+The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
+
+## Displaying locomotive locations on track diagrams (v2.4.9+)
+
+If you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
+
+## Locomotive concurrency (v2.4.11+)
+
+Use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
+
+## Linking routes (v2.6.1+)
+
+If you want your autonomy configuration to require certain routes, set `activateRoutes` to true, then specify the numerical route IDs in `activateRouteIDs`.  These settings are also available in the UI autonomy options tab.  Listed routes will be activated, while others will be deactivated.  
+
+The chosen routes are required to have a triggering S88, as otherwise they can't fire on their own.
+
+This feature can be used for emergency stop logic, playing sound effects when locomotives reach a certain location, switching safety signals, etc.

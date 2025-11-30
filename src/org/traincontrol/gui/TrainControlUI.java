@@ -5765,6 +5765,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         reopenGraphButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         reopenGraphButton.setText(bundle.getString("ui.main.reopenGraph")); // NOI18N
+        reopenGraphButton.setToolTipText(bundle.getString("autolayout.ui.tooltip.reopenGraph")); // NOI18N
         reopenGraphButton.setFocusable(false);
         reopenGraphButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -6047,7 +6048,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         maxActiveTrains.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         maxActiveTrains.setMajorTickSpacing(5);
-        maxActiveTrains.setMaximum(10);
+        maxActiveTrains.setMaximum(20);
         maxActiveTrains.setMinorTickSpacing(1);
         maxActiveTrains.setPaintLabels(true);
         maxActiveTrains.setPaintTicks(true);
@@ -13861,6 +13862,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else
             {
                 this.model.getAutoLayout().setActivateRoutes(!this.model.getAutoLayout().isActivateRoutes());
+                this.model.applyAutonomyRouteActivations();
             }
 
             this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());

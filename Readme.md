@@ -327,7 +327,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.6.1 [Beta]
+* v2.6.1 [11/29/2025]
     - Autonomy Graph
         - Moved all display options from the "Autonomy Settings" tab in the main UI to the right-click menu in the graph UI
     - Autonomy
