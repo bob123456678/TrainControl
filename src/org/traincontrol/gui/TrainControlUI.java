@@ -3376,7 +3376,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList();
-        buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
         buttonGroup3 = new javax.swing.ButtonGroup();
         buttonGroup4 = new javax.swing.ButtonGroup();
@@ -3556,7 +3555,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         toggleSpecifiedRoutes = new javax.swing.JCheckBox();
         jScrollPane4 = new javax.swing.JScrollPane();
         autoRouteList = new javax.swing.JList<>();
-        linkedRoutesLabel = new javax.swing.JLabel();
         jLabel52 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
@@ -6204,10 +6202,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
         jScrollPane4.setViewportView(autoRouteList);
 
-        linkedRoutesLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        linkedRoutesLabel.setForeground(new java.awt.Color(0, 0, 115));
-        linkedRoutesLabel.setText(bundle.getString("autolayout.ui.linkedRoutesLabel")); // NOI18N
-
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -6216,9 +6210,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addComponent(linkedRoutesLabel)
-                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(toggleSpecifiedRoutes, javax.swing.GroupLayout.DEFAULT_SIZE, 211, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -6226,8 +6217,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(linkedRoutesLabel)
-                .addGap(4, 4, 4)
                 .addComponent(toggleSpecifiedRoutes)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane4)
@@ -6236,7 +6225,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
         jLabel52.setForeground(new java.awt.Color(0, 0, 115));
-        jLabel52.setText(bundle.getString("ui.main.graphUIOptions")); // NOI18N
+        jLabel52.setText(bundle.getString("autolayout.ui.linkedRoutesLabel")); // NOI18N
 
         javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
         autoSettingsPanel.setLayout(autoSettingsPanelLayout);
@@ -15314,7 +15303,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autonomyPanel;
     private javax.swing.JCheckBox autosave;
     private javax.swing.JMenuItem backupDataMenuItem;
-    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.ButtonGroup buttonGroup4;
@@ -15436,7 +15424,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu layoutMenuItem;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
-    private javax.swing.JLabel linkedRoutesLabel;
     private javax.swing.JButton loadDefaultBlankGraph;
     private javax.swing.JButton loadJSONButton;
     private javax.swing.JTabbedPane locCommandPanels;
