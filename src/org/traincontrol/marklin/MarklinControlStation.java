@@ -2217,6 +2217,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (r != null)
         {
             r.disable();
+            
+            // Update auto layout route selections
+            if (this.getAutoLayout() != null)
+            {
+                if (this.getAutoLayout().getActivateRouteIDs().contains((Integer) r.getId()))
+                {
+                    this.getAutoLayout().getActivateRouteIDs().remove((Integer) r.getId());
+                }
+            }
+            
             this.routeDB.delete(r.getName());
         }        
     }
@@ -2251,10 +2261,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Route to clone does not exist, 
         if (r == null || this.routeDB.getById(newId) != null) return false;
         
+        Integer oldId = r.getId();
+        
         this.routeDB.delete(name);
         
         r.setId(newId);
         this.routeDB.add(r, name, newId);
+        
+        // Update auto layout route selections
+        if (this.getAutoLayout() != null)
+        {
+            if (this.getAutoLayout().getActivateRouteIDs().contains(oldId))
+            {
+                this.getAutoLayout().getActivateRouteIDs().remove(oldId);
+                this.getAutoLayout().getActivateRouteIDs().add(newId);
+            }
+        }
         
         return true;
     }

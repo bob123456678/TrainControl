@@ -85,6 +85,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JTable;
@@ -13836,6 +13837,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.graphViewer != null && this.graphViewer.isVisible())
         {
+            if ((this.graphViewer.getExtendedState() & JFrame.ICONIFIED) == JFrame.ICONIFIED)
+            {
+                this.graphViewer.setExtendedState(JFrame.NORMAL);
+            }
+
+            // Bring it to the front
+            this.graphViewer.toFront();
             this.graphViewer.requestFocus();
         }
         else
