@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,10 +15,12 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import static org.traincontrol.gui.TrainControlUI.AUTONOMY_BLANK;
 import static org.traincontrol.gui.TrainControlUI.AUTONOMY_SAMPLE;
 import static org.traincontrol.gui.TrainControlUI.RESOURCE_PATH;
+import org.traincontrol.marklin.MarklinRoute;
 
 /**
  *
@@ -28,6 +31,43 @@ public class testAutoLayout
     
     public testAutoLayout()
     {
+    }
+    
+    @Test
+    public void testAutoRoute()
+    { 
+        Layout layout = model.getAutoLayout();
+        
+        MarklinRoute r = model.getRoute("Testcase Route 1");
+        
+        layout.setActivateRouteIDs(Collections.singletonList(r.getId()));
+        layout.setActivateRoutes(false);
+        
+        assertEquals(r.isEnabled(), false);
+        
+        // This should not enable the route
+        model.applyAutonomyRouteActivations();
+        
+        layout.setActivateRoutes(true);
+        assertEquals(r.isEnabled(), false);
+        
+        // This should now enable the route
+        model.applyAutonomyRouteActivations();
+        
+        assertEquals(r.isEnabled(), true);
+        
+        // And disable all other routes
+        for (MarklinRoute otherRoute : model.getRoutes())
+        {
+            if (otherRoute.getId() == r.getId())
+            {
+                assertEquals(otherRoute.isEnabled(), true);
+            }
+            else
+            {
+                assertEquals(otherRoute.isEnabled(), false);
+            }      
+        }
     }
     
     /**
@@ -226,6 +266,10 @@ public class testAutoLayout
         
         model.newDCCLocomotive("Test loc MU CS", 2);
         model.changeLocAddress("Test loc MU CS", 100, MarklinLocomotive.decoderType.MULTI_UNIT);
+        
+        model.newRoute("Testcase Route 1", 
+                Collections.singletonList(RouteCommand.RouteCommandStop()),
+                2001, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, false, null);
     }
 
     @AfterClass
@@ -245,6 +289,8 @@ public class testAutoLayout
         model.deleteLoc("Test loc 1 DCC");
         
         model.deleteLoc("Test loc MU CS");
+        
+        model.deleteRoute("Testcase Route 1");
     }
 
     @BeforeMethod
