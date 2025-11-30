@@ -74,6 +74,8 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
@@ -84,6 +86,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -97,6 +100,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.MatteBorder;
@@ -3548,6 +3552,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel53 = new javax.swing.JLabel();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
+        toggleSpecifiedRoutes = new javax.swing.JCheckBox();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        autoRouteList = new javax.swing.JList<>();
+        linkedRoutesLabel = new javax.swing.JLabel();
         jLabel52 = new javax.swing.JLabel();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
@@ -5688,7 +5696,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 221, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 179, Short.MAX_VALUE)
                         .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap())))
         );
@@ -5882,11 +5890,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         minDelay.setFocusable(false);
         minDelay.setMaximumSize(new java.awt.Dimension(230, 55));
         minDelay.setPreferredSize(new java.awt.Dimension(230, 55));
-        minDelay.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                minDelayStateChanged(evt);
-            }
-        });
         minDelay.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 minDelayMouseReleased(evt);
@@ -6157,15 +6160,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
 
+        toggleSpecifiedRoutes.setText(bundle.getString("autolayout.ui.toggleRoutes")); // NOI18N
+        toggleSpecifiedRoutes.setToolTipText(bundle.getString("autolayout.ui.tooltip.toggleRoutes")); // NOI18N
+        toggleSpecifiedRoutes.setFocusable(false);
+        toggleSpecifiedRoutes.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                toggleSpecifiedRoutesMouseReleased(evt);
+            }
+        });
+
+        autoRouteList.setModel(new DefaultListModel<Route>());
+        autoRouteList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                JList<?> list,
+                Object value,
+                int index,
+                boolean isSelected,
+                boolean cellHasFocus
+            ) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                    list, value, index, isSelected, cellHasFocus
+                );
+
+                if (value instanceof Route) {
+                    Route route = (Route) value;
+                    // Use your model to resolve ID from name
+                    String name = route.getName();
+                    int id = model.getRouteId(name);
+
+                    label.setText(id + ". " + name);
+                }
+
+                return label;
+            }
+        });
+        autoRouteList.setFocusable(false);
+        autoRouteList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                autoRouteListMouseReleased(evt);
+            }
+        });
+        jScrollPane4.setViewportView(autoRouteList);
+
+        linkedRoutesLabel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        linkedRoutesLabel.setForeground(new java.awt.Color(0, 0, 115));
+        linkedRoutesLabel.setText(bundle.getString("autolayout.ui.linkedRoutesLabel")); // NOI18N
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 208, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(linkedRoutesLabel)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(toggleSpecifiedRoutes, javax.swing.GroupLayout.DEFAULT_SIZE, 211, Short.MAX_VALUE))
+                .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 34, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(linkedRoutesLabel)
+                .addGap(4, 4, 4)
+                .addComponent(toggleSpecifiedRoutes)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane4)
+                .addContainerGap())
         );
 
         jLabel52.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
@@ -6185,7 +6250,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel52)
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -6195,9 +6260,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addComponent(jLabel51, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel52))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(94, 94, 94))
         );
 
@@ -11871,10 +11936,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_minDelayMouseReleased
 
-    private void minDelayStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minDelayStateChanged
-
-    }//GEN-LAST:event_minDelayStateChanged
-
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -12444,6 +12505,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /**
+     * Sets the UI route selections to equal what's stored in the model
+     */
+    private void applyAutoRouteListSelections()
+    {
+        if (this.model.getAutoLayout() != null)
+        {
+            List<Integer> activeIDs = this.model.getAutoLayout().getActivateRouteIDs();
+
+            // Collect indices of routes that should be selected
+            List<Integer> selectedIndices = new ArrayList<>();
+
+            ListModel<Route> listModel = this.autoRouteList.getModel();
+            for (int i = 0; i < listModel.getSize(); i++)
+            {
+                MarklinRoute r = (MarklinRoute) listModel.getElementAt(i);
+                if (activeIDs.contains(r.getId()))
+                {
+                    selectedIndices.add(i);
+                }
+            }
+
+            // Convert to primitive int[] for JList
+            int[] indicesArray = selectedIndices.stream().mapToInt(Integer::intValue).toArray();
+            this.autoRouteList.setSelectedIndices(indicesArray);
+        }
+    }
+    
+    /**
+     * Populates the autonomy route list in the UI, then displays the selections to the user
+     * Called when graphs are loaded
+     */
+    private void updateAutoRouteList()
+    {
+        if (this.getModel().getAutoLayout() != null)
+        {
+            DefaultListModel<Route> listModel = new DefaultListModel<>();
+
+            for (String s : this.model.getRouteList())
+            {
+                listModel.addElement(this.model.getRoute(s));
+            } 
+            
+            this.autoRouteList.setEnabled(this.model.getAutoLayout().isActivateRoutes());
+            this.autoRouteList.setModel(listModel);
+            
+            this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
+            applyAutoRouteListSelections();
+        }
+    }
+    
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
@@ -12519,11 +12631,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else
             {
                 // Need to repaint route UI if we are making changes
-                if (this.model.getAutoLayout().isActivateRoutes())
-                {
-                    this.refreshRouteList();
-                }
-                
+                this.refreshRouteList();
+                                
                 locCommandPanels.addTab(
                     I18n.t("autolayout.ui.tabLocomotiveCommands"),
                     this.locCommandTab
@@ -13735,6 +13844,54 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_reopenGraphButtonActionPerformed
 
+    private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            if (this.getModel().getAutoLayout().isRunning())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+            }
+            else
+            {
+                this.model.getAutoLayout().setActivateRoutes(!this.model.getAutoLayout().isActivateRoutes());
+            }
+
+            this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
+            
+            this.autoRouteList.setEnabled(this.model.getAutoLayout().isActivateRoutes());
+        }));
+    }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
+
+    private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
+            
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            if (this.model.getAutoLayout() != null)
+            {
+                if (this.getModel().getAutoLayout().isRunning())
+                {
+                    this.applyAutoRouteListSelections();
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                }
+                else
+                {
+                    // Collect IDs of all selected routes
+                    List<Integer> activateRouteIDs = new ArrayList<>();
+
+                    for (Route r :  this.autoRouteList.getSelectedValuesList())
+                    {
+                        activateRouteIDs.add(((MarklinRoute) r).getId());
+                    }
+
+                    // Push back into the model
+                    this.model.getAutoLayout().setActivateRouteIDs(activateRouteIDs);
+                    this.model.applyAutonomyRouteActivations();
+                    this.refreshRouteList();
+                }
+            }    
+        }));
+    }//GEN-LAST:event_autoRouteListMouseReleased
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -14896,6 +15053,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.RouteList.getColumnModel().getColumn(j).setCellRenderer(new CustomTableRenderer());
             }
 
+            // Update autonomy route list
+            this.updateAutoRouteList();
+
             // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
         }));
     }
@@ -15140,6 +15300,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autoLocPanel;
     private javax.swing.JScrollPane autoLocScroll;
     private javax.swing.JPanel autoPanel;
+    private javax.swing.JList<Route> autoRouteList;
     private javax.swing.JPanel autoSettingsPanel;
     private javax.swing.JTextArea autonomyJSON;
     private javax.swing.JPanel autonomyPanel;
@@ -15231,6 +15392,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
@@ -15266,6 +15428,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu layoutMenuItem;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
+    private javax.swing.JLabel linkedRoutesLabel;
     private javax.swing.JButton loadDefaultBlankGraph;
     private javax.swing.JButton loadJSONButton;
     private javax.swing.JTabbedPane locCommandPanels;
@@ -15315,6 +15478,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JToggleButton timetableCapture;
     private javax.swing.JPanel timetablePanel;
     private javax.swing.JCheckBox toggleMenuBar;
+    private javax.swing.JCheckBox toggleSpecifiedRoutes;
     private javax.swing.JMenuItem turnOffFunctionsMenuItem;
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;

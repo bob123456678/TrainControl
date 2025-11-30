@@ -509,7 +509,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.autoLayout = Layout.fromJSON(s, this);
-        
+        this.applyAutonomyRouteActivations();
+    }
+    
+    /**
+     * Applies route on/off status definitions in autonomy configuration
+     */
+    @Override
+    public void applyAutonomyRouteActivations()
+    {
         // Handle auto layout route definitions
         if (this.autoLayout != null)
         {

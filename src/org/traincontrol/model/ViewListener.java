@@ -62,6 +62,7 @@ public interface ViewListener
     public int getRouteId(String name);
     public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses();
     public void parseAuto(String s);
+    public void applyAutonomyRouteActivations();
     public Layout getAutoLayout();
     public boolean hasAutoLayout();
     public boolean isAutonomyRunning();
