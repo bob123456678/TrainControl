@@ -327,7 +327,8 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.6.2 [Beta]
+* v2.6.2 [12/16/2025]
+    - Improved the quality of large track diagram icons
     - Fixed bug where locomotive functions selected in the route editor UI were inconsistent
 
 * v2.6.1 [11/29/2025]
