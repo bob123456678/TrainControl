@@ -1566,7 +1566,7 @@ public class RouteEditor extends PositionAwareJFrame
             }
             else
             {
-                rc = RouteCommand.RouteCommandFunction((String) locNameList.getSelectedItem(), commandTypeList.getSelectedIndex() - 1, locFuncOn.isSelected());
+                rc = RouteCommand.RouteCommandFunction((String) locNameList.getSelectedItem(), commandTypeList.getSelectedIndex() - 3, locFuncOn.isSelected());
             }
             
             try

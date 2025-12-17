@@ -327,6 +327,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.6.2 [Beta]
+    - Fixed bug where locomotive functions selected in the route editor UI were inconsistent
+
 * v2.6.1 [11/29/2025]
     - Autonomy Graph
         - Moved all display options from the "Autonomy Settings" tab in the main UI to the right-click menu in the graph UI
