@@ -3023,9 +3023,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 {
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
+                                        String url = this.activeLoc.getImageURL();
+
                                         try 
                                         {
-                                            String url = this.activeLoc.getImageURL();
                                             ImageIcon icon = new javax.swing.ImageIcon(
                                                 getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
                                                 // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
@@ -3042,8 +3043,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         }
                                         catch (IOException e)
                                         {
-                                            locIcon.setIcon(null);
-                                            locIcon.setVisible(false);
+                                            if (this.activeLoc != null && url != null && url.equals(this.activeLoc.getImageURL()))
+                                            {
+                                                locIcon.setIcon(null);
+                                                locIcon.setVisible(false);
+                                            }
                                         }
                                     }
                                     else
