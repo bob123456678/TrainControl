@@ -270,6 +270,17 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, true));
                 menuItem.setToolTipText("Control+X");
                 add(menuItem);
+                
+                menuItem = new JMenuItem(
+                    I18n.t("loc.ui.menuClearButton")
+                );
+                menuItem.setToolTipText("Delete");
+                // Doing this twice effectively clears the clipboard
+                menuItem.addActionListener(event -> { 
+                    ui.setCopyTarget(source, true); 
+                    ui.setCopyTarget(source, true); 
+                });
+                add(menuItem);
             }
         }
     }

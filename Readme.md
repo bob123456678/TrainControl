@@ -189,6 +189,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Alt+comma/period, Alt+semicolon/colon (jump to first/last loc page)
     * Control+F (quickly jump to/search for any locomotive)
     * Control+C (copy locomotive at currently active button)
+    * Delete (clear mapping of currently active button)
     * Control+X (cut locomotive and clear mapping of currently active button)
     * Control+V (paste copied locomotive at currently active button)
     * Control+S (swap copied locomotive with currently active button)
@@ -326,6 +327,10 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.6.3 [2/22/2026]
+    - Fixed bug where locomotive icons might be incorrectly repainted when the Central Station latency is high
+    - Added a "Clear Button" option to the right-click menu (keyboard shortcut: Delete).  This allows you to clear a locomotive button without putting the locomotive on the clipboard as with Control+X.
 
 * v2.6.2 [12/16/2025]
     - Improved the quality of large track diagram icons

@@ -2897,12 +2897,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             return;
                         }
                         
-                        b.setIcon(ic);  
+                        // Check that the locomotive hasn't changed - only a sanity check if the latency is high
+                        if (this.getButtonLocomotive(b).equals(l))
+                        {                     
+                            b.setIcon(ic);  
 
-                        b.setHorizontalTextPosition(SwingConstants.CENTER);
+                            b.setHorizontalTextPosition(SwingConstants.CENTER);
 
-                        b.setForeground(Color.WHITE);
-                        b.setContentAreaFilled(false);
+                            b.setForeground(Color.WHITE);
+                            b.setContentAreaFilled(false);
+                        }
                     } 
                     catch (Exception e)
                     {
@@ -3021,12 +3025,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     {
                                         try 
                                         {
-                                            locIcon.setIcon(new javax.swing.ImageIcon(
+                                            String url = this.activeLoc.getImageURL();
+                                            ImageIcon icon = new javax.swing.ImageIcon(
                                                 getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
                                                 // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                                            ));      
-                                            locIcon.setText("");
-                                            locIcon.setVisible(true);
+                                            );
+                                            
+                                            // If the network is laggy, this could show an icon even though no loc is selected
+                                            // Check to ensure there is still an active loc and it hasn't changed
+                                            if (this.activeLoc != null && url != null && url.equals(this.activeLoc.getImageURL()))
+                                            {
+                                                locIcon.setIcon(icon);      
+                                                locIcon.setText("");
+                                                locIcon.setVisible(true);
+                                            }
                                         }
                                         catch (IOException e)
                                         {
@@ -3069,7 +3081,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                             {
                                                 Image icon = getLocImage(targetURL, BUTTON_ICON_WIDTH);
 
-                                                if (icon != null)
+                                                if (icon != null && this.activeLoc != null)
                                                 {
                                                     bt.setIcon(
                                                         new javax.swing.ImageIcon(
@@ -9311,6 +9323,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else if (controlPressed && keyCode == KeyEvent.VK_X)
         {
+            this.setCopyTarget(this.currentButton, true);
+        }
+        else if (!controlPressed && keyCode == KeyEvent.VK_DELETE)
+        {
+            // This is the same as clearing the button
+            this.setCopyTarget(this.currentButton, true);
             this.setCopyTarget(this.currentButton, true);
         }
         else if (this.buttonMapping.containsKey(keyCode))
