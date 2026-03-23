@@ -328,6 +328,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.6.4 [3/23/2026]
+    - In the locomotive similarity search, added option to include only autonomy locomotives
+
 * v2.6.3 [2/22/2026]
     - Fixed bug where locomotive icons might be incorrectly repainted when the Central Station latency is high
     - Added a "Clear Button" option to the right-click menu (keyboard shortcut: Delete).  This allows you to clear a locomotive button without putting the locomotive on the clipboard as with Control+X.

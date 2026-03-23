@@ -10556,9 +10556,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         JRadioButton leastUsedOrder = new JRadioButton(
             I18n.t("search.ui.radioLeastUsed")
         );
+        JRadioButton autonomyOrder = new JRadioButton(
+            I18n.t("search.ui.radioFromAutonomy")
+        );
         ButtonGroup orderGroup = new ButtonGroup();
         orderGroup.add(randomOrder);
         orderGroup.add(leastUsedOrder);
+        orderGroup.add(autonomyOrder);
 
         JPanel inputPanel = new JPanel(new GridLayout(0, 1));
         inputPanel.add(new JLabel(I18n.t("search.ui.labelMaximumMatches")));
@@ -10569,6 +10573,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         inputPanel.add(new JLabel(I18n.t("search.ui.labelOrdering")));
         inputPanel.add(randomOrder);
         inputPanel.add(leastUsedOrder);
+        inputPanel.add(autonomyOrder);
+        
+        // Special option for selecting only autonomy locomotives if autonomy is active
+        if (this.getModel().getAutoLayout() == null || this.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+        {
+            autonomyOrder.setVisible(false);
+        }
 
         int result = JOptionPane.showOptionDialog(
             source,
@@ -10597,6 +10608,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ? this.currentLocMapping().values().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList())
                 : this.model.getLocomotives().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList());
 
+            // Narrow to what's on the graph
+            if (this.getModel().getAutoLayout() != null && autonomyOrder.isSelected() 
+                    && !this.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+            {
+                sourceLocs.retainAll(this.getModel().getAutoLayout().getLocomotivesToRun());
+            }
+            
             boolean randomize = randomOrder.isSelected();
 
             List<Locomotive> matches = Locomotive.findSimilarLocomotives(
