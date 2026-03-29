@@ -12515,7 +12515,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Advance to locomotive autonomy tab
         this.locCommandPanels.setSelectedIndex(
-            1
+            0
         );
 
         this.KeyboardTab.requestFocus();

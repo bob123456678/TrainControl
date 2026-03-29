@@ -15,7 +15,7 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
-    public static final int MAX_PATHS = 13;
+    public static final int MAX_PATHS = 12;
     
     public LayoutRightclickAutonomyMenu(TrainControlUI ui, String stationName)
     {        
@@ -163,6 +163,35 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         );
                         ui.repaintAutoLocList(false);
                     });
+
+                    add(menuItem);
+                    
+                    // Edit locomotive
+                    menuItem = new JMenuItem(
+                        I18n.f("autolayout.ui.labelEditLocomotiveAt", current.getName())
+                    );
+                    menuItem.addActionListener(event -> 
+                    {
+                        GraphLocAssign edit = new GraphLocAssign(ui, current, false);
+
+                        int dialogResult = JOptionPane.showOptionDialog(
+                            ui,
+                            edit,
+                            I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getCurrentLocomotive().getName()),
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            TrainControlUI.OK_CANCEL_OPTS,
+                            TrainControlUI.OK_CANCEL_OPTS[0]
+                        );
+
+                        if (dialogResult == JOptionPane.OK_OPTION)
+                        {
+                            edit.commitChanges();
+                            ui.updateVisiblePoints();
+                            ui.repaintAutoLocList(false);
+                        }
+                    }); 
 
                     add(menuItem);
                 }

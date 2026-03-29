@@ -328,6 +328,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.6.5 [3/29/2026]
+    - Added shortcut to edit autonomy locomotive properties to the right-click menu on track diagram stations
+    - Fixed bug where the right-click menu link to more autonomy destinations in track diagram stations ("...") would not activate the correct UI tab
+
 * v2.6.4 [3/23/2026]
     - In the locomotive similarity search, added option to include only autonomy locomotives
 
