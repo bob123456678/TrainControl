@@ -177,7 +177,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         int dialogResult = JOptionPane.showOptionDialog(
                             ui,
                             edit,
-                            I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getCurrentLocomotive().getName()),
+                            I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getName()),
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.PLAIN_MESSAGE,
                             null,
