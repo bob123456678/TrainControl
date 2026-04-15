@@ -24,6 +24,7 @@ public class testParseCS3Routes
     private final String tc_routes = getClass().getResource("TC_routes.json").toURI().toString();
     private final String cs3_mags = getClass().getResource("CS3_mags.json").toURI().toString();
     private final String cs3_automatics = getClass().getResource("CS3_automatics.json").toURI().toString();
+    private final String cs3_automatics_v260 = getClass().getResource("CS3_automatics_v260.json").toURI().toString();
     private final String cs3_loks = getClass().getResource("CS3_loks.json").toURI().toString();
 
     public MarklinControlStation model;
@@ -44,12 +45,23 @@ public class testParseCS3Routes
     }
    
     /**
-     *
+     * Ensures our saved routes match newly parsed routes
+     * @throws java.lang.Exception
      */
     @Test
-    public void testSameLength()
+    public void testSameLength() throws Exception
     {   
         assertEquals(routesTC.size(), routesCS3.size());
+    }
+    
+    /**
+     * Test new format introduced in the new version of CS3
+     * @throws java.lang.Exception
+     */
+    @Test
+    public void testVersion260Format() throws Exception
+    {   
+        assertEquals(routesCS3, parser.parseRoutesCS3(parseJSONArray(fetchURL(cs3_automatics_v260)), parseJSONArray(fetchURL(cs3_mags)), parseJSONArray(fetchURL(cs3_loks))));
     }
     
     /**

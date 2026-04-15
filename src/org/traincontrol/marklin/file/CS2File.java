@@ -258,11 +258,20 @@ public final class CS2File
     
     /**
      * CS3 Locomotive DB URL
+     * Pre v2.6.0 CS3 firmware handled differently
+     * @param version
      * @return 
      */
-    public String getCS3LocDBUrl()
+    public String getCS3LocDBUrl(int version)
     {
-        return "http://" + this.IP + "/app/api/loks";
+        if (version < 260)
+        {
+            return "http://" + this.IP + "/app/api/loks";
+        }
+        else
+        {
+            return "http://" + this.IP + "/app/api/locos";
+        }
     }
     
     /**
@@ -467,19 +476,94 @@ public final class CS2File
         );
     }
     
-    public List<MarklinRoute> parseRoutesCS3() throws Exception
-    {
-        return parseRoutesCS3(parseJSONObject(fetchURL(getCS3RouteDBUrl())), parseJSONArray(fetchURL(getCS3MagDBUrl())), parseJSONArray(fetchURL(this.getCS3LocDBUrl())));
-    }
-    
     public List<MarklinLocomotive> parseLocomotives() throws Exception
     {
         return parseLocomotives(parseFile(fetchURL(getLocURL())));
     }
     
+    /**
+     * Helper to detect CS3 404 errors
+     * @param in
+     * @return 
+     */
+    private boolean isNotFoundError(BufferedReader in)
+    {
+        try
+        {
+            JSONObject obj = parseJSONObject(in);
+            return "Not Found".equalsIgnoreCase(obj.optString("error", null));
+        }
+        catch (Exception e)
+        {
+            // Not an error object, treat as valid
+            return false;
+        }
+    }
+
+    /**
+     * Helper function that fetches a reader of the CS3 loc db with a check for newer versions v2.6.0+ that use a different endpoint
+     * @return
+     * @throws Exception 
+     */
+    private BufferedReader fetchCS3LocDB() throws Exception
+    {
+        // Probe using a fresh reader so we don't consume the real one
+        boolean is260 = !isNotFoundError(fetchURL(getCS3LocDBUrl(260)));
+
+        if (!is260)
+        {
+            return fetchURL(getCS3LocDBUrl(250));
+        }
+
+        return fetchURL(getCS3LocDBUrl(260));
+    }
+
+    /**
+     * Gets the list of locomotives from the CS3
+     * @return
+     * @throws Exception 
+     */
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(parseJSONArray(fetchURL(this.getCS3LocDBUrl())));
+        return parseLocomotivesCS3(parseJSONArray(fetchCS3LocDB()));
+    }
+
+    /**
+     * Fetches route information from the CS3
+     * @return
+     * @throws Exception
+     */
+    public List<MarklinRoute> parseRoutesCS3() throws Exception
+    {
+        BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
+        BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
+
+        // Determine which locomotive DB version is active (v260+ or older 250)
+        boolean is260 = isNotFoundError(fetchURL(getCS3LocDBUrl(250)));
+
+        BufferedReader locBR = is260
+           ? fetchURL(getCS3LocDBUrl(260))
+           : fetchURL(getCS3LocDBUrl(250));
+
+        // Now parse routes based on the loc DB version
+        if (is260)
+        {
+            // New firmware (260+): route DB is an array
+            return parseRoutesCS3(
+                parseJSONArray(routeBR),
+                parseJSONArray(magBR),
+                parseJSONArray(locBR)
+            );
+        }
+        else
+        {
+            // Old firmware: route DB is an object
+            return parseRoutesCS3(
+                parseJSONObject(routeBR),
+                parseJSONArray(magBR),
+                parseJSONArray(locBR)
+            );
+        }
     }
     
     /**
@@ -844,12 +928,12 @@ public final class CS2File
     
     /**
      * Parses routes from the CS3 API
-     * @param routes
+     * @param routes - JSONArray or JSONObject depending on CS3 version
      * @param mags
      * @param locs
      * @return 
      */
-    public List<MarklinRoute> parseRoutesCS3(JSONObject routes, JSONArray mags, JSONArray locs)
+    public List<MarklinRoute> parseRoutesCS3(Object routes, JSONArray mags, JSONArray locs)
     {
         if (locs.isEmpty())
         {
@@ -858,7 +942,18 @@ public final class CS2File
         
         List<MarklinRoute> out = new ArrayList<>();
         
-        JSONArray routeList = routes.getJSONArray("automatics");
+        JSONArray routeList;
+
+        if (routes instanceof JSONObject)
+        {
+            // Old firmware: routes is a JSONObject containing "automatics"
+            routeList = ((JSONObject) routes).getJSONArray("automatics");
+        }
+        else // if (routes instanceof JSONArray)
+        {
+            // New firmware: routes is already an array
+            routeList = (JSONArray) routes;
+        }
         
         for (int i = 0 ; i < routeList.length(); i++)
         {
@@ -909,7 +1004,7 @@ public final class CS2File
                         }
                     }
                     
-                    // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which can be is non-unique)
+                    // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
                     /* 
                     else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
                     {
