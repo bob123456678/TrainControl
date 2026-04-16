@@ -329,7 +329,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.7.0 [Beta]
-    - Added support for new CS3 firmware v2.6.0 and backwards-compatibility with older versions
+    - Added support for new CS3 firmware v2.6.0 (March 2026) and backwards-compatibility with older versions
     - Updated JSON library to json-20251224.jar
 
 * v2.6.5 [3/29/2026] Note: this and prior versions only support CS3 running firmware v2.5.x or older.
