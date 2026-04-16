@@ -486,16 +486,23 @@ public final class CS2File
      * @param in
      * @return 
      */
-    private boolean isNotFoundError(BufferedReader in)
+    private boolean isNotFoundError(String url)
     {
         try
         {
+            BufferedReader in = fetchURL(url);
+            
             JSONObject obj = parseJSONObject(in);
             return "Not Found".equalsIgnoreCase(obj.optString("error", null));
         }
+        catch (FileNotFoundException e)
+        {
+            return true;
+        }
+        // This should never happen
         catch (Exception e)
         {
-            // Not an error object, treat as valid
+            logMessage("Unexpected error when checking url " + url + " (possible CS3 compatibility issue): " + e.getMessage(), e, false);
             return false;
         }
     }
@@ -508,14 +515,14 @@ public final class CS2File
     private BufferedReader fetchCS3LocDB() throws Exception
     {
         // Probe using a fresh reader so we don't consume the real one
-        boolean is260 = !isNotFoundError(fetchURL(getCS3LocDBUrl(260)));
+        boolean is260 = !isNotFoundError(getCS3LocDBUrl(260));
 
-        if (!is260)
+        if (is260)
         {
-            return fetchURL(getCS3LocDBUrl(250));
+            return fetchURL(getCS3LocDBUrl(260));
         }
 
-        return fetchURL(getCS3LocDBUrl(260));
+        return fetchURL(getCS3LocDBUrl(250));
     }
 
     /**
@@ -539,7 +546,7 @@ public final class CS2File
         BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
 
         // Determine which locomotive DB version is active (v260+ or older 250)
-        boolean is260 = isNotFoundError(fetchURL(getCS3LocDBUrl(250)));
+        boolean is260 = !isNotFoundError(getCS3LocDBUrl(260));
 
         BufferedReader locBR = is260
            ? fetchURL(getCS3LocDBUrl(260))
