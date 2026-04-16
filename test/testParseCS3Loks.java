@@ -1,3 +1,4 @@
+import java.net.URISyntaxException;
 import java.util.List;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.file.CS2File.parseJSONArray;
@@ -10,20 +11,22 @@ import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.file.CS2File.fetchURL;
 import static org.traincontrol.marklin.file.CS2File.parseFile;
+import org.traincontrol.marklin.udp.CSDetect;
 
 /**
  * Tests CS2 and CS3 locomotive parsing
  */
 public class testParseCS3Loks
 {   
-    // Test files stored locally
-    private final String cs3_loks = getClass().getResource("CS3_loks.json").toURI().toString();
-    private final String cs2_loks = getClass().getResource("lokomotive.cs2").toURI().toString();
-    private final String cs2_loks_from_cs3 = getClass().getResource("lokomotive_cs3.cs2").toURI().toString();
-    
+    private String cs3_loks;
+    private String cs2_loks;
+    private String cs2_loks_from_cs3;
+    private String cs3_loks_v260;
+
     public List<MarklinLocomotive> loksCS3;
     public List<MarklinLocomotive> loksCS2;
     public List<MarklinLocomotive> loksCS2_fromCS3;
+    public List<MarklinLocomotive> loksCS3_v260;
 
     //public MarklinControlStation model;
     public CS2File parser;
@@ -53,9 +56,15 @@ public class testParseCS3Loks
                 
         return null;
     }
-    
-    public testParseCS3Loks() throws Exception
+
+    @BeforeClass
+    public void init() throws URISyntaxException
     {
+        this.cs3_loks_v260 = getClass().getResource("CS3_loks_v260.json").toURI().toString();
+        this.cs2_loks_from_cs3 = getClass().getResource("lokomotive_cs3.cs2").toURI().toString();
+        this.cs2_loks = getClass().getResource("lokomotive.cs2").toURI().toString();
+        this.cs3_loks = getClass().getResource("CS3_loks.json").toURI().toString();
+        
         parser = new CS2File(null, null);
         // model = init(null, true, false, false, false); 
         
@@ -85,8 +94,29 @@ public class testParseCS3Loks
         {
             e.printStackTrace();
         }
+        
+        try
+        {
+            loksCS3_v260 = parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));  
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
     }
-   
+     
+    @Test
+    public void testParseCS3Loks() throws Exception
+    {
+        parser = new CS2File(null, null);
+        
+        parser.parseLocomotives(parseFile(fetchURL(cs2_loks)));
+        parser.parseLocomotives(parseFile(fetchURL(cs2_loks_from_cs3)));  
+        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks)));  
+        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));    
+    }
+       
     /**
      * Check basic state
      */
@@ -97,6 +127,8 @@ public class testParseCS3Loks
         assertTrue(!loksCS2_fromCS3.isEmpty());
         assertTrue(!loksCS3.isEmpty());
         assertEquals(loksCS3.size(), loksCS2_fromCS3.size());
+        
+        assertTrue(!loksCS3_v260.isEmpty());
     }
     
     @Test
@@ -157,6 +189,23 @@ public class testParseCS3Loks
         assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
         assertTrue(getLocByName(db, "Test TC").getCentralStationMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
     }
+    
+    @Test
+    public void testCS3_v260()
+    {
+        List<MarklinLocomotive> db = loksCS3_v260;
+
+        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        assertEquals(loksCS3_v260.size(), 154);
+
+        assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+    }
+    
+    
         
     /**
      * These should be the same, except that the CS2 file will have a limited function count and different icons

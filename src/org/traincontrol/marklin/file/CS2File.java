@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
@@ -483,17 +484,25 @@ public final class CS2File
     
     /**
      * Helper to detect CS3 404 errors
-     * @param in
+     * @param url
      * @return 
      */
-    private boolean isNotFoundError(String url)
+    public boolean isNotFoundError(String url)
     {
         try
-        {
-            BufferedReader in = fetchURL(url);
-            
-            JSONObject obj = parseJSONObject(in);
-            return "Not Found".equalsIgnoreCase(obj.optString("error", null));
+        {            
+            Object json = new JSONTokener(fetchURL(url)).nextValue();
+
+            // If it's an object, check for the error field
+            if (json instanceof JSONObject)
+            {
+                JSONObject obj = (JSONObject) json;
+                return "Not Found".equalsIgnoreCase(obj.optString("error", null));
+            }
+
+            // Arrays are always valid (never an error object)
+            return false;
+
         }
         catch (FileNotFoundException e)
         {
@@ -1265,6 +1274,8 @@ public final class CS2File
                     String[] pieces = icon.split("/");
                     icon = pieces[pieces.length - 1];
                 }
+                
+                // dir and speed may now be available from v260+
 
                 String type = loc.getString("dectyp");
                 MarklinLocomotive.decoderType decoderType;
@@ -1276,19 +1287,50 @@ public final class CS2File
                     decoderType = MarklinLocomotive.decoderType.MULTI_UNIT;
                     
                     // Parse multi unit locomotive names
-                    for (int j = 0; j < loc.getJSONArray("traktion").length(); j++)
-                    {
-                        String identifier = loc.getJSONArray("traktion").getString(j).split(";")[0]; 
+                    // New CS3 v2.6.0+: this becomes an object
+                    Object traktion = loc.get("traktion");
 
-                        if (internalNames.containsKey(identifier))
-                        { 
-                            multiUnitLocMap.put(internalNames.get(identifier), loc.getJSONArray("traktion").getString(j).split(";").length > 1 ? -1.0 : 1.0); 
-                        }
-                        else
+                    if (traktion instanceof JSONObject)
+                    {
+                        JSONObject trakObj = (JSONObject) traktion;
+
+                        for (String key : trakObj.keySet())
                         {
-                            logMessage(
-                                I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
-                            );                        
+                            JSONObject entry = trakObj.getJSONObject(key);
+
+                            // Extract the locomotive identifier
+                            String identifier = entry.optString("lokname", null);
+
+                            if (internalNames.containsKey(identifier))
+                            {
+                                // New traction object has no direction flag, assume +1.0 // TODO - look at sendDirectionSpeed and traktionFunktionsMapping
+                                multiUnitLocMap.put(internalNames.get(identifier), 1.0);
+                            }
+                            else
+                            {
+                                logMessage(
+                                    I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
+                                );
+                            }   
+                        }
+                    }
+                    // CS3 v2.5.x and older
+                    else
+                    {
+                        for (int j = 0; j < loc.getJSONArray("traktion").length(); j++)
+                        {
+                            String identifier = loc.getJSONArray("traktion").getString(j).split(";")[0]; 
+
+                            if (internalNames.containsKey(identifier))
+                            { 
+                                multiUnitLocMap.put(internalNames.get(identifier), loc.getJSONArray("traktion").getString(j).split(";").length > 1 ? -1.0 : 1.0); 
+                            }
+                            else
+                            {
+                                logMessage(
+                                    I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
+                                );                        
+                            }
                         }
                     }
                                     

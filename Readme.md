@@ -319,7 +319,7 @@ All state is saved to LocDB.data, UIState.data, and autonomy.json in the same di
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json (json-20250517.jar) (from v1.6.0)
+* org.json (json-20251224.jar) (from v1.6.0)
 * org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
 * com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.4.jar) (from v2.3.0)
 * jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
@@ -328,7 +328,11 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.6.5 [3/29/2026]
+* v2.7.0 [Beta]
+    - Added support for new CS3 firmware v2.6.0 and backwards-compatibility with older versions
+    - Updated JSON library to json-20251224.jar
+
+* v2.6.5 [3/29/2026] Note: this and prior versions only support CS3 running firmware v2.5.x or older.
     - Added shortcut to edit autonomy locomotive properties to the right-click menu on track diagram stations
     - Fixed bug where the right-click menu link to more autonomy destinations in track diagram stations ("...") would not activate the correct UI tab
 

@@ -11,6 +11,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.marklin.file.CS2File;
 
 /**
  *
@@ -72,6 +73,23 @@ public class testAutoDetect
         }
         
         assertEquals(success, numAttempts);
+    }
+    
+    /**
+     * Validates CS3 version detection
+     * @throws Exception 
+     */
+    @Test
+    public void test404() throws Exception
+    {   
+        CS2File parser = new CS2File(CSDetect.detectCentralStation(), null);
+                   
+        boolean is260_plus = parser.isNotFoundError(parser.getCS3LocDBUrl(260));
+        boolean isOld = parser.isNotFoundError(parser.getCS3LocDBUrl(250));
+
+        // One or the other, but not both
+        assertTrue(is260_plus || isOld);
+        assertFalse(is260_plus && isOld);
     }
 
     @BeforeClass
