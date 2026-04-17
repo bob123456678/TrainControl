@@ -18,9 +18,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -115,7 +112,7 @@ public class Layout
     private class EdgeConfigurationState
     {         
         public boolean configIsValid;
-        public final Map<MarklinAccessory, Accessory.accessorySetting> configHistory;
+        public final Map<Accessory, Accessory.accessorySetting> configHistory;
         public final List<String> invalidConfigs;
 
         public EdgeConfigurationState()
@@ -1024,7 +1021,7 @@ public class Layout
             Accessory.accessorySetting state = e.getConfigCommands().get(name);  
         
             // Sanity check
-            MarklinAccessory acc = control.getAccessoryByName(name);
+            Accessory acc = control.getAccessoryByName(name);
 
             if (acc == null)
             {
@@ -2692,7 +2689,7 @@ public class Layout
         l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
         {
             // Optionally skip turning on the functions
-            Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
+            Layout layout = lc.getModel().getAutoLayout();
             
             if (layout != null && layout.isTurnOnFunctionsOnDeparture())
             {
@@ -2717,7 +2714,7 @@ public class Layout
         l.setCallback(Layout.CB_ROUTE_END, (lc) ->
         {
             // Optionally disable the arrival functions
-            Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
+            Layout layout = lc.getModel().getAutoLayout();
             
             if (layout != null && layout.isTurnOffFunctionsOnArrival())
             {
@@ -2806,7 +2803,7 @@ public class Layout
      * @param control 
      * @return  
      */
-    public static Layout fromJSON(String config, MarklinControlStation control)
+    public static Layout fromJSON(String config, ViewListener control)
     {           
         Layout layout = new Layout(control);
         JSONObject o;

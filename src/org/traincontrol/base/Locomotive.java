@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
 /**
@@ -1482,4 +1483,10 @@ public abstract class Locomotive
             return this.autonomyPaused;
         }
     }
+    
+    /**
+     * Return the control station model for this locomotive
+     * @return 
+     */
+    abstract public ViewListener getModel();
 }

@@ -6,7 +6,7 @@ import org.traincontrol.util.Conversion;
  * Class to represent and generate CS2 CAN messages
  * @author Adam
  */
-public class CS2Message
+public class CS2Message extends CANMessage
 {
     /* Class fields constants */
 

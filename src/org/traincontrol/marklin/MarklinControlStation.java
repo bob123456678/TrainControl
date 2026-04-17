@@ -50,6 +50,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.file.CS2File;
+import org.traincontrol.marklin.udp.CANMessage;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
 import org.traincontrol.marklin.udp.NetworkProxy;
@@ -1342,9 +1343,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param message
      * @return 
      */
-    public final MarklinFeedback newFeedback(int id, CS2Message message)
+    @Override
+    public final MarklinFeedback newFeedback(int id, CANMessage message)
     {
-        MarklinFeedback newFb = new MarklinFeedback(this, id, message);
+        MarklinFeedback newFb = new MarklinFeedback(this, id, (CS2Message) message);
                 
         this.feedbackDB.add(newFb, newFb.getName(), newFb.getUID());
         

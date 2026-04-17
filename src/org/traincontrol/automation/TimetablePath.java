@@ -7,6 +7,7 @@ import java.util.Objects;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
 /**
@@ -167,7 +168,7 @@ public class TimetablePath
      * @return
      * @throws Exception 
      */
-    public static TimetablePath fromJSON(String jsonString, MarklinControlStation model, Layout layout) throws Exception
+    public static TimetablePath fromJSON(String jsonString, ViewListener model, Layout layout) throws Exception
     {
         JSONObject json = new JSONObject(jsonString);
         
