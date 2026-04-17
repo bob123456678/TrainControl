@@ -418,4 +418,6 @@ abstract public class Accessory
             "Accessory \"" + this.name + "\" (" + accessoryTypeToPrettyString(this.getType()) + ")\n" + 
             "State: " + switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase();
     }
+    
+    abstract public void updateTiles(boolean forceHighlight);
 }

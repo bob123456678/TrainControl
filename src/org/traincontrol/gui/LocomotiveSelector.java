@@ -10,7 +10,6 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
-import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.model.ViewListener;
 
 /**

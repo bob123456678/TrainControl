@@ -169,6 +169,7 @@ public class MarklinLocomotive extends Locomotive
      * Flags that the functions have been customized
      * @param state 
      */
+    @Override
     public void setCustomFunctions(boolean state)
     {
         this.customFunctions = state;
@@ -178,6 +179,7 @@ public class MarklinLocomotive extends Locomotive
      * Returns whether the functions have been customized
      * @return 
      */
+    @Override
     public boolean isCustomFunctions()
     {
         return this.customFunctions || !this.getLocalFunctionImageURLs().isEmpty();
@@ -252,6 +254,7 @@ public class MarklinLocomotive extends Locomotive
      * @param fType
      * @return 
      */
+    @Override
     public int sanitizeFIconIndex(int fType)
     {
         if (this.network.isCS3() || !this.network.getNetworkCommState())
@@ -300,6 +303,7 @@ public class MarklinLocomotive extends Locomotive
      * @param yellow
      * @return 
      */
+    @Override
     public String getFunctionIconUrl(int fType, boolean active, boolean yellow)
     {
         int index = active ? 1 : 0;
@@ -1021,6 +1025,7 @@ public class MarklinLocomotive extends Locomotive
      * Sets a list of locomotives to link to this one. Must call setLinkedLocomotives after this, i.e. once the model has loaded all locs
      * @param locList
      */
+    @Override
     public void preSetLinkedLocomotives(Map<String, Double> locList)
     {
         this.preLinkedLocomotives = locList;
@@ -1030,6 +1035,7 @@ public class MarklinLocomotive extends Locomotive
      * Processes the preset list and maps locomotives to be linked to this one
      * @return 
      */
+    @Override
     public int setLinkedLocomotives() 
     {       
         linkedLocomotives.clear();
@@ -1093,6 +1099,7 @@ public class MarklinLocomotive extends Locomotive
      * @param logError
      * @return 
      */
+    @Override
     public boolean canBeLinkedTo(Locomotive other, boolean logError)
     {
         String error = null;
@@ -1151,6 +1158,7 @@ public class MarklinLocomotive extends Locomotive
      * Returns true if this locomotive is linked to others as part of a multi-unit
      * @return 
      */
+    @Override
     public boolean hasLinkedLocomotives()
     {
         return !this.linkedLocomotives.isEmpty();

@@ -14,7 +14,6 @@ import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.graphstream.graph.Graph;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.util.I18n;
 
 /**
@@ -214,11 +213,11 @@ public class GraphEdgeEdit extends javax.swing.JFrame
      * Gets all accessories in the command list
      * @return 
      */
-    public List<MarklinAccessory> getCommandAccessories()
+    public List<Accessory> getCommandAccessories()
     {
         String[] commands = this.configCommands.getText().trim().split("\n");
         
-        List<MarklinAccessory> output = new ArrayList<>();
+        List<Accessory> output = new ArrayList<>();
                 
         for (String s : commands)
         {
@@ -519,7 +518,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
             {
                 parent.jumpToLayoutTab();
                 
-                for (MarklinAccessory a : this.getCommandAccessories())
+                for (Accessory a : this.getCommandAccessories())
                 {
                     a.updateTiles(true);
                 } 

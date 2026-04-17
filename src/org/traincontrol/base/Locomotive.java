@@ -1515,6 +1515,18 @@ public abstract class Locomotive
      * @return 
      */
     abstract public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow);
+    abstract public String getFunctionIconUrl(int fType, boolean active, boolean yellow);
+    abstract public int getNumFnIcons();
+    abstract public boolean isCustomFunctions();
+    abstract public void setFunctionType(int fNo, int type, int triggerType);
+    abstract public void setCustomFunctions(boolean state);
+
+    /**
+     * Ensures that the function icon type is within a valid range
+     * @param fType
+     * @return 
+     */
+    abstract public int sanitizeFIconIndex(int fType);
     
     abstract public int getPulseFunctionDuration();
     

@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
-import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 

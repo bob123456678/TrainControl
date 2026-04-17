@@ -7,7 +7,7 @@ import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -179,14 +179,14 @@ public class RightClickMenuListener extends MouseAdapter
                 addSeparator();
 
                 menuItem = new JMenuItem(
-                    !((MarklinLocomotive) ui.getButtonLocomotive(source)).hasLinkedLocomotives()
+                    !(ui.getButtonLocomotive(source)).hasLinkedLocomotives()
                         ? I18n.t("loc.ui.menuSetAsMultiUnit")
                         : I18n.t("loc.ui.menuEditMultiUnitLocomotives")
                 );
-                menuItem.addActionListener(event -> ui.changeLinkedLocomotives((MarklinLocomotive) ui.getButtonLocomotive(source)));
+                menuItem.addActionListener(event -> ui.changeLinkedLocomotives((Locomotive) ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Control+L");
 
-                if (((MarklinLocomotive) ui.getButtonLocomotive(source)).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+                if ((ui.getButtonLocomotive(source)).getDecoderType() == Locomotive.decoderType.MULTI_UNIT)
                 {
                     menuItem.setText(
                         I18n.t("loc.ui.menuViewMultiUnitLocomotives")
@@ -230,7 +230,7 @@ public class RightClickMenuListener extends MouseAdapter
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuEditNameAddressDecoder")
                 );
-                menuItem.addActionListener(event -> ui.changeLocAddress((MarklinLocomotive) ui.getButtonLocomotive(source)));
+                menuItem.addActionListener(event -> ui.changeLocAddress(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Control+R");
                 submenu.add(menuItem);
 

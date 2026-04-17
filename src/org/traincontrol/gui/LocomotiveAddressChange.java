@@ -2,14 +2,13 @@ package org.traincontrol.gui;
 
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
-import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * UI for changing locomotive functions
  */
 public class LocomotiveAddressChange extends javax.swing.JPanel 
 {
-    MarklinLocomotive loc;
+    Locomotive loc;
     
     /**
      * Creates new form to edit Locomotive Address/Decoder Type/Name
@@ -17,7 +16,7 @@ public class LocomotiveAddressChange extends javax.swing.JPanel
      */
     public LocomotiveAddressChange(Locomotive l)
     {
-        this.loc = (MarklinLocomotive) l;
+        this.loc = l;
         initComponents();
         
         this.decoderTypeInput.setModel(new javax.swing.DefaultComboBoxModel(decoderType.values()));

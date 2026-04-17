@@ -5,7 +5,6 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -59,7 +58,7 @@ public class RightClickSelectorMenu extends JPopupMenu
         menuItem = new JMenuItem(
             I18n.t("loc.ui.menuEditNameAddressDecoder")
         );
-        menuItem.addActionListener(event -> ui.changeLocAddress((MarklinLocomotive) loc, e));
+        menuItem.addActionListener(event -> ui.changeLocAddress(loc, e));
         add(menuItem);
 
         menuItem = new JMenuItem(
