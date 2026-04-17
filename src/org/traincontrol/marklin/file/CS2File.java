@@ -575,7 +575,7 @@ public final class CS2File
         {
             // Old firmware: route DB is an object
             return parseRoutesCS3(
-                parseJSONObject(routeBR),
+                parseJSONObject(routeBR).getJSONArray("automatics"),
                 parseJSONArray(magBR),
                 parseJSONArray(locBR)
             );
@@ -944,12 +944,12 @@ public final class CS2File
     
     /**
      * Parses routes from the CS3 API
-     * @param routes - JSONArray or JSONObject depending on CS3 version
+     * @param routeList
      * @param mags
      * @param locs
      * @return 
      */
-    public List<MarklinRoute> parseRoutesCS3(Object routes, JSONArray mags, JSONArray locs)
+    public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
     {
         if (locs.isEmpty())
         {
@@ -958,271 +958,262 @@ public final class CS2File
         
         List<MarklinRoute> out = new ArrayList<>();
         
-        JSONArray routeList;
-
-        if (routes instanceof JSONObject)
+        if (routeList != null)
         {
-            // Old firmware: routes is a JSONObject containing "automatics"
-            routeList = ((JSONObject) routes).getJSONArray("automatics");
-        }
-        else // if (routes instanceof JSONArray)
-        {
-            // New firmware: routes is already an array
-            routeList = (JSONArray) routes;
-        }
         
-        for (int i = 0 ; i < routeList.length(); i++)
-        {
-            try
+            for (int i = 0 ; i < routeList.length(); i++)
             {
-                JSONObject route = routeList.getJSONObject(i);
-                
-                MarklinRoute r = new MarklinRoute(control, route.getString("name"), route.getInt("id"));
-                
-                JSONArray items = route.getJSONArray("items");
-                
-                for (int j = 0; j < items.length(); j++)
+                try
                 {
-                    JSONObject item = items.getJSONObject(j);
-                    
-                    if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
+                    JSONObject route = routeList.getJSONObject(i);
+
+                    MarklinRoute r = new MarklinRoute(control, route.getString("name"), route.getInt("id"));
+
+                    JSONArray items = route.getJSONArray("items");
+
+                    for (int j = 0; j < items.length(); j++)
                     {
-                        String locName = null;
-                        
-                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                        {
-                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                        }
-                        
-                        if (locName != null)
-                        {
-                            int speed = 0;
+                        JSONObject item = items.getJSONObject(j);
 
-                            // wert is speed, default 0
-                            if (item.has("wert"))
+                        if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
+                        {
+                            String locName = null;
+
+                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
                             {
-                                speed = (int) ((item.getDouble("wert") / 1000.0) * 100.0); // check this: round down to nearest integer, ensure number is 0-100
+                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
                             }
 
-                            RouteCommand rc = RouteCommand.RouteCommandLocomotiveSpeed(locName, speed);
+                            if (locName != null)
+                            {
+                                int speed = 0;
 
-                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                            {
-                                // Fix lossy conversion from float to int
-                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                            }
-                            
-                            r.addItem(rc);
-                        }
-                        else
-                        {
-                            logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
-                        }
-                    }
-                    
-                    // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
-                    /* 
-                    else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
-                    {
-                        String locName = null;
-                        
-                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                        {
-                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                        }
-                        
-                        if (locName != null)
-                        {
-                            // wert is on, default 0 but cant be on
-                            // icon is (almost) fno, default 0
-                            int fNo = 0;
-                            boolean fActive = false;
-
-                            if (item.has("icon"))
-                            {
-                                fNo = item.getInt("icon");
-                            }
-
-                            if (item.has("wert") && "1".equals(item.get("wert")))
-                            {
-                                fActive = true;
-                            }
-                            
-                            RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
-
-                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                            {
-                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                            }
-                            
-                            r.addItem(rc);
-                        }
-                        else
-                        {
-                            logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
-                        }
-                    } */
-                    else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
-                    {
-                        String locName = null;
-                        
-                        if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                        {
-                            locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                        }
-                        
-                        if (locName != null)
-                        {
-                            // wert is on, default 0 but cant be on
-                            // icon is fno, defualt 0
-                            int fNo = 0;
-                            Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
-
-                            if (item.has("wert") && "1".equals(item.get("wert")))
-                            {
-                                dir = Locomotive.locDirection.DIR_BACKWARD;
-                            }
-                            
-                            RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(locName, dir);
-
-                            if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                            {
-                                rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                            }
-                            
-                            r.addItem(rc);
-                        }
-                        else
-                        {
-                            logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
-                        }
-                    }
-                    else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
-                    {
-                        // To get the address, we need to look up this accessory in the accessory DB
-                        JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
-                        
-                        if (accessory != null)
-                        {
-                            // System.out.println(accessory);
-                            int address = accessory.getInt("address");
-                            
-                            Accessory.accessoryDecoderType protocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL;
-                            
-                            if ("mm".equals(accessory.getString("prot")))
-                            {
-                                protocol = Accessory.accessoryDecoderType.MM2;
-                            }
-                            else if ("dcc".equals(accessory.getString("prot")))
-                            {
-                                protocol = Accessory.accessoryDecoderType.DCC;
-                            }
-                            
-                            // stellung 0 - key not included
-                            // this means red/turn
-                            if (!item.has("stellung") || "0".equals(item.getString("stellung")))
-                            {
-                                r.addAccessory(address, protocol, true);
-                                
-                                // This is invalid for 3-way signals
-                                // if (3 == accessory.getInt("states"))
-                                if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                // wert is speed, default 0
+                                if (item.has("wert"))
                                 {
-                                    r.addAccessory(address + 1, protocol, false);
+                                    speed = (int) ((item.getDouble("wert") / 1000.0) * 100.0); // check this: round down to nearest integer, ensure number is 0-100
                                 }
-                            }
-                            // stellung 1 means isSwitched is false   
-                            // this means green/straight
-                            else if ("1".equals(item.getString("stellung")))
-                            {                                
-                                r.addAccessory(address, protocol, false);
-                                
-                                // This is invalid for 3-way signals
-                                // if (3 == accessory.getInt("states"))
-                                if ("dreiwegweiche".equals(accessory.getString("typ")))
+
+                                RouteCommand rc = RouteCommand.RouteCommandLocomotiveSpeed(locName, speed);
+
+                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
                                 {
-                                    r.addAccessory(address + 1, protocol, false);
+                                    // Fix lossy conversion from float to int
+                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
                                 }
+
+                                r.addItem(rc);
                             }
-                            else if ("2".equals(item.getString("stellung")))
-                            {           
-                                r.addAccessory(address, protocol, false);
-                                
-                                if (3 == accessory.getInt("states"))
-                                {
-                                    r.addAccessory(address + 1, protocol, true);
-                                }
-                            }
-                            // Unclear how this differs from 1, seems to only be used by certain signals
-                            else if ("3".equals(item.getString("stellung")))
-                            {           
-                                r.addAccessory(address, protocol, false);
-                                
-                                if (3 == accessory.getInt("states"))
-                                {
-                                    r.addAccessory(address + 1, protocol, false);
-                                }
-                            }
-                            
-                            if (item.has("sekunde"))
+                            else
                             {
-                                r.setDelay(address, Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
                             }
-                        }     
-                    }
-                    else if (item.has("typ") && "s88".equals(item.getString("typ")))
-                    {
-                        if (r.getRoute().isEmpty())
+                        }
+
+                        // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
+                        /* 
+                        else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            // Only include S88s at the start.  First is trigger S88, others are treated as condition S88s
-                            if (!r.hasS88())
+                            String locName = null;
+
+                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
                             {
-                                r.setS88(item.getInt("id"));
-                                
-                                // value key won't be present if unoccupied
-                                if (!item.has("value"))
+                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
+                            }
+
+                            if (locName != null)
+                            {
+                                // wert is on, default 0 but cant be on
+                                // icon is (almost) fno, default 0
+                                int fNo = 0;
+                                boolean fActive = false;
+
+                                if (item.has("icon"))
                                 {
-                                    r.setTriggerType(MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+                                    fNo = item.getInt("icon");
+                                }
+
+                                if (item.has("wert") && "1".equals(item.get("wert")))
+                                {
+                                    fActive = true;
+                                }
+
+                                RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
+
+                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
+                                {
+                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                                }
+
+                                r.addItem(rc);
+                            }
+                            else
+                            {
+                                logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
+                            }
+                        } */
+                        else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
+                        {
+                            String locName = null;
+
+                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
+                            {
+                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
+                            }
+
+                            if (locName != null)
+                            {
+                                // wert is on, default 0 but cant be on
+                                // icon is fno, defualt 0
+                                int fNo = 0;
+                                Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
+
+                                if (item.has("wert") && "1".equals(item.get("wert")))
+                                {
+                                    dir = Locomotive.locDirection.DIR_BACKWARD;
+                                }
+
+                                RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(locName, dir);
+
+                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
+                                {
+                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                                }
+
+                                r.addItem(rc);
+                            }
+                            else
+                            {
+                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
+                            }
+                        }
+                        else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
+                        {
+                            // To get the address, we need to look up this accessory in the accessory DB
+                            JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
+
+                            if (accessory != null)
+                            {
+                                // System.out.println(accessory);
+                                int address = accessory.getInt("address");
+
+                                Accessory.accessoryDecoderType protocol = Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+
+                                if ("mm".equals(accessory.getString("prot")))
+                                {
+                                    protocol = Accessory.accessoryDecoderType.MM2;
+                                }
+                                else if ("dcc".equals(accessory.getString("prot")))
+                                {
+                                    protocol = Accessory.accessoryDecoderType.DCC;
+                                }
+
+                                // stellung 0 - key not included
+                                // this means red/turn
+                                if (!item.has("stellung") || "0".equals(item.getString("stellung")))
+                                {
+                                    r.addAccessory(address, protocol, true);
+
+                                    // This is invalid for 3-way signals
+                                    // if (3 == accessory.getInt("states"))
+                                    if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                    {
+                                        r.addAccessory(address + 1, protocol, false);
+                                    }
+                                }
+                                // stellung 1 means isSwitched is false   
+                                // this means green/straight
+                                else if ("1".equals(item.getString("stellung")))
+                                {                                
+                                    r.addAccessory(address, protocol, false);
+
+                                    // This is invalid for 3-way signals
+                                    // if (3 == accessory.getInt("states"))
+                                    if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                    {
+                                        r.addAccessory(address + 1, protocol, false);
+                                    }
+                                }
+                                else if ("2".equals(item.getString("stellung")))
+                                {           
+                                    r.addAccessory(address, protocol, false);
+
+                                    if (3 == accessory.getInt("states"))
+                                    {
+                                        r.addAccessory(address + 1, protocol, true);
+                                    }
+                                }
+                                // Unclear how this differs from 1, seems to only be used by certain signals
+                                else if ("3".equals(item.getString("stellung")))
+                                {           
+                                    r.addAccessory(address, protocol, false);
+
+                                    if (3 == accessory.getInt("states"))
+                                    {
+                                        r.addAccessory(address + 1, protocol, false);
+                                    }
+                                }
+
+                                if (item.has("sekunde"))
+                                {
+                                    r.setDelay(address, Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                                }
+                            }     
+                        }
+                        else if (item.has("typ") && "s88".equals(item.getString("typ")))
+                        {
+                            if (r.getRoute().isEmpty())
+                            {
+                                // Only include S88s at the start.  First is trigger S88, others are treated as condition S88s
+                                if (!r.hasS88())
+                                {
+                                    r.setS88(item.getInt("id"));
+
+                                    // value key won't be present if unoccupied
+                                    if (!item.has("value"))
+                                    {
+                                        r.setTriggerType(MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+                                    }
+                                    else
+                                    {
+                                        r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+                                    }
+
+                                    if (2 == item.getInt("mode"))
+                                    {
+                                        // This value indicates that the route will automatically fire
+                                        // As this would duplicate functionality with the CS3, we leave it disabled
+                                        // r.enable();
+                                    }
                                 }
                                 else
                                 {
-                                    r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
-                                }
-                                
-                                if (2 == item.getInt("mode"))
-                                {
-                                    // This value indicates that the route will automatically fire
-                                    // As this would duplicate functionality with the CS3, we leave it disabled
-                                    // r.enable();
+                                    r.addConditionS88(item.getInt("id"), !item.has("value"));
                                 }
                             }
                             else
                             {
-                                r.addConditionS88(item.getInt("id"), !item.has("value"));
+                                logMessage(I18n.f("route.warningIgnoringExtraS88InRoute", item.toString(), r.getName()));
                             }
                         }
-                        else
-                        {
-                            logMessage(I18n.f("route.warningIgnoringExtraS88InRoute", item.toString(), r.getName()));
-                        }
+
+                        // System.out.println("---");   
                     }
-                    
-                    // System.out.println("---");   
+
+                    // System.out.println(route);
+                    // System.out.println(r.toVerboseString());
+                    // System.out.println("======");
+
+                    out.add(r);
                 }
-                
-                // System.out.println(route);
-                // System.out.println(r.toVerboseString());
-                // System.out.println("======");
-                                    
-                out.add(r);
-            }
-            catch (NumberFormatException | JSONException e)
-            {
-                logMessage(
-                    I18n.f("route.errorFailedToAddAtIndexDueToParsing", i),
-                    e,
-                    false
-                );
+                catch (NumberFormatException | JSONException e)
+                {
+                    logMessage(
+                        I18n.f("route.errorFailedToAddAtIndexDueToParsing", i),
+                        e,
+                        false
+                    );
+                }
             }
         }
         
