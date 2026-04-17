@@ -958,9 +958,8 @@ public final class CS2File
         
         List<MarklinRoute> out = new ArrayList<>();
         
-        if (routeList != null)
+        if (routeList != null && routeList instanceof JSONArray)
         {
-        
             for (int i = 0 ; i < routeList.length(); i++)
             {
                 try
@@ -1215,6 +1214,10 @@ public final class CS2File
                     );
                 }
             }
+        }
+        else
+        {
+            logMessage(I18n.f("route.warningRouteDataCs3"));
         }
         
         return out;

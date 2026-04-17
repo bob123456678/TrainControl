@@ -41,7 +41,7 @@ public class testParseCS3Routes
         // routesCS2 = parser.parseRoutes(parseFile(fetchURL(cs2_routes)));
         routesTC = model.parseRoutesFromJson(parseJSONObject(fetchURL(tc_routes)).toString()); 
         
-        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)), parseJSONArray(fetchURL(cs3_mags)), parseJSONArray(fetchURL(cs3_loks)));           
+        routesCS3 = parser.parseRoutesCS3(parseJSONObject(fetchURL(cs3_automatics)).getJSONArray("automatics"), parseJSONArray(fetchURL(cs3_mags)), parseJSONArray(fetchURL(cs3_loks)));           
     }
    
     /**

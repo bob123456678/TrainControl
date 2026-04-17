@@ -150,8 +150,21 @@ public class RouteEditor extends PositionAwareJFrame
         
         saveWindowBounds();
         
-        // Check if the route is locked
+        // Check if the route is locked, grey out controls
         this.saveButton.setEnabled(!locked);
+        this.addStopCommand.setEnabled(!locked);
+        this.captureCommands.setEnabled(!locked);
+        this.Logic.setEnabled(!locked);
+        this.routeContents.setEditable(!locked);
+        this.conditionAccs.setEditable(!locked);
+        this.addToRouteButton.setEnabled(!locked);
+        this.addToRouteButton1.setEnabled(!locked);
+        this.s88.setEnabled(!locked);
+        this.executionAuto.setEnabled(!locked);
+        this.executionManual.setEnabled(!locked);
+        this.triggerClearThenOccupied.setEnabled(!locked);
+        this.triggerOccupiedThenClear.setEnabled(!locked);
+        this.routeName.setEditable(!locked);
         
         if (locked)
         {
