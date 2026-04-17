@@ -35,8 +35,8 @@ import javax.swing.border.LineBorder;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import static org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_PREFIX;
-import org.traincontrol.marklin.MarklinLayout;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.util.I18n;
 
 /**
@@ -53,12 +53,12 @@ public class LayoutEditor extends PositionAwareJFrame
     
     private final TrainControlUI parent;
     private final int size;
-    private final MarklinLayout layout;
+    private final TrackLayout layout;
     private LayoutGrid grid;
     
     private int lastX = -1;
     private int lastY = -1;
-    private MarklinLayoutComponent lastComponent = null;
+    private TrackLayoutComponent lastComponent = null;
     private tool toolFlag = null;
     
     private int lastHoveredX = -1;
@@ -87,8 +87,8 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean pauseRepaint = false;
     
     // Undo history
-    Deque<List<MarklinLayoutComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
-    Deque<List<MarklinLayoutComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
+    Deque<List<TrackLayoutComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
+    Deque<List<TrackLayoutComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
 
     public static final int MAX_UNDO_HISTORY = 100;
     
@@ -107,7 +107,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param ui
      * @param pageIndex
      */
-    public LayoutEditor(MarklinLayout l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutEditor(TrackLayout l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
         
@@ -136,7 +136,7 @@ public class LayoutEditor extends PositionAwareJFrame
         int cols = 3;
         
         // Initialize components we can place
-        for (MarklinLayoutComponent.componentType type : MarklinLayoutComponent.componentType.values())
+        for (TrackLayoutComponent.componentType type : TrackLayoutComponent.componentType.values())
         {
             this.newComponents.add(this.getLabel(type, "text"), gbc);
 
@@ -183,11 +183,11 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param defaultText
      * @return 
      */
-    private LayoutLabel getLabel(MarklinLayoutComponent.componentType type, String defaultText)
+    private LayoutLabel getLabel(TrackLayoutComponent.componentType type, String defaultText)
     {
         try
         {
-            MarklinLayoutComponent component = new MarklinLayoutComponent(type, 0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
+            TrackLayoutComponent component = new TrackLayoutComponent(type, 0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
             
             // Set a default address, otherwise switches will become unclickable after saving
             if (component.isClickable())
@@ -195,7 +195,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 component.setLogicalAddress(1, Accessory.accessoryDecoderType.MM2, false);
             }
             
-            if (type == MarklinLayoutComponent.componentType.TEXT)
+            if (type == TrackLayoutComponent.componentType.TEXT)
             {
                 component.setLabel(defaultText);   
             }
@@ -203,7 +203,7 @@ public class LayoutEditor extends PositionAwareJFrame
             LayoutLabel newLabel = new LayoutLabel(component, this, this.size, parent, true);
             
             // We need to add the text back on top of the icon
-            if (type == MarklinLayoutComponent.componentType.TEXT)
+            if (type == TrackLayoutComponent.componentType.TEXT)
             {
                 newLabel.setText(defaultText);
             
@@ -411,7 +411,7 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
                
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
         // Support double clicks
         if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1)
@@ -597,7 +597,7 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             // We need to duplicate the component, otherwise its coordinates won't actually change
-            MarklinLayoutComponent newComponent = new MarklinLayoutComponent(lastComponent);
+            TrackLayoutComponent newComponent = new TrackLayoutComponent(lastComponent);
             newComponent.setX(getX(destLabel));
             newComponent.setY(getY(destLabel));
 
@@ -637,7 +637,7 @@ public class LayoutEditor extends PositionAwareJFrame
         refreshGrid();
     }
     
-    public MarklinLayout getMarklinLayout()
+    public TrackLayout getMarklinLayout()
     {
         return layout;
     }
@@ -660,7 +660,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param component - the component at the label location, or one that's specified
      * @param move 
      */
-    synchronized public void initCopy(LayoutLabel label, MarklinLayoutComponent component, boolean move)
+    synchronized public void initCopy(LayoutLabel label, TrackLayoutComponent component, boolean move)
     {
         this.lastX = getX(label);
         this.lastY = getY(label);
@@ -695,7 +695,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void delete(LayoutLabel label)
     {
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
 
         if (lc != null)
         {       
@@ -724,7 +724,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void rotate(LayoutLabel label)
     {       
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
         
         if (lc != null)
         {    
@@ -751,7 +751,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void editText(LayoutLabel label)
     {       
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
                             
         if (lc != null)
         {       
@@ -792,7 +792,7 @@ public class LayoutEditor extends PositionAwareJFrame
     */
     public void editTextWithDropdown(LayoutLabel label)
     {
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
 
         if (lc != null && this.parent.getModel().hasAutoLayout() && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
         {
@@ -879,7 +879,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void editAddress(LayoutLabel label)
     {               
-        MarklinLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
                     
         if (lc != null)
         {     
@@ -1274,15 +1274,15 @@ public class LayoutEditor extends PositionAwareJFrame
      * Creates a copy of the current layout
      * @return 
      */
-    private List<MarklinLayoutComponent> deepCopyLayout()
+    private List<TrackLayoutComponent> deepCopyLayout()
     {
-        List<MarklinLayoutComponent> history = new ArrayList<>();
+        List<TrackLayoutComponent> history = new ArrayList<>();
         
-        for (MarklinLayoutComponent lc : this.layout.getAll())
+        for (TrackLayoutComponent lc : this.layout.getAll())
         {
             try
             {
-                history.add(new MarklinLayoutComponent(lc));
+                history.add(new TrackLayoutComponent(lc));
             }
             catch (IOException ex)
             {
@@ -1317,17 +1317,17 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             if (!this.previousLayoutComponents.isEmpty())
             {         
-                List<MarklinLayoutComponent> history = this.previousLayoutComponents.pop();
+                List<TrackLayoutComponent> history = this.previousLayoutComponents.pop();
                 this.previousLayoutComponentsRedo.push(deepCopyLayout());
                 
                 // Delete all existing components
-                for (MarklinLayoutComponent lc : this.layout.getAll())
+                for (TrackLayoutComponent lc : this.layout.getAll())
                 {
                     layout.addComponent(null, lc.getX(), lc.getY());
                 }
 
                 // Placed previous components
-                for (MarklinLayoutComponent lc : history)
+                for (TrackLayoutComponent lc : history)
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
@@ -1350,7 +1350,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             if (!this.previousLayoutComponentsRedo.isEmpty())
             {         
-                List<MarklinLayoutComponent> history = this.previousLayoutComponentsRedo.pop();
+                List<TrackLayoutComponent> history = this.previousLayoutComponentsRedo.pop();
                 this.previousLayoutComponents.push(deepCopyLayout());
                 
                 // Enforce undo limit
@@ -1360,13 +1360,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 // Delete all existing components
-                for (MarklinLayoutComponent lc : this.layout.getAll())
+                for (TrackLayoutComponent lc : this.layout.getAll())
                 {
                     layout.addComponent(null, lc.getX(), lc.getY());
                 }
 
                 // Placed previous components
-                for (MarklinLayoutComponent lc : history)
+                for (TrackLayoutComponent lc : history)
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }

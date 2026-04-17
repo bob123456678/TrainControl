@@ -1,5 +1,7 @@
 package org.traincontrol.marklin;
 
+import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.TrackLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.event.WindowAdapter;
@@ -110,7 +112,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private final RemoteDeviceCollection<MarklinRoute, Integer> routeDB;
     
     // Layouts
-    private final RemoteDeviceCollection<MarklinLayout, String> layoutDB;
+    private final RemoteDeviceCollection<TrackLayout, String> layoutDB;
     
     // Mapping for int UID -> string UID
     private HashMap<Integer, List<String>> locIdCache;
@@ -306,13 +308,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        for (MarklinLayout l : fileParser.parseLayout(accs))
+        for (TrackLayout l : fileParser.parseLayout(accs))
         {
             this.layoutDB.add(l, l.getName(), l.getName());
 
             this.logf("layout.imported", l.getName());
 
-            for (MarklinLayoutComponent c : l.getAll())
+            for (TrackLayoutComponent c : l.getAll())
             {
                 if (c.isSwitch() || c.isSignal() || c.isUncoupler())
                 {                            
@@ -2423,7 +2425,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public MarklinLayout getLayout(String name)
+    public TrackLayout getLayout(String name)
     {
         return this.layoutDB.getByName(name);
     }

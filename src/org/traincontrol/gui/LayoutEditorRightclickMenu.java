@@ -6,7 +6,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 
@@ -16,7 +16,7 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutEditorRightclickMenu extends JPopupMenu
 {        
-    public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, MarklinLayoutComponent component)
+    public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, TrackLayoutComponent component)
     {        
         JMenuItem menuItem;
         

@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.marklin.MarklinLayout;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
 import org.json.JSONArray;
@@ -1673,23 +1673,23 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    private MarklinLayoutComponent.componentType getComponentType(String name, int address) throws Exception
+    private TrackLayoutComponent.componentType getComponentType(String name, int address) throws Exception
     {
         switch(name)
         {
             case "entkuppler":
             case "entkuppler_1":
-                return MarklinLayoutComponent.componentType.UNCOUPLER;
+                return TrackLayoutComponent.componentType.UNCOUPLER;
             case "prellbock":
-                return MarklinLayoutComponent.componentType.END;                
+                return TrackLayoutComponent.componentType.END;                
             case "s88kontakt":
-                return MarklinLayoutComponent.componentType.FEEDBACK;
+                return TrackLayoutComponent.componentType.FEEDBACK;
             case "s88bogen":
-                return MarklinLayoutComponent.componentType.FEEDBACK_CURVE;
+                return TrackLayoutComponent.componentType.FEEDBACK_CURVE;
             case "s88doppelbogen":
-                return MarklinLayoutComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+                return TrackLayoutComponent.componentType.FEEDBACK_DOUBLE_CURVE;
             case "gerade":
-                return MarklinLayoutComponent.componentType.STRAIGHT;
+                return TrackLayoutComponent.componentType.STRAIGHT;
             case "signal":        // Standard signals
             case "signal_sh01":
             case "signal_hp02":   // TODO - add support for green/yellow signals
@@ -1706,45 +1706,45 @@ public final class CS2File
             case "k84_einfach":    
             case "sonstige_gbs":
             case "standard":       
-                return MarklinLayoutComponent.componentType.SIGNAL;
+                return TrackLayoutComponent.componentType.SIGNAL;
             case "doppelbogen":
-                return MarklinLayoutComponent.componentType.DOUBLE_CURVE;
+                return TrackLayoutComponent.componentType.DOUBLE_CURVE;
             case "bogen":
-                return MarklinLayoutComponent.componentType.CURVE;
+                return TrackLayoutComponent.componentType.CURVE;
             case "tunnel":
-                return MarklinLayoutComponent.componentType.TUNNEL;
+                return TrackLayoutComponent.componentType.TUNNEL;
             case "kreuzung":
-                return MarklinLayoutComponent.componentType.CROSSING;
+                return TrackLayoutComponent.componentType.CROSSING;
             case "unterfuehrung":
-                return MarklinLayoutComponent.componentType.OVERPASS;
+                return TrackLayoutComponent.componentType.OVERPASS;
             case "dkweiche":
             case "dkweiche_2":
             case "andreaskreuz":// Special double slip ?
-                return MarklinLayoutComponent.componentType.SWITCH_CROSSING;
+                return TrackLayoutComponent.componentType.SWITCH_CROSSING;
             case "drehscheibe": // Turntable
-                return MarklinLayoutComponent.componentType.TURNTABLE;
+                return TrackLayoutComponent.componentType.TURNTABLE;
             case "lampe":       // Lamp
             case "lampe_rt":    // Red light
             case "lampe_bl":    // Blue light
             case "lampe_gn":    // Green light
             case "lampe_ge":    // Yellow light
             case "bahnschranke":// Railroad crossing - TODO add dedicated icon
-                return MarklinLayoutComponent.componentType.LAMP;
+                return TrackLayoutComponent.componentType.LAMP;
             case "fahrstrasse": // Route
-                return MarklinLayoutComponent.componentType.ROUTE;
+                return TrackLayoutComponent.componentType.ROUTE;
             case "text":        // Standalone text
-                return MarklinLayoutComponent.componentType.TEXT;
+                return TrackLayoutComponent.componentType.TEXT;
             case "pfeil":       // Link to another page
-                return MarklinLayoutComponent.componentType.LINK;
+                return TrackLayoutComponent.componentType.LINK;
             
             // If these have an address, make them switchable, otherwise default to a permanent crossing
             case "linksweiche":
             // CS3 double slip switch 2 is just two of these
             case "dkw3_li_2":
             case "dkw3_li":
-                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_LEFT;
+                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_LEFT;
             case "custom_perm_left":
-                return MarklinLayoutComponent.componentType.CUSTOM_PERM_LEFT;
+                return TrackLayoutComponent.componentType.CUSTOM_PERM_LEFT;
             
             // If these have an address, make them switchable, otherwise default to a permanent crossing
             case "rechtsweiche":
@@ -1752,26 +1752,26 @@ public final class CS2File
             case "dkw3_re":
             case "dkw3_re_2":
                 // CS3 double slip switch 2. If these have an address, make them switchable, otherwise default to a permanent crossing
-                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_RIGHT;
+                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_RIGHT;
             case "custom_perm_right":
-                return MarklinLayoutComponent.componentType.CUSTOM_PERM_RIGHT;
+                return TrackLayoutComponent.componentType.CUSTOM_PERM_RIGHT;
             
             // Y switch.  If these have an address, make them switchable, otherwise default to a permanent crossing
             case "yweiche":
-                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_Y;
+                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_Y;
             case "custom_perm_y":
-                return MarklinLayoutComponent.componentType.CUSTOM_PERM_Y;
+                return TrackLayoutComponent.componentType.CUSTOM_PERM_Y;
              
             case "dreiwegweiche":
-                if (address > 0) return MarklinLayoutComponent.componentType.SWITCH_THREE;
+                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_THREE;
             case "custom_perm_threeway":
-                return MarklinLayoutComponent.componentType.CUSTOM_PERM_THREEWAY;
+                return TrackLayoutComponent.componentType.CUSTOM_PERM_THREEWAY;
                 
             case "hosentraeger":
             case "custom_scissors":
-                if (address > 0) return MarklinLayoutComponent.componentType.CUSTOM_SCISSORS;
+                if (address > 0) return TrackLayoutComponent.componentType.CUSTOM_SCISSORS;
             case "custom_perm_scissors":
-                return MarklinLayoutComponent.componentType.CUSTOM_PERM_SCISSORS;
+                return TrackLayoutComponent.componentType.CUSTOM_PERM_SCISSORS;
                 
             // Custom (non-CS2) components
             default:
@@ -1796,11 +1796,11 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    public List<MarklinLayout> parseLayout(List<MarklinAccessory> accDB) throws Exception
+    public List<TrackLayout> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
         List<String> names = this.parseLayoutList();
         
-        List<MarklinLayout> out = new ArrayList<>();
+        List<TrackLayout> out = new ArrayList<>();
         
         for (String name : names)
         { 
@@ -1860,7 +1860,7 @@ public final class CS2File
                 }
             }
             
-            MarklinLayout layout = new MarklinLayout(name, maxX + 1, maxY + 1, url, this.control);
+            TrackLayout layout = new TrackLayout(name, maxX + 1, maxY + 1, url, this.control);
                         
             for (Map<String, String> m : l)
             {

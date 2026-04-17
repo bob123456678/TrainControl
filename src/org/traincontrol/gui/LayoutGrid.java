@@ -17,8 +17,8 @@ import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.marklin.MarklinLayout;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.util.I18n;
 
 /**
@@ -57,7 +57,7 @@ public class LayoutGrid
      * @param popup is this layout being rendered in a separate window?
      * @param ui
      */
-    public LayoutGrid(MarklinLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
+    public LayoutGrid(TrackLayout layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {          
         // Calculate boundaries
         int offsetX = layout.getMinx();
@@ -82,7 +82,7 @@ public class LayoutGrid
             container.setBackground(Color.white);
             
             // Things mess up without this
-            if (MarklinLayout.IGNORE_PADDING || layout.getEdit())
+            if (TrackLayout.IGNORE_PADDING || layout.getEdit())
             {
                 parent.setLayout(new FlowLayout());
             }
@@ -128,7 +128,7 @@ public class LayoutGrid
                 }
                 // End GBC fix
                 
-                MarklinLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
+                TrackLayoutComponent c = layout.getComponent(x + offsetX, y  + offsetY);
                                 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());

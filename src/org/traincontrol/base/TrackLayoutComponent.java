@@ -1,4 +1,4 @@
-package org.traincontrol.marklin;
+package org.traincontrol.base;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -7,10 +7,8 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.Feedback;
-import org.traincontrol.base.Route;
+import org.traincontrol.marklin.MarklinAccessory; // TODO - decouple
 import org.traincontrol.util.I18n;
 
 /**
@@ -18,7 +16,7 @@ import org.traincontrol.util.I18n;
  * Contains initial data and references, no actual state
  * @author Adam
  */
-public class MarklinLayoutComponent
+public class TrackLayoutComponent
 {
     public static enum componentType {
         STRAIGHT, CURVE, DOUBLE_CURVE, 
@@ -70,7 +68,7 @@ public class MarklinLayoutComponent
      * @param protocol
      * @throws IOException 
      */
-    public MarklinLayoutComponent(componentType type, int x, int y, 
+    public TrackLayoutComponent(componentType type, int x, int y, 
             int orientation, int state, int address, int rawAddress, accessoryDecoderType protocol) throws IOException
     {
         // Sanity checks
@@ -101,7 +99,7 @@ public class MarklinLayoutComponent
      * @param original The original MarklinLayoutComponent to copy.
      * @throws java.io.IOException
      */
-    public MarklinLayoutComponent(MarklinLayoutComponent original) throws IOException
+    public TrackLayoutComponent(TrackLayoutComponent original) throws IOException
     {
         this(original.type, original.x, original.y, original.orientation, original.state, original.address, original.rawAddress, original.protocol);
         
@@ -337,7 +335,7 @@ public class MarklinLayoutComponent
     
     public Image getImage(int size, boolean ignoreState) throws IOException
     {  
-         Image img = ImageIO.read(MarklinLayoutComponent.class.getResource(getImageName(size, ignoreState)));
+         Image img = ImageIO.read(TrackLayoutComponent.class.getResource(getImageName(size, ignoreState)));
          
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
@@ -562,22 +560,22 @@ public class MarklinLayoutComponent
         this.type = type;
     }
     
-    public void setRoute(MarklinRoute route)
+    public void setRoute(Route route)
     {
         this.route = route;
     }
     
-    public void setAccessory(MarklinAccessory accessory)
+    public void setAccessory(Accessory accessory)
     {
         this.accessory = accessory;
     }
 
-    public void setAccessory2(MarklinAccessory accessory2)
+    public void setAccessory2(Accessory accessory2)
     {
         this.accessory2 = accessory2;
     }
 
-    public void setFeedback(MarklinFeedback feedback)
+    public void setFeedback(Feedback feedback)
     {
         this.feedback = feedback;
     }
@@ -630,7 +628,7 @@ public class MarklinLayoutComponent
 
         if (this.getAccessory() != null)
         {
-            digitalProtocol = MarklinAccessory.getProtocolStringForName(this.getAccessory().getDecoderType().toString());
+            digitalProtocol = Accessory.getProtocolStringForName(this.getAccessory().getDecoderType().toString());
         }
         
         if (this.isThreeWay())
@@ -751,7 +749,7 @@ public class MarklinLayoutComponent
      * @return
      * @throws Exception 
      */
-    public static String getTypeString(MarklinLayoutComponent.componentType type) throws Exception
+    public static String getTypeString(TrackLayoutComponent.componentType type) throws Exception
     {
         switch (type)
         {

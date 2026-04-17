@@ -13,8 +13,8 @@ import org.testng.annotations.Test;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.marklin.MarklinLayout;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.TrackLayoutComponent;
 
 /**
  * Compares CS2 and CS3 route parsing
@@ -26,8 +26,8 @@ public class testParseCS2Layout
     private final String cs2_mags = getClass().getResource("layout/config/magnetartikel.cs2").toURI().toString();
 
     public MarklinControlStation model;
-    public List<MarklinLayout> layouts;
-    public List<MarklinLayout> layouts_nomags;
+    public List<TrackLayout> layouts;
+    public List<TrackLayout> layouts_nomags;
 
     public List<MarklinAccessory> accs;
     public List<MarklinAccessory> manualAccs;
@@ -74,9 +74,9 @@ public class testParseCS2Layout
     {           
         int valid = 0;
         
-        for (MarklinLayout l : layouts)
+        for (TrackLayout l : layouts)
         {
-            for (MarklinLayoutComponent c : l.getAll())
+            for (TrackLayoutComponent c : l.getAll())
             {
                 if (c.getAddress() == 65)
                 {
@@ -118,9 +118,9 @@ public class testParseCS2Layout
     {           
         int valid = 0;
         
-        for (MarklinLayout l : layouts_nomags)
+        for (TrackLayout l : layouts_nomags)
         {
-            for (MarklinLayoutComponent c : l.getAll())
+            for (TrackLayoutComponent c : l.getAll())
             {
                 if (c.getAddress() == 65)
                 {

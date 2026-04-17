@@ -18,7 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -28,7 +28,7 @@ import org.traincontrol.util.ImageUtil;
  */
 public final class LayoutLabel extends JLabel
 {
-    private MarklinLayoutComponent component;
+    private TrackLayoutComponent component;
     
     private final Container parent;
     private String imageName;
@@ -43,7 +43,7 @@ public final class LayoutLabel extends JLabel
     private Icon lastIcon;
     private boolean edit;
     
-    public LayoutLabel(MarklinLayoutComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
+    public LayoutLabel(TrackLayoutComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this.component = c;
         this.size = size;
@@ -438,7 +438,7 @@ public final class LayoutLabel extends JLabel
         public void paintIcon(Component c, Graphics g, int x, int y) {}
     }
     
-    public MarklinLayoutComponent getComponent()
+    public TrackLayoutComponent getComponent()
     {
         return component;
     }

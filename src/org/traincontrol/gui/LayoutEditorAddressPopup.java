@@ -6,21 +6,21 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.marklin.MarklinLayoutComponent;
+import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
     private final TrainControlUI tcui;
-    private final MarklinLayoutComponent lc;
+    private final TrackLayoutComponent lc;
     
     /**
      * Creates new form LayourEditorAddressPopup
      * @param lc
      * @param tcui
      */
-    public LayoutEditorAddressPopup(MarklinLayoutComponent lc, TrainControlUI tcui)
+    public LayoutEditorAddressPopup(TrackLayoutComponent lc, TrainControlUI tcui)
     {
         initComponents();
         

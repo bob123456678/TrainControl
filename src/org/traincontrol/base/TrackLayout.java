@@ -1,4 +1,4 @@
-package org.traincontrol.marklin;
+package org.traincontrol.base;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,7 +19,7 @@ import org.traincontrol.util.I18n;
  * Layout container with grid and size info
  * @author Adam
  */
-public class MarklinLayout
+public class TrackLayout
 {
     private final String name;
     
@@ -56,7 +56,7 @@ public class MarklinLayout
     }
    
     // Corresponding accessory reference
-    private final List<List<MarklinLayoutComponent>> grid;
+    private final List<List<TrackLayoutComponent>> grid;
     
     // Network reference
     private final ViewListener network;
@@ -77,7 +77,7 @@ public class MarklinLayout
      * @param url
      * @param network 
      */
-    public MarklinLayout(String name, int sx, int sy, String url, MarklinControlStation network)
+    public TrackLayout(String name, int sx, int sy, String url, ViewListener network)
     {
         this.name = name;
         this.sx = sx;
@@ -91,7 +91,7 @@ public class MarklinLayout
         
         for (int i = 0; i < sx; i++)
         {            
-            List<MarklinLayoutComponent> l = 
+            List<TrackLayoutComponent> l = 
                     new ArrayList<>();
             
             for (int j = 0; j < sy; j++)
@@ -108,13 +108,13 @@ public class MarklinLayout
         return url;
     }
     
-    public void addComponent(MarklinLayoutComponent.componentType t, 
-            int x, int y, int orient, int state, int address, int rawAddresss, MarklinAccessory.accessoryDecoderType protocol, String text) throws IOException
+    public void addComponent(TrackLayoutComponent.componentType t, 
+            int x, int y, int orient, int state, int address, int rawAddresss, Accessory.accessoryDecoderType protocol, String text) throws IOException
     {
         assert x < sx;
         assert y < sy;
                 
-        grid.get(x).set(y, new MarklinLayoutComponent(t, x, y, orient, state, address, rawAddresss, protocol));
+        grid.get(x).set(y, new TrackLayoutComponent(t, x, y, orient, state, address, rawAddresss, protocol));
         
         if (text != null)
         {
@@ -122,7 +122,7 @@ public class MarklinLayout
         }
     }
     
-    public void addComponent(MarklinLayoutComponent l, int x, int y) throws IOException
+    public void addComponent(TrackLayoutComponent l, int x, int y) throws IOException
     {
         assert x < sx;
         assert y < sy;
@@ -135,16 +135,16 @@ public class MarklinLayout
         return this.name;
     }
     
-    public MarklinLayoutComponent getComponent(int x, int y)
+    public TrackLayoutComponent getComponent(int x, int y)
     {
         if (x < 0 || y < 0 || x >= this.grid.size() || y >= this.grid.get(0).size()) return null;
         
         return this.grid.get(x).get(y);
     }
     
-    public List<MarklinLayoutComponent> getAll()
+    public List<TrackLayoutComponent> getAll()
     {
-        List<MarklinLayoutComponent> out = new ArrayList<>();
+        List<TrackLayoutComponent> out = new ArrayList<>();
         
         for (int x = 0; x < sx; x++)
         {            
@@ -334,7 +334,7 @@ public class MarklinLayout
 
         for (int x = 0; x < numColumns; x++)
         {
-            List<MarklinLayoutComponent> newColumn = new ArrayList<>();
+            List<TrackLayoutComponent> newColumn = new ArrayList<>();
             
             for (int i = 0; i < sx; i++)
             {
@@ -349,7 +349,7 @@ public class MarklinLayout
         
         for (int x = 0; x < numRows; x++)
         {
-            for (List<MarklinLayoutComponent> col : grid)
+            for (List<TrackLayoutComponent> col : grid)
             {
                 col.add(null);
             }
@@ -433,7 +433,7 @@ public class MarklinLayout
             { // Start from the second-to-last column and move backward
                 for (int y = 0; y <= maxy; y++)
                 {
-                    MarklinLayoutComponent component = getComponent(x, y);
+                    TrackLayoutComponent component = getComponent(x, y);
 
                     if (component != null) component.setX(x + 1);
                     addComponent(null, x, y); // Clear the original cell
@@ -467,7 +467,7 @@ public class MarklinLayout
             { // Start from the last row and move upward
                 for (int x = 0; x <= maxx; x++)
                 {
-                   MarklinLayoutComponent component = getComponent(x, y);
+                   TrackLayoutComponent component = getComponent(x, y);
 
                    if (component != null) component.setY(y + 1); // Update the component's row position
                    addComponent(null, x, y); // Clear the original cell
@@ -498,7 +498,7 @@ public class MarklinLayout
         { 
             for (int x = 0; x <= maxx; x++) 
             {
-                MarklinLayoutComponent component = getComponent(x, y + 1);
+                TrackLayoutComponent component = getComponent(x, y + 1);
 
                 if (component != null) component.setY(y); // Update the component's row position
                 addComponent(null, x, y + 1); // Clear the original cell
@@ -528,7 +528,7 @@ public class MarklinLayout
         { 
             for (int y = 0; y <= maxy; y++) 
             {
-                MarklinLayoutComponent component = getComponent(x + 1, y);
+                TrackLayoutComponent component = getComponent(x + 1, y);
 
                 if (component != null) component.setX(x); // Update the component's column position
                 addComponent(null, x + 1, y); // Clear the original cell
