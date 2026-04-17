@@ -5,9 +5,9 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
-import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.TrackLayoutComponent;
-import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.base.Route;
 import org.traincontrol.util.I18n;
 
 /**
@@ -200,7 +200,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     
                 if (component.getProtocol() != null)
                 {
-                    protocol = MarklinAccessory.getProtocolStringForName(component.getProtocol().toString());
+                    protocol = Accessory.getProtocolStringForName(component.getProtocol().toString());
                 }
                 
                 String addressLabel = I18n.t("layout.ui.address"); // component.getUserFriendlyTypeName() + " Address";
@@ -246,7 +246,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 if (component.isRoute())
                 {
                     // Get the route by address, otherwise it will not change as we edit
-                    MarklinRoute route = ui.getModel().getRoute(component.getAddress());
+                    Route route = ui.getModel().getRoute(component.getAddress());
                     
                     if (route != null)
                     {         

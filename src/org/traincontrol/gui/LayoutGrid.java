@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.TrackLayout;
 import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.util.I18n;
@@ -288,7 +288,7 @@ public class LayoutGrid
                     // Add the protocol
                     String protocol = "";
 
-                    if (c.getProtocol() != null && c.getProtocol() != MarklinAccessory.accessoryDecoderType.MM2)
+                    if (c.getProtocol() != null && c.getProtocol() != Accessory.accessoryDecoderType.MM2)
                     {
                         protocol = "<br>" + c.getProtocol().toString().toLowerCase() + "";
                     }

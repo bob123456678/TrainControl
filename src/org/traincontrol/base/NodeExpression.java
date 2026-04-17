@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import org.json.JSONObject;
-import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.util.I18n;
 
 /**
@@ -115,7 +115,7 @@ public abstract class NodeExpression implements Serializable
             // TODO - the RouteCommand should maintain the decoder type
             Accessory acc = null;
             if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress(),
-                MarklinAccessory.determineAccessoryDecoderType(command.getAccessoryType())
+                Accessory.determineAccessoryDecoderType(command.getAccessoryType())
             );
             
             sb.append(command.toLine(acc)).append("\n");
