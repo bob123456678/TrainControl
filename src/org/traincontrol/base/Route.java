@@ -255,4 +255,8 @@ abstract public class Route
      * @return 
      */
     abstract public int getId();
+    
+    abstract public boolean isEnabled();
+    
+    abstract public boolean isLocked();
 }

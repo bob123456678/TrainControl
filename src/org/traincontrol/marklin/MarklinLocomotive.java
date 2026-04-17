@@ -275,9 +275,10 @@ public class MarklinLocomotive extends Locomotive
      * @param fNo - the function number
      * @param fType
      * @param active
-     * @param yellow
+     * @param yellow - white or yellow version
      * @return 
      */
+    @Override
     public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow)
     {
         String customIconURL = this.getLocalFunctionImageURL(fNo);
@@ -331,6 +332,7 @@ public class MarklinLocomotive extends Locomotive
      * @param fNo
      * @return 
      */
+    @Override
     public boolean isFunctionPulse(int fNo)
     {
         if (this.validF(fNo))
@@ -346,6 +348,7 @@ public class MarklinLocomotive extends Locomotive
      * @param fNo
      * @return 
      */
+    @Override
     public int isFunctionTimed(int fNo)
     {
         if (this.validF(fNo))
@@ -400,6 +403,7 @@ public class MarklinLocomotive extends Locomotive
      * Gets the raw locomotive address
      * @return 
      */
+    @Override
     public int getAddress()
     {
         return this.address;
@@ -456,6 +460,7 @@ public class MarklinLocomotive extends Locomotive
      * Gets the decoder type
      * @return 
      */
+    @Override
     public decoderType getDecoderType()
     {
         return this.type;
@@ -868,6 +873,7 @@ public class MarklinLocomotive extends Locomotive
      * Should only be used in the UI/log messages, not as authoritative data
      * @return 
      */
+    @Override
     public String getDecoderTypeLabel()
     {
         switch (this.type)
@@ -924,6 +930,7 @@ public class MarklinLocomotive extends Locomotive
      * Returns a reference to the model.  Useful for callbacks
      * @return 
      */
+    @Override
     public MarklinControlStation getModel()
     {
         return network;

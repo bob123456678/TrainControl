@@ -5,7 +5,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.base.Route;
 import org.traincontrol.util.I18n;
 
 /**
@@ -48,13 +48,13 @@ public class RightClickRouteMenu extends MouseAdapter
 
         public String getRouteTooltip(TrainControlUI ui, String route)
         {
-            MarklinRoute currentRoute = ui.getModel().getRoute(route);
+            Route currentRoute = ui.getModel().getRoute(route);
             return currentRoute.getName() + " (" + I18n.t("route.ui.id") + ": " + ui.getModel().getRouteId(route) + ")";
         }
         
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {       
-            MarklinRoute route = ui.getRouteAtCursor(e);
+            Route route = ui.getRouteAtCursor(e);
 
             if (route != null)
             {

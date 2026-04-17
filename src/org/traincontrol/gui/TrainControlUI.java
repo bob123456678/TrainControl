@@ -275,7 +275,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private GraphViewer graphViewer;
     
     // The active locomotive
-    private MarklinLocomotive activeLoc;
+    private Locomotive activeLoc;
     
     // The active locomotive button
     private javax.swing.JButton currentButton;
@@ -11075,11 +11075,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }).start();
     }
     
-    public MarklinRoute getRouteAtCursor(MouseEvent evt)
+    public Route getRouteAtCursor(MouseEvent evt)
     {
         try
         {
-            return (MarklinRoute) this.RouteList.getValueAt(this.RouteList.rowAtPoint(evt.getPoint()), this.RouteList.columnAtPoint(evt.getPoint()));
+            return (Route) this.RouteList.getValueAt(this.RouteList.rowAtPoint(evt.getPoint()), this.RouteList.columnAtPoint(evt.getPoint()));
         }
         catch (Exception e)
         {
@@ -12551,7 +12551,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ListModel<Route> listModel = this.autoRouteList.getModel();
             for (int i = 0; i < listModel.getSize(); i++)
             {
-                MarklinRoute r = (MarklinRoute) listModel.getElementAt(i);
+                Route r = listModel.getElementAt(i);
                 if (activeIDs.contains(r.getId()))
                 {
                     selectedIndices.add(i);
@@ -13929,7 +13929,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     for (Route r :  this.autoRouteList.getSelectedValuesList())
                     {
-                        activateRouteIDs.add(((MarklinRoute) r).getId());
+                        activateRouteIDs.add(r.getId());
                     }
 
                     // Push back into the model
@@ -13951,10 +13951,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.DCC.isSelected())
         {
-            return MarklinAccessory.stringToAccessoryDecoderType(this.DCC.getText());
+            return Accessory.stringToAccessoryDecoderType(this.DCC.getText());
         }
         
-        return MarklinAccessory.stringToAccessoryDecoderType(this.MM2.getText());
+        return Accessory.stringToAccessoryDecoderType(this.MM2.getText());
     }
     
     public void deleteTimetableEntry(MouseEvent evt)

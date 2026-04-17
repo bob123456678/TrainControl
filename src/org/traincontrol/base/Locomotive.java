@@ -1493,5 +1493,26 @@ public abstract class Locomotive
     
     abstract public int getAddress();
     
-    abstract public decoderType getDecoderType();     
+    abstract public decoderType getDecoderType(); 
+
+    /**
+     * User-friendly string representation of the decoder type
+     * Should only be used in the UI/log messages, not as authoritative data
+     * @return 
+     */
+    abstract public String getDecoderTypeLabel();
+    
+    abstract public int isFunctionTimed(int fNo);
+
+    abstract public boolean isFunctionPulse(int fNo);
+    
+    /**
+     * Returns the image URL for a function number
+     * @param fNo - the function number
+     * @param fType
+     * @param active
+     * @param yellow - white or yellow version
+     * @return 
+     */
+    abstract public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow);
 }
