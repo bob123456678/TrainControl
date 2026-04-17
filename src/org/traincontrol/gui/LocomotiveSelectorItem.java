@@ -5,7 +5,7 @@ import java.awt.Font;
 import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -14,7 +14,7 @@ import org.traincontrol.util.I18n;
  */
 public final class LocomotiveSelectorItem extends javax.swing.JPanel
 {    
-    private final MarklinLocomotive loc;
+    private final Locomotive loc;
     private final LocomotiveSelector selector;
     
     /**
@@ -22,7 +22,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
      * @param loc
      * @param selector
      */
-    public LocomotiveSelectorItem(MarklinLocomotive loc, LocomotiveSelector selector)
+    public LocomotiveSelectorItem(Locomotive loc, LocomotiveSelector selector)
     {
         initComponents();
         

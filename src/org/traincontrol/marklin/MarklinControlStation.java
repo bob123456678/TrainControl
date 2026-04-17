@@ -254,7 +254,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         } 
         
         // Resolve linked locomotives now that we have loaded everything
-        for (MarklinLocomotive l : this.getLocomotives())
+        for (Locomotive l : this.getLocomotives())
         {
             l.setLinkedLocomotives();
         }
@@ -912,7 +912,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Set multi unit info
                 if (this.locDB.getById(l.getUID()) != null)
                 {
-                    this.locDB.getById(l.getUID()).setCentralStationMultiUnitLocomotives(l.getCentralStationMultiUnitLocomotiveNames());
+                    this.locDB.getById(l.getUID()).setModelMultiUnitLocomotives(l.getModelMultiUnitLocomotiveNames());
                 }
             }
         }
@@ -1802,7 +1802,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param loc 
      */
     @Override
-    public void locFunctionsOff(MarklinLocomotive loc)
+    public void locFunctionsOff(Locomotive loc)
     {
         loc.functionsOff();
     }
@@ -1916,7 +1916,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
-            newLoc.setCentralStationMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
+            newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             
             this.locDB.add(newLoc, newLoc.getName(), newLoc.getUID());
             
@@ -2026,7 +2026,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.logf("loc.addressChanged", l.getName(), newAddress, newDecoderType.name());
         
         // Ensure linked locomotives have valid addresses
-        for (MarklinLocomotive other : getLocomotives())
+        for (Locomotive other : getLocomotives())
         {
             if (other.hasLinkedLocomotives())
             {
@@ -2052,9 +2052,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public MarklinLocomotive isLocLinkedToOthers(MarklinLocomotive l)
+    public Locomotive isLocLinkedToOthers(Locomotive l)
     {
-        for (MarklinLocomotive other : getLocomotives())
+        for (Locomotive other : getLocomotives())
         {
             if (other.isLinkedTo(l))
             {
@@ -2070,7 +2070,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public final List<MarklinLocomotive> getLocomotives()
+    public final List<Locomotive> getLocomotives()
+    {
+        List<Locomotive> out = new ArrayList<>();
+        out.addAll(this.locDB.getItems());
+        return out;
+    }
+    
+    /**
+     * Same as getLocomotives, but without casting
+     * @return 
+     */
+    public final List<MarklinLocomotive> getMarklinLocomotives()
     {
         return this.locDB.getItems();
     }
@@ -2521,7 +2532,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Header row
         csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes\n");
 
-        for (MarklinLocomotive l : this.getLocomotives())
+        for (Locomotive l : this.getLocomotives())
         {
             String name = escapeCsv(l.getName());
             List<String> mappings = this.view.getAllLocButtonMappings(l);

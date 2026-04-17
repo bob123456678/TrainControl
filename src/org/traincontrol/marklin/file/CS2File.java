@@ -1396,7 +1396,7 @@ public final class CS2File
                 
                 if (!multiUnitLocMap.isEmpty())
                 {
-                    newLoc.setCentralStationMultiUnitLocomotives(multiUnitLocMap);
+                    newLoc.setModelMultiUnitLocomotives(multiUnitLocMap);
                 }
 
                 out.add(newLoc);
@@ -1531,7 +1531,7 @@ public final class CS2File
                 
                 if (!multiUnitLocMap.isEmpty())
                 {
-                    loc.setCentralStationMultiUnitLocomotives(multiUnitLocMap);
+                    loc.setModelMultiUnitLocomotives(multiUnitLocMap);
                 }
                                 
                 out.add(loc);

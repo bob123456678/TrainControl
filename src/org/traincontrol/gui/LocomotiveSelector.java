@@ -88,13 +88,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
             this.MainLocList.setLayout(new FlowLayout(FlowLayout.LEFT, PADDING, PADDING));
 
-            List<MarklinLocomotive> locs = this.model.getLocomotives();
+            List<Locomotive> locs = this.model.getLocomotives();
             locs.sort((Locomotive l1, Locomotive l2) ->
             {
                 return l1.getName().compareTo(l2.getName());
             });
             
-            for (MarklinLocomotive l : locs)
+            for (Locomotive l : locs)
             {
                 LocomotiveSelectorItem loc = new LocomotiveSelectorItem(l, this);
 

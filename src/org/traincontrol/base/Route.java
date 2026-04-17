@@ -11,6 +11,8 @@ import org.traincontrol.model.ViewListener;
  */
 abstract public class Route
 {    
+    public static enum s88Triggers {CLEAR_THEN_OCCUPIED, OCCUPIED_THEN_CLEAR};
+    
     // Name of this route
     private final String name;
     
@@ -259,4 +261,15 @@ abstract public class Route
     abstract public boolean isEnabled();
     
     abstract public boolean isLocked();
+    
+    // Sensors
+    abstract public void setS88(int s88);
+    abstract public int getS88();
+    
+    abstract public s88Triggers getTriggerType();
+    abstract public void setTriggerType(s88Triggers type);
+    
+    abstract public String getConditionCSV();
+    abstract public NodeExpression getConditions();
+    abstract public boolean hasS88();
 }

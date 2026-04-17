@@ -18,7 +18,6 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
@@ -135,8 +134,8 @@ public class LocomotiveStats extends javax.swing.JPanel
 
                 for (Locomotive l : sortedLocs)
                 {        
-                    boolean isMultiUnit = ((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT ||
-                            ((MarklinLocomotive) l).hasLinkedLocomotives();
+                    boolean isMultiUnit = l.getDecoderType() == Locomotive.decoderType.MULTI_UNIT ||
+                            l.hasLinkedLocomotives();
                     
                     Object[] data = {l.getName() + (isMultiUnit ? " (" + I18n.t("loc.multiUnit") + ")" : ""),
                         new TimestampString(l.getTotalRuntime()), new TimestampString(l.getRuntimeToday()), 
@@ -428,7 +427,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                     
                     String data = "";
                     
-                    for (MarklinLocomotive l : this.tcui.getModel().getLocomotives())
+                    for (Locomotive l : this.tcui.getModel().getLocomotives())
                     {
                         for (Entry<String, Long> e : l.getHistoricalOperatingTime().entrySet())
                         {

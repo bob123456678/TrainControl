@@ -11,7 +11,6 @@ import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.file.CS2File.fetchURL;
 import static org.traincontrol.marklin.file.CS2File.parseFile;
-import org.traincontrol.marklin.udp.CSDetect;
 
 /**
  * Tests CS2 and CS3 locomotive parsing
@@ -168,7 +167,7 @@ public class testParseCS3Loks
         
         assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);  
         assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
-        assertTrue(getLocByName(db, "Test TC").getCentralStationMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
+        assertTrue(getLocByName(db, "Test TC").getModelMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
     }
     
     @Test
@@ -187,7 +186,7 @@ public class testParseCS3Loks
         // Test multi unit
         assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);  
         assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
-        assertTrue(getLocByName(db, "Test TC").getCentralStationMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
+        assertTrue(getLocByName(db, "Test TC").getModelMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
     }
     
     @Test

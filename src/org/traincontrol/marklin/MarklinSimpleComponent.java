@@ -161,7 +161,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
         this.notes = l.getNotes();
         this.linkedLocomotives = l.getLinkedLocomotiveNames();
-        this.centralStationLinkedLocomotives = l.getCentralStationMultiUnitLocomotiveNames();
+        this.centralStationLinkedLocomotives = l.getModelMultiUnitLocomotiveNames();
     }
     
     public Map<String, Double> getCentralStationLinkedLocomotives()

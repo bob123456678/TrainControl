@@ -25,9 +25,7 @@ import org.traincontrol.base.NodeExpression;
  */
 public class MarklinRoute extends Route 
     implements java.io.Serializable
-{
-    public static enum s88Triggers {CLEAR_THEN_OCCUPIED, OCCUPIED_THEN_CLEAR};
-    
+{    
     // Control station reference
     private final MarklinControlStation network;
     
@@ -476,6 +474,7 @@ public class MarklinRoute extends Route
      * Sets the corresponding s88 sensor
      * @param s88 
      */
+    @Override
     public void setS88(int s88)
     {
         this.s88 = s88;
@@ -485,6 +484,7 @@ public class MarklinRoute extends Route
      * Gets the s88 sensor to trigger the route
      * @return 
      */
+    @Override
     public int getS88()
     {
         return this.s88;
@@ -562,6 +562,7 @@ public class MarklinRoute extends Route
      * Returns if the automatic route is enabled
      * @return 
      */
+    @Override
     public boolean isEnabled()
     {
         return this.enabled;
@@ -571,6 +572,7 @@ public class MarklinRoute extends Route
      * Returns the trigger type
      * @return 
      */
+    @Override
     public s88Triggers getTriggerType()
     {
         return this.triggerType;
@@ -580,6 +582,7 @@ public class MarklinRoute extends Route
      * Set the trigger type
      * @param type
      */
+    @Override
     public void setTriggerType(s88Triggers type)
     {
         this.triggerType = type;
@@ -699,6 +702,7 @@ public class MarklinRoute extends Route
      * Returns a CSV representation of the route's condition accessories
      * @return 
      */
+    @Override
     public String getConditionCSV()
     {
         StringBuilder out = new StringBuilder();

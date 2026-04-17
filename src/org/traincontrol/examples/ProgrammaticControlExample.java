@@ -43,7 +43,7 @@ public class ProgrammaticControlExample
                 List<String> allLocomotiveNames = data.getLocList();
                 
                 // Retieve all available locomotives
-                List<MarklinLocomotive> allLocomotives = data.getLocomotives();
+                List<Locomotive> allLocomotives = data.getLocomotives();
                 
                 // Retrieve a locomotive that already exists in the CS2/CS3
                 Locomotive myLoc = data.getLocByName("BR 64");

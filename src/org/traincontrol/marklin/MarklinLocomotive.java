@@ -37,7 +37,7 @@ public class MarklinLocomotive extends Locomotive
     public static final int MULTI_UNIT_BASE = 0x2c00; // The first MU created by the Central Station is 0x2c01
     
     public static int PULSE_FUNCTION_DURATION = 300;
-    
+        
     // Function icon colors
     public static final String[] COLOR_YELLOW = {"i_gr", "a_ge"};
     public static final String[] COLOR_WHITE = {"i_we", "a_we"};
@@ -64,7 +64,7 @@ public class MarklinLocomotive extends Locomotive
     
     // Locomotives linked to this locomotive that will operate as a multi-unit
     // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
-    private final Map <MarklinLocomotive, Double> linkedLocomotives = new LinkedHashMap<>();     
+    private final Map <Locomotive, Double> linkedLocomotives = new LinkedHashMap<>();     
     private Map <String, Double> preLinkedLocomotives;
     
     // For informational purposes, this is the list of locomotives in a central station (not a TrainControl) multi unit
@@ -449,7 +449,8 @@ public class MarklinLocomotive extends Locomotive
      * @param l
      * @return 
      */
-    public boolean hasEquivalentAddress(MarklinLocomotive l)
+    @Override
+    public boolean hasEquivalentAddress(Locomotive l)
     {
         if (l == null || !(l instanceof MarklinLocomotive)) return false;
         
@@ -596,7 +597,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive stop()
     {        
         // Pass through commands
-        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        for (Locomotive l : this.linkedLocomotives.keySet())
         {
             l.stop();
         }
@@ -627,7 +628,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive syncFromNetwork()
     {
         // Pass through commands
-        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        for (Locomotive l : this.linkedLocomotives.keySet())
         {
             l.syncFromNetwork();
         }
@@ -679,7 +680,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive syncFromState()
     {
         // Pass through commands
-        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        for (Locomotive l : this.linkedLocomotives.keySet())
         {
             l.syncFromState();
         }
@@ -703,7 +704,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive setSpeed(int speed)
     {
         // Pass through commands
-        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        for (Map.Entry<Locomotive, Double> entry : this.linkedLocomotives.entrySet())
         {
             double scaledSpeed = speed * Math.abs(entry.getValue()); 
             int roundedSpeed;
@@ -750,7 +751,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive setDirection(locDirection direction)
     {
         // Pass through commands
-        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        for (Map.Entry<Locomotive, Double> entry : this.linkedLocomotives.entrySet())
         {
             if (entry.getValue() < 0)
             {
@@ -791,7 +792,7 @@ public class MarklinLocomotive extends Locomotive
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
         // Pass through commands
-        for (MarklinLocomotive l : this.linkedLocomotives.keySet())
+        for (Locomotive l : this.linkedLocomotives.keySet())
         {
             l.setF(fNumber, state);
         }
@@ -941,6 +942,7 @@ public class MarklinLocomotive extends Locomotive
      * @param l
      * @return 
      */
+    @Override
     public boolean isLinkedTo(Locomotive l)
     {
         // For strict enforcement, "Our linked locomotives have the same address as the other locomotive" can be placed here
@@ -968,18 +970,18 @@ public class MarklinLocomotive extends Locomotive
         }
         
         // Our linked locomotives have the same address as the other locomotive
-        Collection<MarklinLocomotive> otherLocs;
+        Collection<Locomotive> otherLocs;
 
         if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            otherLocs = this.getCentralStationMultiUnitLocomotives();
+            otherLocs = this.getModelMultiUnitLocomotives();
         }
         else
         {
             otherLocs = this.getLinkedLocomotives().keySet();
         }
         
-        for (MarklinLocomotive other : otherLocs)
+        for (Locomotive other : otherLocs)
         {
             if (other.hasEquivalentAddress((MarklinLocomotive) l))
             {
@@ -988,21 +990,21 @@ public class MarklinLocomotive extends Locomotive
         }
               
         // Locomotives linked to the other locomotive have the same address as one of our linked locomotives
-        for (MarklinLocomotive other : this.getLinkedLocomotives().keySet())
+        for (Locomotive other : this.getLinkedLocomotives().keySet())
         {
-            Collection<MarklinLocomotive> other2Locs;
+            Collection<Locomotive> other2Locs;
             
             // Also check central stations MUs
             if (((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
             {
-                other2Locs = ((MarklinLocomotive) l).getCentralStationMultiUnitLocomotives();
+                other2Locs = l.getModelMultiUnitLocomotives();
             }
             else
             {
-                other2Locs = ((MarklinLocomotive) l).getLinkedLocomotives().keySet();
+                other2Locs = l.getLinkedLocomotives().keySet();
             }
             
-            for (MarklinLocomotive other2 : other2Locs)
+            for (Locomotive other2 : other2Locs)
             {
                 if (other.hasEquivalentAddress(other2) || other.equals(other2))
                 {
@@ -1028,7 +1030,7 @@ public class MarklinLocomotive extends Locomotive
      * Processes the preset list and maps locomotives to be linked to this one
      * @return 
      */
-    public int setLinkedLocomotives()
+    public int setLinkedLocomotives() 
     {       
         linkedLocomotives.clear();
      
@@ -1070,11 +1072,12 @@ public class MarklinLocomotive extends Locomotive
      * Gets the list of linked locomotives (names only - suitable for export)
      * @return 
      */
+    @Override
     public Map<String, Double> getLinkedLocomotiveNames()
     {
         HashMap<String, Double> locomotiveNames = new HashMap<>();
         
-        for (Map.Entry<MarklinLocomotive, Double> entry : this.linkedLocomotives.entrySet())
+        for (Map.Entry<Locomotive, Double> entry : this.linkedLocomotives.entrySet())
         {
             String locoName = entry.getKey().getName();
             Double value = entry.getValue();
@@ -1090,7 +1093,7 @@ public class MarklinLocomotive extends Locomotive
      * @param logError
      * @return 
      */
-    public boolean canBeLinkedTo(MarklinLocomotive other, boolean logError)
+    public boolean canBeLinkedTo(Locomotive other, boolean logError)
     {
         String error = null;
 
@@ -1116,7 +1119,7 @@ public class MarklinLocomotive extends Locomotive
         }
         else
         {
-            for (MarklinLocomotive l : this.getLinkedLocomotives().keySet())
+            for (Locomotive l : this.getLinkedLocomotives().keySet())
             {
                 if (l.hasEquivalentAddress(other))
                 {
@@ -1138,7 +1141,8 @@ public class MarklinLocomotive extends Locomotive
      * Gets the list of linked locomotives
      * @return 
      */
-    public Map<MarklinLocomotive, Double> getLinkedLocomotives()
+    @Override
+    public Map<Locomotive, Double> getLinkedLocomotives()
     {
         return this.linkedLocomotives;
     }
@@ -1156,9 +1160,10 @@ public class MarklinLocomotive extends Locomotive
      * For informational purposes, sets the locomotives linked to this multi unit in the central station
      * @param l 
      */
-    public void setCentralStationMultiUnitLocomotives(Map<String, Double> l)
+    @Override
+    public void setModelMultiUnitLocomotives(Map<String, Double> l)
     {
-        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        if (this.getDecoderType() == Locomotive.decoderType.MULTI_UNIT)
         {
             this.centralStationMultiUnitLocomotiveNames = l;
         }
@@ -1168,7 +1173,8 @@ public class MarklinLocomotive extends Locomotive
      * Fetches the raw list of central station multi unit locomotives
      * @return 
      */
-    public Map<String, Double> getCentralStationMultiUnitLocomotiveNames()
+    @Override
+    public Map<String, Double> getModelMultiUnitLocomotiveNames()
     {
         return centralStationMultiUnitLocomotiveNames;
     }
@@ -1177,11 +1183,12 @@ public class MarklinLocomotive extends Locomotive
      * Returns the locomotives linked to this multi unit in the central station
      * @return 
      */
-    public List<MarklinLocomotive> getCentralStationMultiUnitLocomotives()
+    @Override
+    public List<Locomotive> getModelMultiUnitLocomotives()
     {  
-        List<MarklinLocomotive> output = new ArrayList<>();
+        List<Locomotive> output = new ArrayList<>();
         
-        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT && this.centralStationMultiUnitLocomotiveNames != null)
+        if (this.getDecoderType() == Locomotive.decoderType.MULTI_UNIT && this.centralStationMultiUnitLocomotiveNames != null)
         {
             for (String s : this.centralStationMultiUnitLocomotiveNames.keySet())
             {
@@ -1193,5 +1200,11 @@ public class MarklinLocomotive extends Locomotive
         }
         
         return output;
+    }
+    
+    @Override
+    public int getPulseFunctionDuration()
+    {
+        return PULSE_FUNCTION_DURATION;
     }
 }

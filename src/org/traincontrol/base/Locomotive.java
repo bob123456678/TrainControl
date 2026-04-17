@@ -1515,4 +1515,21 @@ public abstract class Locomotive
      * @return 
      */
     abstract public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow);
+    
+    abstract public int getPulseFunctionDuration();
+    
+    abstract public boolean isLinkedTo(Locomotive l);
+    abstract public Map<String, Double> getLinkedLocomotiveNames();
+    abstract public Map<String, Double> getModelMultiUnitLocomotiveNames();
+    abstract public List<Locomotive> getModelMultiUnitLocomotives();
+    abstract public void setModelMultiUnitLocomotives(Map<String, Double> l);
+    abstract public Map<Locomotive, Double> getLinkedLocomotives();
+    abstract public int setLinkedLocomotives();
+    abstract public void preSetLinkedLocomotives(Map<String, Double> locList);
+    abstract public boolean canBeLinkedTo(Locomotive other, boolean logError);
+    abstract public boolean hasLinkedLocomotives();
+
+    abstract public Locomotive syncFromState();
+    abstract public Locomotive syncFromNetwork();
+    abstract public boolean hasEquivalentAddress(Locomotive l);
 }

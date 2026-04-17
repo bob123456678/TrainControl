@@ -120,9 +120,6 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.graphstream.graph.Graph;
@@ -132,9 +129,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
-import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
-import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
@@ -1826,7 +1821,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         LATEST_VERSION
                     );
 
-                    if (Conversion.compareVersions(LATEST_VERSION, MarklinControlStation.RAW_VERSION) > 0)
+                    if (Conversion.compareVersions(LATEST_VERSION, RAW_VERSION) > 0)
                     {
                         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                         {
@@ -2178,7 +2173,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else if (this.activeLoc.isFunctionPulse(fn))
             {
                 new Thread(() -> {
-                    this.activeLoc.toggleF(fn, MarklinLocomotive.PULSE_FUNCTION_DURATION);
+                    this.activeLoc.toggleF(fn, this.activeLoc.getPulseFunctionDuration());
                 }).start();
             }
             else
@@ -2347,7 +2342,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.getLocByName(l.getName()).applyPreferredFunctions();
                 
                 // Ensure correct cascading
-                for (MarklinLocomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
+                for (Locomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
                 {
                     other.applyPreferredFunctions();
                 }
@@ -2401,7 +2396,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.locFunctionsOff(this.model.getLocByName(l.getName()));
                 
                 // Ensure correct cascading
-                for (MarklinLocomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
+                for (Locomotive other : this.model.getLocByName(l.getName()).getLinkedLocomotives().keySet())
                 {
                     this.model.locFunctionsOff(other);
                 }
@@ -9293,7 +9288,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else if (controlPressed && keyCode == KeyEvent.VK_L)
         {
-            this.changeLinkedLocomotives((MarklinLocomotive) this.getButtonLocomotive(this.currentButton));
+            this.changeLinkedLocomotives((Locomotive) this.getButtonLocomotive(this.currentButton));
         }
         else if (controlPressed && keyCode == KeyEvent.VK_M)
         {
@@ -9309,7 +9304,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else if (controlPressed && keyCode == KeyEvent.VK_R)
         {
-            this.changeLocAddress((MarklinLocomotive) this.getButtonLocomotive(this.currentButton));
+            this.changeLocAddress(this.getButtonLocomotive(this.currentButton));
         }
         else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
         {
@@ -10141,10 +10136,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Prompts the user to choose locomotives to link to this one
      * @param l 
      */
-    public void changeLinkedLocomotives(MarklinLocomotive l)
+    public void changeLinkedLocomotives(Locomotive l)
     {
         // If the multi unit is defined in the central station, enter a read-only mode
-        boolean isCSMultiUnit = (l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT);
+        boolean isCSMultiUnit = (l.getDecoderType() == Locomotive.decoderType.MULTI_UNIT);
         
         if (this.model.isLocLinkedToOthers(l) != null)
         {
@@ -10176,8 +10171,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        List<MarklinLocomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getCentralStationMultiUnitLocomotives();
-        Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getCentralStationMultiUnitLocomotiveNames();        
+        List<Locomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getModelMultiUnitLocomotives();
+        Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getModelMultiUnitLocomotiveNames();        
         Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
 
         // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
@@ -10255,7 +10250,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
 
         List<JPanel> rowPanels = new ArrayList<>();
-        for (MarklinLocomotive loco : allLocomotives)
+        for (Locomotive loco : allLocomotives)
         {
             if (
                     isCSMultiUnit || // show all the CS MU's locomotives for informational purposes
@@ -11060,7 +11055,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 else
                 {
-                    MarklinRoute currentRoute = this.model.getRoute(routeName);
+                    Route currentRoute = this.model.getRoute(routeName);
                     
                     routeEditor = new RouteEditor(
                             I18n.f(
@@ -11119,9 +11114,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {  
             if (routeName != null)
             {
-                MarklinRoute currentRoute = this.model.getRoute(routeName);
+                Route currentRoute = this.model.getRoute(routeName);
 
-                if (currentRoute != null && currentRoute instanceof MarklinRoute)
+                if (currentRoute != null && currentRoute instanceof Route)
                 {
                     String proposedName = currentRoute.getName() + " (" + I18n.t("route.ui.copy") + " %s)";
 
@@ -11162,7 +11157,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 for (String routeName : this.model.getRouteList())
                 {
-                    MarklinRoute r = this.model.getRoute(routeName);
+                    Route r = this.model.getRoute(routeName);
 
                     if (r.hasS88() || r.isEnabled())
                     {
@@ -11187,7 +11182,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {  
         new Thread(() -> 
         {
-            MarklinRoute r = this.model.getRoute(routeName);
+            Route r = this.model.getRoute(routeName);
 
             if (r.hasS88())
             {
@@ -12017,7 +12012,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Conditional route warning
             for (String routeName : this.model.getRouteList())
             {
-                MarklinRoute r = this.model.getRoute(routeName);
+                Route r = this.model.getRoute(routeName);
 
                 if (r.isEnabled())
                 {
@@ -12192,7 +12187,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     "",
                     false,
                     0,
-                    MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+                    Route.s88Triggers.CLEAR_THEN_OCCUPIED,
                     "",
                     false
                 );
@@ -12801,7 +12796,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 for (String routeName : this.model.getRouteList())
                 {
-                    MarklinRoute r = this.model.getRoute(routeName);
+                    Route r = this.model.getRoute(routeName);
 
                     if (r.isEnabled())
                     {
@@ -13420,7 +13415,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(newLayoutName);
 
-                MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                org.traincontrol.base.Layout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                 this.layoutEditingComplete();
 
@@ -13485,7 +13480,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()).deleteLayoutFile();
 
                     layoutList.remove(this.LayoutList.getSelectedItem().toString());
-                    MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                    org.traincontrol.base.Layout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                     this.layoutEditingComplete();
                 }
@@ -14384,7 +14379,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Remove locomotive from graph if it was deleted
-        if (p.isOccupied() && p.getCurrentLocomotive() != null && !this.model.getLocomotives().contains((MarklinLocomotive) p.getCurrentLocomotive()))
+        if (p.isOccupied() && p.getCurrentLocomotive() != null && !this.model.getLocomotives().contains((Locomotive) p.getCurrentLocomotive()))
         {
             p.setLocomotive(null);
         }
@@ -14998,7 +14993,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (value != null)
             {
-                String name = ((MarklinRoute) value).getName();
+                String name = ((Route) value).getName();
                 
                 // Show route ID if sorting by ID
                 if (prefs.getBoolean(ROUTE_SORT_PREF, false))
@@ -15076,7 +15071,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             
             // Collect the objects to store in the grid - no more strings
-            List<MarklinRoute> routes = names.stream().map(this.model::getRoute).collect(Collectors.toList());
+            List<Route> routes = names.stream().map(this.model::getRoute).collect(Collectors.toList());
 
             int i = 0;
             while (!routes.isEmpty())

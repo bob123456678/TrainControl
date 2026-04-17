@@ -103,7 +103,7 @@ public class testAutoLayout
         Map<String, Double> locList1copy = new HashMap<String, Double>() {{ put(l1copy.getName(), 1.0); }};
 
         // Initialize multi-units
-        mu_1_2_cs.setCentralStationMultiUnitLocomotives(locList12);
+        mu_1_2_cs.setModelMultiUnitLocomotives(locList12);
         mu_1_2.preSetLinkedLocomotives(locList2);
         mu_3_2.preSetLinkedLocomotives(locList2);
         l5.preSetLinkedLocomotives(locList1copy);
