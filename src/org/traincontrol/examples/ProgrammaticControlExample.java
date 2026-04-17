@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**

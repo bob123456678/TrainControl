@@ -122,7 +122,6 @@ import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
@@ -130,6 +129,7 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinAccessory;
@@ -9714,7 +9714,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void deleteRoute(String routeName)
     {
-        MarklinRoute route = this.model.getRoute(routeName);
+        Route route = this.model.getRoute(routeName);
         
         if (route != null)
         {            
@@ -9978,7 +9978,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {        
         try
         {
-            MarklinRoute currentRoute = this.model.getRoute(routeName);
+            Route currentRoute = this.model.getRoute(routeName);
             
             if (currentRoute != null)
             {
@@ -10018,12 +10018,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    public void changeLocAddress(MarklinLocomotive l)
+    public void changeLocAddress(Locomotive l)
     {
         changeLocAddress(l, null);
     }
     
-    public void changeLocAddress(MarklinLocomotive l, MouseEvent evt)
+    public void changeLocAddress(Locomotive l, MouseEvent evt)
     {
         Component source = evt != null ? (Component) evt.getSource() : this;
         
@@ -12204,9 +12204,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (SwingUtilities.isLeftMouseButton(evt))
         {
             //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
-            MarklinRoute route = this.getRouteAtCursor(evt);
+            Route route = this.getRouteAtCursor(evt);
 
-            if (route != null && route instanceof MarklinRoute)
+            if (route != null && route instanceof Route)
             {
                 // We need to set this in case there are popup windows
                 this.setAlwaysOnTop(true);

@@ -249,4 +249,10 @@ abstract public class Route
         
         return false;
     }
+    
+    /**
+     * Return the network ID of the route
+     * @return 
+     */
+    abstract public int getId();
 }

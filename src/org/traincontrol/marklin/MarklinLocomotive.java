@@ -22,9 +22,7 @@ import org.traincontrol.util.I18n;
  */
 public class MarklinLocomotive extends Locomotive
     implements java.io.Serializable, RemoteDevice<Locomotive, CS2Message>
-{        
-    public static enum decoderType {MFX, MM2, DCC, MULTI_UNIT};
-    
+{            
     /* Constants */
     
     public static final int MFX_NUM_FN = 32;

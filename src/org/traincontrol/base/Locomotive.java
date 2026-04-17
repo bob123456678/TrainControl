@@ -22,6 +22,7 @@ import org.traincontrol.util.I18n;
 public abstract class Locomotive
 {
     public static enum locDirection {DIR_FORWARD, DIR_BACKWARD};
+    public static enum decoderType {MFX, MM2, DCC, MULTI_UNIT};
     
     public static final Object monitor = new Object();
     public static final Object speedMonitor = new Object();
@@ -1489,4 +1490,8 @@ public abstract class Locomotive
      * @return 
      */
     abstract public ViewListener getModel();
+    
+    abstract public int getAddress();
+    
+    abstract public decoderType getDecoderType();     
 }

@@ -1,8 +1,8 @@
 package org.traincontrol.gui;
 
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 
 /**
  * UI for changing locomotive functions

@@ -8,12 +8,12 @@ import java.util.TreeMap;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Feedback;
+import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinLocomotive.decoderType;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.udp.CANMessage;
 
