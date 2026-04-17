@@ -1,5 +1,6 @@
 package org.traincontrol.base;
 
+import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.util.I18n;
 
 /**
@@ -419,5 +420,8 @@ abstract public class Accessory
             "State: " + switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase();
     }
     
+    abstract public accessoryDecoderType getDecoderType();
+    
     abstract public void updateTiles(boolean forceHighlight);
+    abstract public void addTile(LayoutLabel l);
 }

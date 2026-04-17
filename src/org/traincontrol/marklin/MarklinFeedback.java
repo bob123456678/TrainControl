@@ -104,6 +104,7 @@ public class MarklinFeedback extends Feedback
      * Sets the feedback state
      * @param val 
      */
+    @Override
     public void setState(boolean val)
     {
         this._setState(val);

@@ -310,6 +310,7 @@ public class MarklinAccessory extends Accessory
      * Gets the decoder type
      * @return 
      */
+    @Override
     public accessoryDecoderType getDecoderType()
     {
         return decoderType;

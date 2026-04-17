@@ -130,6 +130,7 @@ import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
+import org.traincontrol.marklin.MarklinLayout;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
@@ -13415,7 +13416,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(newLayoutName);
 
-                org.traincontrol.base.Layout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                 this.layoutEditingComplete();
 
@@ -13480,7 +13481,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()).deleteLayoutFile();
 
                     layoutList.remove(this.LayoutList.getSelectedItem().toString());
-                    org.traincontrol.base.Layout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                    MarklinLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                     this.layoutEditingComplete();
                 }

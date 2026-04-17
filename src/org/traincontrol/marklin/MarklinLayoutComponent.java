@@ -9,6 +9,8 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.Feedback;
+import org.traincontrol.base.Route;
 import org.traincontrol.util.I18n;
 
 /**
@@ -51,10 +53,10 @@ public class MarklinLayoutComponent
     private componentType type;
     
     // Accessory references
-    private MarklinAccessory accessory;
-    private MarklinAccessory accessory2;
-    private MarklinFeedback feedback;
-    private MarklinRoute route;
+    private Accessory accessory;
+    private Accessory accessory2;
+    private Feedback feedback;
+    private Route route;
     
     /**
      * Constructor
@@ -500,22 +502,22 @@ public class MarklinLayoutComponent
         return rawAddress;
     }
     
-    public MarklinAccessory getAccessory()
+    public Accessory getAccessory()
     {
         return accessory;
     }
 
-    public MarklinAccessory getAccessory2()
+    public Accessory getAccessory2()
     {
         return accessory2;
     }
 
-    public MarklinFeedback getFeedback()
+    public Feedback getFeedback()
     {
         return feedback;
     }
     
-    public MarklinRoute getRoute()
+    public Route getRoute()
     {
         return route;
     }

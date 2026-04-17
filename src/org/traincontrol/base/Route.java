@@ -2,6 +2,7 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -272,4 +273,7 @@ abstract public class Route
     abstract public String getConditionCSV();
     abstract public NodeExpression getConditions();
     abstract public boolean hasS88();
+    
+    abstract public void execRoute(boolean auto);
+    abstract public void addTile(LayoutLabel l);
 }

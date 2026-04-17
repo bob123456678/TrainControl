@@ -1,5 +1,7 @@
 package org.traincontrol.base;
 
+import org.traincontrol.gui.LayoutLabel;
+
 /**
  * Abstract feedback/sensor class
  * @author Adam
@@ -86,4 +88,9 @@ public abstract class Feedback
         return "Feedback " + this.name + "\n" 
             + "State: " + (this.set ? "On" : "Off");
     }
+    
+    // Gets the Unique ID
+    abstract public int getUID();
+    abstract public void setState(boolean val);
+    abstract public void addTile(LayoutLabel l);
 }
