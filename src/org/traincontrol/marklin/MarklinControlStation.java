@@ -1434,11 +1434,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     /**
      * Receives a network messages from the CS2 for interpretation
-     * @param message
+     * @param msg
      */
     @Override
-    public void receiveMessage(CS2Message message)
+    public void receiveMessage(CANMessage msg)
     {
+        CS2Message message = (CS2Message) msg;
+        
         if (message == null) return;
         
         synchronized (this)

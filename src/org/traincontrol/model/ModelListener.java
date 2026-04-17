@@ -1,6 +1,6 @@
 package org.traincontrol.model;
 
-import org.traincontrol.marklin.udp.CS2Message;
+import org.traincontrol.marklin.udp.CANMessage;
 
 /**
  * Required model functionality interface
@@ -8,7 +8,7 @@ import org.traincontrol.marklin.udp.CS2Message;
  */
 public interface ModelListener
 {
-    public void receiveMessage(CS2Message message);
+    public void receiveMessage(CANMessage message);
     
     public void logf(String key, Object... args);
     public void log(String message);
