@@ -31,6 +31,10 @@ abstract public class Accessory
     protected int numActuations;
     protected boolean stateAtLastActuation;
     
+    // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
+    public static final int MAX_MM2_ADDRESS = 319;
+    public static final int MAX_DCC_ADDRESS = 2047;
+    
     /**
      * Simple constructors
      * @param name
@@ -420,8 +424,31 @@ abstract public class Accessory
             "State: " + switchedToAccessorySetting(this.isSwitched(), this.getType()).toString().toLowerCase();
     }
     
+    public static boolean isValidAddress(int addr, accessoryDecoderType protocol)
+    {
+        if (protocol == accessoryDecoderType.DCC)
+        {
+            return isValidDCCAddress(addr);
+        }
+        else
+        {
+            return isValidMM2Address(addr);
+        }
+    }
+    
+    public static boolean isValidDCCAddress(int addr)
+    {
+        return addr >= 0 && addr <= MAX_DCC_ADDRESS;
+    }
+    
+    public static boolean isValidMM2Address(int addr)
+    {
+        return addr >= 0 && addr <= MAX_MM2_ADDRESS;
+    }
+    
     abstract public accessoryDecoderType getDecoderType();
     
     abstract public void updateTiles(boolean forceHighlight);
     abstract public void addTile(LayoutLabel l);
+    abstract public int getThreeWaySwitchingDelay();
 }

@@ -34,11 +34,7 @@ public class MarklinAccessory extends Accessory
     
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
-    
-    // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
-    public static final int MAX_MM2_ADDRESS = 319;
-    public static final int MAX_DCC_ADDRESS = 2047;
-    
+        
     public static final int MM2_BASE = 0x3000;
     public static final int DCC_BASE = 0x3800;
         
@@ -92,29 +88,7 @@ public class MarklinAccessory extends Accessory
             return isValidMM2Address(this.address);
         }
     }
-    
-    public static boolean isValidAddress(int addr, accessoryDecoderType protocol)
-    {
-        if (protocol == accessoryDecoderType.DCC)
-        {
-            return isValidDCCAddress(addr);
-        }
-        else
-        {
-            return isValidMM2Address(addr);
-        }
-    }
-    
-    public static boolean isValidDCCAddress(int addr)
-    {
-        return addr >= 0 && addr <= MAX_DCC_ADDRESS;
-    }
-    
-    public static boolean isValidMM2Address(int addr)
-    {
-        return addr >= 0 && addr <= MAX_MM2_ADDRESS;
-    }
-    
+     
     /**
      * Returns the UID for the specified integer address
      * @param address
@@ -389,4 +363,11 @@ public class MarklinAccessory extends Accessory
         
         return this.decoderType == other.decoderType;
     }
+    
+    @Override
+    public int getThreeWaySwitchingDelay()
+    {
+        return MarklinAccessory.THREEWAY_DELAY_MS;
+    }
+
 }

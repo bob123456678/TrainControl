@@ -8,7 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.marklin.MarklinAccessory; // TODO - decouple
 import org.traincontrol.util.I18n;
 
 /**
@@ -135,19 +134,19 @@ public class TrackLayoutComponent
             if (this.accessory.isStraight() && this.accessory2.isStraight())
             {
                 this.accessory2.setSwitched(false);
-                this.accessory.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(true);
+                this.accessory.delay(this.accessory.getThreeWaySwitchingDelay()).setSwitched(true);
             }
             else
             {
                 if (this.accessory2.isStraight())
                 {
                     this.accessory.setSwitched(false);
-                    this.accessory2.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(true);
+                    this.accessory2.delay(this.accessory2.getThreeWaySwitchingDelay()).setSwitched(true);
                 }
                 else
                 {
                     this.accessory.setSwitched(false);
-                    this.accessory2.delay(MarklinAccessory.THREEWAY_DELAY_MS).setSwitched(false);
+                    this.accessory2.delay(this.accessory2.getThreeWaySwitchingDelay()).setSwitched(false);
                 }                      
             }  
         }
@@ -860,7 +859,7 @@ public class TrackLayoutComponent
         if (!this.isFeedback() && !this.isLink() && !this.isRoute())
         {
             // 3-way switches have an address 1 above the base, so make the check more strict
-            if (!MarklinAccessory.isValidAddress(this.isThreeWay() ? address : address - 1, protocol))
+            if (!Accessory.isValidAddress(this.isThreeWay() ? address : address - 1, protocol))
             {
                 throw new Exception(I18n.t("acc.invalidAddress"));
             }
