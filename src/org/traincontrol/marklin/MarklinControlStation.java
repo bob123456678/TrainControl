@@ -1045,7 +1045,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             // 2.7.0 change
             // Handle moved enum: MarklinRoute$s88Triggers -> Route$s88Triggers
-            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers")) {
+            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers"))
+            {
                 return Route.s88Triggers.class;
             }
             
@@ -1054,6 +1055,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 name = "org.traincontrol." + name;
             }
+            
             return Class.forName(name);
         }
         
@@ -1066,7 +1068,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // 2.7.0 change
             // Handle moved enum: MarklinRoute$s88Triggers -> Route$s88Triggers
-            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers")) {
+            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers"))
+            {
                 // Return the descriptor of the new enum class
                 return ObjectStreamClass.lookup(Route.s88Triggers.class);
             }
