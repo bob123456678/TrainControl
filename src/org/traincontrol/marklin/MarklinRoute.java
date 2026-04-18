@@ -100,6 +100,7 @@ public class MarklinRoute extends Route
         this.executeAutoRoute();
     }
 
+    @Override
     public boolean isLocked()
     {
         return locked;
@@ -534,6 +535,7 @@ public class MarklinRoute extends Route
      * Returns whether this route has an s88 sensor
      * @return 
      */
+    @Override
     public final boolean hasS88()
     {
         return this.s88 > 0;
@@ -695,6 +697,7 @@ public class MarklinRoute extends Route
      * Gets the route condition expression
      * @return 
      */
+    @Override
     public NodeExpression getConditions()
     {
         return this.conditions;

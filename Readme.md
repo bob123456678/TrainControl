@@ -330,9 +330,12 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.7.0 [Beta]
     - Added support for new CS3 firmware v2.6.0 (March 2026) and backwards-compatibility with older versions
-    - UI enhancement: Greyed out all controls in the route viewer for routes imported from the CS3
-    - Refactored code to made TrainControl classes more generic, suitable for future expansion beyond Marklin's CS3
-    - Updated JSON library to json-20251224.jar
+    - UI
+        - Enhancement: Greyed out all controls in the route viewer for routes imported from the CS3
+        - Fixed bug where CS2/3 auto-detection was not working
+    - Code
+        - Refactored code to made TrainControl classes more generic, suitable for future expansion beyond Marklin's CS3
+        - Updated JSON library to json-20251224.jar
 
 * v2.6.5 [3/29/2026] Note: this and prior versions only support CS3 running firmware v2.5.x or older.
     - Added shortcut to edit autonomy locomotive properties to the right-click menu on track diagram stations

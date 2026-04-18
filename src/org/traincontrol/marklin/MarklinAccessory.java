@@ -111,6 +111,7 @@ public class MarklinAccessory extends Accessory
      * Adds a UI tile to be updated whenever a CS2 event fires
      * @param l 
      */
+    @Override
     public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
         this.tiles.add(l);
@@ -121,6 +122,7 @@ public class MarklinAccessory extends Accessory
      * Deletes tiles that are no longer visible (e.g., from closed windows)
      * @param forceHighlight
      */
+    @Override
     public void updateTiles(boolean forceHighlight)
     {        
         Iterator<LayoutLabel> i = this.tiles.iterator();

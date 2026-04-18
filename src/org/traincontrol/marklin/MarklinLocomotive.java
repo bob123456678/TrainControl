@@ -146,6 +146,7 @@ public class MarklinLocomotive extends Locomotive
      * @param type 
      * @param triggerType 
      */
+    @Override
     public void setFunctionType(int fNo, int type, int triggerType)
     {
         if (this.validF(fNo))
@@ -236,6 +237,7 @@ public class MarklinLocomotive extends Locomotive
      * Returns the number of possible function icons depending on the type of control station
      * @return 
      */
+    @Override
     public int getNumFnIcons()
     {
         if (this.network.isCS3() || !this.network.getNetworkCommState())

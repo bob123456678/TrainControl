@@ -2685,7 +2685,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 case 1: // Cancel
                                     break;
                                 case 2: // Auto-Detect
-                                    System.out.println(I18n.t("centralStation.detectAttempt")); 
+                                    System.out.println(I18n.t("ui.detectCentralStationAttempt")); 
                                     
                                     if (!CSDetect.hasLocalSubnets())
                                     {

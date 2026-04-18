@@ -1,11 +1,9 @@
 package org.traincontrol.marklin;
 
-import java.util.ArrayList;
 import org.traincontrol.base.RouteCommand;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.NodeExpression;
