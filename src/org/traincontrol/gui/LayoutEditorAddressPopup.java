@@ -8,7 +8,6 @@ import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.TrackLayoutComponent;
-import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel

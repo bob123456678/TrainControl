@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
@@ -301,7 +300,7 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 if (type == decoderType.MM2)
                 {
-                    if (locAddress > MarklinLocomotive.MM2_MAX_ADDR)
+                    if (locAddress > Locomotive.MM2_MAX_ADDR)
                     {
                         JOptionPane.showMessageDialog(
                             this,
@@ -313,7 +312,7 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 if (type == decoderType.DCC)
                 {
-                    if (locAddress > MarklinLocomotive.DCC_MAX_ADDR)
+                    if (locAddress > Locomotive.DCC_MAX_ADDR)
                     {
                         JOptionPane.showMessageDialog(
                             this,
@@ -325,7 +324,7 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 if (type == decoderType.MFX)
                 {
-                    if (locAddress > MarklinLocomotive.MFX_MAX_ADDR)
+                    if (locAddress > Locomotive.MFX_MAX_ADDR)
                     {
                         JOptionPane.showMessageDialog(
                             this,
@@ -417,7 +416,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 for (Integer addr : sortedLocs)
                 {
                     List<Locomotive> mfxLocs = locs.get(addr).stream()
-                        .filter(l -> l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
+                        .filter(l -> l.getDecoderType() == Locomotive.decoderType.MFX)
                         .collect(Collectors.toList());
 
                     if (mfxLocs.size() > 1)
@@ -434,7 +433,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 for (Integer addr : sortedLocs)
                 {
                     List<Locomotive> nonMfxLocs = locs.get(addr).stream()
-                        .filter(l -> l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
+                        .filter(l -> l.getDecoderType() != Locomotive.decoderType.MFX)
                         .collect(Collectors.toList());
 
                     if (nonMfxLocs.size() > 1)

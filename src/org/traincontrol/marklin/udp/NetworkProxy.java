@@ -71,7 +71,7 @@ public class NetworkProxy
     /**
      * Public interface to send a message out to the CS2 
      
-     * @param m a CS2Message object 
+     * @param m a CANMessage object 
      * @return true on success, else false
      */
     public boolean sendMessage(CANMessage m)

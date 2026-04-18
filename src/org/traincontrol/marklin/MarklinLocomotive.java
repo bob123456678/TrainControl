@@ -28,9 +28,6 @@ public class MarklinLocomotive extends Locomotive
     public static final int MFX_NUM_FN = 32;
     public static final int DCC_NUM_FN = 29;
     public static final int MM2_NUM_FN = 5;
-    public static final int MM2_MAX_ADDR = 80;
-    public static final int MFX_MAX_ADDR = 0x3FFF;
-    public static final int DCC_MAX_ADDR = 2048;
     public static final int MULTI_UNIT_MAX_ADDR = 5120;
     public static final int MFX_BASE = 0x4000;
     public static final int DCC_BASE = 0xc000;

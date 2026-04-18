@@ -328,7 +328,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // Ensure there are no automatic routes
                     /* for (String routeName : this.control.getRouteList())
                     {
-                        MarklinRoute r = this.control.getRoute(routeName);
+                        Route r = this.control.getRoute(routeName);
 
                         if (r.isEnabled())
                         {

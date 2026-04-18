@@ -24,6 +24,10 @@ public abstract class Locomotive
     public static enum locDirection {DIR_FORWARD, DIR_BACKWARD};
     public static enum decoderType {MFX, MM2, DCC, MULTI_UNIT};
     
+    public static final int MM2_MAX_ADDR = 80;
+    public static final int MFX_MAX_ADDR = 0x3FFF;
+    public static final int DCC_MAX_ADDR = 2048;
+    
     public static final Object monitor = new Object();
     public static final Object speedMonitor = new Object();
     public static final Object accessoryMonitor = new Object();
