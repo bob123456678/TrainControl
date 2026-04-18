@@ -5,5 +5,6 @@ package org.traincontrol.marklin.udp;
  */
 abstract public class CANMessage
 {
-    
+    abstract public byte[] getRawMessage();
+
 }

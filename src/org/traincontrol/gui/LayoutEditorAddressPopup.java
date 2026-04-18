@@ -6,6 +6,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Route;
 import org.traincontrol.base.TrackLayoutComponent;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -141,7 +142,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
      * @param r
      * @return 
      */
-    private String addRouteId(MarklinRoute r)
+    private String addRouteId(Route r)
     {
         if (r == null) return "";
         

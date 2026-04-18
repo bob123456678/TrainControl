@@ -20,8 +20,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.base.Route;
 import org.traincontrol.util.I18n;
 
 /**
@@ -54,7 +53,7 @@ public class RouteEditor extends PositionAwareJFrame
      * @param conditionString
      * @param locked
      */
-    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, MarklinRoute.s88Triggers triggerType, String conditionString, boolean locked)
+    public RouteEditor(String windowTitle, TrainControlUI parent, String routeName, String routeContent, boolean isEnabled, int s88, Route.s88Triggers triggerType, String conditionString, boolean locked)
     {        
         initComponents();
         this.parent = parent;
@@ -79,7 +78,7 @@ public class RouteEditor extends PositionAwareJFrame
         this.s88.setText(Integer.toString(s88));
         this.conditionAccs.setText(conditionString);
 
-        if (triggerType == MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED)
+        if (triggerType == Route.s88Triggers.CLEAR_THEN_OCCUPIED)
         {
             this.triggerClearThenOccupied.setSelected(true);
         }
@@ -1307,45 +1306,45 @@ public class RouteEditor extends PositionAwareJFrame
                 {
                     if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), false
                         ) + delayString + "\n";
                         
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
                         );
                     }
                     else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), true
                         ) + delayString + "\n";
                         
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
                         );               
                     }
                     else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), false
                         ) + delayString + "\n";
                         
-                        newEntry += MarklinAccessory.toAccessorySettingString(
+                        newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), true
                         );
                     }
                 }
                 else if (this.accTypeTurnout.isSelected())
                 {
-                    newEntry += MarklinAccessory.toAccessorySettingString(
+                    newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(),
                             this.accState.getSelectedItem().toString().equals(TURNOUT)
                     ) + delayString;   
                 }
                 else if (this.accTypeSignal.isSelected())
                 {
-                    newEntry += MarklinAccessory.toAccessorySettingString(
+                    newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SIGNAL, address, getProtocol(), 
                             this.accState.getSelectedItem().toString().equals(RED)
                     ) + delayString;
@@ -1461,7 +1460,7 @@ public class RouteEditor extends PositionAwareJFrame
 
                 if (isEdit())
                 {
-                    MarklinRoute thisRoute = this.parent.getModel().getRoute(this.getOriginalRouteName());
+                    Route thisRoute = this.parent.getModel().getRoute(this.getOriginalRouteName());
 
                     if (thisRoute != null && thisRoute.getName().equals(otherRouteName))
                     {
@@ -1668,7 +1667,7 @@ public class RouteEditor extends PositionAwareJFrame
         {
             status = RouteCallback(this.getOriginalRouteName(), getRouteName().getText(), getRouteContents().getText(), getS88().getText(),
                 getExecutionAuto().isSelected(),
-                getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+                getTriggerClearThenOccupied().isSelected() ? Route.s88Triggers.CLEAR_THEN_OCCUPIED : Route.s88Triggers.OCCUPIED_THEN_CLEAR,
                 getConditionAccs().getText()
             );
         }
@@ -1676,7 +1675,7 @@ public class RouteEditor extends PositionAwareJFrame
         {
             status = RouteCallback("", getRouteName().getText(), getRouteContents().getText(), getS88().getText(),
                 getExecutionAuto().isSelected(),
-                getTriggerClearThenOccupied().isSelected() ? MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED : MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+                getTriggerClearThenOccupied().isSelected() ? Route.s88Triggers.CLEAR_THEN_OCCUPIED : Route.s88Triggers.OCCUPIED_THEN_CLEAR,
                 getConditionAccs().getText()
             );
         }
@@ -1804,7 +1803,7 @@ public class RouteEditor extends PositionAwareJFrame
      * @param conditions
      * @return 
      */
-    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, MarklinRoute.s88Triggers triggerType,
+    public boolean RouteCallback(String origName, String routeName, String routeContent, String s88, boolean isEnabled, Route.s88Triggers triggerType,
             String conditions)
     {
         if (routeName == null)

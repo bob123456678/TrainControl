@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.model.ViewListener;
@@ -405,7 +406,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 return;
             }
 
-            Map<Integer, Set<MarklinLocomotive>> locs = this.model.getDuplicateLocAddresses();
+            Map<Integer, Set<Locomotive>> locs = this.model.getDuplicateLocAddresses();
 
             if (!locs.isEmpty())
             {
@@ -415,13 +416,13 @@ public class AddLocomotive extends javax.swing.JFrame
                 this.model.logf("loc.reportMfxHeader");
                 for (Integer addr : sortedLocs)
                 {
-                    List<MarklinLocomotive> mfxLocs = locs.get(addr).stream()
+                    List<Locomotive> mfxLocs = locs.get(addr).stream()
                         .filter(l -> l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
                         .collect(Collectors.toList());
 
                     if (mfxLocs.size() > 1)
                     {
-                        for (MarklinLocomotive l : mfxLocs)
+                        for (Locomotive l : mfxLocs)
                         {
                             this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                         }
@@ -432,13 +433,13 @@ public class AddLocomotive extends javax.swing.JFrame
                 this.model.logf("loc.reportNonMfxHeader");
                 for (Integer addr : sortedLocs)
                 {
-                    List<MarklinLocomotive> nonMfxLocs = locs.get(addr).stream()
+                    List<Locomotive> nonMfxLocs = locs.get(addr).stream()
                         .filter(l -> l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
                         .collect(Collectors.toList());
 
                     if (nonMfxLocs.size() > 1)
                     {
-                        for (MarklinLocomotive l : nonMfxLocs)
+                        for (Locomotive l : nonMfxLocs)
                         {
                             this.model.log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
                         }

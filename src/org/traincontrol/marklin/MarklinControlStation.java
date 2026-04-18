@@ -1133,9 +1133,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
-    public Map<Integer, Set<MarklinLocomotive>> getDuplicateLocAddresses()
+    public Map<Integer, Set<Locomotive>> getDuplicateLocAddresses()
     {
-        Map<Integer, Set<MarklinLocomotive>> locs = new HashMap<>();
+        Map<Integer, Set<Locomotive>> locs = new HashMap<>();
                 
         for (MarklinLocomotive l : this.locDB.getItems())
         {

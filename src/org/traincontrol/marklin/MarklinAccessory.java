@@ -264,22 +264,7 @@ public class MarklinAccessory extends Accessory
     {
         return MarklinAccessory.toAccessorySettingString(this.getType(), this.getAddress() + 1, protocol, setting);
     }
-    
-    /**
-     * Returns an accessory setting string for the given accessory type, address, and setting.
-     * @param type
-     * @param address
-     * @param protocol
-     * @param setting
-     * @return 
-     */
-    public static String toAccessorySettingString(accessoryType type, int address, String protocol, boolean setting)
-    {                       
-        return accessoryTypeToPrettyString(type) + " " + address + 
-                getProtocolStringForName(protocol)  
-                + "," + switchedToAccessorySetting(setting, type).toString().toLowerCase();
-    }
-    
+        
     /**
      * Gets the decoder type
      * @return 

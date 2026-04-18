@@ -487,6 +487,7 @@ public class CS2Message extends CANMessage
      *
      * @return
      */
+    @Override
     public byte[] getRawMessage()
     {
         return rawMessage;

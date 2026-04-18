@@ -73,7 +73,7 @@ public class NetworkProxy
      * @param m a CS2Message object 
      * @return true on success, else false
      */
-    public boolean sendMessage(CS2Message m)
+    public boolean sendMessage(CANMessage m)
     {
     	return this.sendMessage(m.getRawMessage());
     }

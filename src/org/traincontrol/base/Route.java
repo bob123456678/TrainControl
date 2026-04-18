@@ -276,4 +276,5 @@ abstract public class Route
     
     abstract public void execRoute(boolean auto);
     abstract public void addTile(LayoutLabel l);
+    abstract public boolean hasTiles();
 }
