@@ -55,7 +55,7 @@ import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
-import org.traincontrol.base.udp.NetworkProxy;
+import org.traincontrol.marklin.udp.NetworkProxy;
 import org.traincontrol.model.ModelListener;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;

@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import org.json.JSONObject;
-import org.traincontrol.base.Accessory;
 import org.traincontrol.util.I18n;
 
 /**
