@@ -49,6 +49,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RemoteDeviceCollection;
+import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
@@ -1041,11 +1042,36 @@ public class MarklinControlStation implements ViewListener, ModelListener
         protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException
         {
             String name = desc.getName();
+            
+            // 2.7.0 change
+            // Handle moved enum: MarklinRoute$s88Triggers -> Route$s88Triggers
+            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers")) {
+                return Route.s88Triggers.class;
+            }
+            
+            // 2.3.2 change
             if ((name.contains("base.") || name.contains("marklin.")) && !name.contains("org.traincontrol"))
             {
                 name = "org.traincontrol." + name;
             }
             return Class.forName(name);
+        }
+        
+        @Override
+        protected ObjectStreamClass readClassDescriptor()
+                throws IOException, ClassNotFoundException
+        {
+            ObjectStreamClass desc = super.readClassDescriptor();
+            String name = desc.getName();
+
+            // 2.7.0 change
+            // Handle moved enum: MarklinRoute$s88Triggers -> Route$s88Triggers
+            if (name.equals("org.traincontrol.marklin.MarklinRoute$s88Triggers")) {
+                // Return the descriptor of the new enum class
+                return ObjectStreamClass.lookup(Route.s88Triggers.class);
+            }
+
+            return desc;
         }
     }
 
