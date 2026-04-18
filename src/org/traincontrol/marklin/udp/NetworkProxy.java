@@ -154,7 +154,7 @@ public class NetworkProxy
                     socket.receive(packet);
 
                     // Send message to listener
-                    model.receiveMessage(new CANMessage(buffer));
+                    model.receiveMessage(model.createMessage(buffer));
 
                     // Reset the length of the packet just in case
                     packet.setLength(buffer.length);

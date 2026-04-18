@@ -102,7 +102,7 @@ public class CS2Message extends CANMessage
     public CS2Message(byte[] message)
     {
         // Store the entire message
-        super(message);
+        this.rawMessage = message;
 
         // Priority - first 4 bits
         this.priority = message[0] >> 4;
@@ -148,7 +148,6 @@ public class CS2Message extends CANMessage
     public CS2Message(int priority, int command, int hash,
             boolean response, int length, byte[] data)
     {
-        super(null);
         this.fromCS2Message(priority, command, hash,
                 response, length, data);
     }
@@ -160,7 +159,6 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(CS2Message c)
     {
-        super(null);
         this.fromCS2Message(c.getPriority(), c.getCommand(), c.getHash(),
                 c.getResponse(), c.getLength(), c.getData());
     }
@@ -175,7 +173,6 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, byte[] data)
     {
-        super(null);
         this.fromCS2Message(0, command, CS2Message.CS2_PROTOCOL_V2,
                 false, data.length, data);
     }
@@ -191,7 +188,6 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, int hash, byte[] data)
     {
-        super(null);
         this.fromCS2Message(0, command, hash, false, data.length, data);
     }
 
@@ -207,7 +203,6 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, int hash, boolean response, byte[] data)
     {
-        super(null);
         this.fromCS2Message(0, command, hash, response, data.length, data);
     }
 

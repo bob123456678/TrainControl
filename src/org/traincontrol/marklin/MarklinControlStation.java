@@ -1443,6 +1443,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return new byte[CS2Message.MESSAGE_LENGTH];
     }
+    
+    @Override
+    public CANMessage createMessage(byte[] raw)
+    {
+        return new CS2Message(raw);
+    }
         
     /**
      * Receives a network messages from the CS2 for interpretation
@@ -1453,7 +1459,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (msg == null) return;
         
-        CS2Message message = new CS2Message(msg.getRawMessage());
+        CS2Message message = (CS2Message) msg;
         
         synchronized (this)
         {
