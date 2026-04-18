@@ -1,6 +1,5 @@
-package org.traincontrol.marklin.udp;
+package org.traincontrol.base.udp;
 
-import org.traincontrol.base.udp.CANMessage;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
