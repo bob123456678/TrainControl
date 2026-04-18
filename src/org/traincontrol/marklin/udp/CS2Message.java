@@ -1,6 +1,6 @@
 package org.traincontrol.marklin.udp;
 
-import org.traincontrol.base.CANMessage;
+import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.util.Conversion;
 
 /**

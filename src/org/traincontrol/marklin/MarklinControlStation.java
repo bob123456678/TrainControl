@@ -52,7 +52,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
-import org.traincontrol.base.CANMessage;
+import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
 import org.traincontrol.marklin.udp.NetworkProxy;

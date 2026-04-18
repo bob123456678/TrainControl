@@ -1,6 +1,6 @@
 package org.traincontrol.model;
 
-import org.traincontrol.base.CANMessage;
+import org.traincontrol.base.udp.CANMessage;
 
 /**
  * Required model functionality interface

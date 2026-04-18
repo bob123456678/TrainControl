@@ -1,4 +1,4 @@
-package org.traincontrol.base;
+package org.traincontrol.base.udp;
 
 /**
  * Base CAN message class - to be expanded in the future to make TrainControl generic
