@@ -1,5 +1,6 @@
 package org.traincontrol.marklin.udp;
 
+import org.traincontrol.base.CANMessage;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -138,7 +139,7 @@ public class NetworkProxy
             try
             {                
                 // Create a read buffer based on the protocol message length
-                byte[] buffer = new byte[CS2Message.MESSAGE_LENGTH];
+                byte[] buffer = model.initMessageBuffer();
 
                 // Create a packet to receive the data
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -153,7 +154,7 @@ public class NetworkProxy
                     socket.receive(packet);
 
                     // Send message to listener
-                    model.receiveMessage(new CS2Message(buffer));
+                    model.receiveMessage(new CANMessage(buffer));
 
                     // Reset the length of the packet just in case
                     packet.setLength(buffer.length);

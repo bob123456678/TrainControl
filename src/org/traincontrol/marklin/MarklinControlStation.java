@@ -52,7 +52,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
-import org.traincontrol.marklin.udp.CANMessage;
+import org.traincontrol.base.CANMessage;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
 import org.traincontrol.marklin.udp.NetworkProxy;
@@ -1433,6 +1433,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.numMessagesProcessed;
     }
+    
+    /**
+     * Initializes a message buffer based on the protocol being used
+     * @return 
+     */
+    @Override
+    public byte[] initMessageBuffer()
+    {
+        return new byte[CS2Message.MESSAGE_LENGTH];
+    }
         
     /**
      * Receives a network messages from the CS2 for interpretation
@@ -1441,9 +1451,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void receiveMessage(CANMessage msg)
     {
-        CS2Message message = (CS2Message) msg;
+        if (msg == null) return;
         
-        if (message == null) return;
+        CS2Message message = new CS2Message(msg.getRawMessage());
         
         synchronized (this)
         {

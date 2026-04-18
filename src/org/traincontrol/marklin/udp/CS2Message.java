@@ -1,5 +1,6 @@
 package org.traincontrol.marklin.udp;
 
+import org.traincontrol.base.CANMessage;
 import org.traincontrol.util.Conversion;
 
 /**
@@ -11,7 +12,7 @@ public class CS2Message extends CANMessage
     /* Class fields constants */
 
     // The raw 13-byte message sent to/from the Marklin CS2 over the network
-    private byte[] rawMessage;
+    // private byte[] rawMessage;
     // Message priority as defined in the protocol
     private Integer priority;
     // Command issued
@@ -101,7 +102,7 @@ public class CS2Message extends CANMessage
     public CS2Message(byte[] message)
     {
         // Store the entire message
-        this.rawMessage = message;
+        super(message);
 
         // Priority - first 4 bits
         this.priority = message[0] >> 4;
@@ -147,6 +148,7 @@ public class CS2Message extends CANMessage
     public CS2Message(int priority, int command, int hash,
             boolean response, int length, byte[] data)
     {
+        super(null);
         this.fromCS2Message(priority, command, hash,
                 response, length, data);
     }
@@ -158,6 +160,7 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(CS2Message c)
     {
+        super(null);
         this.fromCS2Message(c.getPriority(), c.getCommand(), c.getHash(),
                 c.getResponse(), c.getLength(), c.getData());
     }
@@ -172,6 +175,7 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, byte[] data)
     {
+        super(null);
         this.fromCS2Message(0, command, CS2Message.CS2_PROTOCOL_V2,
                 false, data.length, data);
     }
@@ -187,6 +191,7 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, int hash, byte[] data)
     {
+        super(null);
         this.fromCS2Message(0, command, hash, false, data.length, data);
     }
 
@@ -202,6 +207,7 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(int command, int hash, boolean response, byte[] data)
     {
+        super(null);
         this.fromCS2Message(0, command, hash, response, data.length, data);
     }
 
@@ -482,17 +488,7 @@ public class CS2Message extends CANMessage
     }
 
     /* Getters */
-    /**
-     * Get the raw message bytes
-     *
-     * @return
-     */
-    @Override
-    public byte[] getRawMessage()
-    {
-        return rawMessage;
-    }
-
+    
     /**
      * Get the priority
      *

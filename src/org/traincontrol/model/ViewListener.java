@@ -14,7 +14,7 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.TrackLayout;
 import org.traincontrol.base.Route;
-import org.traincontrol.marklin.udp.CANMessage;
+import org.traincontrol.base.CANMessage;
 
 /**
  * Model functionality in the eyes of the GUI
