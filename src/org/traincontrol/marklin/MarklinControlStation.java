@@ -204,7 +204,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.logf("log.restoring");
 
         // Restore state
-        for (MarklinSimpleComponent c : this.restoreState())
+        for (MarklinSimpleComponent c : this.restoreState(MarklinControlStation.DATA_FILE_NAME))
         {            
             if (c.getLocType() != null)
             {
@@ -1050,6 +1050,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 return Route.s88Triggers.class;
             }
             
+            if (name.equals("org.traincontrol.marklin.MarklinAccessory$accessoryDecoderType"))
+            {
+                return Accessory.accessoryDecoderType.class;
+            }
+            
             // 2.3.2 change
             if ((name.contains("base.") || name.contains("marklin.")) && !name.contains("org.traincontrol"))
             {
@@ -1073,6 +1078,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Return the descriptor of the new enum class
                 return ObjectStreamClass.lookup(Route.s88Triggers.class);
             }
+            
+            if (name.equals("org.traincontrol.marklin.MarklinAccessory$accessoryDecoderType"))
+            {
+                // Return the descriptor of the new enum class
+                return ObjectStreamClass.lookup(Accessory.accessoryDecoderType.class);
+            }
 
             return desc;
         }
@@ -1080,9 +1091,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Restores list of initialized components from a file
+     * @param dataFile
      * @return 
      */
-    public final List<MarklinSimpleComponent> restoreState()
+    public final List<MarklinSimpleComponent> restoreState(String dataFile)
     {
         List<MarklinSimpleComponent> instance = new LinkedList<>();
 
@@ -1090,7 +1102,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             // Read object using ObjectInputStream
             ObjectInputStream obj_in = new CustomObjectInputStream(
-                new FileInputStream(MarklinControlStation.DATA_FILE_NAME)
+                new FileInputStream(dataFile)
             );
             
             // Read an object
