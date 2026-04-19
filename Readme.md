@@ -334,7 +334,7 @@ Requires JDK 1.8+ and the following libraries:
         - Enhancement: Greyed out all controls in the route viewer for routes imported from the CS3
         - Fixed bug where CS2/3 auto-detection was not working
     - Code
-        - Refactored code to made TrainControl classes more generic, suitable for future expansion beyond Marklin's CS3
+        - Refactored code to make TrainControl classes more generic, suitable for future expansion beyond Marklin's CS3
         - Updated JSON library to json-20251224.jar
 
 * v2.6.5 [3/29/2026] Note: this and prior versions only support CS3 running firmware v2.5.x or older.
@@ -526,6 +526,9 @@ Requires JDK 1.8+ and the following libraries:
     - Backward-incompatible changes:
         - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
         - LocDB.data files from v2.3.x and older are no longer compatible.  Run v2.4.0+ at least once prior to upgrading.
+
+<details>
+<summary>View prior versions</summary>
 
 * v2.4.12 [3/24/2025]
     - Graph UI
@@ -808,9 +811,6 @@ Requires JDK 1.8+ and the following libraries:
         - Consolidated "rename" and "change address" options into a single right-click menu entry.  Added keyboard shortcut (Control+R) 
     - Improved error logging
     - Fixed occasional UI initialization error on startup
-
-<details>
-<summary>View prior versions</summary>
 
 * v2.1.5 [6/1/24]
     - Added JSON key `excludedLocs` for `Point`s, which lets you exclude locomotives from certain autonomous paths

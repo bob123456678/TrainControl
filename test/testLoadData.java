@@ -29,7 +29,7 @@ public class testLoadData
 
     private final String data2_3_3 =
             Paths.get(getClass().getResource("LocDB2_3_3.data").toURI()).toString();
-    
+      
     public static MarklinControlStation model;
             
     public testLoadData() throws Exception
@@ -65,7 +65,7 @@ public class testLoadData
     {   
         assertTrue(!model.restoreState(data2_3_3).isEmpty());
     }
-        
+         
     @BeforeClass
     public static void setUpClass() throws Exception
     {
