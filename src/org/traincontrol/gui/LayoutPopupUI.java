@@ -6,7 +6,7 @@ import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
-import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.LayoutDiagram;
 
 /**
  * Popup representing a track diagram
@@ -16,7 +16,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
 {
     private final TrainControlUI parent;
     private final int size;
-    private TrackLayout layout;
+    private LayoutDiagram layout;
     private int pageIndex;
     
     /**
@@ -26,7 +26,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
      * @param ui
      * @param pageIndex
      */
-    public LayoutPopupUI(TrackLayout l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
         

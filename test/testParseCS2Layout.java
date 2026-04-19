@@ -2,7 +2,6 @@ import java.util.LinkedList;
 import java.util.List;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
-import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.file.CS2File;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -13,8 +12,8 @@ import org.testng.annotations.Test;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.base.TrackLayout;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
  * Compares CS2 and CS3 route parsing
@@ -26,8 +25,8 @@ public class testParseCS2Layout
     private final String cs2_mags = getClass().getResource("layout/config/magnetartikel.cs2").toURI().toString();
 
     public MarklinControlStation model;
-    public List<TrackLayout> layouts;
-    public List<TrackLayout> layouts_nomags;
+    public List<LayoutDiagram> layouts;
+    public List<LayoutDiagram> layouts_nomags;
 
     public List<MarklinAccessory> accs;
     public List<MarklinAccessory> manualAccs;
@@ -74,9 +73,9 @@ public class testParseCS2Layout
     {           
         int valid = 0;
         
-        for (TrackLayout l : layouts)
+        for (LayoutDiagram l : layouts)
         {
-            for (TrackLayoutComponent c : l.getAll())
+            for (LayoutDiagramComponent c : l.getAll())
             {
                 if (c.getAddress() == 65)
                 {
@@ -118,9 +117,9 @@ public class testParseCS2Layout
     {           
         int valid = 0;
         
-        for (TrackLayout l : layouts_nomags)
+        for (LayoutDiagram l : layouts_nomags)
         {
-            for (TrackLayoutComponent c : l.getAll())
+            for (LayoutDiagramComponent c : l.getAll())
             {
                 if (c.getAddress() == 65)
                 {

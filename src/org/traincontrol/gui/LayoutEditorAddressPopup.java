@@ -7,20 +7,20 @@ import javax.swing.JCheckBox;
 import javax.swing.Timer;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.util.I18n;
 
 public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
     private final TrainControlUI tcui;
-    private final TrackLayoutComponent lc;
+    private final LayoutDiagramComponent lc;
     
     /**
      * Creates new form LayourEditorAddressPopup
      * @param lc
      * @param tcui
      */
-    public LayoutEditorAddressPopup(TrackLayoutComponent lc, TrainControlUI tcui)
+    public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui)
     {
         initComponents();
         

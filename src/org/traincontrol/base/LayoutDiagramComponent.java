@@ -15,7 +15,7 @@ import org.traincontrol.util.I18n;
  * Contains initial data and references, no actual state
  * @author Adam
  */
-public class TrackLayoutComponent
+public class LayoutDiagramComponent
 {
     public static enum componentType {
         STRAIGHT, CURVE, DOUBLE_CURVE, 
@@ -67,7 +67,7 @@ public class TrackLayoutComponent
      * @param protocol
      * @throws IOException 
      */
-    public TrackLayoutComponent(componentType type, int x, int y, 
+    public LayoutDiagramComponent(componentType type, int x, int y, 
             int orientation, int state, int address, int rawAddress, accessoryDecoderType protocol) throws IOException
     {
         // Sanity checks
@@ -98,7 +98,7 @@ public class TrackLayoutComponent
      * @param original The original MarklinLayoutComponent to copy.
      * @throws java.io.IOException
      */
-    public TrackLayoutComponent(TrackLayoutComponent original) throws IOException
+    public LayoutDiagramComponent(LayoutDiagramComponent original) throws IOException
     {
         this(original.type, original.x, original.y, original.orientation, original.state, original.address, original.rawAddress, original.protocol);
         
@@ -334,7 +334,7 @@ public class TrackLayoutComponent
     
     public Image getImage(int size, boolean ignoreState) throws IOException
     {  
-         Image img = ImageIO.read(TrackLayoutComponent.class.getResource(getImageName(size, ignoreState)));
+         Image img = ImageIO.read(LayoutDiagramComponent.class.getResource(getImageName(size, ignoreState)));
          
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
@@ -748,7 +748,7 @@ public class TrackLayoutComponent
      * @return
      * @throws Exception 
      */
-    public static String getTypeString(TrackLayoutComponent.componentType type) throws Exception
+    public static String getTypeString(LayoutDiagramComponent.componentType type) throws Exception
     {
         switch (type)
         {

@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.base.TrackLayout;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
 import org.json.JSONArray;
@@ -1064,7 +1064,7 @@ public final class CS2File
                             {
                                 // wert is on, default 0 but cant be on
                                 // icon is fno, defualt 0
-                                int fNo = 0;
+                                // int fNo = 0;
                                 Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
 
                                 if (item.has("wert") && "1".equals(item.get("wert")))
@@ -1673,23 +1673,23 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    private TrackLayoutComponent.componentType getComponentType(String name, int address) throws Exception
+    private LayoutDiagramComponent.componentType getComponentType(String name, int address) throws Exception
     {
         switch(name)
         {
             case "entkuppler":
             case "entkuppler_1":
-                return TrackLayoutComponent.componentType.UNCOUPLER;
+                return LayoutDiagramComponent.componentType.UNCOUPLER;
             case "prellbock":
-                return TrackLayoutComponent.componentType.END;                
+                return LayoutDiagramComponent.componentType.END;                
             case "s88kontakt":
-                return TrackLayoutComponent.componentType.FEEDBACK;
+                return LayoutDiagramComponent.componentType.FEEDBACK;
             case "s88bogen":
-                return TrackLayoutComponent.componentType.FEEDBACK_CURVE;
+                return LayoutDiagramComponent.componentType.FEEDBACK_CURVE;
             case "s88doppelbogen":
-                return TrackLayoutComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+                return LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
             case "gerade":
-                return TrackLayoutComponent.componentType.STRAIGHT;
+                return LayoutDiagramComponent.componentType.STRAIGHT;
             case "signal":        // Standard signals
             case "signal_sh01":
             case "signal_hp02":   // TODO - add support for green/yellow signals
@@ -1706,45 +1706,45 @@ public final class CS2File
             case "k84_einfach":    
             case "sonstige_gbs":
             case "standard":       
-                return TrackLayoutComponent.componentType.SIGNAL;
+                return LayoutDiagramComponent.componentType.SIGNAL;
             case "doppelbogen":
-                return TrackLayoutComponent.componentType.DOUBLE_CURVE;
+                return LayoutDiagramComponent.componentType.DOUBLE_CURVE;
             case "bogen":
-                return TrackLayoutComponent.componentType.CURVE;
+                return LayoutDiagramComponent.componentType.CURVE;
             case "tunnel":
-                return TrackLayoutComponent.componentType.TUNNEL;
+                return LayoutDiagramComponent.componentType.TUNNEL;
             case "kreuzung":
-                return TrackLayoutComponent.componentType.CROSSING;
+                return LayoutDiagramComponent.componentType.CROSSING;
             case "unterfuehrung":
-                return TrackLayoutComponent.componentType.OVERPASS;
+                return LayoutDiagramComponent.componentType.OVERPASS;
             case "dkweiche":
             case "dkweiche_2":
             case "andreaskreuz":// Special double slip ?
-                return TrackLayoutComponent.componentType.SWITCH_CROSSING;
+                return LayoutDiagramComponent.componentType.SWITCH_CROSSING;
             case "drehscheibe": // Turntable
-                return TrackLayoutComponent.componentType.TURNTABLE;
+                return LayoutDiagramComponent.componentType.TURNTABLE;
             case "lampe":       // Lamp
             case "lampe_rt":    // Red light
             case "lampe_bl":    // Blue light
             case "lampe_gn":    // Green light
             case "lampe_ge":    // Yellow light
             case "bahnschranke":// Railroad crossing - TODO add dedicated icon
-                return TrackLayoutComponent.componentType.LAMP;
+                return LayoutDiagramComponent.componentType.LAMP;
             case "fahrstrasse": // Route
-                return TrackLayoutComponent.componentType.ROUTE;
+                return LayoutDiagramComponent.componentType.ROUTE;
             case "text":        // Standalone text
-                return TrackLayoutComponent.componentType.TEXT;
+                return LayoutDiagramComponent.componentType.TEXT;
             case "pfeil":       // Link to another page
-                return TrackLayoutComponent.componentType.LINK;
+                return LayoutDiagramComponent.componentType.LINK;
             
             // If these have an address, make them switchable, otherwise default to a permanent crossing
             case "linksweiche":
             // CS3 double slip switch 2 is just two of these
             case "dkw3_li_2":
             case "dkw3_li":
-                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_LEFT;
+                if (address > 0) return LayoutDiagramComponent.componentType.SWITCH_LEFT;
             case "custom_perm_left":
-                return TrackLayoutComponent.componentType.CUSTOM_PERM_LEFT;
+                return LayoutDiagramComponent.componentType.CUSTOM_PERM_LEFT;
             
             // If these have an address, make them switchable, otherwise default to a permanent crossing
             case "rechtsweiche":
@@ -1752,26 +1752,26 @@ public final class CS2File
             case "dkw3_re":
             case "dkw3_re_2":
                 // CS3 double slip switch 2. If these have an address, make them switchable, otherwise default to a permanent crossing
-                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_RIGHT;
+                if (address > 0) return LayoutDiagramComponent.componentType.SWITCH_RIGHT;
             case "custom_perm_right":
-                return TrackLayoutComponent.componentType.CUSTOM_PERM_RIGHT;
+                return LayoutDiagramComponent.componentType.CUSTOM_PERM_RIGHT;
             
             // Y switch.  If these have an address, make them switchable, otherwise default to a permanent crossing
             case "yweiche":
-                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_Y;
+                if (address > 0) return LayoutDiagramComponent.componentType.SWITCH_Y;
             case "custom_perm_y":
-                return TrackLayoutComponent.componentType.CUSTOM_PERM_Y;
+                return LayoutDiagramComponent.componentType.CUSTOM_PERM_Y;
              
             case "dreiwegweiche":
-                if (address > 0) return TrackLayoutComponent.componentType.SWITCH_THREE;
+                if (address > 0) return LayoutDiagramComponent.componentType.SWITCH_THREE;
             case "custom_perm_threeway":
-                return TrackLayoutComponent.componentType.CUSTOM_PERM_THREEWAY;
+                return LayoutDiagramComponent.componentType.CUSTOM_PERM_THREEWAY;
                 
             case "hosentraeger":
             case "custom_scissors":
-                if (address > 0) return TrackLayoutComponent.componentType.CUSTOM_SCISSORS;
+                if (address > 0) return LayoutDiagramComponent.componentType.CUSTOM_SCISSORS;
             case "custom_perm_scissors":
-                return TrackLayoutComponent.componentType.CUSTOM_PERM_SCISSORS;
+                return LayoutDiagramComponent.componentType.CUSTOM_PERM_SCISSORS;
                 
             // Custom (non-CS2) components
             default:
@@ -1796,11 +1796,11 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    public List<TrackLayout> parseLayout(List<MarklinAccessory> accDB) throws Exception
+    public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
         List<String> names = this.parseLayoutList();
         
-        List<TrackLayout> out = new ArrayList<>();
+        List<LayoutDiagram> out = new ArrayList<>();
         
         for (String name : names)
         { 
@@ -1860,7 +1860,7 @@ public final class CS2File
                 }
             }
             
-            TrackLayout layout = new TrackLayout(name, maxX + 1, maxY + 1, url, this.control);
+            LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
                         
             for (Map<String, String> m : l)
             {

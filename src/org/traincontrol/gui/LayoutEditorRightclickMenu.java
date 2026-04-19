@@ -6,7 +6,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Route;
 import org.traincontrol.util.I18n;
 
@@ -16,7 +16,7 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutEditorRightclickMenu extends JPopupMenu
 {        
-    public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, TrackLayoutComponent component)
+    public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, LayoutDiagramComponent component)
     {        
         JMenuItem menuItem;
         

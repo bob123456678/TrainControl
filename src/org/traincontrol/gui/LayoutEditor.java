@@ -35,8 +35,8 @@ import javax.swing.border.LineBorder;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import static org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_PREFIX;
-import org.traincontrol.base.TrackLayout;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.util.I18n;
 
 /**
@@ -53,12 +53,12 @@ public class LayoutEditor extends PositionAwareJFrame
     
     private final TrainControlUI parent;
     private final int size;
-    private final TrackLayout layout;
+    private final LayoutDiagram layout;
     private LayoutGrid grid;
     
     private int lastX = -1;
     private int lastY = -1;
-    private TrackLayoutComponent lastComponent = null;
+    private LayoutDiagramComponent lastComponent = null;
     private tool toolFlag = null;
     
     private int lastHoveredX = -1;
@@ -87,8 +87,8 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean pauseRepaint = false;
     
     // Undo history
-    Deque<List<TrackLayoutComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
-    Deque<List<TrackLayoutComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
+    Deque<List<LayoutDiagramComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
+    Deque<List<LayoutDiagramComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
 
     public static final int MAX_UNDO_HISTORY = 100;
     
@@ -107,7 +107,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param ui
      * @param pageIndex
      */
-    public LayoutEditor(TrackLayout l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutEditor(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
         
@@ -136,7 +136,7 @@ public class LayoutEditor extends PositionAwareJFrame
         int cols = 3;
         
         // Initialize components we can place
-        for (TrackLayoutComponent.componentType type : TrackLayoutComponent.componentType.values())
+        for (LayoutDiagramComponent.componentType type : LayoutDiagramComponent.componentType.values())
         {
             this.newComponents.add(this.getLabel(type, "text"), gbc);
 
@@ -183,11 +183,11 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param defaultText
      * @return 
      */
-    private LayoutLabel getLabel(TrackLayoutComponent.componentType type, String defaultText)
+    private LayoutLabel getLabel(LayoutDiagramComponent.componentType type, String defaultText)
     {
         try
         {
-            TrackLayoutComponent component = new TrackLayoutComponent(type, 0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
+            LayoutDiagramComponent component = new LayoutDiagramComponent(type, 0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
             
             // Set a default address, otherwise switches will become unclickable after saving
             if (component.isClickable())
@@ -195,7 +195,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 component.setLogicalAddress(1, Accessory.accessoryDecoderType.MM2, false);
             }
             
-            if (type == TrackLayoutComponent.componentType.TEXT)
+            if (type == LayoutDiagramComponent.componentType.TEXT)
             {
                 component.setLabel(defaultText);   
             }
@@ -203,7 +203,7 @@ public class LayoutEditor extends PositionAwareJFrame
             LayoutLabel newLabel = new LayoutLabel(component, this, this.size, parent, true);
             
             // We need to add the text back on top of the icon
-            if (type == TrackLayoutComponent.componentType.TEXT)
+            if (type == LayoutDiagramComponent.componentType.TEXT)
             {
                 newLabel.setText(defaultText);
             
@@ -411,7 +411,7 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
                
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
         
         // Support double clicks
         if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1)
@@ -597,7 +597,7 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             // We need to duplicate the component, otherwise its coordinates won't actually change
-            TrackLayoutComponent newComponent = new TrackLayoutComponent(lastComponent);
+            LayoutDiagramComponent newComponent = new LayoutDiagramComponent(lastComponent);
             newComponent.setX(getX(destLabel));
             newComponent.setY(getY(destLabel));
 
@@ -637,7 +637,7 @@ public class LayoutEditor extends PositionAwareJFrame
         refreshGrid();
     }
     
-    public TrackLayout getMarklinLayout()
+    public LayoutDiagram getMarklinLayout()
     {
         return layout;
     }
@@ -660,7 +660,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param component - the component at the label location, or one that's specified
      * @param move 
      */
-    synchronized public void initCopy(LayoutLabel label, TrackLayoutComponent component, boolean move)
+    synchronized public void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
         this.lastX = getX(label);
         this.lastY = getY(label);
@@ -695,7 +695,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void delete(LayoutLabel label)
     {
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
 
         if (lc != null)
         {       
@@ -724,7 +724,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void rotate(LayoutLabel label)
     {       
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
         
         if (lc != null)
         {    
@@ -751,7 +751,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void editText(LayoutLabel label)
     {       
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
                             
         if (lc != null)
         {       
@@ -792,7 +792,7 @@ public class LayoutEditor extends PositionAwareJFrame
     */
     public void editTextWithDropdown(LayoutLabel label)
     {
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
 
         if (lc != null && this.parent.getModel().hasAutoLayout() && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
         {
@@ -879,7 +879,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void editAddress(LayoutLabel label)
     {               
-        TrackLayoutComponent lc = layout.getComponent(getX(label), getY(label));
+        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
                     
         if (lc != null)
         {     
@@ -1274,15 +1274,15 @@ public class LayoutEditor extends PositionAwareJFrame
      * Creates a copy of the current layout
      * @return 
      */
-    private List<TrackLayoutComponent> deepCopyLayout()
+    private List<LayoutDiagramComponent> deepCopyLayout()
     {
-        List<TrackLayoutComponent> history = new ArrayList<>();
+        List<LayoutDiagramComponent> history = new ArrayList<>();
         
-        for (TrackLayoutComponent lc : this.layout.getAll())
+        for (LayoutDiagramComponent lc : this.layout.getAll())
         {
             try
             {
-                history.add(new TrackLayoutComponent(lc));
+                history.add(new LayoutDiagramComponent(lc));
             }
             catch (IOException ex)
             {
@@ -1317,17 +1317,17 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             if (!this.previousLayoutComponents.isEmpty())
             {         
-                List<TrackLayoutComponent> history = this.previousLayoutComponents.pop();
+                List<LayoutDiagramComponent> history = this.previousLayoutComponents.pop();
                 this.previousLayoutComponentsRedo.push(deepCopyLayout());
                 
                 // Delete all existing components
-                for (TrackLayoutComponent lc : this.layout.getAll())
+                for (LayoutDiagramComponent lc : this.layout.getAll())
                 {
                     layout.addComponent(null, lc.getX(), lc.getY());
                 }
 
                 // Placed previous components
-                for (TrackLayoutComponent lc : history)
+                for (LayoutDiagramComponent lc : history)
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
@@ -1350,7 +1350,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             if (!this.previousLayoutComponentsRedo.isEmpty())
             {         
-                List<TrackLayoutComponent> history = this.previousLayoutComponentsRedo.pop();
+                List<LayoutDiagramComponent> history = this.previousLayoutComponentsRedo.pop();
                 this.previousLayoutComponents.push(deepCopyLayout());
                 
                 // Enforce undo limit
@@ -1360,13 +1360,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 
                 // Delete all existing components
-                for (TrackLayoutComponent lc : this.layout.getAll())
+                for (LayoutDiagramComponent lc : this.layout.getAll())
                 {
                     layout.addComponent(null, lc.getX(), lc.getY());
                 }
 
                 // Placed previous components
-                for (TrackLayoutComponent lc : history)
+                for (LayoutDiagramComponent lc : history)
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
@@ -1709,6 +1709,12 @@ public class LayoutEditor extends PositionAwareJFrame
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
+            if (parent.getModel().isAutonomyRunning())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+                return;
+            }
+            
             layout.saveChanges(null, false);
             
             javax.swing.SwingUtilities.invokeLater(new Thread(() ->

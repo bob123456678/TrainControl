@@ -18,17 +18,17 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import org.traincontrol.base.Accessory;
-import org.traincontrol.base.TrackLayoutComponent;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /**
- *
+ * Tiles inside track diagrams
  * @author Adam
  */
 public final class LayoutLabel extends JLabel
 {
-    private TrackLayoutComponent component;
+    private LayoutDiagramComponent component;
     
     private final Container parent;
     private String imageName;
@@ -43,7 +43,7 @@ public final class LayoutLabel extends JLabel
     private Icon lastIcon;
     private boolean edit;
     
-    public LayoutLabel(TrackLayoutComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
+    public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this.component = c;
         this.size = size;
@@ -438,7 +438,7 @@ public final class LayoutLabel extends JLabel
         public void paintIcon(Component c, Graphics g, int x, int y) {}
     }
     
-    public TrackLayoutComponent getComponent()
+    public LayoutDiagramComponent getComponent()
     {
         return component;
     }

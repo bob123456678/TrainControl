@@ -130,7 +130,7 @@ import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
-import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
@@ -13416,7 +13416,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(newLayoutName);
 
-                TrackLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                 this.layoutEditingComplete();
 
@@ -13481,7 +13481,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()).deleteLayoutFile();
 
                     layoutList.remove(this.LayoutList.getSelectedItem().toString());
-                    TrackLayout.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                     this.layoutEditingComplete();
                 }
@@ -14452,7 +14452,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (current != null)
                     {
-                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)) + "]");
+                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim() + "]");
 
                         if (milestones != null)
                         {                                 
@@ -14471,6 +14471,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             {
                                 // Highlight destination
                                 j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                                
+                                // New: Incoming arrow
+                                j.setText(">" + j.getText().substring(1));
+                                j.setText(j.getText().substring(0, j.getText().length() - 1));
                             }
                             else
                             {
@@ -14480,10 +14484,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
                                     j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
                                 }
-                                // Originating station highlighted in green
+                                // Originating station highlighted differently
                                 else
                                 {
-                                    j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                    // New: White on grey
+                                    j.setBackground(new Color(160,160,160, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                    j.setForeground(new Color(255,255,255));
+                                    
+                                    // New: Outgoing arrow
+                                    j.setText(j.getText().substring(0, j.getText().length() - 1) + ">");
+                                    j.setText(j.getText().substring(1));
+
+                                    // Old green look
+                                    //j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
                                 }  
                             }
                         }
@@ -14567,7 +14580,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Graph graph = new SingleGraph(I18n.t("autolayout.ui.layoutGraph")); 
         graphViewer = new GraphViewer(graph, this, !setPoints);
 
-        // Custom stylsheet
+        // Custom stylesheet
         URL resource = TrainControlUI.class.getResource(RESOURCE_PATH + GRAPH_CSS_FILE);
         
         int maxY = 0;

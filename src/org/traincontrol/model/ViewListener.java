@@ -12,7 +12,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.base.TrackLayout;
+import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.udp.CANMessage;
 
@@ -49,7 +49,7 @@ public interface ViewListener
     public void stopAllLocs();
     public int syncWithCS2();
     public List<String> getLayoutList();
-    public TrackLayout getLayout(String name);
+    public LayoutDiagram getLayout(String name);
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);
     public boolean getFeedbackState(String name);
