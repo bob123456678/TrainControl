@@ -36,7 +36,7 @@ public class testParseCS3Loks
      * @param name
      * @return 
      */
-    private static MarklinLocomotive getLocByName(List<MarklinLocomotive> lst, String name)
+    public static MarklinLocomotive getLocByName(List<MarklinLocomotive> lst, String name)
     {
         if (lst != null)
         {
@@ -65,7 +65,6 @@ public class testParseCS3Loks
         this.cs3_loks = getClass().getResource("CS3_loks.json").toURI().toString();
         
         parser = new CS2File(null, null);
-        // model = init(null, true, false, false, false); 
         
         try
         {
@@ -187,6 +186,8 @@ public class testParseCS3Loks
         assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);  
         assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
         assertTrue(getLocByName(db, "Test TC").getModelMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
+        
+        assertEquals(db.size(), 136);
     }
     
     @Test
@@ -204,8 +205,6 @@ public class testParseCS3Loks
         assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
     }
     
-    
-        
     /**
      * These should be the same, except that the CS2 file will have a limited function count and different icons
      */

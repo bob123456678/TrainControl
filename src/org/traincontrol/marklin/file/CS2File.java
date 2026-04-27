@@ -276,6 +276,18 @@ public final class CS2File
     }
     
     /**
+     * CS3 Loc DB URL - auto resolves
+     * @return
+     * @throws Exception 
+     */
+    public String getCS3LocDBUrl() throws Exception
+    {
+        boolean is260 = this.isCS3Version260OrAbove();
+        
+        return getCS3LocDBUrl(is260 ? 260 : 250);
+    }
+    
+    /**
      * CS3 Route DB URL
      * @return 
      */
@@ -292,8 +304,7 @@ public final class CS2File
     {
         return "http://" + this.IP + "/app/api/mags";
     }
-        
-        
+            
     /**
      * CS3 Layout Data URL
      * Parsing this is not currently supported - 
@@ -523,15 +534,7 @@ public final class CS2File
      */
     private BufferedReader fetchCS3LocDB() throws Exception
     {
-        // Probe using a fresh reader so we don't consume the real one
-        boolean is260 = !isNotFoundError(getCS3LocDBUrl(260));
-
-        if (is260)
-        {
-            return fetchURL(getCS3LocDBUrl(260));
-        }
-
-        return fetchURL(getCS3LocDBUrl(250));
+        return fetchURL(getCS3LocDBUrl());
     }
 
     /**
@@ -542,6 +545,16 @@ public final class CS2File
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
         return parseLocomotivesCS3(parseJSONArray(fetchCS3LocDB()));
+    }
+    
+    /**
+     * Returns whether the CS3 is at or above firmware v2.6.0
+     * @return
+     * @throws Exception 
+     */
+    public boolean isCS3Version260OrAbove() throws Exception
+    {
+        return !isNotFoundError(getCS3LocDBUrl(260));
     }
 
     /**
@@ -555,11 +568,9 @@ public final class CS2File
         BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
 
         // Determine which locomotive DB version is active (v260+ or older 250)
-        boolean is260 = !isNotFoundError(getCS3LocDBUrl(260));
+        boolean is260 = isCS3Version260OrAbove();
 
-        BufferedReader locBR = is260
-           ? fetchURL(getCS3LocDBUrl(260))
-           : fetchURL(getCS3LocDBUrl(250));
+        BufferedReader locBR = fetchURL(getCS3LocDBUrl());
 
         // Now parse routes based on the loc DB version
         if (is260)
