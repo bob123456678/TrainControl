@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
@@ -161,6 +162,11 @@ public class LayoutPopupUI extends PositionAwareJFrame
         });
 
         ExtLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
+        ExtLayoutPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ExtLayoutPanelMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout ExtLayoutPanelLayout = new javax.swing.GroupLayout(ExtLayoutPanel);
         ExtLayoutPanel.setLayout(ExtLayoutPanelLayout);
@@ -199,6 +205,20 @@ public class LayoutPopupUI extends PositionAwareJFrame
         parent.childWindowKeyEvent(evt);
     }//GEN-LAST:event_formKeyPressed
 
+    private void ExtLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseClicked
+        if (parent.getModel().hasAutoLayout() && parent.getModel().getAutoLayout().isValid())
+        {
+            if (evt.getButton() == MouseEvent.BUTTON3)
+            {                              
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
+
+                    menu.show(evt.getComponent(), evt.getX(), evt.getY());      
+                }));
+            }
+        }
+    }//GEN-LAST:event_ExtLayoutPanelMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;

@@ -20,94 +20,79 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     public LayoutRightclickAutonomyMenu(TrainControlUI ui, String stationName)
     {        
         JMenuItem menuItem;
-                
-        if (!ui.getModel().getAutoLayout().isAutoRunning())
-        {
-            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
-            menuItem.addActionListener(event -> 
+        
+        if (ui.getModel().getAutoLayout() != null)
+        {     
+            if (!ui.getModel().getAutoLayout().isAutoRunning() && !ui.getModel().getAutoLayout().isRunning())
             {
-                try
+                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
+                menuItem.addActionListener(event -> 
                 {
-                    ui.requestStartAutonomy();
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });
-
-            add(menuItem);
-            
-            // Get the autonomy point corresponding to this station
-            Point current = ui.getModel().getAutoLayout().getPoint(stationName);
-            
-            if (current != null && current.isDestination())
-            {
-                // Get the locomotive at this station
-                Locomotive locomotive = current.getCurrentLocomotive();
-                                
-                // If we want to view paths, locomotive must not be running
-                if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
-                {
-                    List<List<Edge>> paths = ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true);
-                    
-                    paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
-                
-                    if (!paths.isEmpty())
+                    try
                     {
-                        addSeparator();
-                        
-                        // Show the locomotive name for reference
-                        menuItem = new JMenuItem(locomotive.getName());
-                        menuItem.setEnabled(false);
-                        add(menuItem);
+                        ui.requestStartAutonomy();
                     }
-                    
-                    for (List<Edge> path : paths)
+                    catch (Exception e)
                     {
-                        menuItem = new JMenuItem("-> " + path.get(path.size() - 1).getEnd().getName());
-                        menuItem.addActionListener(event -> 
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });
+
+                add(menuItem);
+
+                // Get the autonomy point corresponding to this station
+                Point current = ui.getModel().getAutoLayout().getPoint(stationName);
+
+                if (current != null && current.isDestination())
+                {
+                    // Get the locomotive at this station
+                    Locomotive locomotive = current.getCurrentLocomotive();
+
+                    // If we want to view paths, locomotive must not be running
+                    if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
+                    {
+                        List<List<Edge>> paths = ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true);
+
+                        paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
+
+                        if (!paths.isEmpty())
                         {
-                            try
-                            {
-                                // TODO there is commonality with AutoLocomotiveStatus - reuse code
-                                new Thread(() ->
-                                {
-                                    if (!ui.getModel().getPowerState())
-                                    {
-                                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
-                                    }
-                                    else
-                                    {               
-                                        ui.ensureGraphUIVisible();
+                            addSeparator();
 
-                                        boolean success = ui.getModel().getAutoLayout().executePath(
-                                            path, locomotive, locomotive.getPreferredSpeed(), null
-                                        );
+                            // Show the locomotive name for reference
+                            menuItem = new JMenuItem(locomotive.getName());
+                            menuItem.setEnabled(false);
+                            add(menuItem);
+                        }
 
-                                        if (!success)
-                                        {
-                                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
-                                        }
-                                    }
-                                }).start();
-                            }
-                            catch (Exception e)
-                            {
-                                JOptionPane.showMessageDialog(this, e.getMessage());
-                            }
-                        });    
-
-                        add(menuItem);
-                        
-                        if (this.getComponentCount() > MAX_PATHS + 1)
+                        for (List<Edge> path : paths)
                         {
-                            menuItem = new JMenuItem("...");
+                            menuItem = new JMenuItem("-> " + path.get(path.size() - 1).getEnd().getName());
                             menuItem.addActionListener(event -> 
                             {
                                 try
                                 {
-                                    ui.jumpToAutonomyLocTab();
+                                    // TODO there is commonality with AutoLocomotiveStatus - reuse code
+                                    new Thread(() ->
+                                    {
+                                        if (!ui.getModel().getPowerState())
+                                        {
+                                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+                                        }
+                                        else
+                                        {               
+                                            ui.ensureGraphUIVisible();
+
+                                            boolean success = ui.getModel().getAutoLayout().executePath(
+                                                path, locomotive, locomotive.getPreferredSpeed(), null
+                                            );
+
+                                            if (!success)
+                                            {
+                                                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
+                                            }
+                                        }
+                                    }).start();
                                 }
                                 catch (Exception e)
                                 {
@@ -116,103 +101,125 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             });    
 
                             add(menuItem);
-                            break;
+
+                            if (this.getComponentCount() > MAX_PATHS + 1)
+                            {
+                                menuItem = new JMenuItem("...");
+                                menuItem.addActionListener(event -> 
+                                {
+                                    try
+                                    {
+                                        ui.jumpToAutonomyLocTab();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        JOptionPane.showMessageDialog(this, e.getMessage());
+                                    }
+                                });    
+
+                                add(menuItem);
+                                break;
+                            }
                         }
                     }
-                }
-                
-                addSeparator();
 
-                // Station name label
-                menuItem = new JMenuItem(stationName);
-                menuItem.setEnabled(false);
-                add(menuItem);
-                
-                // Place a different locomotive at this station
-                if (ui.getActiveLoc() != null 
-                    && !ui.getModel().getAutoLayout().isRunning() 
-                    && !ui.getActiveLoc().equals(locomotive))
-                {
-                    menuItem = new JMenuItem(
-                        I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
-                    );
-                    menuItem.addActionListener(event ->
-                    {
-                        ui.getModel().getAutoLayout().moveLocomotive(
-                            ui.getActiveLoc().getName(),
-                            current.getName(),
-                            false
-                        );
-                        ui.repaintAutoLocList(false);
-                    });
+                    addSeparator();
 
+                    // Station name label
+                    menuItem = new JMenuItem(stationName);
+                    menuItem.setEnabled(false);
                     add(menuItem);
-                }
 
-                if (current.getCurrentLocomotive() != null)
-                {
-                    menuItem = new JMenuItem(
-                        I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
-                    );
-                    menuItem.addActionListener(event ->
+                    // Place a different locomotive at this station
+                    if (ui.getActiveLoc() != null 
+                        && !ui.getModel().getAutoLayout().isRunning() 
+                        && !ui.getActiveLoc().equals(locomotive))
                     {
-                        ui.getModel().getAutoLayout().moveLocomotive(
-                            null,
-                            current.getName(),
-                            false
+                        menuItem = new JMenuItem(
+                            I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
                         );
-                        ui.repaintAutoLocList(false);
-                    });
-
-                    add(menuItem);
-                    
-                    // Edit locomotive
-                    menuItem = new JMenuItem(
-                        I18n.f("autolayout.ui.labelEditLocomotiveAt", current.getName())
-                    );
-                    menuItem.addActionListener(event -> 
-                    {
-                        GraphLocAssign edit = new GraphLocAssign(ui, current, false);
-
-                        int dialogResult = JOptionPane.showOptionDialog(
-                            ui,
-                            edit,
-                            I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getName()),
-                            JOptionPane.OK_CANCEL_OPTION,
-                            JOptionPane.PLAIN_MESSAGE,
-                            null,
-                            TrainControlUI.OK_CANCEL_OPTS,
-                            TrainControlUI.OK_CANCEL_OPTS[0]
-                        );
-
-                        if (dialogResult == JOptionPane.OK_OPTION)
+                        menuItem.addActionListener(event ->
                         {
-                            edit.commitChanges();
-                            ui.updateVisiblePoints();
+                            ui.getModel().getAutoLayout().moveLocomotive(
+                                ui.getActiveLoc().getName(),
+                                current.getName(),
+                                false
+                            );
                             ui.repaintAutoLocList(false);
-                        }
-                    }); 
+                        });
 
-                    add(menuItem);
+                        add(menuItem);
+                    }
+
+                    if (current.getCurrentLocomotive() != null)
+                    {
+                        menuItem = new JMenuItem(
+                            I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
+                        );
+                        menuItem.addActionListener(event ->
+                        {
+                            ui.getModel().getAutoLayout().moveLocomotive(
+                                null,
+                                current.getName(),
+                                false
+                            );
+                            ui.repaintAutoLocList(false);
+                        });
+
+                        add(menuItem);
+                        
+                    }
+                    
+                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+                    {
+                        // Edit locomotive
+                        menuItem = new JMenuItem(
+                            I18n.f("autolayout.ui.labelEditLocomotiveAt", current.getName())
+                        );
+                        menuItem.addActionListener(event -> 
+                        {
+                            GraphLocAssign edit = new GraphLocAssign(ui, current, false);
+
+                            int dialogResult = JOptionPane.showOptionDialog(
+                                ui,
+                                edit,
+                                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getName()),
+                                JOptionPane.OK_CANCEL_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                TrainControlUI.OK_CANCEL_OPTS,
+                                TrainControlUI.OK_CANCEL_OPTS[0]
+                            );
+
+                            if (dialogResult == JOptionPane.OK_OPTION)
+                            {
+                                edit.commitChanges();
+                                ui.updateVisiblePoints();
+                                ui.repaintAutoLocList(false);
+                            }
+                        }); 
+
+                        add(menuItem);
+                    }
                 }
             }
-        }
-        else
-        {
-            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
-            menuItem.addActionListener(event -> 
+            else
             {
-                try
+                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
+                menuItem.addActionListener(event -> 
                 {
-                    ui.requestStopAutonomy();
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
-                }
-            });    
+                    try
+                    {
+                        ui.requestStopAutonomy();
+                    }
+                    catch (Exception e)
+                    {
+                        JOptionPane.showMessageDialog(this, e.getMessage());
+                    }
+                });    
 
-            add(menuItem);
+                add(menuItem);
+            }
         }
     }
 }

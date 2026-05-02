@@ -5470,6 +5470,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         InnerLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
         InnerLayoutPanel.setMaximumSize(null);
+        InnerLayoutPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                InnerLayoutPanelMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout InnerLayoutPanelLayout = new javax.swing.GroupLayout(InnerLayoutPanel);
         InnerLayoutPanel.setLayout(InnerLayoutPanelLayout);
@@ -5805,10 +5810,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(startAutonomy)
-                    .addComponent(gracefulStop)
-                    .addComponent(reopenGraphButton, javax.swing.GroupLayout.DEFAULT_SIZE, 24, Short.MAX_VALUE))
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(reopenGraphButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 24, Short.MAX_VALUE)
+                    .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(startAutonomy)
+                        .addComponent(gracefulStop)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 510, Short.MAX_VALUE)
                 .addContainerGap())
@@ -13936,6 +13942,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }    
         }));
     }//GEN-LAST:event_autoRouteListMouseReleased
+
+    private void InnerLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_InnerLayoutPanelMouseClicked
+        if (evt.getButton() == MouseEvent.BUTTON3)
+        {      
+            if (this.getModel().hasAutoLayout() && this.getModel().getAutoLayout().isValid())
+            {
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null);
+
+                    menu.show(evt.getComponent(), evt.getX(), evt.getY());      
+                }));
+            }
+        }
+    }//GEN-LAST:event_InnerLayoutPanelMouseClicked
 
     public final void displayKeyboardHints(boolean visibility)
     {

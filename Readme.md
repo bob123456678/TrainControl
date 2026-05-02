@@ -328,11 +328,14 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.7.0 [Beta]
+* v2.7.0 [5/1/2026]
     - Added support for new CS3 firmware v2.6.0 (March 2026) and backwards-compatibility with older versions
     - UI
         - Improved the intuitiveness of track diagram station labels in autonomous operation
+        - With autonomy enabled, clicking on a blank square in the track diagram will now show a popup menu to start/stop train operation
+        - With autonomy enabled, empty stations on the track diagram will now allow locomotives to be moved around via the right-click menu
         - For added clarity, all controls in the route editor for routes imported from the central station will now be greyed out
+        - Fixed bug where autonomy locomotives could be edited via the track diagram while autonomy was running
         - Fixed bug where track diagrams could be edited while autonomy was running
         - Fixed bug where CS2/3 auto-detection was not working
     - Code
