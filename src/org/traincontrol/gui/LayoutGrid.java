@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -180,6 +181,21 @@ public class LayoutGrid
 
                                         menu.show(e.getComponent(), e.getX(), e.getY());      
                                     }));
+                                }
+                                // Left-clicking a station will activate its locomotive
+                                else
+                                {
+                                    if (ui.getModel().getAutoLayout() != null &&
+                                            ui.getModel().getAutoLayout().getPoint(text.getToolTipText()) != null)
+                                    {
+                                        Locomotive atStation = ui.getModel().getAutoLayout().getPoint(text.getToolTipText()).getCurrentLocomotive();
+                                        Locomotive active = ui.getActiveLoc();
+                                        
+                                        if (atStation != null && !atStation.equals(active))
+                                        {
+                                            ui.jumpToLocomotive(atStation.getName());
+                                        }                                        
+                                    }
                                 }
                             }  
                         }); 

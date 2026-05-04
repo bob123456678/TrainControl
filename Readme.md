@@ -328,6 +328,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.7.1 [5/4/2026]
+    - UI
+        - Left-clicking a locomotive on a track diagram autonomy station will now set it as the active locomotive if a key mapping exists
+
 * v2.7.0 [5/1/2026]
     - Added support for new CS3 firmware v2.6.0 (March 2026) and backwards-compatibility with older versions
     - UI
