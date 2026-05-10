@@ -108,8 +108,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     synchronized private void filterLocList()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
-
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
             String filter = this.LocFilterBox.getText().toLowerCase();
         
             for (Component b : this.MainLocList.getComponents())
@@ -449,6 +449,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }  
             
             refreshToolTips();
+            this.MainLocList.revalidate();
+            this.MainLocList.repaint();
         }
         catch (Exception e)
         {
