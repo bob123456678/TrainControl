@@ -11494,39 +11494,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
 
-        if(SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
+        if (SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
         {
-            javax.swing.JToggleButton b =
-            (javax.swing.JToggleButton) evt.getSource();
-            
-            if (b.isEnabled())
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
             {
-                Integer fNumber = this.functionMapping.get(b);
-
-                LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(this.activeLoc, this, fNumber, true);
-
-                int result = JOptionPane.showOptionDialog(
-                    this,
-                    edit,
-                    I18n.f("loc.ui.dialogEditLocomotiveFunctions", this.activeLoc.getName()),
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    OK_CANCEL_OPTS,
-                    OK_CANCEL_OPTS[0] // default selection
-                );
-                edit.focusImages();
-                
-                if (result == JOptionPane.OK_OPTION)
+                javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+                                
+                if (b != null && b.isEnabled())
                 {
-                    edit.doApply();
-                }
-            }
+                    Integer fNumber = this.functionMapping.get(b);
+
+                    RightClickFunctionMenu menu = new RightClickFunctionMenu(this, this.activeLoc, b, fNumber);
+
+                    menu.showPopup(evt);      
+                };
+            }));
         }
     }//GEN-LAST:event_EditFunction
 
     private void locIconMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locIconMouseReleased
-        if(SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
+        if (SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
         {
             this.setLocIcon(this.activeLoc);
         }

@@ -328,6 +328,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.7.2 [5/26/2026]
+    - UI
+        - Added right-click menu to all function icons (with shortcuts to save/recall presets and the previous functionality of editing functions)
+
 * v2.7.1 [5/10/2026]
     - UI
         - Left-clicking a locomotive on a track diagram autonomy station will now set it as the active locomotive if a key mapping exists
