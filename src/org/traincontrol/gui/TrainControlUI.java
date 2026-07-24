@@ -514,6 +514,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {            
             // Add right click events
             this.buttonMapping.get(entry.getKey()).addMouseListener(new RightClickMenuListener(this, entry.getValue()));
+
+            // Add drag and drop support
+            LocButtonTransferHandler.enable(this, entry.getValue());
         }
         
         // Map buttons to labels
