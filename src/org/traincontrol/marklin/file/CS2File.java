@@ -1241,7 +1241,10 @@ public final class CS2File
                 catch (NumberFormatException | JSONException e)
                 {
                     logMessage(
-                        I18n.f("route.errorFailedToAddAtIndexDueToParsing", i),
+                        I18n.f("route.invalidCs3Route",
+                            describeCS3Field(routeList, i, "name"),
+                            describeCS3Field(routeList, i, "id")
+                        ),
                         e,
                         false
                     );
@@ -1255,11 +1258,38 @@ public final class CS2File
         
         return out;
     }
- 
+
+    /**
+     * Best-effort lookup of a single field of a CS3 record, so that an entry which failed to parse
+     * can still be named in the error message
+     * @param list
+     * @param index
+     * @param key
+     * @return the field value, or "?" if it cannot be read
+     */
+    private String describeCS3Field(JSONArray list, int index, String key)
+    {
+        try
+        {
+            JSONObject entry = list.getJSONObject(index);
+
+            if (entry.has(key))
+            {
+                return entry.get(key).toString();
+            }
+        }
+        catch (JSONException e)
+        {
+            // We are already reporting a parsing failure, so fall through to the placeholder
+        }
+
+        return "?";
+    }
+
     /**
      * Parses locomotives from the CS3 API
      * @param locomotiveList
-     * @return 
+     * @return
      */
     public List<MarklinLocomotive> parseLocomotivesCS3(JSONArray locomotiveList)
     {
@@ -1437,7 +1467,10 @@ public final class CS2File
             catch (NumberFormatException | JSONException e)
             {
                 logMessage(
-                    I18n.f("loc.errorFailedToAddAtIndexDueToParsing", i),
+                    I18n.f("loc.invalidCs3Locomotive",
+                        describeCS3Field(locomotiveList, i, "name"),
+                        describeCS3Field(locomotiveList, i, "uid")
+                    ),
                     e,
                     false
                 );
