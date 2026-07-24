@@ -142,7 +142,9 @@ public class Layout
         // NOTE: ConcurrentHashMap rejects null keys/values, so accessors that take a Locomotive
         // must null-guard before touching these (see getDestination/getStart/getReachedMilestones/etc.).
         this.locomotivesToRun = ConcurrentHashMap.<Locomotive>newKeySet();
-        this.callbacks = new HashMap<>();
+        // ConcurrentHashMap: setCallback (e.g. opening the graph view) puts on the EDT while
+        // executePath iterates callbacks.values() on loco threads - a plain HashMap would CME.
+        this.callbacks = new ConcurrentHashMap<>();
         this.activeLocomotives = new ConcurrentHashMap<>();
         this.locomotiveMilestones = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();

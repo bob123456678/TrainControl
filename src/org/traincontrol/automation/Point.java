@@ -17,7 +17,9 @@ import org.traincontrol.util.I18n;
  */
 public class Point
 {
-    private Locomotive currentLoc;
+    // volatile: setLocomotive is synchronized but getCurrentLocomotive is not, and both are called
+    // across autonomy/UI threads.  volatile gives the unsynchronized reader visibility of the latest write.
+    private volatile Locomotive currentLoc;
     private boolean isDestination;
     private String name;
     private String s88;
