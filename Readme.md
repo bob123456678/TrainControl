@@ -328,6 +328,10 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
+* v2.7.3 [7/23/2026]
+    - UI
+        - Added support to drag-and-drop locomotive mapping buttons (when the power is off)
+
 * v2.7.2 [5/26/2026]
     - UI
         - Added right-click menu to all function icons (with shortcuts to save/recall presets and the previous functionality of editing functions)

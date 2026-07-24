@@ -516,7 +516,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.buttonMapping.get(entry.getKey()).addMouseListener(new RightClickMenuListener(this, entry.getValue()));
 
             // Add drag and drop support
-            LocButtonTransferHandler.enable(this, entry.getValue());
+            LocButtonTransferHandler.enable(this, entry.getValue(), locKeyTabs);
         }
         
         // Map buttons to labels
@@ -743,12 +743,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
         }
         
-        this.locKeyTabs.addChangeListener(e -> 
+        this.locKeyTabs.addChangeListener(e ->
         {
             this.switchLocMapping(locKeyTabs.getSelectedIndex() + 1);
             repaintMappings();
         });
-                
+
+        // Hovering over the page controls during a drag turns the page, so locomotives can be dragged across pages
+        LocButtonTransferHandler.enablePageSwitching(this.locKeyTabs, this.locKeyTabs, 0);
+        LocButtonTransferHandler.enablePageSwitching(this.PrevLocMapping, this.locKeyTabs, -1);
+        LocButtonTransferHandler.enablePageSwitching(this.NextLocMapping, this.locKeyTabs, 1);
+
         toggleLocKeyTabs();
         
         adjustTabbedPaneHeight(locKeyTabs);

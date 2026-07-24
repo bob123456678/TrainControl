@@ -75,7 +75,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "2.7.2";
+    public static final String RAW_VERSION = "2.7.3";
         
     //// Settings
     
