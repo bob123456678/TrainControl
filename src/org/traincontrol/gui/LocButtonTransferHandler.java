@@ -155,7 +155,7 @@ public class LocButtonTransferHandler extends TransferHandler
     public boolean canImport(TransferSupport support)
     {
         // Only allow moving locomotives when the power is off
-        // if (ui.getModel().getPowerState()) return false;
+        if (ui.getModel().getPowerState() && ui.getModel().getNetworkCommState()) return false;
 
         if (!support.isDrop() || !support.isDataFlavorSupported(FLAVOR)) return false;
 
