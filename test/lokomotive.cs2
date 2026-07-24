@@ -2844,6 +2844,65 @@ lokomotive
  .funktionen
  ..nr=15
 lokomotive
+ .name=ICE=4
+ .richtung=1
+ .uid=0x407c
+ .adresse=0x7c
+ .typ=mfx
+ .sid=0x1b
+ .mfxuid=0x7dfe4802
+ .icon=ICE 1
+ .av=15
+ .bv=15
+ .volume=255
+ .tachomax=250
+ .vmin=5
+ .xprot=19608
+ .mfxtyp=4
+ .funktionen
+ ..nr=0
+ ..typ=1
+ ..wert=1
+ .funktionen
+ ..nr=1
+ ..typ=139
+ .funktionen
+ ..nr=2
+ ..typ=23
+ .funktionen
+ ..nr=3
+ ..typ=10
+ .funktionen
+ ..nr=4
+ ..typ=18
+ .funktionen
+ ..nr=5
+ ..typ=28
+ .funktionen
+ ..nr=6
+ ..typ=153
+ .funktionen
+ ..nr=7
+ ..typ=138
+ .funktionen
+ ..nr=8
+ ..typ=153
+ .funktionen
+ ..nr=9
+ ..typ=20
+ .funktionen
+ ..nr=10
+ .funktionen
+ ..nr=11
+ .funktionen
+ ..nr=12
+ .funktionen
+ ..nr=13
+ .funktionen
+ ..nr=14
+ .funktionen
+ ..nr=15
+lokomotive
  .name=BR 39 083
  .uid=0x401c
  .adresse=0x1c

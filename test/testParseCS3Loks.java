@@ -149,6 +149,9 @@ public class testParseCS3Loks
         
         assertEquals(getLocByName(db, "ICE 1").getAddress(), 27);
         assertEquals(getLocByName(db, "ICE 1").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+        
+        assertEquals(getLocByName(db, "ICE=4").getAddress(), 124);
+        assertEquals(getLocByName(db, "ICE=4").getDecoderType(), MarklinLocomotive.decoderType.MFX);
     }
     
     @Test
