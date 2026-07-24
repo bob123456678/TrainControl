@@ -205,7 +205,10 @@ public final class LayoutLabel extends JLabel
                                                         // We need a significant delay because the power might take some time to come on
                                                         Thread.sleep(1000);
                                                     } 
-                                                    catch (InterruptedException ex) { }    
+                                                    catch (InterruptedException ex)
+                                                    {
+                                                        Thread.currentThread().interrupt();
+                                                    }
                                                 }
                                                 
                                                 break;
@@ -340,7 +343,10 @@ public final class LayoutLabel extends JLabel
                                 {
                                     Thread.sleep(HIGHLIGHT_DURATION);
                                 } 
-                                catch (InterruptedException ex) { }
+                                catch (InterruptedException ex)
+                                {
+                                    Thread.currentThread().interrupt();
+                                }
 
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {

@@ -330,9 +330,15 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.7.3 [7/23/2026]
     - UI
-        - Added support to drag-and-drop locomotive mapping buttons (when the power is off)
-        - When downloading an update file, progress is now shown in the menu bar
+        - Added support to drag-and-drop locomotive mapping buttons (when the power is off), including across pages
+        - When downloading an update file, progress is now shown in the menu bar, and the update file is only written once the download completes
+        - Fixed bug where the UI would freeze until the connection timed out if the Central Station became unreachable
         - Fixed bug where declining the prompt to reset a locomotive's function customizations would leave the reset button permanently disabled
+        - Fixed bug where locomotive icons could report a spurious image loading error if a button was cleared while its icon was still loading
+        - Fixed bug where clearing the locomotives on a page updated the display from the wrong thread
+    - Code
+        - A single incomplete route or locomotive in the Central Station database no longer aborts the import of all the others, and the skipped entry is now named in the log
+        - Fixed missing error messages that could mask the underlying error when deleting an unknown autonomy point, or when the locomotive statistics page failed to render
 
 * v2.7.2 [5/26/2026]
     - UI

@@ -1076,7 +1076,10 @@ public class Layout
                 {
                     Thread.sleep(CONFIGURE_SLEEP);
                 } 
-                catch (InterruptedException ex) { }        
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

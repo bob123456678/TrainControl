@@ -1784,7 +1784,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             try
             {
                 Thread.sleep(CAN_MONITOR_DELAY * 1000);
-            } catch (InterruptedException ex) { }
+            } catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
             
             if (this.model.getNumMessagesProcessed() == 0
                 && this.model.getNetworkCommState()
@@ -14881,7 +14884,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         try 
                         {
                             Thread.sleep(REPAINT_ROUTE_INTERVAL);
-                        } catch (InterruptedException ex) { }
+                        } catch (InterruptedException ex)
+                        {
+                            Thread.currentThread().interrupt();
+                        }
                         
                         this.repaintAutoLocListLite();
                     }))

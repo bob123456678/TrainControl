@@ -820,10 +820,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 
                 if (!this.routeDB.hasId(r.getId()))
-                {                    
-                    newRoute(r);                    
-                    this.logf("route.added", r.getName());                    
-                    num++;
+                {
+                    // Only report and count the route if it was actually added
+                    if (newRoute(r))
+                    {
+                        this.logf("route.added", r.getName());
+                        num++;
+                    }
+                    else
+                    {
+                        this.logf("route.notAdded", r.getName());
+                    }
                 }
                 
                 // Routes from the Central Station are not editable
@@ -2587,7 +2594,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (MarklinRoute route : routes)
         {
             this.logf("route.adding", route.getName());
-            this.newRoute(route);
+
+            if (!this.newRoute(route))
+            {
+                this.logf("route.notAdded", route.getName());
+            }
         }
     }
         
@@ -2875,7 +2886,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     try
                     {
                         Thread.sleep(1000);
-                    } catch (InterruptedException ex1) {}
+                    } catch (InterruptedException ex1)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
                 }                
             }));
 

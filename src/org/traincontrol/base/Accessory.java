@@ -145,6 +145,7 @@ abstract public class Accessory
             Thread.sleep(ms);
         } catch (InterruptedException ex)
         {
+            Thread.currentThread().interrupt();
         }
         
         return this;

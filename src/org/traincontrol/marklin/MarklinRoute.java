@@ -427,7 +427,7 @@ public class MarklinRoute extends Route
                         } 
                         catch (InterruptedException ex)
                         {
-
+                            Thread.currentThread().interrupt();
                         }
                     }
                 }

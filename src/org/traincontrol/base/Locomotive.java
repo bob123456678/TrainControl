@@ -894,7 +894,10 @@ public abstract class Locomotive
         {
             Thread.sleep(ms);
         } 
-        catch (InterruptedException ex) { }
+        catch (InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
         
         return this;
     }
