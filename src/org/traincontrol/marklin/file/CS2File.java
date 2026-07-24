@@ -30,6 +30,11 @@ import org.traincontrol.util.I18n;
  */
 public final class CS2File
 {
+    // Timeouts for our HTTP requests.  Connecting is quick because the Central Station is on the local
+    // network, but reads are given time to transfer potentially large database files.
+    public static final int CONNECT_TIMEOUT_MS = 2000;
+    public static final int READ_TIMEOUT_MS = 15000;
+
     // IP address for our HTTP requests
     private final String IP;
     
@@ -371,10 +376,16 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    public static BufferedReader fetchURL(String url) throws Exception 
+    public static BufferedReader fetchURL(String url) throws Exception
     {
         URL website = new URL(url);
         URLConnection connection = website.openConnection();
+
+        // Without these, an unreachable Central Station blocks the caller until the OS abandons the connection.
+        // Ignored for local files, which are read through this method when a layout override path is set.
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+
         return new BufferedReader(
             new InputStreamReader(
                 connection.getInputStream(), StandardCharsets.UTF_8)

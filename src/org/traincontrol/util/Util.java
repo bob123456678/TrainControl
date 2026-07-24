@@ -58,6 +58,11 @@ public class Util
      */
     public static final String PARTIAL_DOWNLOAD_SUFFIX = ".part";
 
+    // Timeouts for downloads.  The read timeout applies to each individual read, so a stalled transfer
+    // fails instead of leaving the download running indefinitely.
+    private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 5000;
+    private static final int DOWNLOAD_READ_TIMEOUT_MS = 15000;
+
     /**
      * Downloads a file from a URL
      * @param fileURL
@@ -82,6 +87,9 @@ public class Util
     {
         URL url = new URL(fileURL);
         URLConnection connection = url.openConnection();
+
+        connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
 
         File partialFile = new File(saveOutputFile.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
 
