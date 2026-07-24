@@ -440,18 +440,24 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     this.loc.setCustomFunctions(false);
-                    this.loc.unsetLocalFunctionImageURLs();  
+                    this.loc.unsetLocalFunctionImageURLs();
                     this.parent.getModel().syncWithCS2();
                     this.parent.repaintLoc(true, null);
                     this.customIconPath = null;
 
-                    updateFNumber(this.fNo.getSelectedIndex()); 
+                    updateFNumber(this.fNo.getSelectedIndex());
                 }));
             }
-            
+
+            // The button was only disabled to keep a second dialog from opening, so restore its correct state
+            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            {
+                displayCustomizationButtons();
+            }));
+
         }).start();
     }//GEN-LAST:event_resetButtonActionPerformed
 

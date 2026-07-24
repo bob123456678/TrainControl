@@ -332,6 +332,7 @@ Requires JDK 1.8+ and the following libraries:
     - UI
         - Added support to drag-and-drop locomotive mapping buttons (when the power is off)
         - When downloading an update file, progress is now shown in the menu bar
+        - Fixed bug where declining the prompt to reset a locomotive's function customizations would leave the reset button permanently disabled
 
 * v2.7.2 [5/26/2026]
     - UI

@@ -9927,7 +9927,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void clearCurrentPage()
     {
-        new Thread(() ->
+        // The dialog and the mappings it clears both belong on the event thread
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 this,
@@ -9943,7 +9944,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 doClearCurrentPage();
             }
-        }).start();
+        }));
     }
     
     /**
