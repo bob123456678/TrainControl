@@ -328,7 +328,7 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.7.4 [Beta]
+* v2.7.4 [7/24/2026]
     - Bug fixes
         - Fixed rare race conditions in autonomy code
 
