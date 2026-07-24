@@ -87,7 +87,9 @@ public class Util
 
         long totalBytes = connection.getContentLengthLong();
         long readBytes = 0;
-        int lastPercent = -1;
+
+        // Starts out of range, so that the first read always reports, even when the size is unknown
+        int lastPercent = -2;
 
         try (InputStream inputStream = new BufferedInputStream(connection.getInputStream());
              FileOutputStream outputStream = new FileOutputStream(partialFile.getAbsolutePath()))

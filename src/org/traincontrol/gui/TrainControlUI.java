@@ -2902,7 +2902,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         
                         // Check that the locomotive hasn't changed - only a sanity check if the latency is high
-                        if (this.getButtonLocomotive(b).equals(l))
+                        // l is known to be non-null, but the button may have been cleared while the image loaded
+                        if (l.equals(this.getButtonLocomotive(b)))
                         {                     
                             b.setIcon(ic);  
 
