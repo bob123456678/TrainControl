@@ -336,6 +336,7 @@ Requires JDK 1.8+ and the following libraries:
         - Fixed bug where declining the prompt to reset a locomotive's function customizations would leave the reset button permanently disabled
         - Fixed bug where locomotive icons could report a spurious image loading error if a button was cleared while its icon was still loading
     - Other bug fixes
+        - Fixed rare race condition in autonomy graph
         - Fixed bug where CS2 locomotive names containing = would cause importing to fail
         - A single incomplete route or locomotive in the Central Station database no longer aborts the import of all the others, and the skipped entry is now named in the log
         - Fixed missing error messages that could mask the underlying error when deleting an unknown autonomy point, or when the locomotive statistics page failed to render

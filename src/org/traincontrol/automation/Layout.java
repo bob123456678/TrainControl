@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -2048,7 +2049,10 @@ public class Layout
         {
             synchronized (this.activeLocomotives)
             {                
-                this.locomotiveMilestones.put(loc, new LinkedList<>());
+                // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI
+                // (getReachedMilestones/getLatestMilestoneS88).  COW makes those reads iterate a snapshot
+                // with no lock and no ConcurrentModificationException, so the getters need no locking.
+                this.locomotiveMilestones.put(loc, new CopyOnWriteArrayList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.activeLocomotives.put(loc, path);
             
