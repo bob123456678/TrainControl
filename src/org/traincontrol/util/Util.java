@@ -112,7 +112,8 @@ public class Util
 
                 if (progress != null)
                 {
-                    int percent = totalBytes > 0 ? (int) (readBytes * 100 / totalBytes) : -1;
+                    // Capped, in case the server under-reports the content length
+                    int percent = totalBytes > 0 ? (int) Math.min(100, readBytes * 100 / totalBytes) : -1;
 
                     // Only report changes, so that we don't flood the caller
                     if (percent != lastPercent)

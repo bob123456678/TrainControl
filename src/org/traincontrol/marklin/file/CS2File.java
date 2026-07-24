@@ -461,8 +461,9 @@ public final class CS2File
                 }
                 else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
                 {
-                    String[] parts = s.substring(2).split("=");
-                    
+                    // Limit of 2, so that a route or locomotive name containing an equals sign is not truncated
+                    String[] parts = s.substring(2).split("=", 2);
+
                     if (item != null)
                     {
                         item.put(parts[0], parts[1]);
@@ -671,7 +672,8 @@ public final class CS2File
             if ("fahrstrasse".equals(m.get("_type")))
             {
                 // Skip only the offending route.  Letting this throw would abort the import of every route.
-                if (m.get("id") == null || m.get("item") == null)
+                // The name is required because routes are indexed by it once they reach the database.
+                if (m.get("id") == null || m.get("item") == null || m.get("name") == null)
                 {
                     control.logf(
                         "route.invalidCs2Route",
@@ -843,6 +845,9 @@ public final class CS2File
             // Loop through the keys in each function
             for (String functionItem : functionInfo.split(","))
             {
+                // A key with no value would otherwise run off the end of the array below
+                if (!functionItem.contains("=")) continue;
+
                 String[] item = functionItem.split("=");
                 
                 if ("nr".equals(item[0]))
@@ -884,6 +889,9 @@ public final class CS2File
             // Loop through the keys in each function
             for (String functionItem : functionInfo.split(","))
             {
+                // A key with no value would otherwise run off the end of the array below
+                if (!functionItem.contains("=")) continue;
+
                 String[] item = functionItem.split("=");
                 
                 if ("nr".equals(item[0]))

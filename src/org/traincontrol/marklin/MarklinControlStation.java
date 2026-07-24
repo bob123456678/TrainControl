@@ -1221,6 +1221,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final boolean newRoute(MarklinRoute r)
     {
+        // Routes are indexed by name, so an unnamed route cannot be added
+        if (r == null || r.getName() == null)
+        {
+            return false;
+        }
+
         if (!this.routeDB.hasId(r.getId()) && !this.routeDB.hasName(r.getName().trim()))
         {
             this.routeDB.add(r, r.getName().trim(), r.getId());
