@@ -331,6 +331,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.7.3 [7/23/2026]
     - UI
         - Added support to drag-and-drop locomotive mapping buttons (when the power is off)
+        - When downloading an update file, progress is now shown in the menu bar
 
 * v2.7.2 [5/26/2026]
     - UI

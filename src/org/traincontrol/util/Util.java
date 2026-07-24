@@ -11,6 +11,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.function.IntConsumer;
 import org.json.JSONObject;
 import org.traincontrol.marklin.file.CS2File;
 
@@ -51,27 +54,73 @@ public class Util
     }
     
     /**
+     * Extension of the temporary file used while a download is in progress
+     */
+    public static final String PARTIAL_DOWNLOAD_SUFFIX = ".part";
+
+    /**
      * Downloads a file from a URL
      * @param fileURL
      * @param saveOutputFile
-     * @throws IOException 
+     * @throws IOException
      */
     public static void downloadFile(String fileURL, File saveOutputFile) throws IOException
     {
+        downloadFile(fileURL, saveOutputFile, null);
+    }
+
+    /**
+     * Downloads a file from a URL, reporting progress as it goes.
+     * The output file is written under a temporary name and only renamed once complete,
+     * so that an interrupted download never looks like a finished one.
+     * @param fileURL
+     * @param saveOutputFile
+     * @param progress - receives the percentage downloaded, or -1 if the size is unknown
+     * @throws IOException
+     */
+    public static void downloadFile(String fileURL, File saveOutputFile, IntConsumer progress) throws IOException
+    {
         URL url = new URL(fileURL);
         URLConnection connection = url.openConnection();
-        InputStream inputStream = new BufferedInputStream(connection.getInputStream());
-        FileOutputStream outputStream = new FileOutputStream(saveOutputFile.getAbsolutePath());
 
-        byte[] buffer = new byte[1024];
-        int bytesRead = -1;
-        while ((bytesRead = inputStream.read(buffer)) != -1)
+        File partialFile = new File(saveOutputFile.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
+
+        long totalBytes = connection.getContentLengthLong();
+        long readBytes = 0;
+        int lastPercent = -1;
+
+        try (InputStream inputStream = new BufferedInputStream(connection.getInputStream());
+             FileOutputStream outputStream = new FileOutputStream(partialFile.getAbsolutePath()))
         {
-            outputStream.write(buffer, 0, bytesRead);
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+
+            while ((bytesRead = inputStream.read(buffer)) != -1)
+            {
+                outputStream.write(buffer, 0, bytesRead);
+                readBytes += bytesRead;
+
+                if (progress != null)
+                {
+                    int percent = totalBytes > 0 ? (int) (readBytes * 100 / totalBytes) : -1;
+
+                    // Only report changes, so that we don't flood the caller
+                    if (percent != lastPercent)
+                    {
+                        lastPercent = percent;
+                        progress.accept(percent);
+                    }
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            partialFile.delete();
+
+            throw e;
         }
 
-        outputStream.close();
-        inputStream.close();
+        Files.move(partialFile.toPath(), saveOutputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
     
     /**

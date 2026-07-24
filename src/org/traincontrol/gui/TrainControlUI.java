@@ -13134,7 +13134,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_checkForUpdatesActionPerformed
 
     private void downloadUpdateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadUpdateMenuItemActionPerformed
-        
+
+        // Without this, a second click would skip the in-progress download and report the partial file as complete
+        this.downloadUpdateMenuItem.setEnabled(false);
+        this.model.logf("ui.infoDownloadingUpdate");
+
         new Thread(() ->
         {
             try
@@ -13143,9 +13147,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (!f.exists())
                 {
-                    Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f);
+                    Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
+                    {
+                        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                        {
+                            this.downloadUpdateMenuItem.setText(percent < 0
+                                ? I18n.t("ui.infoDownloadingUpdate")
+                                : I18n.f("ui.infoDownloadingUpdatePercent", percent)
+                            );
+                        }));
+                    });
                 }
-                
+
                 javax.swing.SwingUtilities.invokeLater(new Thread(() ->
                 {
                     JOptionPane.showMessageDialog(
@@ -13175,6 +13188,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     this.model.log(e);
                 }
+            }
+            finally
+            {
+                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                {
+                    this.downloadUpdateMenuItem.setText(I18n.t("ui.main.downloadUpdate"));
+                    this.downloadUpdateMenuItem.setEnabled(true);
+                }));
             }
         }).start();
     }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
