@@ -2168,9 +2168,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public String getLocAddress(String name)
     {
-        MarklinLocomotive l = this.locDB.getByName(name); 
+        MarklinLocomotive l = this.locDB.getByName(name);
         String address;
-        
+
+        // Unlike the other lookups in this class, this one used to throw on an unknown name
+        if (l == null)
+        {
+            return null;
+        }
+
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX 
                 || l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {

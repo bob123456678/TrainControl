@@ -670,8 +670,19 @@ public final class CS2File
         {
             if ("fahrstrasse".equals(m.get("_type")))
             {
+                // Skip only the offending route.  Letting this throw would abort the import of every route.
+                if (m.get("id") == null || m.get("item") == null)
+                {
+                    control.logf(
+                        "route.invalidCs2Route",
+                        m.get("name") != null ? m.get("name") : "?",
+                        m.get("id") != null ? m.get("id") : "?"
+                    );
+                    continue;
+                }
+
                 MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
-                
+
                 String route = m.get("item").replace("{", "").replace("}","");
                 String[] pieces = route.split("\\|");
 
@@ -1507,11 +1518,11 @@ public final class CS2File
                 // Others
                 else
                 {
-                    if (m.get("typ").equals("mfx"))
+                    if ("mfx".equals(m.get("typ")))
                     {
                         type = MarklinLocomotive.decoderType.MFX;
                     }
-                    else if (m.get("typ").equals("dcc"))
+                    else if ("dcc".equals(m.get("typ")))
                     {
                         type = MarklinLocomotive.decoderType.DCC;
                         

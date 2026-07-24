@@ -36,6 +36,15 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      */
     public void add(ITEM device, String name, IDENTIFIER id)
     {
+        IDENTIFIER existingId = this.names.get(name);
+
+        // Re-adding a name under a different id would otherwise strand the old device in the
+        // database, where it would still be returned by getItems but not by getItemNames
+        if (existingId != null && !existingId.equals(id))
+        {
+            this.db.remove(existingId);
+        }
+
         this.db.put(id, device);
         this.names.put(name, id);
     }
