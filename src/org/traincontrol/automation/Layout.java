@@ -350,14 +350,14 @@ public class Layout
     public String getLatestMilestoneS88(Locomotive loc)
     {
        List<Point> milestones = this.locomotiveMilestones.get(loc);
-       
+
        if (milestones == null || milestones.isEmpty()) return null;
 
        // Iterate backwards through the list
        for (int i = milestones.size() - 1; i >= 0; i--)
        {
             Point point = milestones.get(i);
-            
+
             if (point.hasS88())
             {
                 return point.getS88();
@@ -3643,12 +3643,19 @@ public class Layout
         }*/
         
         List<Locomotive> locsToRun = new LinkedList<>();
-        
+
         for (String s : locomotives)
         {
-            locsToRun.add(control.getLocByName(s));
+            // Skip names that no longer resolve to a locomotive (deleted/renamed since the config was saved).
+            // A null here would be a latent bug regardless: it also NPEs when checkForSlowerLoc iterates the run list.
+            Locomotive loc = control.getLocByName(s);
+
+            if (loc != null)
+            {
+                locsToRun.add(loc);
+            }
         }
-        
+
         layout.setLocomotivesToRun(locsToRun);
                     
         return layout;
