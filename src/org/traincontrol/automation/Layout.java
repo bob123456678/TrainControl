@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -133,12 +134,18 @@ public class Layout
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
         this.adjacency = new HashMap<>();    
-        this.locomotivesToRun = new HashSet<>();
+        // These four are read by the UI (getActiveAccs, getActiveLocomotives, getReachedMilestones)
+        // without holding the writers' synchronized(activeLocomotives) lock, so they must be
+        // individually thread-safe.  The existing synchronized blocks still provide the writers'
+        // compound atomicity; the concurrent collections add safe lock-free reads on top.
+        // NOTE: ConcurrentHashMap rejects null keys/values, so accessors that take a Locomotive
+        // must null-guard before touching these (see getDestination/getStart/getReachedMilestones/etc.).
+        this.locomotivesToRun = ConcurrentHashMap.<Locomotive>newKeySet();
         this.callbacks = new HashMap<>();
-        this.activeLocomotives = new HashMap<>();
-        this.locomotiveMilestones = new HashMap<>();
+        this.activeLocomotives = new ConcurrentHashMap<>();
+        this.locomotiveMilestones = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();
-        this.locomotivePendingS88 = new HashMap<>();
+        this.locomotivePendingS88 = new ConcurrentHashMap<>();
         this.activateRouteIDs = new LinkedList<>();
         
         Layout.layoutVersion += 1;
@@ -262,9 +269,11 @@ public class Layout
      */
     public void locDeleted(Locomotive l)
     {
+        if (l == null) return;
+
         this.locomotivesToRun.remove(l);
         this.activeLocomotives.remove(l);
-        this.locomotiveMilestones.remove(l);     
+        this.locomotiveMilestones.remove(l);
     }
     
     /**
@@ -274,6 +283,8 @@ public class Layout
      */
     public Point getDestination(Locomotive locomotive)
     {
+        if (locomotive == null) return null;
+
         List<Edge> path = getActiveLocomotives().get(locomotive);
 
         if (path == null || path.isEmpty())
@@ -291,6 +302,8 @@ public class Layout
      */
     public Point getStart(Locomotive locomotive)
     {
+        if (locomotive == null) return null;
+
         List<Edge> path = getActiveLocomotives().get(locomotive);
 
         if (path == null || path.isEmpty())
@@ -308,8 +321,11 @@ public class Layout
      */
     public Set<Point> getPointsInActivePath(Locomotive locomotive)
     {
-        List<Edge> path = getActiveLocomotives().get(locomotive);
         Set<Point> output = new HashSet<>();
+
+        if (locomotive == null) return output;
+
+        List<Edge> path = getActiveLocomotives().get(locomotive);
 
         if (path != null && !path.isEmpty())
         {
@@ -339,6 +355,8 @@ public class Layout
      */
     public List<Point> getReachedMilestones(Locomotive loc)
     {
+        if (loc == null) return null;
+
         return this.locomotiveMilestones.get(loc);
     }
     
@@ -349,6 +367,8 @@ public class Layout
      */
     public String getLatestMilestoneS88(Locomotive loc)
     {
+       if (loc == null) return null;
+
        List<Point> milestones = this.locomotiveMilestones.get(loc);
 
        if (milestones == null || milestones.isEmpty()) return null;
@@ -1676,7 +1696,9 @@ public class Layout
     synchronized public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
         List<List<Edge>> output = new LinkedList<>();
- 
+
+        if (loc == null) return output;
+
         // If the locomotive is currently running, it has no possible paths
         if (!this.activeLocomotives.containsKey(loc))
         {     
@@ -1928,6 +1950,8 @@ public class Layout
      */
     public void waitForS88Reached(Locomotive l, String targetS88)
     {
+        if (l == null) return;
+
         while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
         {
             synchronized (this)
