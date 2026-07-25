@@ -16,15 +16,16 @@ import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * Verifies the configureAndLockPath guard in Layout: autonomy trains must not be released until the
- * Central Station confirms the path's accessories reached their commanded state.  On a persistent
- * mismatch the guard retries once, then stops the locomotive and releases its locks (returning false so
- * executePath does not run it) - power is deliberately left on so other locomotives are unaffected.
+ * Central Station confirms the path's accessories reached their commanded state.  On a mismatch the guard
+ * stops the locomotive and releases its locks (returning false so executePath does not run it); power is
+ * deliberately left on so other locomotives are unaffected, and autonomy re-attempts the path organically.
+ * A UI popup is only raised once failures reach PATH_VALIDATION_ALERT_THRESHOLD.
  *
  * The tests run disconnected with DEBUG_SIMULATE_PACKETS = true so exec() echoes each accessory command
  * back (simulating a working CS), letting the accessories confirm.  A fault is forced by asynchronously
- * driving the configured accessories to the wrong state out of band, which re-configuration cannot fix -
- * so both attempts fail and the guard takes the error path.  The error path is observed via the return
- * value and the released path locks (not a shared field), since multiple locomotives validate concurrently.
+ * driving the configured accessories to the wrong state out of band - so validation fails and the guard
+ * takes the error path.  The error path is observed via the return value and the released path locks (not
+ * a shared field), since multiple locomotives validate concurrently.
  */
 public class testAutonomyPathValidation
 {
@@ -37,14 +38,15 @@ public class testAutonomyPathValidation
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        // showUI = true so the failure popup renders and the operator can see the error.
+        model = init(null, true, true, false, true);
 
         // Not connected => exec() takes the simulated-echo branch; debug is on so that branch is active.
         model.setNetworkCommState(false);
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
-        // Keep the tests fast: the fault case waits out this timeout twice (once per attempt).  The
-        // production default is much larger to accommodate a slow Central Station.
+        // Keep the tests fast: the fault case waits out this timeout once.  The production default is much
+        // larger to accommodate a slow Central Station.
         Layout.PATH_VALIDATION_MS = 300;
 
         // Exercise the guard explicitly (this is the production default, but be robust to other tests).
@@ -189,8 +191,8 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A persistently misconfigured accessory takes the error path: the guard retries, then stops the
-     * locomotive and releases its locks (returning false), leaving power on for everyone else.
+     * A misconfigured accessory takes the error path: the guard stops the locomotive and releases its
+     * locks (returning false) after a single validation attempt, leaving power on for everyone else.
      */
     @Test
     public void testMisconfiguredAccessoryTriggersErrorPath() throws Exception
@@ -204,7 +206,6 @@ public class testAutonomyPathValidation
 
         MarklinLocomotive loc = dummyLoc();
         boolean result;
-        long start = System.currentTimeMillis();
 
         try
         {
@@ -215,16 +216,8 @@ public class testAutonomyPathValidation
             corrupting[0] = false;
         }
 
-        long elapsed = System.currentTimeMillis() - start;
-
-        // Validation failed after the retry, so the path is not executed
+        // Validation failed, so the path is not executed
         assertFalse(result, "configureAndLockPath must return false when the path cannot be confirmed");
-
-        // The guard must have made two attempts (initial + retry): each waits out the full validation
-        // timeout, so a single attempt could not account for two timeouts' worth of elapsed time.  This
-        // directly proves the retry ran rather than inferring it only from the error-path outcome.
-        assertTrue(elapsed >= 2 * Layout.PATH_VALIDATION_MS,
-            "Both the initial validation and the retry must have waited out the timeout (elapsed=" + elapsed + "ms)");
 
         // Power stays on - the guard stops the loco and releases its locks instead of cutting power, so
         // other locomotives are unaffected
@@ -263,5 +256,56 @@ public class testAutonomyPathValidation
 
         assertTrue(result);
         assertTrue(model.getPowerState(), "Simulation mode must bypass the guard (power stays on)");
+    }
+
+    /**
+     * Every failure is counted and logged, but the UI popup is suppressed until the failure count reaches
+     * PATH_VALIDATION_ALERT_THRESHOLD, at which point the counter resets.  The counter is per-Layout, so a
+     * single fresh layout starts at zero.  (The popup itself is a no-op without a view; this verifies the
+     * counting/threshold logic that gates it.)
+     */
+    @Test
+    public void testUiAlertSuppressedUntilThreshold() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        int originalThreshold = Layout.PATH_VALIDATION_ALERT_THRESHOLD;
+        Layout.PATH_VALIDATION_ALERT_THRESHOLD = 3;
+
+        try
+        {
+            TestPath tp = buildPath(41, "_thresh");
+            boolean[] corrupting = startCorrupting(tp);
+
+            try
+            {
+                // The path is released after each failure, so it can be re-attempted on the same layout.
+                // Below the threshold the counter simply climbs (no reset, i.e. no alert).
+                for (int i = 1; i < Layout.PATH_VALIDATION_ALERT_THRESHOLD; i++)
+                {
+                    tp.layout.configureAndLockPath(tp.path, dummyLoc());
+                    assertTrue(tp.layout.getPathValidationFailureCount() == i,
+                        "Failure " + i + " should accumulate without alerting");
+                }
+
+                // The failure that reaches the threshold fires the alert and resets the counter.
+                tp.layout.configureAndLockPath(tp.path, dummyLoc());
+                assertTrue(tp.layout.getPathValidationFailureCount() == 0,
+                    "Reaching the threshold must reset the counter (alert fired)");
+            }
+            finally
+            {
+                corrupting[0] = false;
+            }
+
+            // Keep the UI up briefly so the operator can actually read the popup before the suite tears
+            // it down (the alert is shown asynchronously on the EDT).
+            Thread.sleep(5000);
+        }
+        finally
+        {
+            Layout.PATH_VALIDATION_ALERT_THRESHOLD = originalThreshold;
+        }
     }
 }

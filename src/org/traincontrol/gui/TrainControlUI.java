@@ -11705,15 +11705,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.saveState(true);
             this.backupDataMenuItem.setEnabled(true);
 
+            String backupFolder = new File(Util.BACKUP_FOLDER).getAbsolutePath();
+
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 JOptionPane.showMessageDialog(
                     this,
-                    I18n.t("ui.infoBackupCompleteCheckLog")
+                    I18n.f("ui.infoBackupCompleteSavedTo", backupFolder)
                 );
 
                 // Advance to last tab (log)
-                this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
+                //this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
             });
         }).start();
     }//GEN-LAST:event_backupDataMenuItemActionPerformed

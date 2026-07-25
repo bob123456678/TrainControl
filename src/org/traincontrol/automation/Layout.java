@@ -54,7 +54,19 @@ public class Layout
     // locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
     // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
     public static boolean PATH_INTEGRITY_VALIDATION = true;
-    
+
+    // Every path validation failure is logged, but a UI popup is only raised once this many failures have
+    // accumulated (then the counter resets).  Failures are expected to be rare and self-correcting - the
+    // loco is released and autonomy re-attempts the path organically - so we do not alarm the user over a
+    // one-off; a run of failures instead points to a real network/configuration problem.  Tunable.
+    public static int PATH_VALIDATION_ALERT_THRESHOLD = 3;
+
+    // Running count of path validation failures since the last UI alert; reset whenever an alert fires.
+    // Per-instance (not static) so a re-created Layout - e.g. after the user loads a different autonomy
+    // configuration or edits the layout - starts clean and never confounds old failures with new state.
+    // Guarded by this Layout since its locomotives validate paths concurrently.
+    private int pathValidationFailureCount = 0;
+
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
 
@@ -1347,27 +1359,13 @@ public class Layout
         }
 
         // Verify the accessories actually reached their commanded state (this wait does not hold the
-        // Layout monitor).  If not, retry the whole configuration once; if it still fails, stop the
-        // locomotive and release its locks (returning false so executePath does not run it) - power is
-        // left on so other locomotives are unaffected.
+        // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
+        // executePath does not run it); power is left on and autonomy re-attempts the path organically on
+        // its next cycle, so no explicit retry is needed here.
         if (!this.validatePathActuation(path))
         {
-            control.logf("autolayout.warningPathConfigRetrying", loc.getName());
-
-            synchronized (this)
-            {
-                for (Edge e : path)
-                {
-                    this.configureEdge(e, null);
-                    loc.delay(CONFIGURE_SLEEP);
-                }
-            }
-
-            if (!this.validatePathActuation(path))
-            {
-                this.handleMisconfiguredPath(path, loc);
-                return false;
-            }
+            this.handleMisconfiguredPath(path, loc);
+            return false;
         }
 
         return true;
@@ -1457,11 +1455,13 @@ public class Layout
     }
 
     /**
-     * Handles a path whose accessories could not be confirmed after a retry: stops the locomotive and
-     * releases the locks it just acquired (leaving it at its start point), logs the problem, and shows a
-     * UI alert naming the locomotive and the misconfigured accessories.  Power is deliberately left on so
-     * other locomotives keep running unaffected; this locomotive simply does not depart, and the released
-     * edges become available for whoever claims (and reconfigures) them next.
+     * Handles a path whose accessories could not be confirmed: stops the locomotive and releases the locks
+     * it just acquired (leaving it at its start point), and logs the problem.  Power is deliberately left
+     * on so other locomotives keep running unaffected; this locomotive simply does not depart, and the
+     * released edges become available for whoever claims (and reconfigures) them next - including this loco
+     * when autonomy re-attempts the path.  A UI alert (naming the locomotive and the unconfirmed
+     * accessories) is only shown once failures reach PATH_VALIDATION_ALERT_THRESHOLD, so a one-off does not
+     * alarm the user.
      * @param path
      * @param loc
      */
@@ -1504,11 +1504,43 @@ public class Layout
 
         String accList = String.join(", ", misconfigured);
 
+        // Always log every failure to the console.
         control.logf("autolayout.errorPathMisconfigured", loc.getName(), accList);
 
-        control.showAutonomyAlert(
-            I18n.f("autolayout.errorPathMisconfiguredDialog", loc.getName(), accList)
-        );
+        // Only raise a UI popup once failures cross the threshold (then reset), to avoid alarming the user
+        // over a transient that autonomy will recover from on its own.
+        boolean alert;
+
+        synchronized (this)
+        {
+            pathValidationFailureCount++;
+            alert = pathValidationFailureCount >= PATH_VALIDATION_ALERT_THRESHOLD;
+
+            if (alert)
+            {
+                pathValidationFailureCount = 0;
+            }
+        }
+
+        if (alert)
+        {
+            control.showAutonomyAlert(
+                I18n.f("autolayout.errorPathMisconfiguredDialog", loc.getName(), accList)
+            );
+        }
+    }
+
+    /**
+     * Current number of path validation failures accumulated on this Layout since the last UI alert
+     * (exposed for tests).
+     * @return the failure count
+     */
+    public int getPathValidationFailureCount()
+    {
+        synchronized (this)
+        {
+            return pathValidationFailureCount;
+        }
     }
 
     /**
