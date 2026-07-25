@@ -77,10 +77,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                     {
                                         if (!ui.getModel().getPowerState())
                                         {
-                                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
                                         }
                                         else
-                                        {               
+                                        {
                                             ui.ensureGraphUIVisible();
 
                                             boolean success = ui.getModel().getAutoLayout().executePath(
@@ -89,7 +89,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                                             if (!success)
                                             {
-                                                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
+                                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
                                             }
                                         }
                                     }).start();

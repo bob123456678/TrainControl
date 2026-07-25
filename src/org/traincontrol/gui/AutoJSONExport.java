@@ -109,7 +109,7 @@ public class AutoJSONExport extends javax.swing.JPanel
 
                     Files.write(Paths.get(f.getPath()), json);
                     TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
-                    
+
                     // Close the popup
                     Window w = SwingUtilities.getWindowAncestor(jsonSaveAs);
 
@@ -128,7 +128,7 @@ public class AutoJSONExport extends javax.swing.JPanel
                     e.printStackTrace();
                 }
             }
-            
+
             this.jsonSaveAs.setEnabled(true);
         }).start();
     }//GEN-LAST:event_jsonSaveAsActionPerformed
