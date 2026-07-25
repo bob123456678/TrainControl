@@ -13121,10 +13121,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("route.ui.errorFailedToImportRoutesCheckLog")
-                    );
+                    ));
 
                     this.model.logf(
                         "route.errorImportFailedWithMessage",
