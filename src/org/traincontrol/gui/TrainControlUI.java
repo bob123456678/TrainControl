@@ -194,6 +194,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String AUTO_POWER_ON = "AutoPowerOn" + Conversion.getFolderHash(10);
     public static final String LAYOUT_TITLES_PREF = "LayoutTitlesPref";
     public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
+    public static final String ENHANCED_PATH_VALIDATION = "EnhancedPathValidation" + Conversion.getFolderHash(10);
     public static final String PREFERRED_KEYBOARD_MM2 = "PreferredKeyboardMM2";
     public static final String LAYOUT_SHOW_ADDRESSES = "LayoutShowAddresses";
     public static final String TABS_SETTING_PREF = "MappingTabs";
@@ -658,6 +659,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
+        this.enhancedPathValidationMenuItemCheckbox.setSelected(prefs.getBoolean(ENHANCED_PATH_VALIDATION, true));
+        Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
         this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
  
@@ -3835,7 +3838,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         keyboardQwertyMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardQwertzMenuItem = new javax.swing.JRadioButtonMenuItem();
         keyboardAzertyMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jMenu1 = new javax.swing.JMenu();
+        startupToolbarMenu = new javax.swing.JMenu();
         powerOnStartup = new javax.swing.JRadioButtonMenuItem();
         powerOffStartup = new javax.swing.JRadioButtonMenuItem();
         powerNoChangeStartup = new javax.swing.JRadioButtonMenuItem();
@@ -3845,6 +3848,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         checkForUpdates = new javax.swing.JCheckBoxMenuItem();
         layoutMenuItem = new javax.swing.JMenu();
         menuItemShowLayoutAddresses = new javax.swing.JCheckBoxMenuItem();
+        autonomyToolbarMenu = new javax.swing.JMenu();
+        enhancedPathValidationMenuItemCheckbox = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         viewReleasesMenuItem = new javax.swing.JMenuItem();
         downloadUpdateMenuItem = new javax.swing.JMenuItem();
@@ -6327,7 +6332,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         autoPanelLayout.setVerticalGroup(
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 592, Short.MAX_VALUE)
+            .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
         );
 
         locCommandPanels.getAccessibleContext().setAccessibleName(bundle.getString("ui.main.autoConfig")); // NOI18N
@@ -9155,7 +9160,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         interfaceMenu.add(locomotiveControlMenu);
 
-        jMenu1.setText(bundle.getString("ui.main.toolbar.startup")); // NOI18N
+        startupToolbarMenu.setText(bundle.getString("ui.main.toolbar.startup")); // NOI18N
 
         buttonGroup4.add(powerOnStartup);
         powerOnStartup.setSelected(true);
@@ -9165,7 +9170,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 powerOnStartupActionPerformed(evt);
             }
         });
-        jMenu1.add(powerOnStartup);
+        startupToolbarMenu.add(powerOnStartup);
 
         buttonGroup4.add(powerOffStartup);
         powerOffStartup.setText(bundle.getString("ui.main.toolbar.powerOff")); // NOI18N
@@ -9174,7 +9179,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 powerOffStartupActionPerformed(evt);
             }
         });
-        jMenu1.add(powerOffStartup);
+        startupToolbarMenu.add(powerOffStartup);
 
         buttonGroup4.add(powerNoChangeStartup);
         powerNoChangeStartup.setText(bundle.getString("ui.main.toolbar.doNothing")); // NOI18N
@@ -9183,8 +9188,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 powerNoChangeStartupActionPerformed(evt);
             }
         });
-        jMenu1.add(powerNoChangeStartup);
-        jMenu1.add(jSeparator18);
+        startupToolbarMenu.add(powerNoChangeStartup);
+        startupToolbarMenu.add(jSeparator18);
 
         AutoLoadAutonomyMenuItem.setSelected(true);
         AutoLoadAutonomyMenuItem.setText(bundle.getString("ui.main.toolbar.loadAutonomy")); // NOI18N
@@ -9194,8 +9199,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 AutoLoadAutonomyMenuItemActionPerformed(evt);
             }
         });
-        jMenu1.add(AutoLoadAutonomyMenuItem);
-        jMenu1.add(jSeparator3);
+        startupToolbarMenu.add(AutoLoadAutonomyMenuItem);
+        startupToolbarMenu.add(jSeparator3);
 
         checkForUpdates.setSelected(true);
         checkForUpdates.setText(bundle.getString("ui.main.toolbar.checkForUpdates")); // NOI18N
@@ -9205,9 +9210,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 checkForUpdatesActionPerformed(evt);
             }
         });
-        jMenu1.add(checkForUpdates);
+        startupToolbarMenu.add(checkForUpdates);
 
-        interfaceMenu.add(jMenu1);
+        interfaceMenu.add(startupToolbarMenu);
 
         layoutMenuItem.setText(bundle.getString("ui.main.toolbar.layouts")); // NOI18N
 
@@ -9222,6 +9227,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenuItem.add(menuItemShowLayoutAddresses);
 
         interfaceMenu.add(layoutMenuItem);
+
+        autonomyToolbarMenu.setText(bundle.getString("autolayout.ui.tabAutonomy")); // NOI18N
+
+        enhancedPathValidationMenuItemCheckbox.setSelected(true);
+        enhancedPathValidationMenuItemCheckbox.setText(bundle.getString("autolayout.ui.tabAutonomyEnhancedValidation")); // NOI18N
+        enhancedPathValidationMenuItemCheckbox.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.pathIntegrityValidation")); // NOI18N
+        enhancedPathValidationMenuItemCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                enhancedPathValidationMenuItemActionPerformed(evt);
+            }
+        });
+        autonomyToolbarMenu.add(enhancedPathValidationMenuItemCheckbox);
+
+        interfaceMenu.add(autonomyToolbarMenu);
 
         mainMenuBar.add(interfaceMenu);
 
@@ -14016,6 +14035,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
 
+    private void enhancedPathValidationMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_enhancedPathValidationMenuItemActionPerformed
+        Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
+        prefs.putBoolean(ENHANCED_PATH_VALIDATION, this.enhancedPathValidationMenuItemCheckbox.isSelected());
+    }//GEN-LAST:event_enhancedPathValidationMenuItemActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -15028,6 +15052,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             );
         }));
     }
+
+    @Override
+    public void showAutonomyAlert(String message)
+    {
+        // Non-blocking so the autonomy thread that raised the alert is not held up
+        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        {
+            JOptionPane.showMessageDialog(
+                this,
+                message,
+                I18n.t("autolayout.ui.pathConfigErrorTitle"),
+                JOptionPane.WARNING_MESSAGE
+            );
+        }));
+    }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer
     {
@@ -15444,6 +15483,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autoSettingsPanel;
     private javax.swing.JTextArea autonomyJSON;
     private javax.swing.JPanel autonomyPanel;
+    private javax.swing.JMenu autonomyToolbarMenu;
     private javax.swing.JCheckBox autosave;
     private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup2;
@@ -15463,6 +15503,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem duplicateLayoutMenuItem;
     private javax.swing.JMenuItem editCurrentPageActionPerformed;
     private javax.swing.JButton editLayoutButton;
+    private javax.swing.JCheckBoxMenuItem enhancedPathValidationMenuItemCheckbox;
     private javax.swing.JButton executeTimetable;
     private javax.swing.JMenuItem exitMenuItem;
     private javax.swing.JButton exportJSON;
@@ -15524,7 +15565,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
-    private javax.swing.JMenu jMenu1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -15609,6 +15649,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JRadioButton sortByID;
     private javax.swing.JRadioButton sortByName;
     private javax.swing.JButton startAutonomy;
+    private javax.swing.JMenu startupToolbarMenu;
     private javax.swing.JMenuItem switchCSLayoutMenuItem;
     private javax.swing.JMenuItem syncFullLocStateMenuItem;
     private javax.swing.JMenuItem syncMenuItem;

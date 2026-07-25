@@ -29,7 +29,15 @@ abstract public class Accessory
     
     // Number of times this accessory has been actuated
     protected int numActuations;
-    protected boolean stateAtLastActuation;
+    
+    // volatile: read without locking by autonomy path validation (which waits on actuationConfirmedMonitor)
+    // while parseMessage writes it, so the reader sees updates without taking this accessory's lock.
+    protected volatile boolean stateAtLastActuation;
+
+    // Notified whenever a CS echo advances stateAtLastActuation (see MarklinAccessory.parseMessage), so
+    // autonomy path validation can wait for confirmed actuations.  Deliberately separate from Locomotive's
+    // accessoryMonitor, which also fires on optimistic setSwitched() changes and drives unrelated waits.
+    public static final Object actuationConfirmedMonitor = new Object();
     
     // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
     public static final int MAX_MM2_ADDRESS = 319;
@@ -168,7 +176,20 @@ abstract public class Accessory
     {
         return this.switched;
     }
-    
+
+    /**
+     * Returns whether the network has confirmed (echoed) this accessory at the given state.
+     * setSwitched() sets {@code switched} optimistically, but {@code stateAtLastActuation} only advances
+     * when the CS echoes an actuation - so this reflects the last CS-confirmed position, letting autonomy
+     * verify an accessory actually reached its commanded state rather than just being commanded to it.
+     * @param desired the commanded switched state
+     * @return true if the last CS-confirmed actuation matches {@code desired}
+     */
+    public boolean isConfirmedAt(boolean desired)
+    {
+        return this.stateAtLastActuation == desired;
+    }
+
     /**
      * Returns switch state
      * @return 

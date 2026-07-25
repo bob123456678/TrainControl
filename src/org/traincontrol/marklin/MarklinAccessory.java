@@ -169,8 +169,16 @@ public class MarklinAccessory extends Accessory
                 {
                     this.stateAtLastActuation = !stateAtLastActuation;
                     this.numActuations += 1;
+
+                    // Wake anyone waiting for a CS-confirmed actuation (e.g. autonomy path validation).
+                    // A dedicated monitor (not Locomotive.accessoryMonitor) so existing accessoryMonitor
+                    // waiters are undisturbed, and it fires only now that the confirmed state is current.
+                    synchronized (Accessory.actuationConfirmedMonitor)
+                    {
+                        Accessory.actuationConfirmedMonitor.notifyAll();
+                    }
                 }
-                
+
                 this.updateTiles(false);
                                                 
                 this.network.logf(

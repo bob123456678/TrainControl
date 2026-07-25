@@ -328,7 +328,9 @@ Requires JDK 1.8+ and the following libraries:
 
 ## Changelog
 
-* v2.7.4 [7/24/2026]
+* v2.7.4 [7/25/2026]   
+    - Autonomy
+        - Added enhanced accessory state validation for autonomy paths. If a configuration cannot be confirmed by the Central Station, the locomotive will not run.  Configurable via the menu bar preferences.  A warning popup will be shown if configuration fails.
     - Backups are now saved to the tc_backup folder in the current directory
     - Bug fixes
         - Fixed bug where only one locomotive could be triggered from the track diagram in semi-autonomous mode

@@ -2537,7 +2537,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.view;
     }
-    
+
+    @Override
+    public void showAutonomyAlert(String message)
+    {
+        if (this.view != null)
+        {
+            this.view.showAutonomyAlert(message);
+        }
+    }
+
     /**
      * Initialize with default values
      * @return

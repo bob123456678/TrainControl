@@ -50,7 +50,14 @@ public interface View
      * @param r 
      */
     public void emergencyStopTriggered(Route r);
-    
+
+    /**
+     * Shows a non-blocking alert dialog to the user (used by autonomy to report a path that could not
+     * be configured).  Must not block the calling thread.
+     * @param message the message to display
+     */
+    public void showAutonomyAlert(String message);
+
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);
 }

@@ -24,6 +24,7 @@ public interface ViewListener
 {
     public void go();
     public void stop();
+    public void showAutonomyAlert(String message);
     public List<String> getLocList();
     public List<String> getRouteList();
     public Locomotive getLocByName(String name);

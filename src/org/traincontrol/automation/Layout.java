@@ -40,9 +40,20 @@ public class Layout
     
     // If set to true, paths will automatically execute.  Only useful for debugging / testing during development.
     private boolean simulate = false;
-    
+
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
+
+    // Max time to wait for the configured accessories to reach their commanded state before deciding the
+    // path failed to configure.  Not final so tests can shorten it; the wait exits early on success and
+    // only blocks the full duration when an accessory does not confirm.
+    public static int PATH_VALIDATION_MS = 5000;
+
+    // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
+    // reached its commanded state before releasing the locomotive; on a persistent mismatch it stops that
+    // locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
+    // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
+    public static boolean PATH_INTEGRITY_VALIDATION = true;
     
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
@@ -1304,27 +1315,204 @@ public class Layout
      * @param loc
      * @return 
      */
-    synchronized public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
+    public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
     {
-        // Return if this path isn't clear
-        if (!this.isPathClear(path, loc))
+        // Lock the path and send the accessory commands under the Layout monitor.  Holding it here is
+        // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
+        // locomotives' path checks are not blocked for up to PATH_VALIDATION_MS.
+        synchronized (this)
         {
-            return false;
+            // Return if this path isn't clear
+            if (!this.isPathClear(path, loc))
+            {
+                this.control.logf("autolayout.errorPathOccupied");
+                return false;
+            }
+
+            for (Edge e : path)
+            {
+                e.setOccupied();
+                e.getEnd().setLocomotive(loc);
+                this.configureEdge(e, null);
+                loc.delay(CONFIGURE_SLEEP);
+            }
         }
-                    
-        for (Edge e : path)
+
+        // In pure simulation mode the accessories are not really actuated, so there is nothing to
+        // validate - skip the guard entirely (see setSimulate: sim requires debug + no connection).
+        // Also skip when the user has disabled path integrity validation.
+        if (this.simulate || !PATH_INTEGRITY_VALIDATION)
         {
-            e.setOccupied();
-            e.getEnd().setLocomotive(loc);
-            this.configureEdge(e, null);
-            loc.delay(CONFIGURE_SLEEP);
+            return true;
         }
-        
+
+        // Verify the accessories actually reached their commanded state (this wait does not hold the
+        // Layout monitor).  If not, retry the whole configuration once; if it still fails, stop the
+        // locomotive and release its locks (returning false so executePath does not run it) - power is
+        // left on so other locomotives are unaffected.
+        if (!this.validatePathActuation(path))
+        {
+            control.logf("autolayout.warningPathConfigRetrying", loc.getName());
+
+            synchronized (this)
+            {
+                for (Edge e : path)
+                {
+                    this.configureEdge(e, null);
+                    loc.delay(CONFIGURE_SLEEP);
+                }
+            }
+
+            if (!this.validatePathActuation(path))
+            {
+                this.handleMisconfiguredPath(path, loc);
+                return false;
+            }
+        }
+
         return true;
     }
-    
+
     /**
-     * Marks all the edges in a path as unoccupied, 
+     * Waits (up to PATH_VALIDATION_MS) for every accessory on the path to reach its CS-confirmed
+     * commanded state.  Waits on Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on
+     * each confirmed actuation) rather than busy-polling, and returns as soon as all are confirmed - the
+     * full timeout only elapses when an accessory never confirms.  Must be called WITHOUT holding the
+     * Layout monitor so concurrent path checks are not blocked.
+     * @param path
+     * @return true if all accessories on the path are confirmed at their commanded state
+     */
+    private boolean validatePathActuation(List<Edge> path)
+    {
+        List<Accessory> accessories = new ArrayList<>();
+        List<Boolean> desired = new ArrayList<>();
+
+        for (Edge e : path)
+        {
+            for (String name : e.getConfigCommands().keySet())
+            {
+                Accessory acc = control.getAccessoryByName(name);
+
+                if (acc != null)
+                {
+                    accessorySetting state = e.getConfigCommands().get(name);
+                    accessories.add(acc);
+                    desired.add(state == accessorySetting.TURN || state == accessorySetting.RED);
+                }
+            }
+        }
+
+        if (accessories.isEmpty())
+        {
+            return true;
+        }
+
+        // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
+        // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
+        // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
+        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS;
+
+        synchronized (Accessory.actuationConfirmedMonitor)
+        {
+            while (!allConfirmed(accessories, desired))
+            {
+                long remaining = deadline - System.currentTimeMillis();
+
+                if (remaining <= 0)
+                {
+                    break;
+                }
+
+                try
+                {
+                    Accessory.actuationConfirmedMonitor.wait(remaining);
+                }
+                catch (InterruptedException ex)
+                {
+                    // Autonomy is being stopped - abort validation without flagging a misconfiguration
+                    // (the loco is not going anywhere).  Preserve the interrupt for downstream code.
+                    Thread.currentThread().interrupt();
+                    return true;
+                }
+            }
+        }
+
+        return allConfirmed(accessories, desired);
+    }
+
+    /**
+     * Whether every accessory in the list is confirmed at its corresponding desired state.
+     */
+    private boolean allConfirmed(List<Accessory> accessories, List<Boolean> desired)
+    {
+        for (int i = 0; i < accessories.size(); i++)
+        {
+            if (!accessories.get(i).isConfirmedAt(desired.get(i)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Handles a path whose accessories could not be confirmed after a retry: stops the locomotive and
+     * releases the locks it just acquired (leaving it at its start point), logs the problem, and shows a
+     * UI alert naming the locomotive and the misconfigured accessories.  Power is deliberately left on so
+     * other locomotives keep running unaffected; this locomotive simply does not depart, and the released
+     * edges become available for whoever claims (and reconfigures) them next.
+     * @param path
+     * @param loc
+     */
+    private void handleMisconfiguredPath(List<Edge> path, Locomotive loc)
+    {
+        List<String> misconfigured = new ArrayList<>();
+
+        for (Edge e : path)
+        {
+            for (String name : e.getConfigCommands().keySet())
+            {
+                Accessory acc = control.getAccessoryByName(name);
+                accessorySetting state = e.getConfigCommands().get(name);
+                boolean d = state == accessorySetting.TURN || state == accessorySetting.RED;
+
+                if (acc != null && !acc.isConfirmedAt(d))
+                {
+                    misconfigured.add(acc.getName() + " (" + state.toString().toLowerCase() + ")");
+                }
+            }
+        }
+
+        // Stop this locomotive so it cannot move onto the unset path.
+        loc.setSpeed(0);
+
+        // Release only the locks configureAndLockPath just took: mark the edges unoccupied and clear the
+        // per-edge end-point assignments, but leave the loco at its start point (it never departed).
+        synchronized (this)
+        {
+            for (Edge e : path)
+            {
+                e.setUnoccupied();
+
+                if (loc.equals(e.getEnd().getCurrentLocomotive()))
+                {
+                    e.getEnd().setLocomotive(null);
+                }
+            }
+        }
+
+        String accList = String.join(", ", misconfigured);
+
+        control.logf("autolayout.errorPathMisconfigured", loc.getName(), accList);
+
+        control.showAutonomyAlert(
+            I18n.f("autolayout.errorPathMisconfiguredDialog", loc.getName(), accList)
+        );
+    }
+
+    /**
+     * Marks all the edges in a path as unoccupied,
      * unlocking it so that other trains may pass
      * @param path
      * @param loc
@@ -2039,12 +2227,11 @@ public class Layout
         boolean result;
         
         result = configureAndLockPath(path, loc);
-                
+
         if (!result)
         {
-            this.control.logf(
-                "autolayout.errorPathOccupied"
-            );
+            // configureAndLockPath has already logged the reason (path occupied, or a validation failure
+            // that stopped the loco and released its locks) - do not run the locomotive.
             return false;
         }
         else
