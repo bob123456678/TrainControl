@@ -575,21 +575,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset)
     {
         long startDate = System.currentTimeMillis() - (offset * 86400000);
-        
+
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
-        
+
+        // Snapshot the locomotive list once - it does not change across the day-by-day loop,
+        // so there is no need to allocate a fresh copy on every iteration.
+        List<Locomotive> locs = this.getLocomotives();
+
         for (int i = 0; i < Math.abs(days); i++)
         {
             final long date = startDate;
-            
+
             stats.put(
-                Locomotive.getDate(startDate), 
-                this.getLocomotives().stream().mapToLong(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date))).sum()
+                Locomotive.getDate(startDate),
+                locs.stream().mapToLong(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date))).sum()
             );
-            
+
             startDate -= 86400000;
         }
-        
+
         return stats;
     }
     
@@ -603,21 +607,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset)
     {
         long startDate = System.currentTimeMillis() - (offset * 86400000);
-        
+
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
-        
+
+        // Snapshot the locomotive list once - it does not change across the day-by-day loop.
+        List<Locomotive> locs = this.getLocomotives();
+
         for (int i = 0; i < Math.abs(days); i++)
         {
             final long date = startDate;
-            
+
             stats.put(
-                Locomotive.getDate(startDate), 
-                this.getLocomotives().stream().mapToInt(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date)) > 0 ? 1 : 0).sum()
+                Locomotive.getDate(startDate),
+                locs.stream().mapToInt(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date)) > 0 ? 1 : 0).sum()
             );
-            
+
             startDate -= 86400000;
         }
-        
+
         return stats;
     }
     
@@ -631,22 +638,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public int getTotalLocStats(int days, long offset)
     {
         long startDate = System.currentTimeMillis() - (offset * 86400000);
-        
+
         Set locs = new HashSet<>();
-        
+
+        // Snapshot the locomotive list once - it does not change across the day-by-day loop.
+        List<Locomotive> allLocs = this.getLocomotives();
+
         for (int i = 0; i < Math.abs(days); i++)
-        {            
-            for (Locomotive l : this.getLocomotives())
+        {
+            for (Locomotive l : allLocs)
             {
                 if (l.getRuntimeOnDay(Locomotive.getDate(startDate)) > 0)
                 {
                     locs.add(l);
                 }
             }
-            
+
             startDate -= 86400000;
         }
-        
+
         return locs.size();
     }
     
@@ -1026,13 +1036,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             ? Util.getBackupPath(prefix + MarklinControlStation.DATA_FILE_NAME)
             : (prefix + MarklinControlStation.DATA_FILE_NAME);
 
-        try
+        // try-with-resources guarantees the stream is flushed and closed even on exception -
+        // without close() the final buffered block may never reach disk, truncating the file.
+        try (ObjectOutputStream obj_out = new ObjectOutputStream(new FileOutputStream(path)))
         {
-            // Write object with ObjectOutputStream to disk using
-            // FileOutputStream
-            ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(path));
-
             // Write object out to disk
             obj_out.writeObject(l);
 
@@ -1114,13 +1121,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         List<MarklinSimpleComponent> instance = new LinkedList<>();
 
-        try
+        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
+        try (ObjectInputStream obj_in = new CustomObjectInputStream(new FileInputStream(dataFile)))
         {
-            // Read object using ObjectInputStream
-            ObjectInputStream obj_in = new CustomObjectInputStream(
-                new FileInputStream(dataFile)
-            );
-            
             // Read an object
             Object obj = obj_in.readObject();
 
@@ -1131,7 +1134,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
 
             this.logf("log.databaseLoadedFromFile");
-        } 
+        }
         catch (IOException iex)
         {
             if (debug)

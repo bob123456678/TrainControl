@@ -1,4 +1,3 @@
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;

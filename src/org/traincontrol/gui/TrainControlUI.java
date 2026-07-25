@@ -1068,13 +1068,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
             : (prefix + TrainControlUI.DATA_FILE_NAME);
 
-        try
+        // try-with-resources guarantees the stream is flushed and closed even on exception -
+        // without close() the final buffered block may never reach disk, truncating the file.
+        try (ObjectOutputStream obj_out = new ObjectOutputStream(new FileOutputStream(statePath)))
         {
-            // Write object with ObjectOutputStream to disk using
-            // FileOutputStream
-            ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(statePath));
-
             // Write object out to disk
             obj_out.writeObject(l);
 
@@ -1290,13 +1287,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
         
-        try
+        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
+        try (ObjectInputStream obj_in = new ObjectInputStream(new FileInputStream(TrainControlUI.DATA_FILE_NAME)))
         {
-            // Read object using ObjectInputStream
-            ObjectInputStream obj_in = new ObjectInputStream(
-                new FileInputStream(TrainControlUI.DATA_FILE_NAME)
-            );
-
             // Read an object
             Object obj = obj_in.readObject();
 
