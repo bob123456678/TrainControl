@@ -59,7 +59,8 @@ public class AddLocomotive extends javax.swing.JFrame
         checkDuplicates = new javax.swing.JButton();
         AddNewLocLabel = new javax.swing.JLabel();
 
-        setTitle("Add Locomotive");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
+        setTitle(bundle.getString("loc.ui.addLocomotive")); // NOI18N
         setBackground(new java.awt.Color(238, 238, 238));
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setResizable(false);
@@ -75,7 +76,6 @@ public class AddLocomotive extends javax.swing.JFrame
         LocTypeMM2.setInheritsPopupMenu(true);
 
         jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
         jLabel4.setText(bundle.getString("ui.locType")); // NOI18N
         jLabel4.setFocusable(false);
 
@@ -231,28 +231,28 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 if (locName.trim().length() == 0)
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("loc.errorNameMissing")
-                    );
+                    ));
                     return;
                 }
 
                 if (locName.length() >= TrainControlUI.MAX_LOC_NAME_DATABASE)
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.f("loc.errorNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE)
-                    );
+                    ));
                     return;
                 }
 
                 if (this.model.getLocByName(locName) != null)
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("loc.errorNameExists")
-                    );
+                    ));
                     return;
                 }
 
@@ -289,10 +289,10 @@ public class AddLocomotive extends javax.swing.JFrame
                 }
                 catch (NumberFormatException e)
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("loc.errorAddressNotNumeric")
-                    );
+                    ));
                     return;
                 }
 
@@ -302,10 +302,10 @@ public class AddLocomotive extends javax.swing.JFrame
                 {
                     if (locAddress > Locomotive.MM2_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             this,
                             I18n.t("loc.errorMM2AddressOutOfRange")
-                        );
+                        ));
                         return;
                     }
                 }
@@ -314,10 +314,10 @@ public class AddLocomotive extends javax.swing.JFrame
                 {
                     if (locAddress > Locomotive.DCC_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             this,
                             I18n.t("loc.errorDCCAddressOutOfRange")
-                        );
+                        ));
                         return;
                     }
                 }
@@ -326,10 +326,10 @@ public class AddLocomotive extends javax.swing.JFrame
                 {
                     if (locAddress > Locomotive.MFX_MAX_ADDR)
                     {
-                        JOptionPane.showMessageDialog(
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             this,
                             I18n.t("loc.errorMFXAddressOutOfRange")
-                        );
+                        ));
                         return;
                     }
                 }
@@ -349,16 +349,19 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 this.parent.getLocSelector().refreshLocSelectorList();
 
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("loc.infoAddedSuccessfully")
-                );
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.infoAddedSuccessfully")
+                    );
 
-                this.LocAddressInput.setText("");
-                this.LocNameInput.setText("");
+                    this.LocAddressInput.setText("");
+                    this.LocNameInput.setText("");
 
-                // Map the locomotive if the button is empty
-                this.parent.mapLocToCurrentButton(locName, true);
+                    // Map the locomotive if the button is empty
+                    this.parent.mapLocToCurrentButton(locName, true);
+                });
   
             }).start();
     }//GEN-LAST:event_AddLocButtonActionPerformed
@@ -401,7 +404,7 @@ public class AddLocomotive extends javax.swing.JFrame
             }
             catch (NumberFormatException e)
             {
-                JOptionPane.showMessageDialog(this, "Please enter a numerical address");
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("loc.errorAddressNotNumeric")));
                 return;
             }
 
@@ -466,8 +469,9 @@ public class AddLocomotive extends javax.swing.JFrame
                 {
                     message = I18n.t("loc.infoAddressFree");
                 }
-                
-                JOptionPane.showMessageDialog(this, message);
+
+                final String reportMessage = message;
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, reportMessage));
             }
 
         }).start();
