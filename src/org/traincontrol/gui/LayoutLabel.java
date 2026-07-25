@@ -318,7 +318,13 @@ public final class LayoutLabel extends JLabel
                         {
                             img = this.component.getImage(size, edit);
 
-                            imageCache.put(key, img);
+                            // The cache is a ConcurrentHashMap, which rejects null values.
+                            // getImage() never returns null today (it throws instead), but guard
+                            // defensively so a null can never reach the cache.
+                            if (img != null)
+                            {
+                                imageCache.put(key, img);
+                            }
                         }
                         else
                         {

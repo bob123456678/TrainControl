@@ -331,6 +331,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.7.4 [7/24/2026]
     - Backups are now saved to the tc_backup folder in the current directory
     - Bug fixes
+        - Minor UI performance improvements
         - Fixed rare race conditions in autonomy code
 
 * v2.7.3 [7/23/2026]

@@ -60,6 +60,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -322,7 +323,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
                      
     // Image cache
-    private static HashMap<String, Image> imageCache;
+    // ConcurrentHashMap (not HashMap): this cache is read/written concurrently by the EDT,
+    // the ImageLoader pool (4 threads), ImageLoaderLoc (2), and the render executors. A plain
+    // HashMap can corrupt its bucket table under concurrent puts and spin at 100% CPU on Java 8.
+    // Note: ConcurrentHashMap rejects null keys/values, so every put site must guard against null.
+    private static ConcurrentHashMap<String, Image> imageCache;
     
     // Layout cache (speeds up rendering)
     public HashMap<String, JPanel> layoutCache = new HashMap<>();
@@ -1328,7 +1333,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (imageCache == null)
         {
-            imageCache = new HashMap<>();
+            imageCache = new ConcurrentHashMap<>();
         }
         
         return imageCache;
