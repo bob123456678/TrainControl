@@ -301,6 +301,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
     private ExecutorService ImageLoaderLoc = Executors.newFixedThreadPool(2);
+    // Decodes/scales layout tile images off the EDT so the diagram can paint while tiles load
+    private ExecutorService TileImageLoader = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()));
     private List<Future<?>> autonomyFutures = new LinkedList<>();
     private List<Future<?>> locFutures = new LinkedList<>();
 
@@ -2960,7 +2962,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         return this.ImageLoader;
     }
-    
+
+    public ExecutorService getTileImageLoader()
+    {
+        return this.TileImageLoader;
+    }
+
     @Override
     public void repaintLoc()
     {

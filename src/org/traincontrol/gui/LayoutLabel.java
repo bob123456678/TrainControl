@@ -286,10 +286,53 @@ public final class LayoutLabel extends JLabel
     }
     
     /**
-     * Sets the image based on the component's state
+     * Sets the image based on the component's state.  On a cache miss the decode/scale runs off the EDT
+     * (so it never blocks Swing) and the cached result is then applied on the EDT; a cache hit goes
+     * straight to the EDT.
      * @param update are we updating an existing image?
      */
     private void setImage(boolean update)
+    {
+        // Only the decode needs to move off the EDT; text tiles and cache hits go straight through.
+        if (this.component != null && !this.component.isText())
+        {
+            final Map<String, Image> imageCache = TrainControlUI.getImageCache();
+            final String key = this.component.getImageKey(size, edit);
+
+            if (imageCache.get(key) == null)
+            {
+                // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
+                this.tcUI.getTileImageLoader().submit(() ->
+                {
+                    try
+                    {
+                        Image img = this.component.getImage(size, edit);
+
+                        if (img != null)
+                        {
+                            imageCache.putIfAbsent(key, img);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        this.tcUI.getModel().log(ex.getMessage());
+                    }
+
+                    setImageOnEDT(update);
+                });
+
+                return;
+            }
+        }
+
+        setImageOnEDT(update);
+    }
+
+    /**
+     * Applies the (already-cached) image and its Swing updates on the EDT.
+     * @param update are we updating an existing image?
+     */
+    private void setImageOnEDT(boolean update)
     {
         javax.swing.SwingUtilities.invokeLater(
         new Thread(() ->
