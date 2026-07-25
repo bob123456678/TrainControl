@@ -26,6 +26,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1003,6 +1004,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Saves initialized component database to a file
      * @param backup
      */
+    /**
+     * Decodes stored autonomy JSON bytes.  Current files are raw JSON; files written by older versions
+     * (and their backups) are ObjectOutputStream-serialized Strings, detected by the 0xAC 0xED magic header.
+     * @param bytes the raw file contents
+     * @return the JSON string
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private static String decodeAutonomyJson(byte[] bytes) throws IOException, ClassNotFoundException
+    {
+        // ObjectOutputStream files begin with the magic header 0xAC 0xED
+        if (bytes.length >= 2 && (bytes[0] & 0xFF) == 0xAC && (bytes[1] & 0xFF) == 0xED)
+        {
+            try (ObjectInputStream obj_in = new ObjectInputStream(new ByteArrayInputStream(bytes)))
+            {
+                Object obj = obj_in.readObject();
+                return (obj instanceof String) ? (String) obj : "";
+            }
+        }
+
+        return new String(bytes);
+    }
+
     public void saveState(boolean backup)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
@@ -1105,12 +1129,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     new File(autonomyPath).getAbsolutePath()
                 );
 
-                ObjectOutputStream obj_out = new ObjectOutputStream(
-                    new FileOutputStream(autonomyPath)
-                );
-
-                // Write object out to disk
-                obj_out.writeObject(this.autonomyJSON.getText());
+                // Write as raw JSON so the file (and its backups) is human-readable and importable via Load JSON.
+                // (Older versions wrote this via ObjectOutputStream; the auto-load below still reads those.)
+                Files.write(Paths.get(autonomyPath), this.autonomyJSON.getText().getBytes());
             }
             catch (IOException iOException)
             {
@@ -1678,22 +1699,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         adder.setLocationRelativeTo(this);
         selector.setLocationRelativeTo(this);
         
-        // Load autonomy data
+        // Load autonomy data.  Current versions store autonomy.json as raw JSON; older versions stored it as
+        // an ObjectOutputStream-serialized String, so detect and fall back to that for files written by them.
         try
         {
-            // Read object using ObjectInputStream
-            ObjectInputStream obj_in = new ObjectInputStream(
-                new FileInputStream(TrainControlUI.AUTONOMY_FILE_NAME)
-            );
-            
-            // Read an object
-            Object obj = obj_in.readObject();
-
-            if (obj instanceof String)
-            {
-                // Cast object
-                this.autonomyJSON.setText((String) obj);
-            }
+            byte[] bytes = Files.readAllBytes(Paths.get(TrainControlUI.AUTONOMY_FILE_NAME));
+            this.autonomyJSON.setText(decodeAutonomyJson(bytes));
         }
         catch (IOException | ClassNotFoundException e)
         {
@@ -11785,11 +11796,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.repaintLoc();
                 this.repaintLayout();
-                JOptionPane.showMessageDialog(
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     this,
                     I18n.t("layout.ui.errorInvalidPathOrCorruptData")
-                );
-            }    
+                ));
+            }
         }).start();
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
@@ -12195,12 +12206,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (routeEditor != null && routeEditor.isVisible())
             {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                );
-                routeEditor.requestFocus();
-                routeEditor.toFront();
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                    );
+                    routeEditor.requestFocus();
+                    routeEditor.toFront();
+                });
             }
             else
             {
@@ -12812,7 +12826,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (!this.model.getPowerState())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
                     return;
                 }
 
@@ -12857,10 +12871,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
-                    );
+                    ));
                     return;
                 }
 
@@ -12876,17 +12890,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 else if (this.model.getAutoLayout().isRunning())
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
-                    );
+                    ));
                 }
                 else if (!this.model.getAutoLayout().isValid())
                 {
-                    JOptionPane.showMessageDialog(
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
-                    );
+                    ));
                 }
             }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
@@ -12969,15 +12983,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         File f = fc.getSelectedFile();
 
-                        this.autonomyJSON.setText(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+                        this.autonomyJSON.setText(decodeAutonomyJson(Files.readAllBytes(Paths.get(f.getPath()))));
                         prefs.put(LAST_USED_FOLDER, f.getParent());
 
                         validateButtonActionPerformed(null);
                     }
                 }
-                catch (HeadlessException | IOException e)
+                catch (HeadlessException | IOException | ClassNotFoundException e)
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorOpeningFile"));
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorOpeningFile")));
 
                     this.model.log(e);
                 }
