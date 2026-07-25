@@ -4,6 +4,7 @@ import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -440,7 +441,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
                     try
                     {
-                        Files.write(Paths.get(f.getPath()), data.trim().getBytes());
+                        Files.write(Paths.get(f.getPath()), data.trim().getBytes(StandardCharsets.UTF_8));
                         TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
                         break;
                     }

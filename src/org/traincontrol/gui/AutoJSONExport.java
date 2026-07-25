@@ -4,6 +4,7 @@ import java.awt.HeadlessException;
 import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -105,7 +106,7 @@ public class AutoJSONExport extends javax.swing.JPanel
                 {
                     File f = fc.getSelectedFile();
 
-                    byte[] json = this.jsonTextArea.getText().getBytes();
+                    byte[] json = this.jsonTextArea.getText().getBytes(StandardCharsets.UTF_8);
 
                     Files.write(Paths.get(f.getPath()), json);
                     TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());

@@ -38,6 +38,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -1029,7 +1030,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        return new String(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     public void saveState(boolean backup)
@@ -1136,7 +1137,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Write as raw JSON so the file (and its backups) is human-readable and importable via Load JSON.
                 // (Older versions wrote this via ObjectOutputStream; the auto-load below still reads those.)
-                Files.write(Paths.get(autonomyPath), this.autonomyJSON.getText().getBytes());
+                Files.write(Paths.get(autonomyPath), this.autonomyJSON.getText().getBytes(StandardCharsets.UTF_8));
             }
             catch (IOException iOException)
             {
