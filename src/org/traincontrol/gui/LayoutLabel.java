@@ -397,16 +397,16 @@ public final class LayoutLabel extends JLabel
     public void updateImage(boolean highlight)
     {
         // TODO improve the way highlighting is done, delete global variables
-        new Thread(() -> 
+        // No thread needed: the check below is trivial and setImage() already marshals its
+        // Swing work to the EDT via invokeLater, so callers (e.g. the CS feedback thread) are
+        // not blocked.  Avoids spawning a raw thread per tile on every state change.
+        if (this.component != null)
         {
-            if (this.component != null)
+            if (!this.component.getImageName(size, edit).equals(this.imageName) || highlight)
             {
-                if (!this.component.getImageName(size, edit).equals(this.imageName) || highlight)
-                {
-                    this.setImage(true);  
-                }
+                this.setImage(true);
             }
-        }).start();
+        }
     }
         
     /**
