@@ -9855,17 +9855,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if ("-1".equals(r.toString()))
                     {
-                        JOptionPane.showMessageDialog(
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             c,
                             I18n.t("ui.errorSyncFailedSeeLog")
-                        );
+                        ));
                     }
                     else
                     {
-                        JOptionPane.showMessageDialog(
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             c,
                             I18n.f("ui.infoSyncCompleteItemsAdded", r.toString())
-                        );
+                        ));
                     }
                 }
             }).start();
@@ -11067,11 +11067,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {          
                 if (routeEditor != null && routeEditor.isVisible())
                 {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                    );
-                    routeEditor.requestFocus();
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                        );
+                        routeEditor.requestFocus();
+                    });
                 }
                 else
                 {
@@ -11217,14 +11220,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                JOptionPane.showMessageDialog(
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     this,
                     I18n.f("route.ui.errorS88RequiredForAutoFire", r.getName())
-                );
+                ));
             }
         }).start();
     }
-        
+
     public void resetFocus()
     {
         this.KeyboardTab.requestFocus();
@@ -11655,13 +11658,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.saveState(true);
             this.model.saveState(true);
             this.backupDataMenuItem.setEnabled(true);
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("ui.infoBackupCompleteCheckLog")
-            );
 
-            // Advance to last tab (log)
-            this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                JOptionPane.showMessageDialog(
+                    this,
+                    I18n.t("ui.infoBackupCompleteCheckLog")
+                );
+
+                // Advance to last tab (log)
+                this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
+            });
         }).start();
     }//GEN-LAST:event_backupDataMenuItemActionPerformed
 
