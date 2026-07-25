@@ -495,36 +495,42 @@ public class LayoutEditor extends PositionAwareJFrame
                 List<LayoutLabel> sourceColumn = grid.getColumn(startCol);
 
                 pauseRepaint = true;
-                
-                // Clear existing tiles
-                for (LayoutLabel l : destColumn)
-                {
-                    if (l.getComponent() != null) this.delete(l);
-                }
-                
-                for (int i = 0; i < sourceColumn.size(); i++)
-                {
-                    LayoutLabel sourceLabel = sourceColumn.get(i);
-                    LayoutLabel destLabel = destColumn.get(i);
-                    this.lastX = startCol;
-                    this.lastY = i;
-                    this.lastComponent = sourceLabel.getComponent();
 
-                    if (this.lastComponent != null)
+                try
+                {   
+                    // Clear existing tiles
+                    for (LayoutLabel l : destColumn)
                     {
-                        execCopy(destLabel, false);
+                        if (l.getComponent() != null) this.delete(l);
                     }
+                    
+                    for (int i = 0; i < sourceColumn.size(); i++)
+                    {
+                        LayoutLabel sourceLabel = sourceColumn.get(i);
+                        LayoutLabel destLabel = destColumn.get(i);
+                        this.lastX = startCol;
+                        this.lastY = i;
+                        this.lastComponent = sourceLabel.getComponent();
 
-                    // Tool will get reset
-                    //this.toolFlag = tool.COPY;
+                        if (this.lastComponent != null)
+                        {
+                            execCopy(destLabel, false);
+                        }
+
+                        // Tool will get reset
+                        //this.toolFlag = tool.COPY;
+                    }
+                    
+                    for (LayoutLabel l : sourceColumn)
+                    {
+                        if (isMove && l.getComponent() != null) this.delete(l);
+                    }      
                 }
-                
-                for (LayoutLabel l : sourceColumn)
+                finally
                 {
-                    if (isMove && l.getComponent() != null) this.delete(l);
+                    pauseRepaint = false;
                 }
                 
-                pauseRepaint = false;
                 this.resetClipboard();
                 refreshGrid();
             }
@@ -542,35 +548,42 @@ public class LayoutEditor extends PositionAwareJFrame
                 List<LayoutLabel> sourceRow = grid.getRow(startRow);
 
                 pauseRepaint = true;
-                
-                // Clear existing tiles
-                for (LayoutLabel l : destinationRow)
-                {
-                    if (l.getComponent() != null) this.delete(l);
-                }
-                
-                for (int i = 0; i < sourceRow.size(); i++)
-                {
-                    LayoutLabel sourceLabel = sourceRow.get(i);
-                    LayoutLabel destLabel = destinationRow.get(i);
-                    this.lastX = i;
-                    this.lastY = startRow;
-                    this.lastComponent = sourceLabel.getComponent();
 
-                    if (this.lastComponent != null)
+                try
+                {
+                    // Clear existing tiles
+                    for (LayoutLabel l : destinationRow)
                     {
-                        execCopy(destLabel, false);
+                        if (l.getComponent() != null) this.delete(l);
                     }
+                    
+                    for (int i = 0; i < sourceRow.size(); i++)
+                    {
+                        LayoutLabel sourceLabel = sourceRow.get(i);
+                        LayoutLabel destLabel = destinationRow.get(i);
+                        this.lastX = i;
+                        this.lastY = startRow;
+                        this.lastComponent = sourceLabel.getComponent();
 
-                    //this.toolFlag = tool.COPY;
+                        if (this.lastComponent != null)
+                        {
+                            execCopy(destLabel, false);
+                        }
+
+                        //this.toolFlag = tool.COPY;
+                    }
+                    
+                    for (LayoutLabel l : sourceRow)
+                    {
+                        if (isMove && l.getComponent() != null) this.delete(l);
+                    }
+                    
                 }
-                
-                for (LayoutLabel l : sourceRow)
+                finally
                 {
-                    if (isMove && l.getComponent() != null) this.delete(l);
+                    pauseRepaint = false;
                 }
                 
-                pauseRepaint = false;
                 this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually put the original tile back on the clipboard, and specify the tool
                 refreshGrid();
             }
