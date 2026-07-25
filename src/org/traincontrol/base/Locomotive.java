@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -90,6 +91,9 @@ public abstract class Locomotive
     protected long lastPathTime = System.currentTimeMillis();
     
     // Cumulative time of operation, by date
+    // Always instantiated as a ConcurrentHashMap: written by runtime tracking while read (unsynchronized)
+    // by the stats/CSV-export paths on background threads.  Kept declared as the Map interface so the field
+    // is not coupled to a concrete implementation (keeps deserialization of older HashMap-backed saves simple).
     protected Map<String, Long> historicalOperatingTime;
     
     // When this locomotive was last run.  Used to ensure stats are tracked correctly when power is turned off.
@@ -120,7 +124,7 @@ public abstract class Locomotive
         this.functionTriggerTypes = new int[numFunctions];
         
         this.callbacks = new HashMap<>();
-        this.historicalOperatingTime = new HashMap<>();
+        this.historicalOperatingTime = new ConcurrentHashMap<>();
         this.localFunctionImageURLs = new HashMap<>();
         
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
@@ -251,7 +255,7 @@ public abstract class Locomotive
         this.preferredFunctions = Arrays.copyOf(functionState, functionState.length);
         this.preferredSpeed = 0;
         this.trainLength = 0;
-        this.historicalOperatingTime = new HashMap<>();
+        this.historicalOperatingTime = new ConcurrentHashMap<>();
     }
     
     /**
@@ -337,7 +341,13 @@ public abstract class Locomotive
         this.arrivalFunc = arrivalFunc;
         this.reversible = reversible;
         this.trainLength = trainLength;
-        this.historicalOperatingTime = historicalOperatingTime;
+        // Copy into a ConcurrentHashMap: this map is read (stats/CSV export) on background threads
+        // while runtime tracking writes it, so it must be concurrent to avoid ConcurrentModificationException.
+        // The incoming map (from a deserialized MarklinSimpleComponent) is a plain HashMap and may be null for
+        // very old saves; its contents are never null (keys are dates, values are longs), so the copy is safe.
+        this.historicalOperatingTime = (historicalOperatingTime != null)
+            ? new ConcurrentHashMap<>(historicalOperatingTime)
+            : new ConcurrentHashMap<>();
     }
     
     /**
