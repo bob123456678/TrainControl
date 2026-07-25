@@ -58,6 +58,31 @@ public class Util
      */
     public static final String PARTIAL_DOWNLOAD_SUFFIX = ".part";
 
+    /**
+     * Folder (relative to the working directory) that timestamped backup files are written to.
+     */
+    public static final String BACKUP_FOLDER = "tc_backup";
+
+    /**
+     * Returns the path a backup file should be written to.  Backups go into a dedicated subfolder
+     * ({@link #BACKUP_FOLDER}), which is created if it does not exist.  If the folder cannot be
+     * created, the original file name is returned so the backup falls back to the current directory.
+     * @param fileName the intended backup file name
+     * @return the path to write the backup to
+     */
+    public static String getBackupPath(String fileName)
+    {
+        File dir = new File(BACKUP_FOLDER);
+
+        if (dir.isDirectory() || dir.mkdirs())
+        {
+            return new File(dir, fileName).getPath();
+        }
+
+        // Folder unavailable - fall back to the current directory (the original behaviour)
+        return fileName;
+    }
+
     // Timeouts for downloads.  The read timeout applies to each individual read, so a stalled transfer
     // fails instead of leaving the download running indefinitely.
     private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 5000;

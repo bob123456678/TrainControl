@@ -62,6 +62,7 @@ import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 import static org.traincontrol.util.Util.escapeCsv;
 
 /**
@@ -1017,18 +1018,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
             l.add(new MarklinSimpleComponent(f));
         }
         
+        // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
+        String path = backup
+            ? Util.getBackupPath(prefix + MarklinControlStation.DATA_FILE_NAME)
+            : (prefix + MarklinControlStation.DATA_FILE_NAME);
+
         try
         {
             // Write object with ObjectOutputStream to disk using
             // FileOutputStream
             ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(prefix + MarklinControlStation.DATA_FILE_NAME));
+                new FileOutputStream(path));
 
             // Write object out to disk
             obj_out.writeObject(l);
 
-            this.logf("log.savingDatabaseState", new File(prefix + MarklinControlStation.DATA_FILE_NAME).getAbsolutePath());
-        } 
+            this.logf("log.savingDatabaseState", new File(path).getAbsolutePath());
+        }
         catch (IOException iOException)
         {
             this.logf("log.databaseSaveFailed", iOException.getMessage());

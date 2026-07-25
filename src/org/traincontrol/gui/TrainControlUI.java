@@ -1033,21 +1033,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save page names
         l.add(this.pageNames);
         
+        // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
+        String statePath = backup
+            ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
+            : (prefix + TrainControlUI.DATA_FILE_NAME);
+
         try
         {
             // Write object with ObjectOutputStream to disk using
             // FileOutputStream
             ObjectOutputStream obj_out = new ObjectOutputStream(
-                new FileOutputStream(prefix + TrainControlUI.DATA_FILE_NAME));
+                new FileOutputStream(statePath));
 
             // Write object out to disk
             obj_out.writeObject(l);
 
             this.model.logf(
                 "ui.logSavingUiState",
-                new File(prefix + TrainControlUI.DATA_FILE_NAME).getAbsolutePath()
+                new File(statePath).getAbsolutePath()
             );
-        } 
+        }
         catch (IOException iOException)
         {
             this.model.logf(
@@ -1088,15 +1093,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (!this.autonomyJSON.getText().trim().equals(""))
         {
+            // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
+            String autonomyPath = backup
+                ? Util.getBackupPath(prefix + TrainControlUI.AUTONOMY_FILE_NAME)
+                : (prefix + TrainControlUI.AUTONOMY_FILE_NAME);
+
             try
             {
                 this.model.logf(
                     "autolayout.infoSavingAutonomyJson",
-                    new File(prefix + TrainControlUI.AUTONOMY_FILE_NAME).getAbsolutePath()
+                    new File(autonomyPath).getAbsolutePath()
                 );
 
                 ObjectOutputStream obj_out = new ObjectOutputStream(
-                    new FileOutputStream(prefix + TrainControlUI.AUTONOMY_FILE_NAME)
+                    new FileOutputStream(autonomyPath)
                 );
 
                 // Write object out to disk

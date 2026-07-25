@@ -329,6 +329,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.7.4 [7/24/2026]
+    - Backups are now saved to the tc_backup folder in the current directory
     - Bug fixes
         - Fixed rare race conditions in autonomy code
 
