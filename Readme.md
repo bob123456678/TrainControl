@@ -331,6 +331,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.7.4 [7/24/2026]
     - Backups are now saved to the tc_backup folder in the current directory
     - Bug fixes
+        - Fixed bug where only one locomotive could be triggered from the track diagram in semi-autonomous mode
         - Minor UI performance improvements
         - Fixed rare race conditions in autonomy code
 
@@ -353,7 +354,7 @@ Requires JDK 1.8+ and the following libraries:
 * v2.7.1 [5/10/2026]
     - UI
         - Left-clicking a locomotive on a track diagram autonomy station will now set it as the active locomotive if a key mapping exists
-        - Fixed bug where deleting/editing locomotives from the locomotive selector would not automaticlaly refresh the locomotive list
+        - Fixed bug where deleting/editing locomotives from the locomotive selector would not automatically refresh the locomotive list
 
 * v2.7.0 [5/1/2026]
     - Added support for new CS3 firmware v2.6.0 (March 2026) and backwards-compatibility with older versions

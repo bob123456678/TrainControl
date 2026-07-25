@@ -3975,7 +3975,7 @@
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="autoLocScroll" pref="733" max="32767" attributes="0"/>
+                                  <Component id="autoLocScroll" pref="745" max="32767" attributes="0"/>
                                   <Group type="102" attributes="0">
                                       <Component id="gracefulStop" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace max="32767" attributes="0"/>
@@ -3992,15 +3992,15 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="1" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="reopenGraphButton" alignment="1" pref="24" max="32767" attributes="0"/>
+                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                   <Group type="103" groupAlignment="3" attributes="0">
                                       <Component id="startAutonomy" alignment="3" min="-2" max="-2" attributes="0"/>
                                       <Component id="gracefulStop" alignment="3" min="-2" max="-2" attributes="0"/>
                                   </Group>
+                                  <Component id="reopenGraphButton" max="32767" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="autoLocScroll" pref="510" max="32767" attributes="0"/>
+                              <Component id="autoLocScroll" pref="501" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -4249,7 +4249,7 @@
                                   <Component id="jLabel52" min="-2" max="-2" attributes="0"/>
                                   <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="15" max="32767" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
                           </Group>
                       </Group>
                     </DimensionLayout>

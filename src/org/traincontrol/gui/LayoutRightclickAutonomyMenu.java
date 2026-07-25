@@ -23,7 +23,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         
         if (ui.getModel().getAutoLayout() != null)
         {     
-            if (!ui.getModel().getAutoLayout().isAutoRunning() && !ui.getModel().getAutoLayout().isRunning())
+            if (!ui.getModel().getAutoLayout().isAutoRunning())
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
                 menuItem.addActionListener(event -> 
@@ -151,7 +151,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
-                    if (current.getCurrentLocomotive() != null)
+                    if (current.getCurrentLocomotive() != null && !ui.getModel().getAutoLayout().isRunning())
                     {
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
@@ -166,11 +166,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             ui.repaintAutoLocList(false);
                         });
 
-                        add(menuItem);
-                        
+                        add(menuItem); 
                     }
                     
-                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.getModel().getAutoLayout().isRunning())
                     {
                         // Edit locomotive
                         menuItem = new JMenuItem(
