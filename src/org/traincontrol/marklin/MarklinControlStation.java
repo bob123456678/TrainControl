@@ -117,7 +117,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private final RemoteDeviceCollection<LayoutDiagram, String> layoutDB;
     
     // Mapping for int UID -> string UID
-    private HashMap<Integer, List<String>> locIdCache;
+    // volatile: written by rebuildLocIdCache() (synchronized) but read unsynchronized on the
+    // message-processor thread in receiveMessage().  The volatile store/load gives the reader a
+    // happens-before edge so it always sees a fully-built map (see rebuildLocIdCache).
+    private volatile HashMap<Integer, List<String>> locIdCache;
 
     // Network proxy reference
     private final NetworkProxy NetworkInterface;
@@ -1470,18 +1473,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     synchronized private void rebuildLocIdCache()
     {
-        this.locIdCache = new HashMap<>();
-        
+        // Build the new cache fully in a local map, then publish it in a single volatile write.
+        // Unsynchronized readers must never see a half-populated map: the volatile store below
+        // happens-before their volatile read, so they observe either the complete old map or the
+        // complete new one - never one that is being mutated.
+        HashMap<Integer, List<String>> newCache = new HashMap<>();
+
         for (MarklinLocomotive l : this.locDB.getItems())
         {
             int id = l.getIntUID();
-            if (!this.locIdCache.containsKey(id))
+            if (!newCache.containsKey(id))
             {
-                this.locIdCache.put(id, new LinkedList<>());
+                newCache.put(id, new LinkedList<>());
             }
-            
-            this.locIdCache.get(id).add(l.getUID());
+
+            newCache.get(id).add(l.getUID());
         }
+
+        this.locIdCache = newCache;
     }
     
     /**
@@ -1588,10 +1597,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                         if (this.view != null)
                         {
-                            new Thread(() ->
-                            {
-                                 this.view.repaintLoc(false, locList);
-                            }).start();    
+                            // repaintLoc() already hands off to its own executor + invokeLater,
+                            // so no wrapper thread is needed (avoids a thread spawn per loco response).
+                            this.view.repaintLoc(false, locList);
                         }
                     }
                     else
@@ -1613,12 +1621,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (this.view != null)
                     {
-                        new Thread(() -> 
-                        {
-                            this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1, this.accDB.getById(id).getDecoderType());
-                            //this.view.repaintSwitches();
-                        }).start();
-                    } 
+                        // repaintSwitch() already marshals to the EDT via invokeLater internally.
+                        this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1, this.accDB.getById(id).getDecoderType());
+                        //this.view.repaintSwitches();
+                    }
                 }
             }));
         }
@@ -1668,10 +1674,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     if (this.view != null)
                     {
-                        new Thread(() -> 
-                        {
-                            this.view.updateLatency(this.lastLatency);
-                        }).start();
+                        // updateLatency() already marshals to the EDT via invokeLater internally.
+                        this.view.updateLatency(this.lastLatency);
                     }
                 }
 
