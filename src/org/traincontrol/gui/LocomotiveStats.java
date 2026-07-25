@@ -1,9 +1,9 @@
 package org.traincontrol.gui;
 
 import java.awt.Font;
-import java.awt.HeadlessException;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -417,39 +417,81 @@ public class LocomotiveStats extends javax.swing.JPanel
         {
             try
             {
-                JFileChooser fc = new JFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
-                fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".csv"));
-                int i = fc.showSaveDialog(this);
+                // Build the CSV once; the data does not change between retries
+                String data = "";
 
-                if (i == JFileChooser.APPROVE_OPTION)
+                for (Locomotive l : this.tcui.getModel().getLocomotives())
                 {
-                    File f = fc.getSelectedFile();
-                    
-                    String data = "";
-                    
-                    for (Locomotive l : this.tcui.getModel().getLocomotives())
+                    for (Entry<String, Long> e : l.getHistoricalOperatingTime().entrySet())
                     {
-                        for (Entry<String, Long> e : l.getHistoricalOperatingTime().entrySet())
-                        {
-                            data += "\"" + l.getName() + "\"," + e.getKey() + "," + e.getValue() + "\n";
-                        }
+                        data += "\"" + l.getName() + "\"," + e.getKey() + "," + e.getValue() + "\n";
+                    }
+                }
+
+                // Loop so a failed write re-prompts for another location instead of aborting
+                while (true)
+                {
+                    File f = chooseSaveFile();   // shown on the EDT; null means the user cancelled
+
+                    if (f == null)
+                    {
+                        break;
                     }
 
-                    Files.write(Paths.get(f.getPath()), data.trim().getBytes());
-                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                    try
+                    {
+                        Files.write(Paths.get(f.getPath()), data.trim().getBytes());
+                        TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+                        break;
+                    }
+                    catch (IOException e)
+                    {
+                        this.tcui.getModel().log(e);
+
+                        // Show the error, then loop back so the user can pick another location
+                        javax.swing.SwingUtilities.invokeAndWait(() ->
+                            JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile")));
+                    }
                 }
             }
-            catch (HeadlessException | IOException e)
+            catch (InterruptedException | InvocationTargetException e)
             {
-                JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile"));
-
                 this.tcui.getModel().log(e);
             }
-            
-            this.exportData.setEnabled(true);
-            this.tcui.resetFocus();
+            finally
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.exportData.setEnabled(true);
+                    this.tcui.resetFocus();
+                });
+            }
         }).start();
     }//GEN-LAST:event_exportDataActionPerformed
+
+    /**
+     * Shows the CSV save chooser on the EDT and returns the chosen file, or null if the user cancelled.
+     * @return the selected file, or null
+     * @throws InterruptedException
+     * @throws InvocationTargetException
+     */
+    private File chooseSaveFile() throws InterruptedException, InvocationTargetException
+    {
+        final File[] chosen = { null };
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            JFileChooser fc = new JFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
+            fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".csv"));
+
+            if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION)
+            {
+                chosen[0] = fc.getSelectedFile();
+            }
+        });
+
+        return chosen[0];
+    }
 
     private void refreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_refreshActionPerformed
         this.refresh();

@@ -346,7 +346,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                         if (!success)
                         {
-                            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog"));
+                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
                         }
                         
                     }).start();
