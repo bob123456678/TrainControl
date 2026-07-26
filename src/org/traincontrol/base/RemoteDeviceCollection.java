@@ -29,10 +29,14 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     }
     
     /**
-     * Adds a device
+     * Adds a device.
+     *
+     * Maintains a strict one-to-one mapping between names and ids: adding clears out anything the
+     * name or the id was previously attached to, so neither map can accumulate entries the other
+     * does not know about.
      * @param device
      * @param name
-     * @param id 
+     * @param id
      */
     public void add(ITEM device, String name, IDENTIFIER id)
     {
@@ -44,6 +48,12 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
         {
             this.db.remove(existingId);
         }
+
+        // Re-adding an id under a different name would otherwise strand the old name, which would
+        // keep being listed by getItemNames and keep resolving - to the new device - via getByName.
+        // An accessory re-created as the other type is the case that matters: a switch and a signal
+        // at one address share an id, so "Switch 5" would linger after it became "Signal 5".
+        this.names.values().removeIf(mapped -> mapped != null && mapped.equals(id));
 
         this.db.put(id, device);
         this.names.put(name, id);

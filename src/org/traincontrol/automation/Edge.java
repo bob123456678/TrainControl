@@ -129,19 +129,11 @@ public class Edge
             Accessory.accessoryDecoderType protocol = rc.getProtocol();
             Accessory.accessoryType type = Accessory.stringToAccessoryType(rc.getAccessoryType());
             
-            Accessory existing = control.getAccessoryByAddress(address, protocol);
-            
-            if (existing != null && existing.getType() != type)
-            {
-                throw new Exception(
-                    I18n.f(
-                        "acc.commandConflictSameAddressMustRename",
-                        accessory,
-                        existing.getType().toString()
-                    )
-                );            
-            }
-            
+            // No accessory is registered at this address - getAccessoryByName above already falls back
+            // to the address and protocol encoded in the name, so a signal and a switch at the same
+            // address resolve to each other.  There is therefore nothing here to conflict with: the two
+            // are the same decoder, and the type only selects how it is displayed.  Note we must not
+            // look the address up via getAccessoryByAddress, which would invent an accessory here.
             if (type == Accessory.accessoryType.SIGNAL)
             {
                 control.newSignal(address, protocol, false);

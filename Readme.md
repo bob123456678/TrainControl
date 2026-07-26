@@ -363,6 +363,7 @@ Tab icons provided by Freepik.
 * v2.8.0 [Beta]
     - Bug fixes
         - Autonomy: a path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
+        - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
         - Fixed bug where a route imported from the Central Station 3 would be silently skipped if it set a locomotive's speed or direction before a switch or signal with a delay
 
 * v2.7.5 [7/26/2026]

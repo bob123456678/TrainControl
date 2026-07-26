@@ -1369,14 +1369,43 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Fetches an accessory
+     * Fetches an accessory by name, falling back to the same address under the other accessory type.
+     *
+     * A signal and a switch are the same physical decoder - the type only selects how TrainControl
+     * displays it - and the database is keyed by address and protocol, so "Signal 5" and "Switch 5"
+     * are one entry.  Only one of those two names is registered, though: whichever the accessory was
+     * created as.  Without this fallback a route or autonomy edge naming the other one does not
+     * resolve, and that accessory is then silently never commanded.
+     *
+     * Only the type prefix is swapped, so the address and any protocol suffix still have to match
+     * exactly and the name map stays authoritative.  Never creates anything.
      * @param name
-     * @return 
+     * @return
      */
     @Override
     public final MarklinAccessory getAccessoryByName(String name)
     {
-        return this.accDB.getByName(name);
+        MarklinAccessory accessory = this.accDB.getByName(name);
+
+        if (accessory != null || name == null)
+        {
+            return accessory;
+        }
+
+        String switchPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH);
+        String signalPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL);
+
+        if (name.startsWith(signalPrefix))
+        {
+            return this.accDB.getByName(switchPrefix + name.substring(signalPrefix.length()));
+        }
+
+        if (name.startsWith(switchPrefix))
+        {
+            return this.accDB.getByName(signalPrefix + name.substring(switchPrefix.length()));
+        }
+
+        return null;
     }
             
     /**
@@ -2023,11 +2052,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state
      * @return 
      */
-    private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type, 
+    private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type,
             Accessory.accessoryDecoderType decoderType, boolean state)
     {
-        MarklinAccessory current = this.getAccessoryByAddress(address, decoderType);
-                
+        // Carry over the actuation count from whatever is already at this address.  Resolved by name
+        // (which falls back to address + protocol) rather than getAccessoryByAddress: the latter takes
+        // a LOGICAL address, so passing the raw one looked up the accessory one address below - and,
+        // being a creating lookup, registered a spurious accessory there every time.
+        MarklinAccessory current = this.getAccessoryByName(
+            MarklinAccessory.getNameWithProtocol(logicalAddress, type, decoderType));
+
         return newAccessory(logicalAddress, address, type, decoderType, state, current != null ? current.getNumActuations() : 0);
     }
     
