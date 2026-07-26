@@ -332,7 +332,8 @@ Requires JDK 1.8+ and the following libraries:
 
 * v2.7.5 [Beta]
     - Added French and Polish translations
-    - Removed copy-to-next/previous page option from right-click menu
+    - Removed UI features:
+        - Copy-to-next/-previous page option from locomotive button right-click menu
 
 * v2.7.4 [7/25/2026]   
     - Autonomy
