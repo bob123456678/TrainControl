@@ -46,6 +46,10 @@ public class MarklinRoute extends Route
     
     // Controls if the route can be edited
     private boolean locked = false;
+
+    // The thread watching this route's s88 sensor, when one is running.  Transient because a Thread is
+    // not serializable, and it is pure runtime state.
+    private transient Thread monitorThread;
     
     /**
      * Simple constructor
@@ -115,13 +119,23 @@ public class MarklinRoute extends Route
      * Monitors the route conditions and executes the route when appropriate
      * @return 
      */
-    public final boolean executeAutoRoute()
+    public final synchronized boolean executeAutoRoute()
     {
         // Execute the automatic route
         if (this.enabled && this.hasS88())
         {
-            new Thread(() -> 
-            {                
+            // disable() only clears the enabled flag - the monitor thread stays parked in its feedback
+            // wait until the sensor next fires, and only then notices and exits.  Without this guard a
+            // disable/enable cycle in the meantime starts a second monitor, and the route then fires
+            // once per monitor on every trigger.  applyAutonomyRouteActivations does exactly that when
+            // one autonomy configuration omits the route and the next one includes it.
+            if (this.monitorThread != null && this.monitorThread.isAlive())
+            {
+                return false;
+            }
+
+            this.monitorThread = new Thread(() ->
+            {
                 // The utility functions are defined in Locomotive, so create a dummy locomotive
                 MarklinLocomotive loc = new MarklinLocomotive(this.network, 1, MarklinLocomotive.decoderType.MM2, "Dummy Loc");
 
@@ -177,11 +191,13 @@ public class MarklinRoute extends Route
                         this.network.log(e);
                     }
                 }
-            }).start();
-            
+            });
+
+            this.monitorThread.start();
+
             return true;
         }
-        
+
         return false;
     }
         

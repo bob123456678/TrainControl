@@ -557,6 +557,43 @@ public class testRoutes
         }
     }
 
+    /**
+     * A route may only ever have one monitor thread.
+     *
+     * disable() just clears a flag; the thread stays parked in its feedback wait until the sensor next
+     * fires.  Re-enabling before that happens used to start a second monitor, and the route then fired
+     * once per monitor on every trigger.  applyAutonomyRouteActivations produces exactly this sequence
+     * when one autonomy configuration omits the route and the next one includes it.
+     */
+    @Test
+    public void testDisableAndReEnableDoesNotStartASecondMonitor() throws Exception
+    {
+        model.newFeedback(8821, null);
+        model.setFeedbackState("8821", false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(287, MM2, true));
+
+        MarklinRoute route = new MarklinRoute(model, "A6 single monitor route", 9802, commands, 8821,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            // Let the monitor started by the constructor reach its blocking wait
+            Thread.sleep(600);
+
+            route.disable();
+            route.enable();
+
+            assertFalse(route.executeAutoRoute(),
+                "the parked monitor is still alive, so a second one must not be started");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
     @Test
     public void testExpressions() throws Exception
     {

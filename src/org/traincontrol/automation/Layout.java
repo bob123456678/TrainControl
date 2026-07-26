@@ -1614,7 +1614,10 @@ public class Layout
      * unlocking it so that other trains may pass
      * @param path
      * @param loc
-     * @return list of edges that were not unlocked during dynamic routes
+     * @return edges whose own occupancy flag was left alone because another locomotive has since
+     *         claimed their end point.  Informational only - their lock edges are still released, and
+     *         the flag itself either belongs to that other locomotive now or was already cleared by
+     *         executePath's early unlock, so there is nothing for the caller to act on.
      */
     synchronized public List<Edge> unlockPath(List<Edge> path, Locomotive loc)
     {
@@ -1653,7 +1656,19 @@ public class Layout
                 else
                 {
                     output.add(e);
-                    
+
+                    // Another locomotive has taken the end point, so we must not touch the edge's own
+                    // flag - it may be that locomotive's lock now.  Its LOCK edges are still ours
+                    // though: executePath's early unlock uses setLockedEdgeUnoccupied, which
+                    // deliberately leaves lock edges held until the path completes, and isPathClear
+                    // refuses any path whose lock edges are occupied, so nothing else can have taken
+                    // them.  Release them here - skipping this left them held for the rest of the
+                    // session, permanently blocking every path that crosses them.
+                    for (Edge lockEdge : e.getLockEdges())
+                    {
+                        lockEdge.setLockedEdgeUnoccupied();
+                    }
+
                     if (this.control.isDebug())
                     {
                         this.control.logf(

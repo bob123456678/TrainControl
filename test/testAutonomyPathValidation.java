@@ -396,6 +396,64 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * With atomic routes disabled, unlockPath must release a skipped edge's LOCK edges.
+     *
+     * executePath's early unlock frees each edge as the train clears it, using
+     * setLockedEdgeUnoccupied - which deliberately leaves the edge's lock edges held until the path
+     * completes, since a crossing may still be in use.  unlockPath is what finally releases them.  But
+     * if another locomotive has claimed the edge's end point in the meantime, unlockPath skips the edge
+     * to avoid clearing that locomotive's lock - and used to skip the lock edges along with it, leaving
+     * the crossing marked occupied for the rest of the session and blocking every path through it.
+     */
+    @Test
+    public void testUnlockPathReleasesLockEdgesOfASkippedEdge() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+        layout.setAtomicRoutes(false);
+
+        layout.createPoint("LE_A", false, null);
+        layout.createPoint("LE_B", false, null);
+
+        MarklinFeedback fb = model.newFeedback(81, null);
+        model.setFeedbackState(fb.getName(), false);
+        layout.createPoint("LE_C", true, fb.getName());
+
+        // A crossing that is not on the path, but is locked whenever the first edge is
+        layout.createPoint("LE_X", false, null);
+        layout.createPoint("LE_Y", false, null);
+        Edge crossing = layout.createEdge("LE_X", "LE_Y");
+
+        Edge ab = layout.createEdge("LE_A", "LE_B");
+        Edge bc = layout.createEdge("LE_B", "LE_C");
+        ab.addLockEdge(crossing);
+
+        MarklinLocomotive loc = dummyLoc();
+        MarklinLocomotive intruder = dummyLoc();
+
+        layout.getPoint("LE_A").setLocomotive(loc);
+
+        List<Edge> path = Arrays.asList(ab, bc);
+
+        assertTrue(layout.configureAndLockPath(path, loc), "precondition: the path locks cleanly");
+        assertTrue(crossing.isOccupied(dummyLoc()), "precondition: the crossing is locked with the path");
+
+        // What executePath's early unlock does once the train has cleared the first edge: release the
+        // edge but deliberately not its lock edges
+        ab.setLockedEdgeUnoccupied();
+
+        // ...and by then another locomotive has taken the point the train has just left
+        layout.getPoint("LE_B").setLocomotive(intruder);
+
+        layout.unlockPath(path, loc);
+
+        assertFalse(crossing.isOccupied(dummyLoc()),
+            "the crossing must be released even though its edge was skipped");
+    }
+
+    /**
      * Control: the identical path runs normally once the accessory exists, confirming the tests above
      * fail for the missing accessory and not for anything else in the setup.
      */
