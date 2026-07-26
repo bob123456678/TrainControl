@@ -1,0 +1,192 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.marklin.MarklinControlStation;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+
+/**
+ * Sanity check: run the kind of autonomy file the main UI ships with, in simulate mode, for one minute and
+ * confirm the path integrity validation warning never fires - while also verifying the run was real (the
+ * accessories actually actuated many times and every locomotive changed stations repeatedly).
+ *
+ * In simulate mode the guard is bypassed (there is no real actuation to confirm), so a clean run must
+ * never record a path validation failure.  PATH_VALIDATION_ALERT_THRESHOLD is raised so the failure
+ * counter never resets - any single failure would therefore be caught.  DEBUG_SIMULATE_PACKETS is on so
+ * the Central Station echoes are simulated, which is what advances each accessory's actuation count.
+ *
+ * The frozen layout (test/autonomy_sanity.json) is a larger version of the UI's sample_autonomy.json:
+ * three departure stations plus an arrival station, four switches and three signals, three locomotives,
+ * and 0-1s action delays so trains cycle quickly.  The switches are commanded to different positions on
+ * different routes, so they toggle constantly as the trains move around.
+ */
+public class testAutonomySimulationSanity
+{
+    private static MarklinControlStation model;
+
+    private static final Accessory.accessoryDecoderType MM2 = Accessory.accessoryDecoderType.MM2;
+
+    private static final String[] LOCO_NAMES =
+    {
+        "Auto Test Loc 1", "Auto Test Loc 2", "Auto Test Loc 3"
+    };
+
+    private static final String[] ACCESSORY_NAMES =
+    {
+        "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Signal 5", "Signal 6", "Signal 7"
+    };
+
+    // How long to run, and how sensitively to sample locomotive positions.
+    private static final long RUN_MS = 120_000;
+    private static final long POLL_MS = 500;
+
+    // Minimum activity a genuine one-minute run must produce.
+    private static final int MIN_TOTAL_ACTUATIONS = 20;
+    private static final int MIN_STATION_CHANGES_PER_LOC = 3;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        model = init(null, true, false, false, true);
+
+        // Not connected: the layout may enter simulate mode, and exec() takes the simulated-echo branch so
+        // accessory actuations are confirmed (which is what advances getNumActuations()).
+        model.setNetworkCommState(false);
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+        // Guard enabled; never reset the counter so even a single failure is detectable.
+        Layout.PATH_INTEGRITY_VALIDATION = true;
+        Layout.PATH_VALIDATION_ALERT_THRESHOLD = Integer.MAX_VALUE;
+
+        // parseAuto only places locomotives that already exist - create the three the file references.
+        model.newMM2Locomotive(LOCO_NAMES[0], 61);
+        model.newMM2Locomotive(LOCO_NAMES[1], 62);
+        model.newMM2Locomotive(LOCO_NAMES[2], 63);
+
+        // The accessories referenced by the edges must exist in the DB - parseAuto does not reliably create
+        // them - so add each one the file uses (the number in the name is the address).
+        model.newSwitch(1, MM2, false);
+        model.newSwitch(2, MM2, false);
+        model.newSwitch(3, MM2, false);
+        model.newSwitch(4, MM2, false);
+        model.newSignal(5, MM2, false);
+        model.newSignal(6, MM2, false);
+        model.newSignal(7, MM2, false);
+
+        // Load the frozen autonomy file from the test folder.
+        String json = new BufferedReader(new InputStreamReader(
+                testAutonomySimulationSanity.class.getResource("autonomy_sanity.json").openStream()))
+                .lines().collect(Collectors.joining("\n"));
+
+        model.parseAuto(json);
+    }
+
+    @AfterClass
+    public static void tearDownClass()
+    {
+        if (model.hasAutoLayout())
+        {
+            model.getAutoLayout().stopLocomotives();
+        }
+
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+        Layout.PATH_VALIDATION_ALERT_THRESHOLD = 3;
+
+        for (String name : LOCO_NAMES)
+        {
+            model.deleteLoc(name);
+        }
+    }
+
+    @Test
+    public void testSimulatedAutonomyRaisesNoWarning() throws Exception
+    {
+        Layout layout = model.getAutoLayout();
+
+        assertTrue(layout != null && layout.isValid(),
+            "The autonomy file must parse into a valid layout");
+
+        // Count each locomotive's completed routes (= station-to-station moves) via the arrival callback.
+        // This is reliable, unlike sampling getLocomotiveLocation, which returns an arbitrary one of the
+        // several points a locomotive occupies mid-path (and so can appear stuck while the train runs).
+        Map<String, AtomicInteger> stationChanges = new HashMap<>();
+
+        for (String name : LOCO_NAMES)
+        {
+            stationChanges.put(name, new AtomicInteger(0));
+            model.getLocByName(name).setCallback(Layout.CB_ROUTE_END,
+                (l) -> stationChanges.get(l.getName()).incrementAndGet());
+        }
+
+        model.go();
+        layout.runLocomotives();
+
+        boolean sawActivity = false;
+
+        // Soak, confirming no warning ever fires.
+        long deadline = System.currentTimeMillis() + RUN_MS;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            if (!layout.getActiveLocomotives().isEmpty())
+            {
+                sawActivity = true;
+            }
+
+            assertTrue(layout.getPathValidationFailureCount() == 0,
+                "No path validation warning must occur during a simulated run (failures="
+                    + layout.getPathValidationFailureCount() + ")");
+
+            Thread.sleep(POLL_MS);
+        }
+
+        layout.stopLocomotives();
+
+        // Let any in-flight paths finish so the actuation counters settle and the run threads exit before
+        // teardown removes the locomotives.
+        long windDown = System.currentTimeMillis() + 5000;
+
+        while (!layout.getActiveLocomotives().isEmpty() && System.currentTimeMillis() < windDown)
+        {
+            Thread.sleep(100);
+        }
+
+        // The run must not have been vacuous.
+        assertTrue(sawActivity, "The simulated autonomy should have executed at least one path");
+
+        // Accessories must actually have been actuated a meaningful number of times (the switches toggle as
+        // trains take the different routes).
+        int totalActuations = 0;
+
+        for (String name : ACCESSORY_NAMES)
+        {
+            Accessory acc = model.getAccessoryByName(name);
+            assertTrue(acc != null, "Accessory " + name + " should exist");
+            totalActuations += acc.getNumActuations();
+        }
+
+        assertTrue(totalActuations >= MIN_TOTAL_ACTUATIONS,
+            "Accessories should have actuated at least " + MIN_TOTAL_ACTUATIONS + " times (was " + totalActuations + ")");
+
+        // Every locomotive must have changed stations enough times.
+        for (String name : LOCO_NAMES)
+        {
+            int changes = stationChanges.get(name).get();
+            assertTrue(changes >= MIN_STATION_CHANGES_PER_LOC,
+                name + " should have changed stations at least " + MIN_STATION_CHANGES_PER_LOC
+                    + " times (was " + changes + ")");
+        }
+
+        // And of course - no warning across the whole run.
+        assertTrue(layout.getPathValidationFailureCount() == 0,
+            "No path validation warning must occur during a simulated run");
+    }
+}
