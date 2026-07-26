@@ -1,15 +1,29 @@
-# TrainControl for Marklin Central Station 2 and 3
+# TrainControl for Märklin Central Station 2 & 3
 
-This powerful, free, cross-platform Java program allows you to use your computer to *easily* control your entire Marklin / Trix / DCC digital model train layout.
-It connects to a Central Station 2, 3, or 3 Plus over the network.
-It is primarily designed for users with a large layout and many locomotives, as
-the standard Marklin UI makes many common tasks (such as quickly switching between locomotives or triggering functions)
-overly tedious.  Convenient keyboard hotkeys are available for controlling locomotives, switching between locomotives, 
-enabling functions, function presets, smooth deceleration, emergency stop, etc.  You can also open windows with interactive track diagrams and edit track diagrams.
+[![Latest release](https://img.shields.io/github/v/release/bob123456678/TrainControl?label=latest%20release&color=success)](https://github.com/bob123456678/TrainControl/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](https://www.gnu.org/licenses/gpl-3.0)
+![Java 8](https://img.shields.io/badge/Java-8-orange)
 
-As such, TrainControl is designed to be a complete replacement for the CS2/CS3 for
-operating your layout, with the Central Station serving solely as the track interface
-and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
+**Free, open-source software for controlling and automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
+
+![TrainControl main window, showing locomotive control with keyboard mappings, locomotive thumbnails, and function buttons](assets/main23_2.png?raw=true)
+
+TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  It is designed for model railways with many locomotives, where the standard Marklin UI makes common tasks — quickly switching between locomotives, or triggering functions — overly tedious.  It is a complete replacement for the CS2/CS3 when operating your layout, with the Central Station serving solely as the track interface and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
+
+**Why TrainControl?**
+
+* Control any locomotive instantly from your keyboard — no menu diving
+* Interactive track diagrams, fully editable in the app, across unlimited windows
+* Fully autonomous train operation using only S88 sensors
+* Multi-units, function presets, conditional routes, and usage statistics
+* Locomotive and layout data downloaded automatically from your Central Station
+* Free, open source, and actively developed
+
+**Getting started**
+
+1. Connect your Central Station 2/3 to your network and enable CAN broadcasting in its settings ([details](#requirements))
+2. [Download the latest `TrainControl.jar`](https://github.com/bob123456678/TrainControl/releases/latest)
+3. Run it, and enter your Central Station's IP address when prompted ([details](#download-and-run-traincontrol))
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
 also be used to programmatically control the entire layout ([see API](Automation.md)).  Layout and locomotive information is automatically
@@ -19,7 +33,7 @@ For easy scripting or interactive control, you can write [Python (Jython) script
 
 TrainControl also provides a UI for creating a graph model of your layout, 
 which when paired with S88 sensors, enables tracking train locations for *fully autonomous* operation at the push of a single button,
-as well as semi-autonmous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
+as well as semi-autonomous point-to-point operation between stations. You can of course also set up traditional/conditional routes to 
 automate switch and signal commands while operating trains manually.
 
 Translations are now available:
@@ -32,37 +46,33 @@ Translations are now available:
 * Nu beschikbaar in het Nederlands
 
 TrainControl follows your computer's language automatically, so there is nothing to configure.
-If you would rather run it in a different language, you can [force one from the command line](#running-traincontrol).
+If you would rather run it in a different language, you can [force one from the command line](#download-and-run-traincontrol).
 
 ## Overview
 
 **Main UI**
 
-You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
-
-![UI screenshot: locomotive control](assets/main23_2.png?raw=true)
+As shown above, you can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
 Right-click a locomotive or function icon to change it or set additional options, such as preferred speed or function presets.
 
-![UI screenshot: locomotive control](assets/ui_right_click.png?raw=true)
+![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 
-![UI screenshot: locomotive control](assets/ui_sel_loc.png?raw=true)
+![TrainControl locomotive selector, used to assign a locomotive from the database to a keyboard button](assets/ui_sel_loc.png?raw=true)
 
 Multi-units can be configured in TrainControl, which can be simpler than using the Central Station.
 
-![UI screenshot: multi-units](assets/multiunit.png?raw=true)
+![Configuring a Marklin multi-unit in TrainControl by linking several locomotives together](assets/multiunit.png?raw=true)
 
 **Layout View & Layout Editing**
 
 Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or customizable through locally managed layout files.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
-![UI screenshot: layout viewer](assets/layout23.png?raw=true)
+![Interactive track diagram in TrainControl, with clickable switches, signals, and S88 feedback indicators](assets/layout23.png?raw=true)
 
-From v2.5.0, full cross-platfrom track diagram editing support is available in TrainControl.  
+Track diagrams can be created and edited directly within TrainControl, on any platform.
 
-![UI screenshot: layout editor](assets/editor.png?raw=true)
-
-Between v2.0.x and v2.4.x, you can also edit local track diagrams via a bundled Windows-only program ([TrackDiagramEditor](https://github.com/bob123456678/TrackDiagramEditor)).
+![TrainControl's built-in track diagram editor, used to draw and edit a model railway layout](assets/editor.png?raw=true)
 
 <details>
 <summary>Instructions for Managing and Importing Layouts</summary>
@@ -72,18 +82,15 @@ Between v2.0.x and v2.4.x, you can also edit local track diagrams via a bundled 
 This program was originally written to import and display layouts created/configured from within the CS2, but you can also customize your own layouts without a Central Station.
 
 Because the CS3 uses a different layout format than the CS2, this program does not support displaying native CS3 layouts. 
-However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  Support for such layouts is therefore available from TrainControl v2.2.0+, and they are automatically imported by default.
+However, from CS3 v2.5.0, the CS3 now exports its Track Board layouts using the CS2 file format.  TrainControl supports such layouts, and they are automatically imported by default.
 In some cases, you may need to use a double slip switch or a Y-switch from the "manual" menu in the CS3 to get tracks that cross over each other to render correctly.  You may also need to change certain straight tracks as the CS3 has a tendency to incorrectly connect tracks in the CS2 format.
 
 If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can import and edit layouts in TrainControl as follows:
 
 - If you have a CS2/CS3 with a layout, import your layout:
-    - From the Layouts menu in TrainControl, switch to the Central Station layout, then select "Download Central Station Layout".
-- Or, import your layout manually:
-    - Create an empty folder on your PC
-    - From your CS2/CS3, export `/config/gleisbild.cs2`, `/config/gleisbilder/*`, and optionally `/config/magnetartikel.cs2`, to the new folder, maintaining the same subdirectory structure starting with the `config` folder.  You can open this location from "Show Current Data Source" in the Layouts menu, or by accessing the Central Station's IP in your web browser.
-    - Start TrainControl, then from the Layouts menu, click on "Open Layout", then select the path to your folder
-    - The local layout will now be shown in the Layout tab and can be edited if desired
+    - From the Layouts menu in TrainControl, switch to the Central Station layout, then select "Download Central Station Layout Files".
+    - The layout will be saved to a folder of your choosing, and TrainControl will switch to it as the local data source.  It will now be shown in the Layout tab and can be edited if desired.
+    - If you already have layout files on your computer, use "Open Layout" in the Layouts menu to select the folder containing them.
 - Otherwise, to create a new layout:
     - Start TrainControl, then from the Layout menu, click on "Create New Layout"
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
@@ -93,8 +100,6 @@ Complete editing support is accessible via the "Edit" button within the Layout t
 If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
-
-As the CS3 has its own web-based UI which can be used as an alternative, native support for CS3 layouts is currently under consideration.
 
 ---
 
@@ -106,37 +111,37 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 In addition to all Central Station functionality, complex logical expressions are supported.
 
-![UI screenshot: layout](assets/ui_route2.png?raw=true)
+![Route editing wizard in TrainControl, showing accessory commands and conditional S88 trigger logic](assets/ui_route2.png?raw=true)
 
 **Keyboard**
 
 Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
 
-![UI screenshot: layout](assets/ui_keyboard.png?raw=true)
+![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
 
 **Full Autonomy**
 
 Defined via a special [JSON configuration file](Automation.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
-![UI screenshot: autonomy](assets/ui_autonomy.png?raw=true)
+![Autonomy control panel in TrainControl, used to start fully autonomous train operation](assets/ui_autonomy.png?raw=true)
 
 The graph UI will show you which routes are active, which edges are locked, and where different trains are stationed.  This can also help you debug your graph as you build it.  While trains are not running, you can right-click any station to reassign a train and view possible routes.
 
-<img src="assets/graphview.png?raw=true" alt="UI screenshot: autonomous graph visualizer" width="500">
+<img src="assets/graphview.png?raw=true" alt="Autonomy graph view showing stations, locked edges, active routes, and the current location of each train" width="500">
 
 In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list of paths, subject to the constraints and protections of the graph model.
 
-<img src="assets/timetable.png?raw=true" alt="UI screenshot: timetable" width="500">
+<img src="assets/timetable.png?raw=true" alt="Timetable editor in TrainControl, running trains through a predefined sequence of paths" width="500">
 
-From v2.4.12, autonomy / point-to-point operation can also be controlled directly from track diagrams through specially named labels.
+Autonomy / point-to-point operation can also be controlled directly from track diagrams through specially named labels.
 
-<img src="assets/easyauto.png?raw=true" alt="UI screenshot: easy autonomy" width="500">
+<img src="assets/easyauto.png?raw=true" alt="Starting point-to-point train operation directly from a track diagram using autonomy station labels" width="500">
 
 **Statistics**
 
 Monitor the usage of different locomotives.
 
-![UI screenshot: locomotive statistics](assets/stats23.png?raw=true)
+![Locomotive usage statistics in TrainControl, showing runtime per locomotive over the past 30 days](assets/stats23.png?raw=true)
 
 ## Features
 
@@ -160,11 +165,13 @@ Monitor the usage of different locomotives.
     * [Graph model](Automation.md) w/ JSON configuration for location tracking and fully autonomous train operation
     * Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
     * Full UI for editing autonomy graph models
-    * View station information and control trains via track digrams
+    * View station information and control trains via track diagrams
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, speed multipliers, and maximum train idle time
     * Record and play back timetables
-* Progammatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
+* Programmatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
 * Monitor locomotive usage stats
+
+All of it is free.  If TrainControl has earned a place in your train room, you can [buy me a coffee](https://www.buymeacoffee.com/traincontrol) to support its continued development.
 
 ## Keyboard Commands / Key Mappings
 
@@ -206,7 +213,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+N (edit locomotive notes)
     * Control+R (edit locomotive name or address)
     * Control+L (edit multi-unit)
-    * Control+Delete (permanentely delete locomotive from database)
+    * Control+Delete (permanently delete locomotive from database)
 * Autonomy Graph UI
     * Control+V (assign active locomotive, or clipboard locomotive if non-empty, to currently hovered node)
     * Delete/Backspace (remove locomotive from currently hovered node, clear clipboard if non-empty)
@@ -237,52 +244,37 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Escape (clear clipboard & reset tool)
     * Left mouse click (cut hovered tile / paste new tile)
     * Middle-mouse click (rotate hovered tile)
-    * Right moues click (show all options)
+    * Right mouse click (show all options)
 
-![Key mapping](assets/keyboard.png?raw=true)
+![Diagram of TrainControl's keyboard mappings for locomotive and function control](assets/keyboard.png?raw=true)
 
-## License & Contact
-
-TrainControl was created and is maintained by Adam Oest.
-
-To support development, please feel free to [make a donation via Buy Me a Coffee](
-https://www.buymeacoffee.com/traincontrol).
-
-Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
-
-This is free software released under the GNU General Public License v3.
-
-No copyright claim is made to any Central Station icons rendered during the use of this program.
-
-Tab icons provided by Free pik.
-
-## Prerequisites
+## Requirements
 
 * Install Java 8 on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
 * The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or ethernet)
 * Ensure that your firewall allows TrainControl/Java to access the local network
 * Important: CS2/CS3 CAN bus and broadcasting needs to be enabled in the settings (TrainControl will show a warning popup after 15 seconds if this is not enabled)
-* For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommendend)
+* For fully autonomous operation, your network connection must be reliable (Ethernet or 5Ghz Wi-Fi recommended)
 
 <details>
 <summary>How to enable CAN broadcasting</summary>
 
-**Central Station 2:**
+**Central Station 3:**
 
 From the upper-left corner of the CS3 main screen, click on the **System** icon.  Then click on **IP** toward the bottom the page that is shown.
 
-![CS3 System page](assets/network1.png?raw=true)
+![Marklin Central Station 3 System page, where network settings are opened](assets/network1.png?raw=true)
 
 Typically, you would either manually input a specific IP on this page, or have your router assign a static IP based on the CS3's MAC address.
 
 In this example, the network mode is *auto (DHCP)* and the CS3 has been automatically assigned an *IP Address* of 192.168.50.25 on the local network. The *IP Gateway* and *DNS Server* is 192.168.50.1 with an *IP Network Template* of 255.255.255.0.
 
-![CS3 IP settings page](assets/network3.png?raw=true)
+![Central Station 3 IP settings page showing the assigned local network IP address](assets/network3.png?raw=true)
 
 Scroll down to **Settings CAN** and select *broadcast* from the dropdown.  Set the *Destination Address* to the highest allowed IP in your subnet, which usually means setting the last octet to 255.  In this case, the *Destination Address* is therefore 192.168.50.255.  You can safely ignore the warning icon shown.
 
-![CS3 CAN settings page](assets/network2.png?raw=true)
+![Central Station 3 CAN settings page with broadcast enabled and the destination address set](assets/network2.png?raw=true)
 
 Many routers assign addresses within the 192.168.1.x range by default, so most users will need to set **192.168.1.255** here.
 
@@ -296,10 +288,10 @@ On the CS2, identical settings are found by going to the **Setup** tab in the up
 
 **Limitations:**
 
-* Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  An auto-detection feature is available from v2.3.1, but is not guaranteed to find your Central Station.
+* Central Station IP address must be manually entered the first time you run TrainControl (recommend configuring a static IP in your router).  Auto-detection is available, but is not guaranteed to find your Central Station.
 * Central Station track diagrams can only be viewed with a CS2, or CS3 v2.5+ (local layouts can also be created and edited in TrainControl)
 
-## Running TrainControl
+## Download and Run TrainControl
 
 **Running the application (build or release JAR):**
 
@@ -329,7 +321,11 @@ TrainControl uses your computer's language automatically.  To run it in a differ
 * ```java -Duser.language=es -Duser.country=ES -jar TrainControl.jar``` (Force Spanish locale/language)
 * ```java -Duser.language=nl -Duser.country=NL -jar TrainControl.jar``` (Force Dutch locale/language)
 
-All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
+**Backing up and restoring your data:**
+
+To make a backup, select "Backup TrainControl Data" from the File menu.
+
+All of your data is stored in `LocDB.data`, `UIState.data`, and `autonomy.json`, in the same directory as the JAR file.  To restore a backup, close TrainControl, replace these files with the copies from your backup, then start TrainControl again.
 
 **Building the project from source:**
 
@@ -341,6 +337,22 @@ Requires JDK 1.8+ and the following libraries:
 * jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
+
+## License & Contact
+
+TrainControl was created and is maintained by Adam Oest.
+
+**TrainControl is free — no ads, no paywalls, and no locked features.**  It is built and maintained by one person, in his spare time.  If it has made your layout more fun to run, a coffee helps keep new features coming.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20TrainControl-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/traincontrol)
+
+Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
+
+This is free software released under the GNU General Public License v3.
+
+No copyright claim is made to any Central Station icons rendered during the use of this program.
+
+Tab icons provided by Freepik.
 
 ## Changelog
 
@@ -439,6 +451,9 @@ Requires JDK 1.8+ and the following libraries:
     - Updated JSON library to `json-20250517.jar`
     - Backward-incompatible changes:
         - Save files from v2.4.2 and older are no longer compatible. Open and save data from v2.4.3+ prior to upgrading.
+
+<details>
+<summary>View prior versions</summary>
 
 * v2.5.16 [9/20/2025]
     - Autonomy graph
@@ -583,9 +598,6 @@ Requires JDK 1.8+ and the following libraries:
     - Backward-incompatible changes:
         - Route JSON files from v2.4.3 and older are no longer compatible.  Export routes from v2.4.4+ prior to upgrading.
         - LocDB.data files from v2.3.x and older are no longer compatible.  Run v2.4.0+ at least once prior to upgrading.
-
-<details>
-<summary>View prior versions</summary>
 
 * v2.4.12 [3/24/2025]
     - Graph UI
