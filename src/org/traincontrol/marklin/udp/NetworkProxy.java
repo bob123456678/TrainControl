@@ -16,8 +16,12 @@ public class NetworkProxy
     public static final int RX_PORT = 15730;
     public static final int TX_PORT = 15731;
     
-    // UDP socket used to send and receive packets
-    private DatagramSocket socket;
+    // UDP socket used to send and receive packets.  volatile because sendMessage can replace it after
+    // a failure while the reader thread is looping on it.
+    private volatile DatagramSocket socket;
+
+    // How long to wait after a recoverable receive error, so that a persistent fault cannot spin
+    private static final long RECEIVE_ERROR_BACKOFF_MS = 50;
     
     // Transmission IP/port
     private final InetAddress transmitIP;
@@ -95,13 +99,15 @@ public class NetworkProxy
         
     	// Transmit
         try
-        {	
-            socket.send(packet);
-            
+        {
+            // Checked before sending, not after: send() throws on a closed socket, so the reopen below
+            // used to be unreachable and transmission stayed broken for the rest of the session
             if (this.socket.isClosed())
             {
                 this.socket = new DatagramSocket(NetworkProxy.RX_PORT);
             }
+
+            socket.send(packet);
         }
         catch (IOException e)
         {
@@ -136,53 +142,73 @@ public class NetworkProxy
         @Override
         public void run()
         {
+            // Create a read buffer based on the protocol message length
+            byte[] buffer = model.initMessageBuffer();
+
+            // Create a packet to receive the data
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+            model.logf(
+                "network.canListenerRunning"
+            );
+
             try
-            {                
-                // Create a read buffer based on the protocol message length
-                byte[] buffer = model.initMessageBuffer();
-
-                // Create a packet to receive the data
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                
-                model.logf(
-                    "network.canListenerRunning"
-                );
-                // Receive packets as they come in
-                while (true) 
+            {
+                // Receive packets as they come in.  A failure must not end this loop: one transient
+                // error used to terminate the thread for the rest of the session, leaving TrainControl
+                // able to transmit but deaf - no feedback, no accessory echoes, no power state changes,
+                // and path integrity validation failing every path.  The only condition we stop for is
+                // the socket being closed, which is the loop test below.
+                while (!socket.isClosed())
                 {
-                    // Wait to receive a datagram
-                    socket.receive(packet);
+                    try
+                    {
+                        // Wait to receive a datagram
+                        socket.receive(packet);
 
-                    // Send message to listener
-                    model.receiveMessage(model.createMessage(buffer));
+                        // Send message to listener
+                        model.receiveMessage(model.createMessage(buffer));
 
-                    // Reset the length of the packet just in case
-                    packet.setLength(buffer.length);
+                        // Reset the length of the packet just in case
+                        packet.setLength(buffer.length);
+                    }
+                    catch (IOException e)
+                    {
+                        // A closed socket is handled by the loop test.  Anything else is treated as
+                        // recoverable: log it, pause briefly so a persistent fault cannot spin, and
+                        // keep listening.  sendMessage may also have replaced the socket by now, in
+                        // which case the next pass picks up the new one.
+                        if (socket.isClosed())
+                        {
+                            break;
+                        }
+
+                        model.log(e);
+
+                        try
+                        {
+                            Thread.sleep(RECEIVE_ERROR_BACKOFF_MS);
+                        }
+                        catch (InterruptedException interrupted)
+                        {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // A single malformed packet must not stop reception either
+                        model.log(e);
+                    }
                 }
-            }
-            catch (IOException e)
-            {
-                // Do not exit on error, simply close the socket connection
-                model.logf(
-                    "network.fatalError"
-                );                
-                model.log(e);
-            }
-            catch (Exception e)
-            {
-                // Do not exit on error, simply close the socket connection
-                model.logf(
-                    "network.fatalError"
-                );    
-                model.log(e);
             }
             finally
             {
                 model.logf(
                     "network.canListenerClosed"
-                );                
+                );
                 // Close connection on error or when finished
-            	socket.close();
+                socket.close();
             }
         }
     }
