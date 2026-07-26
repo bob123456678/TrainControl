@@ -1362,6 +1362,7 @@ public class Layout
         // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
         // see validatePathActuation) validation wait.
         boolean configureFailed = false;
+        int edgesLocked = 0;
 
         synchronized (this)
         {
@@ -1376,6 +1377,7 @@ public class Layout
             {
                 e.setOccupied();
                 e.getEnd().setLocomotive(loc);
+                edgesLocked++;
 
                 // isPathClear already previewed the configuration, so this should not fail - but if an
                 // accessory went missing in between, the locomotive must not be released onto a path we
@@ -1392,7 +1394,10 @@ public class Layout
 
         if (configureFailed)
         {
-            this.handleMisconfiguredPath(path, loc);
+            // Only the edges we actually took.  Releasing the rest would call setUnoccupied on edges we
+            // never locked, and that also clears their lock edges - which, precisely because we never
+            // held them, may belong to another locomotive by now.
+            this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
             return false;
         }
 

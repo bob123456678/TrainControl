@@ -212,8 +212,11 @@ public class NetworkProxy
                 model.logf(
                     "network.canListenerClosed"
                 );
-                // Close connection on error or when finished
-                socket.close();
+
+                // Deliberately does NOT close the socket.  The loop only exits once the socket is
+                // already closed, so there is nothing to close - and because the loop re-reads the
+                // field in order to pick up a socket sendMessage may have reopened, closing it here
+                // could shut down a healthy replacement instead.
             }
         }
     }
