@@ -42,7 +42,11 @@ public class MarklinRoute extends Route
     private static final int DEFAULT_SLEEP_MS = 150;
     
     // State for routes with S88 trigger
-    private boolean enabled;
+    // volatile: the monitor thread started below loops on this field, while enable() and disable() are
+    // called from the EDT.  Without it that thread has no guarantee of ever observing a disable, and
+    // deleteRoute depends on exactly that to retire the monitor of a route being edited or removed -
+    // an unretired monitor keeps firing the old command list on a route the UI can no longer reach.
+    private volatile boolean enabled;
     private s88Triggers triggerType;
     private int s88;
     private NodeExpression conditions;

@@ -1663,12 +1663,19 @@ public class Layout
                     output.add(e);
 
                     // Another locomotive has taken the end point, so we must not touch the edge's own
-                    // flag - it may be that locomotive's lock now.  Its LOCK edges are still ours
-                    // though: executePath's early unlock uses setLockedEdgeUnoccupied, which
-                    // deliberately leaves lock edges held until the path completes, and isPathClear
-                    // refuses any path whose lock edges are occupied, so nothing else can have taken
-                    // them.  Release them here - skipping this left them held for the rest of the
-                    // session, permanently blocking every path that crosses them.
+                    // flag - it may be that locomotive's lock now.  Its LOCK edges still have to be
+                    // released: executePath's early unlock uses setLockedEdgeUnoccupied, which
+                    // deliberately leaves lock edges held until the path completes, so skipping them
+                    // here left them held for the rest of the session, permanently blocking every path
+                    // that crosses them.
+                    //
+                    // Safe for a crossing declared symmetrically - each of the two edges naming the
+                    // other as a lock edge, which is how the editor writes them - because the crossing
+                    // edge is then itself part of any conflicting path, so isPathClear rejects that path
+                    // on the edge's own occupancy flag while we hold it.  Note that isPathClear does NOT
+                    // inspect lock edges, and occupancy is a flag rather than a count, so this reasoning
+                    // does not extend to a hand-edited autonomy.json in which two edges name a third as
+                    // a lock edge without either of them traversing it.
                     for (Edge lockEdge : e.getLockEdges())
                     {
                         lockEdge.setLockedEdgeUnoccupied();

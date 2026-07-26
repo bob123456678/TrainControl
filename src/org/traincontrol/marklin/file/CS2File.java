@@ -578,32 +578,39 @@ public final class CS2File
      */
     public List<MarklinRoute> parseRoutesCS3() throws Exception
     {
-        BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
-        BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
-
-        // Determine which locomotive DB version is active (v260+ or older 250)
+        // Determine which locomotive DB version is active (v260+ or older 250).  Probed once, up front,
+        // and the version passed explicitly below: the no-argument getCS3LocDBUrl() probes again, so this
+        // used to ask the Central Station twice per import.  Doing it before anything is opened also
+        // means a failed probe cannot strand a reader.
         boolean is260 = isCS3Version260OrAbove();
 
-        BufferedReader locBR = fetchURL(getCS3LocDBUrl());
-
-        // Now parse routes based on the loc DB version
-        if (is260)
+        // All three in one try-with-resources.  Each holds an HTTP connection to the Central Station, and
+        // an exception after the first was opened - a refused fetch, or a malformed response from any of
+        // them - used to leak every reader opened up to that point.  parseJSONArray/parseJSONObject close
+        // them too, which is harmless: BufferedReader.close is a no-op once already closed.
+        try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
+             BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
+             BufferedReader locBR   = fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)))
         {
-            // New firmware (260+): route DB is an array
-            return parseRoutesCS3(
-                parseJSONArray(routeBR),
-                parseJSONArray(magBR),
-                parseJSONArray(locBR)
-            );
-        }
-        else
-        {
-            // Old firmware: route DB is an object
-            return parseRoutesCS3(
-                parseJSONObject(routeBR).getJSONArray("automatics"),
-                parseJSONArray(magBR),
-                parseJSONArray(locBR)
-            );
+            // Now parse routes based on the loc DB version
+            if (is260)
+            {
+                // New firmware (260+): route DB is an array
+                return parseRoutesCS3(
+                    parseJSONArray(routeBR),
+                    parseJSONArray(magBR),
+                    parseJSONArray(locBR)
+                );
+            }
+            else
+            {
+                // Old firmware: route DB is an object
+                return parseRoutesCS3(
+                    parseJSONObject(routeBR).getJSONArray("automatics"),
+                    parseJSONArray(magBR),
+                    parseJSONArray(locBR)
+                );
+            }
         }
     }
     
@@ -1744,8 +1751,10 @@ public final class CS2File
      */
     public static JSONArray parseJSONArray (BufferedReader in) throws IOException
     {
-        // Closes the reader, as parseFile does - callers pass fetchURL(...) inline and have no other
-        // handle on it, so without this every CS3 API call leaked its connection
+        // Closes the reader, as parseFile does.  Every caller opens a reader purely to hand to this
+        // method and consumes it exactly once - parseRoutesCS3 picks one of its two firmware branches,
+        // so no reader is read twice - which makes closing here what actually frees the connection.
+        // Without it every CS3 API call leaked one.
         try (BufferedReader reader = in)
         {
             StringBuilder sb = new StringBuilder();
