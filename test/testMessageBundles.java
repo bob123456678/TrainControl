@@ -4,7 +4,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -28,6 +33,24 @@ import org.testng.annotations.Test;
 public class testMessageBundles
 {
     private static final String BUNDLE_DIR = "/org/traincontrol/resources/";
+    private static final String ENGLISH_BUNDLE = "messages.properties";
+
+    /**
+     * The key a line defines, or null if the line is blank, a comment, or carries no '='.
+     */
+    private static String keyOf(String line)
+    {
+        String trimmed = line.trim();
+
+        if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("!"))
+        {
+            return null;
+        }
+
+        int split = line.indexOf('=');
+
+        return split < 0 ? null : line.substring(0, split).trim();
+    }
 
     /**
      * Every message bundle on the test classpath, discovered rather than listed, so that adding a
@@ -171,5 +194,108 @@ public class testMessageBundles
 
         assertTrue(offenders.isEmpty(),
             "testNoStraightApostropheInAnyValue assumes one value per line. Continued lines: " + offenders);
+    }
+
+    /**
+     * No bundle may define the same key twice.
+     *
+     * A .properties file silently keeps only the LAST definition, so a duplicate means one of the two
+     * values is dead - and when they differ, the surviving text may not be the one anyone intended.
+     * autolayout.ui.errorAddEdge was exactly that: a variant carrying {0} was shadowed by a
+     * placeholder-less one, so the reason an edge failed to be added was silently discarded.
+     */
+    @Test
+    public void testNoDuplicateKeys() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            Map<String, Integer> seen = new HashMap<>();
+
+            int lineNumber = 0;
+
+            for (String line : Files.readAllLines(bundle.toPath(), StandardCharsets.ISO_8859_1))
+            {
+                lineNumber++;
+
+                String key = keyOf(line);
+
+                if (key == null)
+                {
+                    continue;
+                }
+
+                Integer earlier = seen.put(key, lineNumber);
+
+                if (earlier != null)
+                {
+                    offenders.add(bundle.getName() + " " + key
+                        + " (lines " + earlier + " and " + lineNumber + ")");
+                }
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "a .properties file keeps only the last definition, so one of these values is dead: "
+            + offenders);
+    }
+
+    /**
+     * Every translation defines exactly the same keys as the English bundle.
+     *
+     * A key missing from a translation falls back through ResourceBundle's parent chain and quietly
+     * renders in English, so it is easy to leave one behind without noticing.  An extra key is dead
+     * weight.  Neither shows up at runtime, which is why it is worth asserting here.
+     */
+    @Test
+    public void testTranslationsMatchEnglishKeySet() throws Exception
+    {
+        Map<String, Set<String>> byBundle = new HashMap<>();
+
+        for (File bundle : bundles())
+        {
+            Set<String> keys = new HashSet<>();
+
+            for (String line : Files.readAllLines(bundle.toPath(), StandardCharsets.ISO_8859_1))
+            {
+                String key = keyOf(line);
+
+                if (key != null)
+                {
+                    keys.add(key);
+                }
+            }
+
+            byBundle.put(bundle.getName(), keys);
+        }
+
+        Set<String> english = byBundle.get(ENGLISH_BUNDLE);
+
+        assertNotNull(english, ENGLISH_BUNDLE + " was not found among " + byBundle.keySet());
+
+        List<String> offenders = new ArrayList<>();
+
+        for (Map.Entry<String, Set<String>> bundle : byBundle.entrySet())
+        {
+            if (ENGLISH_BUNDLE.equals(bundle.getKey()))
+            {
+                continue;
+            }
+
+            Set<String> missing = new TreeSet<>(english);
+            missing.removeAll(bundle.getValue());
+
+            Set<String> extra = new TreeSet<>(bundle.getValue());
+            extra.removeAll(english);
+
+            if (!missing.isEmpty() || !extra.isEmpty())
+            {
+                offenders.add(bundle.getKey() + " missing=" + missing + " extra=" + extra);
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "translations are out of step with " + ENGLISH_BUNDLE + ": " + offenders);
     }
 }

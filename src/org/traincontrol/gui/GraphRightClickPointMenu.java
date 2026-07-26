@@ -596,7 +596,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     {
                         JOptionPane.showMessageDialog(
                             (Component) parent.getSwingView(),
-                            I18n.t("autolayout.ui.errorAddEdge")
+                            I18n.f("autolayout.ui.errorAddEdge", e.getMessage())
                         );
                     }
                 }
