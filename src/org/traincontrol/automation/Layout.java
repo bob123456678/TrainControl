@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -1474,7 +1475,11 @@ public class Layout
      */
     private void handleMisconfiguredPath(List<Edge> path, Locomotive loc)
     {
-        List<String> misconfigured = new ArrayList<>();
+        // LinkedHashSet: if a path repeats the same accessory across edges (e.g. a shared throat switch
+        // referenced by two consecutive edges), isPathClear already guarantees it's commanded to the same
+        // state at every occurrence, so the resulting string is identical each time and collapses here -
+        // the operator-facing message names each misconfigured accessory once, in first-seen order.
+        Set<String> misconfigured = new LinkedHashSet<>();
 
         for (Edge e : path)
         {
