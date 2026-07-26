@@ -1104,7 +1104,7 @@ public abstract class Locomotive
         {
             this.arrivalFunc = null;
         }
-        else if (arrivalFunc <= numF && arrivalFunc >= 0)
+        else if (arrivalFunc < numF && arrivalFunc >= 0)
         {
             this.arrivalFunc = arrivalFunc;
         }
@@ -1129,7 +1129,7 @@ public abstract class Locomotive
         {
             this.departureFunc = null;
         }
-        else if (departureFunc <= numF && departureFunc >= 0)
+        else if (departureFunc < numF && departureFunc >= 0)
         {
             this.departureFunc = departureFunc;
         }
@@ -1311,7 +1311,7 @@ public abstract class Locomotive
     
     public String getLocalFunctionImageURL(int fNo)
     {
-        if (fNo <= this.numF && fNo >= 0)
+        if (fNo < this.numF && fNo >= 0)
         {
             return this.localFunctionImageURLs.get(fNo);
         }
@@ -1321,7 +1321,7 @@ public abstract class Locomotive
     
     public boolean setLocalFunctionImageURL(int fNo, String url)
     {
-        if (fNo <= this.numF && fNo >= 0)
+        if (fNo < this.numF && fNo >= 0)
         {
             this.localFunctionImageURLs.put(fNo, url);
             return true;

@@ -1730,7 +1730,17 @@ public class Layout
             return null;
         }
         
-        List<Point> visited = new LinkedList<>();
+        // A set, not a list: this is probed with contains() once per neighbour of every point dequeued,
+        // which was a linear scan against a LinkedList.  Point overrides both equals and hashCode, so
+        // membership is decided identically - only the cost changes.
+        //
+        // Deliberately still marked on DEQUEUE below rather than on enqueue.  Marking on enqueue is the
+        // usual BFS refinement and would stop a point being queued more than once, but it would change
+        // what this method finds: all three callers pass excludePaths, and the search depends on
+        // reaching a point by several different routes in order to find one that is not excluded.
+        // Marking on enqueue would explore only the first route to each point and could then fail to
+        // return an allowed alternative that exists.
+        Set<Point> visited = new HashSet<>();
         Queue<PointPath> queue = new LinkedList<>();
         
         queue.add(new PointPath(start, new LinkedList<>()));

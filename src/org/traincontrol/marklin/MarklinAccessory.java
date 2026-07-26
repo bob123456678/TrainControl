@@ -319,12 +319,17 @@ public class MarklinAccessory extends Accessory
     }
     
     /**
-     * Gets the standardized accessory name along with the protocol
-     * @return 
+     * Gets the standardized accessory name along with the protocol.
+     *
+     * Built from the LOGICAL address, which is one above the raw address this class stores - the
+     * database is keyed on the logical one, so passing this.address produced a name one lower than
+     * getName() and than anything getAccessoryByName could resolve.  Has no callers today; this is
+     * corrected so the first one does not inherit an off-by-one.
+     * @return
      */
     public String getNameWithProtocol()
     {
-        return getNameWithProtocol(this.address, this.getType(), this.getDecoderType());
+        return getNameWithProtocol(this.address + 1, this.getType(), this.getDecoderType());
     }
 
     @Override

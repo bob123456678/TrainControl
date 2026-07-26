@@ -341,7 +341,12 @@ public class Point
 
     public int getX()
     {
-        return x;
+        // 0 when no coordinates have been assigned, rather than unboxing a null Integer into a
+        // NullPointerException carrying no message.  0 is already this codebase's "not positioned"
+        // value - TrainControlUI treats (0,0) exactly like !coordinatesSet() when deciding whether to
+        // auto-lay-out the graph - so a caller that forgets the check lands on that same path instead
+        // of crashing.  Anything needing to tell "at the origin" from "unset" must ask coordinatesSet().
+        return this.x == null ? 0 : this.x;
     }
 
     public void setX(int x)
@@ -351,7 +356,8 @@ public class Point
 
     public int getY()
     {
-        return y;
+        // See getX - 0 means "not positioned", not "at the origin"
+        return this.y == null ? 0 : this.y;
     }
 
     public void setY(int y)
