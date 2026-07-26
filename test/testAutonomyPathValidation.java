@@ -47,7 +47,7 @@ public class testAutonomyPathValidation
 
         // Keep the tests fast: the fault case waits out this timeout once.  The production default is much
         // larger to accommodate a slow Central Station.
-        Layout.PATH_VALIDATION_MS = 300;
+        Layout.PATH_VALIDATION_MS = 100;
 
         // Exercise the guard explicitly (this is the production default, but be robust to other tests).
         Layout.PATH_INTEGRITY_VALIDATION = true;
@@ -57,7 +57,7 @@ public class testAutonomyPathValidation
     public static void tearDownClass()
     {
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
-        Layout.PATH_VALIDATION_MS = 5000;
+        Layout.PATH_VALIDATION_MS = 1000;
         Layout.PATH_INTEGRITY_VALIDATION = true;
     }
 

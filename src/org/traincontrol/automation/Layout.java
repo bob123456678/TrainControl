@@ -44,10 +44,10 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
 
-    // Max time to wait for the configured accessories to reach their commanded state before deciding the
+    // Max time to wait per accessory for the configured accessories to reach their commanded state before deciding the
     // path failed to configure.  Not final so tests can shorten it; the wait exits early on success and
     // only blocks the full duration when an accessory does not confirm.
-    public static int PATH_VALIDATION_MS = 5000;
+    public static int PATH_VALIDATION_MS = 1000;
 
     // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
     // reached its commanded state before releasing the locomotive; on a persistent mismatch it stops that
@@ -1408,7 +1408,7 @@ public class Layout
         // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
         // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
         // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS;
+        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS * accessories.size();
 
         synchronized (Accessory.actuationConfirmedMonitor)
         {
