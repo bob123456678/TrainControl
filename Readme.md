@@ -362,6 +362,7 @@ Tab icons provided by Freepik.
 
 * v2.8.0 [Beta]
     - Bug fixes
+        - Fixed bug where a route imported from a Central Station 2 could never fire if one of its s88 conditions expected a sensor to be clear
         - Fixed bug where a conditional route would stop firing for the rest of the session if one of its conditions referred to a locomotive that was not placed on the autonomy graph.  The route still showed as enabled
         - Autonomy: a path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched

@@ -739,30 +739,29 @@ public final class CS2File
                                
                             // Condition S88s
                             if ("kont".equals(kv[0]))
-                            {         
-                                // Already saw a previous condition - add it to route
+                            {
+                                // Another sensor follows in the same group - store the previous one
                                 if (conditionS88 != 0)
                                 {
                                     r.addConditionS88(conditionS88, s88Status != 0);
                                     s88Status = 1;
                                 }
-                                
+
                                 conditionS88 = Integer.valueOf(kv[1].trim());
                             }
-                            
+
                             if ("hi".equals(kv[0]))
-                            {                                
+                            {
                                 s88Status = Integer.valueOf(kv[1].trim());
                             }
                         }
-                        
-                        // Add final condition to route
-                        if (conditionS88 != 0)
-                        {
-                            r.addConditionS88(conditionS88, s88Status != 0);
-                        }
                     }
-                    
+
+                    if (conditionS88 != 0)
+                    {
+                        r.addConditionS88(conditionS88, s88Status != 0);
+                    }
+
                     // Handle 3-way switches and signals
                     if (id > 0)
                     {
