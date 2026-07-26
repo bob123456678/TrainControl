@@ -360,10 +360,10 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v2.7.5 [Beta]
+* v2.7.5 [7/26/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
     - Removed UI features:
-        - Copy-to-next/-previous page option from locomotive button right-click menu
+        - Copy-to-next/-previous page option from locomotive button right-click menu (now redundant with drag and drop)
 
 * v2.7.4 [7/25/2026]   
     - Autonomy
