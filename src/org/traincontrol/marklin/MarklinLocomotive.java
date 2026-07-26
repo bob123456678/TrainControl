@@ -848,27 +848,32 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Prints a human-readable address (greater or equal to 1) based on a raw UID
+     * Prints a human-readable decoder type and address (1 or greater) based on a raw UID.
+     * Used to identify a locomotive we have no record of, so it names the protocol - an address alone
+     * does not say which locomotive to look for.
      * @param UID
-     * @return 
+     * @return
      */
     public static String addressFromUID(int UID)
     {
-        if (UID > MFX_BASE)
+        // Tested from the highest base downwards.  DCC_BASE (0xc000) is above MFX_BASE (0x4000), so
+        // testing MFX first caught every DCC and multi-unit UID as well and reported it as an MFX
+        // address - the DCC and multi-unit branches could never be reached.
+        if (UID > DCC_BASE)
         {
-            return Conversion.intToHex(UID - MFX_BASE);
+            return decoderType.DCC.name() + " " + (UID - DCC_BASE);
+        }
+        else if (UID > MFX_BASE)
+        {
+            return decoderType.MFX.name() + " " + (UID - MFX_BASE);
         }
         else if (UID > MULTI_UNIT_BASE)
         {
-            return Conversion.intToHex(UID - MULTI_UNIT_BASE);
-        }
-        else if (UID > DCC_BASE)
-        {
-            return Conversion.intToHex(UID - DCC_BASE);
+            return decoderType.MULTI_UNIT.name() + " " + (UID - MULTI_UNIT_BASE);
         }
         else
         {
-            return Integer.toString(UID);
+            return decoderType.MM2.name() + " " + UID;
         }
     }
     

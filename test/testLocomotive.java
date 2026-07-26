@@ -575,10 +575,39 @@ public class testLocomotive
         assertEquals(l9.getLinkedLocomotiveNames().size(), 1);
     }
     
+    /**
+     * A UID identifies both the decoder type and the address, and addressFromUID has to recover both -
+     * it names the locomotive in the log when a command arrives for one we have no record of.
+     *
+     * The bases are not ordered by value: DCC (0xc000) sits above MFX (0x4000), so testing MFX first
+     * matched every DCC and multi-unit UID too and reported them all as MFX addresses.  Each type is
+     * checked here at both ends of its address range, since the MFX and multi-unit ranges meet exactly.
+     */
+    @Test
+    public void testAddressFromUID()
+    {
+        assertEquals(MarklinLocomotive.addressFromUID(5), "MM2 5");
+        assertEquals(MarklinLocomotive.addressFromUID(MarklinLocomotive.MM2_MAX_ADDR), "MM2 80");
+
+        // Multi-unit tops out exactly where MFX begins
+        assertEquals(MarklinLocomotive.addressFromUID(MarklinLocomotive.MULTI_UNIT_BASE + 1), "MULTI_UNIT 1");
+        assertEquals(MarklinLocomotive.addressFromUID(
+            MarklinLocomotive.MULTI_UNIT_BASE + MarklinLocomotive.MULTI_UNIT_MAX_ADDR), "MULTI_UNIT 5120");
+
+        assertEquals(MarklinLocomotive.addressFromUID(MarklinLocomotive.MFX_BASE + 1), "MFX 1");
+        assertEquals(MarklinLocomotive.addressFromUID(
+            MarklinLocomotive.MFX_BASE + MarklinLocomotive.MFX_MAX_ADDR), "MFX 16383");
+
+        // Previously unreachable: these came out as MFX addresses
+        assertEquals(MarklinLocomotive.addressFromUID(MarklinLocomotive.DCC_BASE + 1), "DCC 1");
+        assertEquals(MarklinLocomotive.addressFromUID(
+            MarklinLocomotive.DCC_BASE + MarklinLocomotive.DCC_MAX_ADDR), "DCC 2048");
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLocomotive.model = init(null, true, false, false, true); 
+        testLocomotive.model = init(null, true, false, false, true);
         model.stop();
         
         l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",
