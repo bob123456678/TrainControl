@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import org.json.JSONArray;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
@@ -538,7 +540,92 @@ public class testRoutes
 
         assertTrue(new HashSet<>(finalRoutes).equals(new HashSet<>(currentRoutes)));
     }
-    
+
+    /**
+     * Setting a delay by address must work on a route that also contains locomotive commands.
+     *
+     * MarklinRoute.setDelay walks every command looking for a matching address, but getAddress() is
+     * only meaningful for accessory and feedback commands - it parses the ADDRESS entry of the command
+     * config, which locomotive commands do not have.  A locomotive command appearing before the target
+     * accessory therefore aborts the whole call.
+     *
+     * This is the shared root cause behind the CS3 import failure below; it is exercised here directly
+     * because it is protocol-independent.
+     */
+    @Test
+    public void testSetDelayOnRouteContainingLocomotiveCommands()
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        // The locomotive does not need to exist - only the command's shape matters here
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("Delay Test Loc", 40));
+        commands.add(RouteCommand.RouteCommandLocomotiveDirection("Delay Test Loc", DIR_FORWARD));
+        commands.add(RouteCommand.RouteCommandAccessory(5, MM2, true));
+
+        MarklinRoute route = new MarklinRoute(model, "Mixed delay route", 9701, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        route.setDelay(5, 1500);
+
+        assertEquals(route.getRoute().get(2).getDelay(), 1500,
+            "the delay should have been applied to the accessory at address 5");
+
+        assertEquals(route.getRoute().get(0).getDelay(), 0,
+            "the locomotive speed command should be untouched");
+
+        assertEquals(route.getRoute().get(1).getDelay(), 0,
+            "the locomotive direction command should be untouched");
+    }
+
+    /**
+     * A CS3 route that starts a locomotive and then throws a switch after a delay must import intact.
+     *
+     * The item order is what the CS3 editor produces when the operator sets a speed and then schedules
+     * an accessory a couple of seconds later.  parseRoutesCS3 appends the speed command first, so the
+     * subsequent setDelay call for the accessory walks over it - see the test above.  The resulting
+     * exception is swallowed by the per-route handler, and the entire route is dropped from the import
+     * with only a generic "could not be parsed" message.
+     *
+     * Note the reverse ordering (accessory first) imports fine, as does the same route without a
+     * delay, so nothing but the ordering plus the delay is required to lose the route.
+     */
+    @Test
+    public void testCS3RouteWithLocomotiveCommandThenDelayedAccessory()
+    {
+        CS2File parser = new CS2File(null, model);
+
+        JSONArray locs = new JSONArray(
+            "[{\"internname\": \"loc_mixed\", \"name\": \"CS3 Mixed Route Loc\"}]");
+
+        JSONArray mags = new JSONArray(
+            "[{\"id\": 1, \"address\": 7, \"prot\": \"mm\", \"typ\": \"linksweiche\", \"states\": 2}]");
+
+        JSONArray routes = new JSONArray(
+            "[{\"id\": \"9702\", \"name\": \"Mixed CS3 route\", \"items\": ["
+          + "  {\"typ\": \"speed\", \"lok\": \"loc_mixed\", \"wert\": 500, \"key\": \"000\"},"
+          + "  {\"typ\": \"mag\", \"magnetartikel\": \"1\", \"stellung\": \"1\", \"sekunde\": 2, \"key\": \"001\"}"
+          + "]}]");
+
+        List<MarklinRoute> parsed = parser.parseRoutesCS3(routes, mags, locs);
+
+        assertEquals(parsed.size(), 1,
+            "a route mixing a locomotive command with a delayed accessory must not be dropped");
+
+        MarklinRoute route = parsed.get(0);
+
+        assertEquals(route.getRoute().size(), 2,
+            "both the speed command and the accessory should be present");
+
+        assertTrue(route.getRoute().get(0).isLocomotiveSpeed(),
+            "the speed command should come first");
+
+        assertTrue(route.getRoute().get(1).isAccessory(),
+            "the accessory should come second");
+
+        assertEquals(route.getRoute().get(1).getDelay(), 2000,
+            "the accessory's 2 second delay should have survived the import");
+    }
+
     /**
      * Adding and removing a route from the database
      * @throws java.lang.IllegalAccessException

@@ -494,21 +494,24 @@ public class MarklinRoute extends Route
     }
      
     /**
-     * Sets the delay for an individual item
+     * Sets the delay for an individual item, identified by its address
      * @param key
-     * @param delayMs 
+     * @param delayMs
      */
     public final void setDelay(Integer key, Integer delayMs)
     {
         for (RouteCommand rc : this.route)
         {
-            if (rc.getAddress() == key)
+            // Locomotive, function and route commands carry no address.  Skipping them matters:
+            // calling getAddress() on one throws, and in the CS3 importer that exception is caught
+            // per route, silently dropping any route that sets a speed before a delayed accessory.
+            if (rc.hasAddress() && rc.getAddress() == key)
             {
                 rc.setDelay(delayMs);
                 return;
             }
         }
-        
+
         this.network.logf("route.keyNotFound", key);
     }
     

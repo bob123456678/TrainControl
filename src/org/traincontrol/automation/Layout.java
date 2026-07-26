@@ -141,16 +141,21 @@ public class Layout
      * Used to preview conflicting edge configuration
      */
     private class EdgeConfigurationState
-    {         
+    {
         public boolean configIsValid;
         public final Map<Accessory, Accessory.accessorySetting> configHistory;
         public final List<String> invalidConfigs;
 
+        // Set when the preview failed for a reason more specific than conflicting commands, so that
+        // isPathClear can report what actually went wrong instead of a generic conflict message
+        public String errorMessage;
+
         public EdgeConfigurationState()
-        {         
+        {
             this.configIsValid = true;
             this.configHistory = new HashMap<>();
             this.invalidConfigs = new LinkedList<>();
+            this.errorMessage = null;
         }
     }
     
@@ -1029,13 +1034,16 @@ public class Layout
             this.configureEdge(e, validity);
         }
 
-        // Invalid state means there were conflicting accessory commands, so this path would not work as intended
+        // Invalid state means the commands conflicted, or referenced an accessory we do not have -
+        // either way this path would not work as intended, so it must not be offered
         if (!validity.configIsValid)
         {
             logPathError(
                 loc,
                 path,
-                I18n.f("autolayout.errorConflictingAccessoryCommands", validity.invalidConfigs.toString())
+                validity.errorMessage != null
+                    ? validity.errorMessage
+                    : I18n.f("autolayout.errorConflictingAccessoryCommands", validity.invalidConfigs.toString())
             );
             return false;
         }
@@ -1065,13 +1073,16 @@ public class Layout
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
      * @param e - the edge
      * @param preConfigure - when set, simulate sequence of commands and record validity status
+     * @return false if the edge could not be configured, or - when previewing - cannot be
      */
-    private void configureEdge(Edge e, EdgeConfigurationState preConfigure)
+    private boolean configureEdge(Edge e, EdgeConfigurationState preConfigure)
     {
+        boolean result = true;
+
         for (String name : e.getConfigCommands().keySet())
-        { 
-            Accessory.accessorySetting state = e.getConfigCommands().get(name);  
-        
+        {
+            Accessory.accessorySetting state = e.getConfigCommands().get(name);
+
             // Sanity check
             Accessory acc = control.getAccessoryByName(name);
 
@@ -1080,14 +1091,22 @@ public class Layout
                 String errorMessage = I18n.f("autolayout.errorAccessoryDoesNotExist", name, state);
                 control.log(errorMessage);
 
-                if (preConfigure == null)
+                if (preConfigure != null)
                 {
-                    this.invalidate();
-                    Layout.lastError = errorMessage;
-                    control.logf("autolayout.errorInvalidatingAutoLayoutState");
+                    // A path whose accessory we do not have cannot be set up, so it must not be
+                    // offered.  Carry on checking so that every missing accessory is reported at once.
+                    preConfigure.invalidConfigs.add(name + " " + state);
+                    preConfigure.configIsValid = false;
+                    preConfigure.errorMessage = errorMessage;
+                    result = false;
+                    continue;
                 }
-                
-                return;
+
+                this.invalidate();
+                Layout.lastError = errorMessage;
+                control.logf("autolayout.errorInvalidatingAutoLayoutState");
+
+                return false;
             }
 
             if (preConfigure != null)
@@ -1111,29 +1130,32 @@ public class Layout
                     state.toString().toLowerCase()
                 );
 
-                boolean result = acc.setState(state);
-
-                if (!result)
+                if (!acc.setState(state))
                 {
-                    // This should never happen
+                    // This should never happen - but if it does the accessory was not commanded, so
+                    // the edge is not configured and the caller must not release the locomotive
                     control.logf(
                         "autolayout.errorInvalidConfigurationCommand",
                         name,
                         state.toString()
                     );
+
+                    result = false;
                 }
 
                 // Sleep between commands
-                try 
+                try
                 {
                     Thread.sleep(CONFIGURE_SLEEP);
-                } 
+                }
                 catch (InterruptedException ex)
                 {
                     Thread.currentThread().interrupt();
                 }
             }
         }
+
+        return result;
     }
     
     /**
@@ -1339,6 +1361,8 @@ public class Layout
         // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
         // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
         // see validatePathActuation) validation wait.
+        boolean configureFailed = false;
+
         synchronized (this)
         {
             // Return if this path isn't clear
@@ -1352,9 +1376,24 @@ public class Layout
             {
                 e.setOccupied();
                 e.getEnd().setLocomotive(loc);
-                this.configureEdge(e, null);
+
+                // isPathClear already previewed the configuration, so this should not fail - but if an
+                // accessory went missing in between, the locomotive must not be released onto a path we
+                // were unable to set up.  Stop here and let the caller below release the locks.
+                if (!this.configureEdge(e, null))
+                {
+                    configureFailed = true;
+                    break;
+                }
+
                 loc.delay(CONFIGURE_SLEEP);
             }
+        }
+
+        if (configureFailed)
+        {
+            this.handleMisconfiguredPath(path, loc);
+            return false;
         }
 
         // In pure simulation mode the accessories are not really actuated, so there is nothing to
@@ -1489,9 +1528,11 @@ public class Layout
                 accessorySetting state = e.getConfigCommands().get(name);
                 boolean d = state == accessorySetting.TURN || state == accessorySetting.RED;
 
-                if (acc != null && !acc.isConfirmedAt(d))
+                // An accessory that is not in the database at all is named too - otherwise the
+                // operator is told the path is misconfigured without being told which part
+                if (acc == null || !acc.isConfirmedAt(d))
                 {
-                    misconfigured.add(acc.getName() + " (" + state.toString().toLowerCase() + ")");
+                    misconfigured.add(name + " (" + state.toString().toLowerCase() + ")");
                 }
             }
         }

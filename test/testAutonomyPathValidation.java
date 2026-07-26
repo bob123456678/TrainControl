@@ -323,4 +323,99 @@ public class testAutonomyPathValidation
             Layout.PATH_VALIDATION_ALERT_THRESHOLD = originalThreshold;
         }
     }
+
+    /**
+     * An edge whose configuration names an accessory that is not in the database cannot be set up, so
+     * the path must be refused outright rather than locked and handed to a locomotive.  Otherwise the
+     * switch is never commanded and the train runs over it in whatever position it was left in.
+     *
+     * This is deliberately independent of Path Integrity Validation and of simulation mode: that guard
+     * asks whether the Central Station confirmed an actuation, whereas here no command is sent at all.
+     */
+    @Test
+    public void testMissingAccessoryPreventsPathFromBeingUsed() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(51, "_missing");
+
+        // No accessory can be called this - the maximum logical address is 320 (MM2) and 2048 (DCC)
+        String missing = "Switch 99999";
+        assertNull(model.getAccessoryByName(missing), "precondition: the accessory must not exist");
+
+        tp.path.get(0).addConfigCommand(missing, accessorySetting.TURN);
+
+        MarklinLocomotive loc = dummyLoc();
+
+        assertFalse(tp.layout.isPathClear(tp.path, loc),
+            "a path naming an accessory we do not have must not be reported as clear");
+
+        assertFalse(tp.layout.configureAndLockPath(tp.path, loc),
+            "the path must not be locked, nor reported as ready to run");
+
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()),
+            "the rejected path must not be left locked");
+
+        assertTrue(model.getPowerState(),
+            "power must stay on so the other locomotives are unaffected");
+
+        // The rest of the layout is still usable - only this path is refused.  Rejecting it during the
+        // preview means inspecting a path (pickPath, getPossiblePaths, debugPath) no longer has the
+        // side effect of invalidating the whole configuration.
+        assertTrue(tp.layout.isValid(),
+            "one unusable path must not invalidate the entire layout");
+    }
+
+    /**
+     * The same case end to end: executePath must refuse to release the locomotive at all.
+     */
+    @Test
+    public void testMissingAccessoryPreventsLocomotiveFromDeparting() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(61, "_missingrun");
+
+        String missing = "Switch 99999";
+        assertNull(model.getAccessoryByName(missing), "precondition: the accessory must not exist");
+
+        tp.path.get(0).addConfigCommand(missing, accessorySetting.TURN);
+
+        MarklinLocomotive loc = dummyLoc();
+        tp.layout.getPoint("A_missingrun").setLocomotive(loc);
+
+        assertFalse(tp.layout.executePath(tp.path, loc, 30, null),
+            "the locomotive must not be released onto a path that could not be set up");
+
+        assertTrue(loc.getSpeed() == 0, "the locomotive must never have been started");
+
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()),
+            "the rejected path must not be left locked");
+    }
+
+    /**
+     * Control: the identical path runs normally once the accessory exists, confirming the tests above
+     * fail for the missing accessory and not for anything else in the setup.
+     */
+    @Test
+    public void testPathRunsOnceTheAccessoryExists() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(71, "_present");
+
+        MarklinAccessory extra = model.newSwitch(75, MM2, false);
+        tp.path.get(0).addConfigCommand(extra.getName(), accessorySetting.TURN);
+
+        MarklinLocomotive loc = dummyLoc();
+
+        assertTrue(tp.layout.isPathClear(tp.path, loc),
+            "control: with every accessory present the path is clear");
+
+        assertTrue(tp.layout.configureAndLockPath(tp.path, loc),
+            "control: with every accessory present the path locks and is ready");
+    }
 }
