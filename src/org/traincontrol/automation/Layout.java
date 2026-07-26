@@ -1408,7 +1408,7 @@ public class Layout
         // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
         // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
         // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS * accessories.size();
+        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
 
         synchronized (Accessory.actuationConfirmedMonitor)
         {
