@@ -2,6 +2,8 @@ package org.traincontrol.base;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.model.ViewListener;
 
@@ -222,32 +224,36 @@ abstract public class Route
         }
         else if (rc.isAutoLocomotive())
         {
-            if (control.hasAutoLayout() && control.getLocByName(rc.getName()) != null)
+            if (!control.hasAutoLayout())
             {
-                // Avoid race condition and ensure the autonomy resolution finishes first
-                control.getAutoLayout().waitForS88Reached(control.getLocByName(rc.getName()), Integer.toString(rc.getAddress()));
-                
-                return 
-                    // Last milestone if loc is active
-                    Integer.toString(rc.getAddress()).equals(
-                    control.getAutoLayout().getLatestMilestoneS88(
-                        control.getLocByName(rc.getName())
-                    )) 
-                    || 
-                    // Also check Loc location if route was completed
-                    (
-                        // This would require the locomotive to be inactive
-                        // !control.getAutoLayout().getActiveLocomotives().containsKey(control.getLocByName(rc.getName()))
-                        // &&
-                        Integer.toString(rc.getAddress()).equals(
-                            control.getAutoLayout().getLocomotiveLocation(
-                                control.getLocByName(rc.getName())
-                            ).getS88()
-                        )
-                    );
+                return false;
             }
-            
-            return false;
+
+            Locomotive loc = control.getLocByName(rc.getName());
+
+            if (loc == null)
+            {
+                return false;
+            }
+
+            Layout layout = control.getAutoLayout();
+            String s88 = Integer.toString(rc.getAddress());
+
+            // Avoid a race condition and ensure the autonomy resolution finishes first
+            layout.waitForS88Reached(loc, s88);
+
+            // The last milestone reached, while the locomotive is running a path
+            if (s88.equals(layout.getLatestMilestoneS88(loc)))
+            {
+                return true;
+            }
+
+            // Otherwise wherever the locomotive is standing, for a path that has completed.  A
+            // locomotive that is not on the autonomy graph at all has no location, and so simply does
+            // not satisfy this condition
+            Point location = layout.getLocomotiveLocation(loc);
+
+            return location != null && s88.equals(location.getS88());
         }
         
         return false;

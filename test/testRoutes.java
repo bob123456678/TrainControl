@@ -25,6 +25,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
+import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
@@ -413,8 +414,151 @@ public class testRoutes
         assertTrue(node18.evaluate(model));
     }
 
+    /**
+     * A minimal autonomy configuration with a single station, so that autoloc conditions have a graph
+     * to resolve against.
+     */
+    private static String stationOnlyAutonomy(String pointName, int s88)
+    {
+        return "{"
+            + "\"points\": [ {\"name\": \"" + pointName + "\", \"station\": true, \"s88\": " + s88 + "} ],"
+            + "\"edges\": [],"
+            + "\"minDelay\": 0,"
+            + "\"maxDelay\": 0,"
+            + "\"defaultLocSpeed\": 30"
+            + "}";
+    }
+
+    /**
+     * Drives a sensor clear then occupied, holding each state well past
+     * Locomotive.FEEDBACK_DURATION_THRESHOLD, then allows time for the route body to run.
+     */
+    private static void pulseFeedback(String feedbackName) throws InterruptedException
+    {
+        model.setFeedbackState(feedbackName, false);
+        Thread.sleep(400);
+        model.setFeedbackState(feedbackName, true);
+        Thread.sleep(1500);
+    }
+
+    /**
+     * An autoloc condition names a locomotive and the sensor it is expected to be at.  A locomotive
+     * that is not on the autonomy graph at all simply does not satisfy that condition - it must
+     * evaluate to false rather than failing.
+     */
     @Test
-    public void testExpressions() throws Exception 
+    public void testAutoLocomotiveConditionWithUnplacedLocomotive() throws Exception
+    {
+        model.parseAuto(stationOnlyAutonomy("A4R_Unplaced", 8801));
+
+        String locName = model.getLocList().get(0);
+
+        assertNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(locName)),
+            "precondition: the locomotive is not on the graph");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8801), model),
+            "an unplaced locomotive cannot be at the named sensor");
+    }
+
+    /**
+     * Control: placed at the named sensor, the same condition is satisfied.
+     */
+    @Test
+    public void testAutoLocomotiveConditionWithPlacedLocomotive() throws Exception
+    {
+        model.parseAuto(stationOnlyAutonomy("A4R_Placed", 8802));
+
+        String locName = model.getLocList().get(0);
+
+        assertTrue(model.getAutoLayout().moveLocomotive(locName, "A4R_Placed", false),
+            "precondition: the locomotive is placed at the station");
+
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8802), model),
+            "a locomotive standing at the named sensor satisfies the condition");
+    }
+
+    /**
+     * Control: placed somewhere else, the condition is not satisfied - and still does not fail.
+     */
+    @Test
+    public void testAutoLocomotiveConditionAtADifferentSensor() throws Exception
+    {
+        model.parseAuto(stationOnlyAutonomy("A4R_Elsewhere", 8803));
+
+        String locName = model.getLocList().get(0);
+
+        assertTrue(model.getAutoLayout().moveLocomotive(locName, "A4R_Elsewhere", false));
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8804), model),
+            "the locomotive is at 8803, not 8804");
+    }
+
+    /**
+     * The operational consequence, end to end.
+     *
+     * executeAutoRoute evaluates a route's conditions inside a bare Thread with no exception handler.
+     * If evaluating a condition fails, that thread dies and the route stops watching its sensor for the
+     * rest of the session - while still reporting itself as enabled.  A condition that is merely not
+     * satisfied must instead be retried on the next trigger.
+     */
+    @Test
+    public void testUnsatisfiedAutoLocConditionDoesNotKillTheRouteMonitor() throws Exception
+    {
+        model.parseAuto(stationOnlyAutonomy("A4R_Monitor", 8811));
+
+        model.newFeedback(8812, null);
+        model.setFeedbackState("8812", false);
+
+        MarklinAccessory observable = model.newSwitch(286, MM2, false);
+        assertFalse(observable.isSwitched(), "precondition: the observed switch starts straight");
+
+        String locName = model.getLocList().get(0);
+
+        assertNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(locName)),
+            "precondition: the locomotive is not on the graph, so the condition is unsatisfied");
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(286, MM2, true));
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandAutoLocomotive(locName, 8811));
+
+        MarklinRoute route = new MarklinRoute(model, "A4 monitor survival route", 9801, commands, 8812,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, NodeExpression.fromList(conditions));
+
+        try
+        {
+            // Let the monitor thread reach its blocking wait
+            Thread.sleep(600);
+
+            // First trigger: the condition is not satisfied, so the route must not fire
+            pulseFeedback("8812");
+
+            assertFalse(observable.isSwitched(),
+                "the route must not fire while its condition is unsatisfied");
+
+            // Now satisfy the condition
+            assertTrue(model.getAutoLayout().moveLocomotive(locName, "A4R_Monitor", false));
+
+            assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8811), model),
+                "the condition is now satisfiable");
+
+            assertTrue(route.isEnabled(), "the route still reports itself as enabled");
+
+            // Second trigger: a route that is still watching its sensor must now fire
+            pulseFeedback("8812");
+
+            assertTrue(observable.isSwitched(),
+                "the route must still be monitoring its sensor after an unsatisfied condition");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    @Test
+    public void testExpressions() throws Exception
     {
         // Generate random expressions and verify consistency
         for (int i = 0; i < 20; i++)

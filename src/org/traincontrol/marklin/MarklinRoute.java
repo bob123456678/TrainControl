@@ -143,26 +143,39 @@ public class MarklinRoute extends Route
                     
                     // Exit if the state changed
                     if (!this.enabled) return;
-                    
-                    // Check the condition
-                    if (this.hasConditions())
-                    {                      
-                        if (!this.conditions.evaluate(network))
-                        {                        
+
+                    // Anything that goes wrong here must not end the loop.  This runs on a bare thread
+                    // with no handler, so an escaping exception would silently stop this route from
+                    // watching its sensor for the rest of the session, while it still reports itself
+                    // as enabled.  Log it and wait for the next trigger instead.
+                    try
+                    {
+                        // Check the condition
+                        if (this.hasConditions() && !this.conditions.evaluate(network))
+                        {
                             this.network.logf(
                                 "route.s88ConditionFailed",
                                 this.getName()
-                            );                           
+                            );
                             continue;
                         }
-                    }
-            
-                    this.network.logf(
-                        "route.s88Triggered",
-                        this.getName()
-                    );
 
-                    this.execRoute(true);                    
+                        this.network.logf(
+                            "route.s88Triggered",
+                            this.getName()
+                        );
+
+                        this.execRoute(true);
+                    }
+                    catch (Exception e)
+                    {
+                        this.network.logf(
+                            "route.s88ConditionFailed",
+                            this.getName()
+                        );
+
+                        this.network.log(e);
+                    }
                 }
             }).start();
             
