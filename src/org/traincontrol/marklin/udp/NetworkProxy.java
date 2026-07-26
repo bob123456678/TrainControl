@@ -45,12 +45,17 @@ public class NetworkProxy
     }
     
     /**
-     * Gets the IP
-     * @return 
+     * Gets the Central Station's address, as a literal IP suitable for building URLs
+     * @return
      */
     public String getIP()
     {
-        return this.transmitIP.toString().replaceAll("/", "");
+        // InetAddress.toString() is "hostname/literal", with the hostname empty when none is known.
+        // Stripping the slash therefore only worked for an address entered as a dotted quad, where the
+        // hostname is null: given a hostname the two halves were concatenated into nonsense such as
+        // "localhost127.0.0.1", every HTTP fetch then failed, and the operator was told the Central
+        // Station was unreachable moments after the connection check had passed.
+        return this.transmitIP.getHostAddress();
     }
 
     /**

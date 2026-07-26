@@ -316,11 +316,16 @@ public class Edge
      */
     synchronized public boolean isOccupied(Locomotive loc)
     {
-        if (this.end.isOccupied() && !this.end.getCurrentLocomotive().equals(loc))
+        // Read once.  Point.isOccupied is synchronized but getCurrentLocomotive is not, so testing the
+        // first and dereferencing the second let another thread clear the point in between - which threw
+        // a NullPointerException inside isPathClear, on a locomotive thread
+        Locomotive endLocomotive = this.end.getCurrentLocomotive();
+
+        if (endLocomotive != null && !endLocomotive.equals(loc))
         {
             return true;
         }
-        
+
         return occupied;
     }
     

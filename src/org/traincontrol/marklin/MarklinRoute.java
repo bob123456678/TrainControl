@@ -33,6 +33,9 @@ public class MarklinRoute extends Route
     private int id;
     
     // Gui reference
+    // ConcurrentHashMap-backed set: addTile is called from the EDT as track diagram windows open,
+    // while updateTiles iterates and prunes from a Central Station message thread.  A plain HashSet
+    // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
     
     // Extra delay between route commands
@@ -64,7 +67,7 @@ public class MarklinRoute extends Route
         this.id = id;
         this.network = network;  
         
-        this.tiles = new HashSet<>();
+        this.tiles = java.util.concurrent.ConcurrentHashMap.newKeySet();
         
         this.s88 = 0;
         
@@ -93,7 +96,7 @@ public class MarklinRoute extends Route
         this.id = id;
         this.network = network;    
         
-        this.tiles = new HashSet<>();
+        this.tiles = java.util.concurrent.ConcurrentHashMap.newKeySet();
         this.s88 = s88;
         this.triggerType = triggerType;
         this.enabled = enabled;
@@ -279,196 +282,204 @@ public class MarklinRoute extends Route
                 // This will highlight icons in the UI
                 this.updateTiles();
 
-                for (RouteCommand rc : this.route)
+                // try/finally so that stopExecuting always runs.  setExecuting is the re-entrancy
+                // guard: if a command threw, the flag stayed set and every later attempt to run this
+                // route silently returned false for the rest of the session.
+                try
                 {
-                    if (rc != null)
+                    for (RouteCommand rc : this.route)
                     {
-                        if (rc.isAccessory())
+                        if (rc != null)
                         {
-                            int idd = rc.getAddress();
-                            boolean state = rc.getSetting();
-
-                            this.network.setAccessoryState(idd, rc.getProtocol(), state);
-                        }
-                        else if (rc.isStop())
-                        {                        
-                            // Only send stop command once
-                            if (this.network.getPowerState())
+                            if (rc.isAccessory())
                             {
-                                this.network.logf(
-                                    "route.powerTurnedOffCondition",
-                                    this.getName()
-                                );
-                                this.network.stop();
+                                int idd = rc.getAddress();
+                                boolean state = rc.getSetting();
+
+                                this.network.setAccessoryState(idd, rc.getProtocol(), state);
+                            }
+                            else if (rc.isStop())
+                            {                        
+                                // Only send stop command once
+                                if (this.network.getPowerState())
+                                {
+                                    this.network.logf(
+                                        "route.powerTurnedOffCondition",
+                                        this.getName()
+                                    );
+                                    this.network.stop();
                                 
-                                if (auto && this.network.getGUI() != null)
-                                {
-                                    this.network.getGUI().emergencyStopTriggered(this);
-                                }
-                            }
-                            else
-                            {
-                                this.network.logf(
-                                    "route.conditionFiredPowerAlreadyOff",
-                                    this.getName()
-                                );
-                            }
-                        }
-                        else if (rc.isFunctionsOff())
-                        {
-                            this.network.logf(
-                                "route.turningOffFunctions",
-                                this.getName()
-                            );
-                            
-                            this.network.allFunctionsOff();
-                        }
-                        else if (rc.isAutonomyLightsOn())
-                        {
-                            if (this.network.hasAutoLayout())
-                            {
-                                this.network.logf(
-                                    "route.turningOnAutonomyLights",
-                                    this.getName()
-                                );
-
-                                this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
-                            }
-                        }
-                        else if (rc.isLightsOn())
-                        {
-                            this.network.logf(
-                                "route.turningOnAllLights",
-                                this.getName()
-                            );
-
-                            this.network.lightsOn(this.network.getLocList());  
-                        }
-                        else if (rc.isLocomotiveSpeed())
-                        {
-                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
-                            
-                            if (loc != null)
-                            {
-                                if (rc.getSpeed() < 0)
-                                {
-                                    loc.instantStop();
-                                }
-                                else
-                                {
-                                    loc.setSpeed(rc.getSpeed());
-                                }
-                            }
-                            else
-                            {
-                                this.network.logf(
-                                    "route.warningLocomotiveNotExist",
-                                    rc.getName()
-                                );
-                            }
-                        }
-                        else if (rc.isLocomotiveDirection())
-                        {
-                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
-                            
-                            if (loc != null)
-                            {
-                                loc.setDirection(rc.getDirection());
-                            }
-                            else
-                            {
-                                this.network.logf(
-                                    "route.warningLocomotiveNotExist",
-                                    rc.getName()
-                                );
-                            }
-                        }
-                        else if (rc.isFunction())
-                        {
-                            MarklinLocomotive loc = this.network.getLocByName(rc.getName());
-                            
-                            if (loc != null)
-                            {
-                                loc.setF(rc.getFunction(), rc.getSetting());
-                            }
-                            else
-                            {
-                                this.network.logf(
-                                    "route.warningLocomotiveNotExistCalledFrom",
-                                    rc.getName(),
-                                    this.getName()
-                                );
-                            }
-                        }
-                        else if (rc.isRoute())
-                        {
-                            MarklinRoute r = this.network.getRoute(rc.getName());
-                            
-                            if (r == this)
-                            {
-                                this.network.logf(
-                                    "route.warningCommandSelfReference",
-                                    rc.getName()
-                                );
-                            }
-                            else
-                            {                      
-                                if (r != null)
-                                {
-                                    if (!this.equals(r))
+                                    if (auto && this.network.getGUI() != null)
                                     {
-                                         // We allow the route to recurse at most once
-                                        r.execRoute(false, recursionLimit - 1);
-                                    }
-                                    else
-                                    {
-                                        this.network.logf(
-                                            "route.warningCannotInvokeSelf",
-                                            rc.getName()
-                                        );
+                                        this.network.getGUI().emergencyStopTriggered(this);
                                     }
                                 }
                                 else
                                 {
                                     this.network.logf(
-                                        "route.warningRouteNotExistCalledFrom",
+                                        "route.conditionFiredPowerAlreadyOff",
+                                        this.getName()
+                                    );
+                                }
+                            }
+                            else if (rc.isFunctionsOff())
+                            {
+                                this.network.logf(
+                                    "route.turningOffFunctions",
+                                    this.getName()
+                                );
+                            
+                                this.network.allFunctionsOff();
+                            }
+                            else if (rc.isAutonomyLightsOn())
+                            {
+                                if (this.network.hasAutoLayout())
+                                {
+                                    this.network.logf(
+                                        "route.turningOnAutonomyLights",
+                                        this.getName()
+                                    );
+
+                                    this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
+                                }
+                            }
+                            else if (rc.isLightsOn())
+                            {
+                                this.network.logf(
+                                    "route.turningOnAllLights",
+                                    this.getName()
+                                );
+
+                                this.network.lightsOn(this.network.getLocList());  
+                            }
+                            else if (rc.isLocomotiveSpeed())
+                            {
+                                MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                                if (loc != null)
+                                {
+                                    if (rc.getSpeed() < 0)
+                                    {
+                                        loc.instantStop();
+                                    }
+                                    else
+                                    {
+                                        loc.setSpeed(rc.getSpeed());
+                                    }
+                                }
+                                else
+                                {
+                                    this.network.logf(
+                                        "route.warningLocomotiveNotExist",
+                                        rc.getName()
+                                    );
+                                }
+                            }
+                            else if (rc.isLocomotiveDirection())
+                            {
+                                MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                                if (loc != null)
+                                {
+                                    loc.setDirection(rc.getDirection());
+                                }
+                                else
+                                {
+                                    this.network.logf(
+                                        "route.warningLocomotiveNotExist",
+                                        rc.getName()
+                                    );
+                                }
+                            }
+                            else if (rc.isFunction())
+                            {
+                                MarklinLocomotive loc = this.network.getLocByName(rc.getName());
+                            
+                                if (loc != null)
+                                {
+                                    loc.setF(rc.getFunction(), rc.getSetting());
+                                }
+                                else
+                                {
+                                    this.network.logf(
+                                        "route.warningLocomotiveNotExistCalledFrom",
                                         rc.getName(),
                                         this.getName()
                                     );
                                 }
                             }
-                        }
-
-                        try
-                        {
-                            if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                            else if (rc.isRoute())
                             {
-                                this.network.logf(
-                                    "route.delay",
-                                    rc.getDelay()
-                                );                                
-                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                                MarklinRoute r = this.network.getRoute(rc.getName());
+                            
+                                if (r == this)
+                                {
+                                    this.network.logf(
+                                        "route.warningCommandSelfReference",
+                                        rc.getName()
+                                    );
+                                }
+                                else
+                                {                      
+                                    if (r != null)
+                                    {
+                                        if (!this.equals(r))
+                                        {
+                                             // We allow the route to recurse at most once
+                                            r.execRoute(false, recursionLimit - 1);
+                                        }
+                                        else
+                                        {
+                                            this.network.logf(
+                                                "route.warningCannotInvokeSelf",
+                                                rc.getName()
+                                            );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        this.network.logf(
+                                            "route.warningRouteNotExistCalledFrom",
+                                            rc.getName(),
+                                            this.getName()
+                                        );
+                                    }
+                                }
                             }
-                            else
+
+                            try
                             {
-                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
-                            }    
-                        } 
-                        catch (InterruptedException ex)
-                        {
-                            Thread.currentThread().interrupt();
+                                if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                                {
+                                    this.network.logf(
+                                        "route.delay",
+                                        rc.getDelay()
+                                    );                                
+                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                                }
+                                else
+                                {
+                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
+                                }    
+                            } 
+                            catch (InterruptedException ex)
+                            {
+                                Thread.currentThread().interrupt();
+                            }
                         }
                     }
+
+                    this.network.logf(
+                        "route.executed",
+                        this.getName()
+                    );
                 }
+                finally
+                {
+                    this.stopExecuting();
 
-                this.stopExecuting();
-
-                this.updateTiles();
-                
-                this.network.logf(
-                    "route.executed",
-                    this.getName()
-                );
+                    this.updateTiles();
+                }
             }
         }).start();
     }

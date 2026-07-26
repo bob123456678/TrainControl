@@ -384,24 +384,22 @@ public final class LayoutLabel extends JLabel
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
-                            new Thread(() -> 
+                            // Both of these run on the EDT: this block already does, and a Swing Timer
+                            // fires there too.  The overlay and the restore used to be applied from a
+                            // raw thread, mutating a Swing component off the EDT - the one place in this
+                            // class that did not marshal its work.
+                            this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
+
+                            javax.swing.Timer restore = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
                             {
-                                this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
-
-                                try
-                                {
-                                    Thread.sleep(HIGHLIGHT_DURATION);
-                                } 
-                                catch (InterruptedException ex)
-                                {
-                                    Thread.currentThread().interrupt();
-                                }
-
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
                                     this.setIcon(lastIcon);
                                 }
-                            }).start();
+                            });
+
+                            restore.setRepeats(false);
+                            restore.start();
                         }
                         
                         // Show a tooltip in the UI

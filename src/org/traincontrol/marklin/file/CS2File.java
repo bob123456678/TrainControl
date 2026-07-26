@@ -348,25 +348,27 @@ public final class CS2File
      */
     public static boolean isCS3(String deviceInfoUrl) throws Exception
     {
-        BufferedReader content = fetchURL(deviceInfoUrl);
-
-        while (true)
+        // try-with-resources: the early return below used to leak the reader, and its HTTP connection
+        try (BufferedReader content = fetchURL(deviceInfoUrl))
         {
-            String line = content.readLine();
-         
-            if (line == null)
+            while (true)
             {
-                break;
-            }
-            else
-            {
-                if (line.contains("Central Station 3"))
+                String line = content.readLine();
+
+                if (line == null)
                 {
-                    return true;
+                    break;
+                }
+                else
+                {
+                    if (line.contains("Central Station 3"))
+                    {
+                        return true;
+                    }
                 }
             }
         }
-        
+
         return false;
     }
     
@@ -512,9 +514,9 @@ public final class CS2File
      */
     public boolean isNotFoundError(String url)
     {
-        try
-        {            
-            Object json = new JSONTokener(fetchURL(url)).nextValue();
+        try (BufferedReader in = fetchURL(url))
+        {
+            Object json = new JSONTokener(in).nextValue();
 
             // If it's an object, check for the error field
             if (json instanceof JSONObject)
@@ -831,16 +833,20 @@ public final class CS2File
         }
 
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
-        
-        int[] output = new int[data.length];
-        
-        // TODO - improve the original parsing approach to make this unnecessary
+
+        // Collected first, because the function number is the INDEX in the returned array while the
+        // entry count only bounds how many are listed.  A CS2 file may list functions sparsely, and
+        // indexing an entry-count-sized array by function number then threw - which escaped
+        // parseLocomotives and aborted the entire Central Station sync for one bad locomotive.
+        Map<Integer, Integer> parsed = new HashMap<>();
+        int highest = -1;
+
         // Loop through each function
         for (String functionInfo : data)
         {
             int fn = 0;
             int type = 0;
-            
+
             // Loop through the keys in each function
             for (String functionItem : functionInfo.split(","))
             {
@@ -848,7 +854,7 @@ public final class CS2File
                 if (!functionItem.contains("=")) continue;
 
                 String[] item = functionItem.split("=");
-                
+
                 if ("nr".equals(item[0]))
                 {
                     fn = Integer.parseInt(item[1]);
@@ -858,13 +864,26 @@ public final class CS2File
                     type = Integer.parseInt(item[1]);
                 }
             }
-            
-            output[fn] = type;
+
+            if (fn >= 0)
+            {
+                parsed.put(fn, type);
+
+                if (fn > highest) highest = fn;
+            }
         }
-        
+
+        // At least data.length, so a contiguous list returns exactly what it always did
+        int[] output = new int[Math.max(data.length, highest + 1)];
+
+        for (Map.Entry<Integer, Integer> function : parsed.entrySet())
+        {
+            output[function.getKey()] = function.getValue();
+        }
+
         return output;
     }
-    
+
     public static int[] parseFunctionTriggerTypes(String functionList)
     {
         // Sanity check in case no functions are specified in the CS2 file
@@ -874,17 +893,19 @@ public final class CS2File
         }
 
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
-        
-        int[] output = new int[data.length];
-        
-        // TODO - improve the original parsing approach to make this unnecessary
+
+        // Collected first - see parseLocomotiveFunctions above for why the array cannot be sized by the
+        // number of entries
+        Map<Integer, Integer> parsed = new HashMap<>();
+        int highest = -1;
+
         // Loop through each function
         for (String functionInfo : data)
         {
             int fn = 0;
             int type = 0;
             int dauer = 0;
-            
+
             // Loop through the keys in each function
             for (String functionItem : functionInfo.split(","))
             {
@@ -892,7 +913,7 @@ public final class CS2File
                 if (!functionItem.contains("=")) continue;
 
                 String[] item = functionItem.split("=");
-                
+
                 if ("nr".equals(item[0]))
                 {
                     fn = Integer.parseInt(item[1]);
@@ -906,10 +927,22 @@ public final class CS2File
                     dauer = Integer.parseInt(item[1]);
                 }
             }
-            
-            output[fn] = dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE);
+
+            if (fn >= 0)
+            {
+                parsed.put(fn, dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE));
+
+                if (fn > highest) highest = fn;
+            }
         }
-        
+
+        int[] output = new int[Math.max(data.length, highest + 1)];
+
+        for (Map.Entry<Integer, Integer> function : parsed.entrySet())
+        {
+            output[function.getKey()] = function.getValue();
+        }
+
         return output;
     }
     
@@ -1711,14 +1744,20 @@ public final class CS2File
      */
     public static JSONArray parseJSONArray (BufferedReader in) throws IOException
     {
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = in.readLine()) != null)
+        // Closes the reader, as parseFile does - callers pass fetchURL(...) inline and have no other
+        // handle on it, so without this every CS3 API call leaked its connection
+        try (BufferedReader reader = in)
         {
-            sb.append(line);
+            StringBuilder sb = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null)
+            {
+                sb.append(line);
+            }
+
+            return new JSONArray(sb.toString());
         }
-                
-        return new JSONArray(sb.toString());
     }
     
     /**
@@ -1729,14 +1768,19 @@ public final class CS2File
      */
     public static JSONObject parseJSONObject (BufferedReader in) throws IOException
     {
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = in.readLine()) != null)
+        // Closes the reader - see parseJSONArray
+        try (BufferedReader reader = in)
         {
-            sb.append(line);
-        }
+            StringBuilder sb = new StringBuilder();
+            String line;
 
-        return new JSONObject(sb.toString());
+            while ((line = reader.readLine()) != null)
+            {
+                sb.append(line);
+            }
+
+            return new JSONObject(sb.toString());
+        }
     }
     
     /**
@@ -2060,16 +2104,16 @@ public final class CS2File
     * @return 
     */
     public static boolean ping(String host)
-    {    
-       try 
+    {
+       // try-with-resources: this is called in a retry loop at startup, and each attempt used to leave
+       // its connection open
+       try (BufferedReader reachable = CS2File.fetchURL(CS2File.getPingIP(host)))
        {
-           CS2File.fetchURL(CS2File.getPingIP(host));
+           return reachable != null;
        }
        catch (Exception e)
        {
            return false;
        }
-
-       return true;
     }
 }

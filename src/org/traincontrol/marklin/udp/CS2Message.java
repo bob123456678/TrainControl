@@ -101,23 +101,30 @@ public class CS2Message extends CANMessage
      */
     public CS2Message(byte[] message)
     {
-        // Store the entire message
-        this.rawMessage = message;
+        // Store the entire message.  Copied, because the network reader reuses one buffer for every
+        // packet - keeping the reference meant every message aliased the same array, so a message's raw
+        // bytes changed underneath it as soon as the next packet arrived
+        this.rawMessage = java.util.Arrays.copyOf(message, message.length);
 
         // Priority - first 4 bits
-        this.priority = message[0] >> 4;
+        this.priority = (message[0] >> 4) & 0x0F;
 
-        // Command - last bit of first byte, first 7 bits of second byte
-        this.command = (message[0] << 7) | (message[1] >> 1);
+        // Command - last bit of first byte, first 7 bits of second byte.  Both operands are masked:
+        // without & 0x01 the priority bits bled into the command, and without & 0xFF the second byte
+        // sign-extended for any command at or above 0x40
+        this.command = ((message[0] & 0x01) << 7) | ((message[1] & 0xFF) >> 1);
 
         // Response - last bit of second byte
         this.response = (message[1] & 1) != 0;
 
-        // Hash - third and fourth bytes
-        this.hash = (message[2] << 8) | message[3];
+        // Hash - third and fourth bytes, unsigned.  Without the masks byte 2 sign-extended (harmless,
+        // as the outgoing constructor produced the same negative value) but byte 3 destroyed the high
+        // byte outright: (0xE3 << 8) | 0x9D evaluated to 0xFFFFFF9D
+        this.hash = ((message[2] & 0xFF) << 8) | (message[3] & 0xFF);
 
-        // Length - fifth byte
-        this.length = (int) message[4];
+        // Length - fifth byte.  Only the low nibble is the payload length, and it is clamped to the
+        // payload size so a corrupted value cannot run the copy below off the end of the array
+        this.length = Math.min(message[4] & 0x0F, MESSAGE_LENGTH - 5);
 
         // Data - sixth through last byte
         this.data = new byte[8];
@@ -249,10 +256,12 @@ public class CS2Message extends CANMessage
             this.rawMessage[5 + i] = data[i];
         }
 
-        // Store data
+        // Store data.  The hash is kept as an unsigned 16-bit value so that it matches what the parsing
+        // constructor above produces - previously one was (short)-cast and the other sign-extended, so
+        // a parsed and a constructed message with the same hash could compare unequal
         this.priority = priority;
         this.command = command;
-        this.hash = (int) ((short) hash);
+        this.hash = hash & 0xFFFF;
         this.response = response;
         this.length = length;
         this.data = data;
@@ -419,11 +428,12 @@ public class CS2Message extends CANMessage
      */
     public int getSubCommand()
     {
-        if (this.data.length < 4)
+        // The sub command is data[4], so five bytes are needed - not four
+        if (this.data.length < 5)
         {
             return -1;
         }
-        
+
         return CS2Message.mergeBytes(
             new byte[]
             {

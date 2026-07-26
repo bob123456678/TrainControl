@@ -2581,8 +2581,14 @@ public class Layout
 
             synchronized (this.activeLocomotives)
             {
-                this.locomotiveMilestones.get(loc).add(current); 
-               
+                List<Point> milestones = this.locomotiveMilestones.get(loc);
+
+                // Null if the locomotive was deleted from the database while this path was running
+                if (milestones != null)
+                {
+                    milestones.add(current);
+                }
+
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {

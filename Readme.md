@@ -360,8 +360,15 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v2.8.0 [Beta]
+* v2.7.6 [Beta]
     - Bug fixes
+        - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
+        - Fixed bug where a route condition would fail to parse if a locomotive's name contained the word AND or OR, such as NORD or MOTOR
+        - Fixed bug where a DCC switch or signal used as a route condition was shown with the wrong protocol
+        - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
+        - Fixed bug where a route could stop responding if one of its commands failed
+        - Locomotives whose Central Station function list skips function numbers now import correctly, instead of cancelling the whole database sync
+        - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where a route imported from a Central Station 2 could never fire if one of its s88 conditions expected a sensor to be clear
         - Fixed bug where a conditional route would stop firing for the rest of the session if one of its conditions referred to a locomotive that was not placed on the autonomy graph.  The route still showed as enabled
         - Autonomy: a path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded

@@ -3,7 +3,6 @@ package org.traincontrol.marklin;
 import org.traincontrol.base.Feedback;
 import org.traincontrol.base.RemoteDevice;
 import org.traincontrol.gui.LayoutLabel;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.traincontrol.marklin.udp.CS2Message;
@@ -23,6 +22,9 @@ public class MarklinFeedback extends Feedback
     private final MarklinControlStation network;
     
     // Gui reference
+    // ConcurrentHashMap-backed set: addTile is called from the EDT as track diagram windows open,
+    // while updateTiles iterates and prunes from a Central Station message thread.  A plain HashSet
+    // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
         
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
@@ -31,7 +33,7 @@ public class MarklinFeedback extends Feedback
         
         this.network = network;
         this.UID = id;
-        this.tiles = new HashSet<>();
+        this.tiles = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         if (m != null)
         {
@@ -54,21 +56,23 @@ public class MarklinFeedback extends Feedback
      * Deletes tiles that are no longer visible (e.g., from closed windows)
      */
     public void updateTiles()
-    {        
-        new Thread(() ->
-        {
-            Iterator<LayoutLabel> i = this.tiles.iterator();
-            while (i.hasNext())
-            {
-                LayoutLabel nxtTile = i.next();
-                nxtTile.updateImage(false);
+    {
+        // No thread: updateImage already marshals its Swing work to the EDT, so this is cheap and
+        // non-blocking.  Spawning one per call - potentially per feedback event - only widened the
+        // window for concurrent iteration, which is what made the plain HashSet blow up.  The other
+        // device classes have always done this inline.
+        Iterator<LayoutLabel> i = this.tiles.iterator();
 
-                if (!nxtTile.isParentVisible())
-                {
-                    i.remove();
-                }
+        while (i.hasNext())
+        {
+            LayoutLabel nxtTile = i.next();
+            nxtTile.updateImage(false);
+
+            if (!nxtTile.isParentVisible())
+            {
+                i.remove();
             }
-        }).start();
+        }
     }
         
     @Override

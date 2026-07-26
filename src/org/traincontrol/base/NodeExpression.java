@@ -111,11 +111,21 @@ public abstract class NodeExpression implements Serializable
             RouteCommand command = ((NodeRouteCommand) node).getRouteCommand();
             
             // We need to make this check to prevent invalid lookups of S88 addresses
-            // TODO - the RouteCommand should maintain the decoder type
             Accessory acc = null;
-            if (command.isAccessory()) acc = network.getAccessoryByAddress(command.getAddress(),
-                Accessory.determineAccessoryDecoderType(command.getAccessoryType())
-            );
+
+            if (command.isAccessory())
+            {
+                // Resolved by name, which carries the command's own protocol.  This used to pass
+                // getAccessoryType() - "Switch" or "Signal" - into determineAccessoryDecoderType, which
+                // could not parse it and silently fell back to MM2, so a DCC accessory was looked up
+                // under the wrong protocol.  Going through getAccessoryByName also means this display
+                // path no longer invents an accessory when the address is unused, the way
+                // getAccessoryByAddress does.  Either type resolves, since they are one decoder.
+                acc = network.getAccessoryByName(
+                    Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH) + " "
+                    + command.getAddress()
+                    + Accessory.getProtocolStringForName(command.getProtocol().toString()));
+            }
             
             sb.append(command.toLine(acc)).append("\n");
         }
@@ -231,7 +241,11 @@ public abstract class NodeExpression implements Serializable
 
     private static List<String> preprocessText(String text)
     {
-        text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n").replaceAll("AND", "\nAND\n").replaceAll("OR", "\nOR\n");
+        // \b so that AND and OR are only split out when they stand alone.  Without it these were plain
+        // substring replacements, so a locomotive name in an autoloc condition containing them - NORD,
+        // MOTOR, ORIENT, GRAND - was cut in half and the expression failed to parse.
+        text = text.replaceAll("\\(", "\n(\n").replaceAll("\\)", "\n)\n")
+                   .replaceAll("\\bAND\\b", "\nAND\n").replaceAll("\\bOR\\b", "\nOR\n");
         List<String> lines = Arrays.asList(text.split("\n"));
         List<String> filteredLines = new ArrayList<>();
 

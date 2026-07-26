@@ -335,8 +335,11 @@ public class LayoutDiagram
         for (int x = 0; x < numColumns; x++)
         {
             List<LayoutDiagramComponent> newColumn = new ArrayList<>();
-            
-            for (int i = 0; i < sx; i++)
+
+            // A column is sy cells tall.  Sizing it by sx made the new column the wrong length, and on
+            // a layout taller than it is wide it was too short - getComponent bounds-checks y against
+            // column 0, so reading the new column then threw IndexOutOfBounds
+            for (int i = 0; i < sy; i++)
             {
                 newColumn.add(null);
             }

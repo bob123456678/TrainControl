@@ -1,6 +1,5 @@
 package org.traincontrol.marklin;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -30,6 +29,9 @@ public class MarklinAccessory extends Accessory
     private final MarklinControlStation network;
     
     // Gui reference
+    // ConcurrentHashMap-backed set: addTile is called from the EDT as track diagram windows open,
+    // while updateTiles iterates and prunes from a Central Station message thread.  A plain HashSet
+    // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
     
     // Delay between threeway switches
@@ -67,7 +69,7 @@ public class MarklinAccessory extends Accessory
         // Set state
         this._setSwitched(state);
         
-        this.tiles = new HashSet<>();
+        this.tiles = java.util.concurrent.ConcurrentHashMap.newKeySet();
         
         this.numActuations = numActuations;
         this.stateAtLastActuation = this.switched;
