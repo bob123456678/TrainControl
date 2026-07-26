@@ -27,12 +27,18 @@ Translations are now available:
 * Nu tilgængelig på dansk
 * Teraz również po polsku
 * Désormais disponible en français
+* Ora disponibile in italiano
+* Ahora disponible en español
+* Nu beschikbaar in het Nederlands
+
+TrainControl follows your computer's language automatically, so there is nothing to configure.
+If you would rather run it in a different language, you can [force one from the command line](#running-traincontrol).
 
 ## Overview
 
 **Main UI**
 
-You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.
+You can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
 ![UI screenshot: locomotive control](assets/main23_2.png?raw=true)
 
@@ -311,9 +317,17 @@ Examples:
 * ```java -jar TrainControl.jar 192.168.50.10``` (Will attempt to connect to the Central Station at 192.168.50.10)
 * ```java -jar TrainControl.jar 192.168.50.10 debug``` (Same as above, but with debug mode: extra error logging)
 * ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
-* ```java -Duser.language=da -Duser.country=DK -jar TrainControl.jar``` (Force Danish locale/language)
-* ```java -Duser.language=de -Duser.country=DE -jar TrainControl.jar``` (Force German locale/language)
+
+TrainControl uses your computer's language automatically.  To run it in a different language, add the locale flags shown below.
+
 * ```java -Duser.language=en -Duser.country=US -jar TrainControl.jar``` (Force English locale/language)
+* ```java -Duser.language=de -Duser.country=DE -jar TrainControl.jar``` (Force German locale/language)
+* ```java -Duser.language=da -Duser.country=DK -jar TrainControl.jar``` (Force Danish locale/language)
+* ```java -Duser.language=fr -Duser.country=FR -jar TrainControl.jar``` (Force French locale/language)
+* ```java -Duser.language=pl -Duser.country=PL -jar TrainControl.jar``` (Force Polish locale/language)
+* ```java -Duser.language=it -Duser.country=IT -jar TrainControl.jar``` (Force Italian locale/language)
+* ```java -Duser.language=es -Duser.country=ES -jar TrainControl.jar``` (Force Spanish locale/language)
+* ```java -Duser.language=nl -Duser.country=NL -jar TrainControl.jar``` (Force Dutch locale/language)
 
 All state is saved to LocDB.data, UIState.data, and autonomy.json in the same directory, and can be backed up as desired.
 
@@ -331,7 +345,7 @@ Requires JDK 1.8+ and the following libraries:
 ## Changelog
 
 * v2.7.5 [Beta]
-    - Added French and Polish translations
+    - Added French, Italian, Spanish, Dutch, and Polish translations
     - Removed UI features:
         - Copy-to-next/-previous page option from locomotive button right-click menu
 
