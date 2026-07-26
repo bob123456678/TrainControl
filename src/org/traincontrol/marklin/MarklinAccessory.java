@@ -171,14 +171,22 @@ public class MarklinAccessory extends Accessory
                 {
                     this.stateAtLastActuation = !stateAtLastActuation;
                     this.numActuations += 1;
+                }
 
-                    // Wake anyone waiting for a CS-confirmed actuation (e.g. autonomy path validation).
-                    // A dedicated monitor (not Locomotive.accessoryMonitor) so existing accessoryMonitor
-                    // waiters are undisturbed, and it fires only now that the confirmed state is current.
-                    synchronized (Accessory.actuationConfirmedMonitor)
-                    {
-                        Accessory.actuationConfirmedMonitor.notifyAll();
-                    }
+                // Any echo is an acknowledgement from the Central Station, whether or not it moved the
+                // accessory - so it confirms the position, and it has to wake the waiter either way.
+                // Both of these used to happen only when the state changed, which left an accessory
+                // commanded to the position it was already in confirmed by nothing at all, and left
+                // autonomy path validation asleep until its timeout even though the CS had answered.
+                // Set before the notify so a woken waiter sees it.
+                this.actuationConfirmed = true;
+
+                // Wake anyone waiting for a CS-confirmed actuation (e.g. autonomy path validation).
+                // A dedicated monitor (not Locomotive.accessoryMonitor) so existing accessoryMonitor
+                // waiters are undisturbed, and it fires only now that the confirmed state is current.
+                synchronized (Accessory.actuationConfirmedMonitor)
+                {
+                    Accessory.actuationConfirmedMonitor.notifyAll();
                 }
 
                 this.updateTiles(false);

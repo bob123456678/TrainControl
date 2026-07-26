@@ -34,6 +34,13 @@ abstract public class Accessory
     // while parseMessage writes it, so the reader sees updates without taking this accessory's lock.
     protected volatile boolean stateAtLastActuation;
 
+    // Whether the Central Station has ever echoed this accessory - that is, acknowledged a command for
+    // it.  stateAtLastActuation cannot express this on its own: it is seeded from the ASSUMED startup
+    // state, so until an echo arrives it happens to match any command that agrees with that assumption,
+    // and isConfirmedAt would pass without the CS having acknowledged anything at all.
+    // volatile for the same reason as the field above.
+    protected volatile boolean actuationConfirmed = false;
+
     // Notified whenever a CS echo advances stateAtLastActuation (see MarklinAccessory.parseMessage), so
     // autonomy path validation can wait for confirmed actuations.  Deliberately separate from Locomotive's
     // accessoryMonitor, which also fires on optimistic setSwitched() changes and drives unrelated waits.
@@ -182,12 +189,21 @@ abstract public class Accessory
      * setSwitched() sets {@code switched} optimistically, but {@code stateAtLastActuation} only advances
      * when the CS echoes an actuation - so this reflects the last CS-confirmed position, letting autonomy
      * verify an accessory actually reached its commanded state rather than just being commanded to it.
+     *
+     * An echo has to have been seen at all.  Without that requirement this returned true for any
+     * accessory whose ASSUMED startup state already matched the command, so the very first path to
+     * command a switch to the position it was believed to already be in passed validation
+     * unconditionally - the one case where nothing had been confirmed by anybody.  Safe to require,
+     * because setSwitched() always transmits, even when the accessory is already in the requested
+     * position, so an echo is always expected.
+     *
      * @param desired the commanded switched state
-     * @return true if the last CS-confirmed actuation matches {@code desired}
+     * @return true if the CS has echoed this accessory and its last confirmed actuation matches
+     *         {@code desired}
      */
     public boolean isConfirmedAt(boolean desired)
     {
-        return this.stateAtLastActuation == desired;
+        return this.actuationConfirmed && this.stateAtLastActuation == desired;
     }
 
     /**

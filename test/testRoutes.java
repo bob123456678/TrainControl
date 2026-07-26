@@ -253,7 +253,7 @@ public class testRoutes
         assertEquals(testName, renamedCommands.get(3).getName());
         assertEquals(direction, renamedCommands.get(3).getDirection());
 
-        // ✅ Verify untouched locomotive command remains unchanged
+        // Verify untouched locomotive command remains unchanged
         assertEquals(untouchedName, renamedCommands.get(4).getName());
         assertEquals(untouchedSpeed, renamedCommands.get(4).getSpeed());
 
@@ -276,7 +276,7 @@ public class testRoutes
         assertEquals(originalName, restoredCommands.get(3).getName());
         assertEquals(direction, restoredCommands.get(3).getDirection());
 
-        // ✅ Verify untouched locomotive command still remains unchanged
+        // Verify untouched locomotive command still remains unchanged
         assertEquals(untouchedName, restoredCommands.get(4).getName());
         assertEquals(untouchedSpeed, restoredCommands.get(4).getSpeed());
 
@@ -1011,6 +1011,62 @@ public class testRoutes
 
         assertEquals(MarklinRoute.fromJSON(json, model).getTriggerType(),
             MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+    }
+
+    /**
+     * A malformed route line is reported as a readable error rather than an unchecked exception.
+     *
+     * Every branch of the parser splits user-entered text on commas and calls Integer.parseInt on the
+     * pieces, so a truncated line or a non-numeric address escaped as ArrayIndexOutOfBoundsException or
+     * NumberFormatException.  Those bypassed the friendly error.invalidLine message the parser produces
+     * in its other branches, and reached the route editor as a raw stack trace instead of a message.
+     */
+    @Test
+    public void testMalformedRouteLinesReportAReadableError()
+    {
+        String[] malformed = {
+            "Switch abc,turn",      // address does not match the accessory pattern
+            "Switch 5",             // no setting at all
+            "locdir,MyLoc",         // truncated before the direction
+            "locdir",               // truncated before everything
+            "locspeed,MyLoc,abc",   // non-numeric speed
+            "locfunc,MyLoc,3",      // truncated before the state
+            "autoloc,MyLoc",        // truncated before the s88
+            "Switch 5,turn,abc"     // non-numeric delay
+        };
+
+        for (String line : malformed)
+        {
+            try
+            {
+                RouteCommand.fromLine(line, false);
+
+                fail("expected a readable error for: " + line);
+            }
+            catch (Exception e)
+            {
+                assertFalse(e instanceof RuntimeException,
+                    line + " threw an unchecked " + e.getClass().getSimpleName()
+                    + " instead of a readable error");
+
+                assertNotNull(e.getMessage(), line + " produced no message");
+            }
+        }
+    }
+
+    /**
+     * The conversion above must not swallow lines that are actually valid.
+     */
+    @Test
+    public void testValidRouteLinesStillParse() throws Exception
+    {
+        assertNotNull(RouteCommand.fromLine("Switch 5,turn", false));
+        assertNotNull(RouteCommand.fromLine("Switch 5,turn,200", false));
+        assertNotNull(RouteCommand.fromLine("5,1", false));
+        assertNotNull(RouteCommand.fromLine("locspeed,MyLoc,50", false));
+        assertNotNull(RouteCommand.fromLine("locdir,MyLoc,forward", false));
+        assertNotNull(RouteCommand.fromLine("locfunc,MyLoc,3,1", false));
+        assertNotNull(RouteCommand.fromLine("autoloc,MyLoc,14", false));
     }
 
     @BeforeClass

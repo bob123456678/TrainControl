@@ -11,6 +11,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.marklin.udp.CS2Message;
 
 /**
  * Use testng 6.14.3
@@ -330,10 +331,61 @@ public class testAccessory
         assertTrue(MarklinAccessory.isValidDCCAddress(switch2048.getAddress()));
     }
     
+    /**
+     * Builds the CAN accessory echo the Central Station sends back for an accessory command.
+     * Setting 0 means turned, 1 means straight (see MarklinAccessory.parseMessage).
+     */
+    private static CS2Message accessoryEcho(int uid, int setting)
+    {
+        return new CS2Message(CS2Message.CMD_ACC_SWITCH, new byte[]
+        {
+            (byte) (uid >> 24), (byte) (uid >> 16), (byte) (uid >> 8), (byte) uid,
+            (byte) setting, 1
+        });
+    }
+
+    /**
+     * An accessory is not confirmed at any position until the Central Station has echoed it.
+     *
+     * isConfirmedAt used to compare against stateAtLastActuation alone, which is seeded from the
+     * ASSUMED startup state - so it returned true for any accessory whose assumption already matched
+     * the command, and the first autonomy path to set a switch to the position it was believed to be
+     * in passed validation without the Central Station having acknowledged anything at all.
+     *
+     * The second part matters just as much: an echo that does NOT move the accessory still confirms
+     * it.  Only state-changing echoes used to count, so an accessory commanded to the position it was
+     * already in would never have become confirmed under the stricter rule.
+     */
+    @Test
+    public void testAccessoryIsNotConfirmedUntilTheCentralStationEchoes() throws Exception
+    {
+        clearAccessoryAddress(290);
+
+        MarklinAccessory acc = model.newSwitch(290, MarklinAccessory.accessoryDecoderType.MM2, false);
+
+        assertFalse(acc.isSwitched(), "created straight");
+
+        // The assumed state agrees with "straight", and that alone used to count as confirmation
+        assertFalse(acc.isConfirmedAt(false), "nothing has been echoed yet, so nothing is confirmed");
+        assertFalse(acc.isConfirmedAt(true));
+
+        // An echo of the position it was already believed to be in confirms it without moving it
+        acc.parseMessage(accessoryEcho(acc.getUID(), 1));
+
+        assertTrue(acc.isConfirmedAt(false), "the Central Station has now acknowledged this accessory");
+        assertFalse(acc.isConfirmedAt(true));
+
+        // An echo that does move it advances the confirmed position
+        acc.parseMessage(accessoryEcho(acc.getUID(), 0));
+
+        assertTrue(acc.isConfirmedAt(true));
+        assertFalse(acc.isConfirmedAt(false));
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testAccessory.model = init(null, true, false, false, false); 
+        testAccessory.model = init(null, true, false, false, false);
         model.stop();
     }
 

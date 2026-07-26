@@ -638,12 +638,48 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Parses a simple string representation of the route (equivalent to Route.toCSV)
+     *
+     * Any malformed line is reported as a checked Exception carrying the friendly error.invalidLine
+     * message, which is what the callers - the route editor, the autonomy edge parser and
+     * NodeExpression.parseLine - are written to expect and display.
+     *
+     * The parsing below splits user-entered text on commas and calls Integer.parseInt on the pieces,
+     * so a truncated line ("locdir,MyLoc") or a non-numeric address ("Switch abc,turn") surfaced as
+     * ArrayIndexOutOfBoundsException or NumberFormatException.  Those are unchecked, so they bypassed
+     * the error.invalidLine message this method takes care to produce in its other branches and
+     * escaped to callers as a raw stack trace.  Converting them here covers every branch at once,
+     * including any added later.
+     *
      * @param line
      * @param extractAccessoryType
-     * @return 
-     * @throws java.lang.Exception 
+     * @return
+     * @throws java.lang.Exception
      */
     public static RouteCommand fromLine(String line, boolean extractAccessoryType) throws Exception
+    {
+        try
+        {
+            return parseLine(line, extractAccessoryType);
+        }
+        catch (RuntimeException e)
+        {
+            // Only unchecked exceptions are converted.  The friendly messages parseLine raises itself
+            // are checked, so they pass straight through with their own wording intact.
+            throw new Exception(
+                I18n.f("error.invalidLine", line == null ? "" : line.trim())
+            );
+        }
+    }
+
+    /**
+     * The parser proper.  Callers go through fromLine, which turns a malformed line into a readable
+     * error rather than an unchecked exception.
+     * @param line
+     * @param extractAccessoryType
+     * @return
+     * @throws java.lang.Exception
+     */
+    private static RouteCommand parseLine(String line, boolean extractAccessoryType) throws Exception
     {
         line = line.trim();
         
