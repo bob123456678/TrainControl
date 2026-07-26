@@ -26,6 +26,10 @@ public class testLoadData
     private final String data2_7_0 =
             Paths.get(getClass().getResource("LocDB2_7_0.data").toURI()).toString();
 
+    private final String data2_8_0 =
+            Paths.get(getClass().getResource("LocDB2_8_0.data").toURI()).toString();
+
+    
     private final String data2_3_3 =
             Paths.get(getClass().getResource("LocDB2_3_3.data").toURI()).toString();
       
@@ -63,6 +67,12 @@ public class testLoadData
     public void testLoad2_3_3() throws Exception
     {   
         assertTrue(!model.restoreState(data2_3_3).isEmpty());
+    }
+    
+    @Test
+    public void testLoad2_8_0() throws Exception
+    {   
+        assertTrue(!model.restoreState(data2_8_0).isEmpty());
     }
          
     @BeforeClass
