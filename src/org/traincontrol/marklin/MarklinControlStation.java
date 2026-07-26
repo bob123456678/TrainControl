@@ -2357,9 +2357,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (r != null)
         {
             r.disable();
-            
-            // Update auto layout route selections
-            if (this.getAutoLayout() != null)
+
+            // Update auto layout route selections.
+            // hasAutoLayout, not getAutoLayout() != null: getAutoLayout() CREATES a Layout when none
+            // exists, so the old test was always true and deleting a route on a setup with no autonomy
+            // silently instantiated one - bumping the static layoutVersion along with it.
+            if (this.hasAutoLayout())
             {
                 if (this.getAutoLayout().getActivateRouteIDs().contains((Integer) r.getId()))
                 {

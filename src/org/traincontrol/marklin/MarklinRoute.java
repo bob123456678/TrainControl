@@ -102,7 +102,10 @@ public class MarklinRoute extends Route
         
         this.tiles = java.util.concurrent.ConcurrentHashMap.newKeySet();
         this.s88 = s88;
-        this.triggerType = triggerType;
+
+        // Never left null: the monitor tests "== CLEAR_THEN_OCCUPIED" and a null would silently mean
+        // occupied-then-clear instead of the documented default
+        this.triggerType = triggerType != null ? triggerType : s88Triggers.CLEAR_THEN_OCCUPIED;
         this.enabled = enabled;
         
         this.conditions = conditions;
@@ -714,7 +717,12 @@ public class MarklinRoute extends Route
         int s88 = Math.abs(jsonObject.optInt("s88", 0));
         boolean enabled = jsonObject.getBoolean("auto");
 
-        MarklinRoute.s88Triggers triggerType = null;
+        // Defaults to CLEAR_THEN_OCCUPIED, the same default the simple constructor documents.  This was
+        // left null when the key was absent, and the monitor's "== CLEAR_THEN_OCCUPIED" test then fell
+        // through to waiting for occupied-then-clear - so a route imported from an autonomy file that
+        // omits the key triggered on the opposite sensor edge from the one it should have.
+        MarklinRoute.s88Triggers triggerType = MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED;
+
         if (jsonObject.has("triggerType"))
         {
             triggerType = MarklinRoute.s88Triggers.valueOf(jsonObject.getString("triggerType"));

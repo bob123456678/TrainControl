@@ -983,10 +983,40 @@ public class testRoutes
         assert model.getRouteList().equals(currentRouteNames);
     }
         
+    /**
+     * A route read from an autonomy file that omits "triggerType" gets the documented
+     * CLEAR_THEN_OCCUPIED default.
+     *
+     * fromJSON used to leave the field null, and the monitor's "== CLEAR_THEN_OCCUPIED" test then fell
+     * through to waiting for occupied-then-clear - so the route fired on the opposite edge of the sensor
+     * from the one the file meant, for the whole session.
+     *
+     * "auto" is false so that constructing the route does not start a live monitor thread.
+     */
+    @Test
+    public void testRouteFromJSONDefaultsToClearThenOccupied()
+    {
+        org.json.JSONObject json = new org.json.JSONObject();
+        json.put("name", "C13 default trigger type");
+        json.put("id", 9601);
+        json.put("s88", 88);
+        json.put("auto", false);
+
+        assertEquals(MarklinRoute.fromJSON(json, model).getTriggerType(),
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            "an absent triggerType must mean clear-then-occupied, not the opposite edge");
+
+        // An explicit value is still honoured
+        json.put("triggerType", MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR.toString());
+
+        assertEquals(MarklinRoute.fromJSON(json, model).getTriggerType(),
+            MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testRoutes.model = init(null, true, false, false, false); 
+        testRoutes.model = init(null, true, false, false, false);
     }
 
     @AfterClass
