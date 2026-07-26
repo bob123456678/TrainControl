@@ -44,9 +44,10 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
 
-    // Max time to wait per accessory for the configured accessories to reach their commanded state before deciding the
-    // path failed to configure.  Not final so tests can shorten it; the wait exits early on success and
-    // only blocks the full duration when an accessory does not confirm.
+    // Base time budget for path validation: the actual deadline is PATH_VALIDATION_MS * (accessories on
+    // the path + 1) - see validatePathActuation - so paths with more accessories get proportionally more
+    // time.  Not final so tests can shorten it; the wait exits early on success and only blocks the full
+    // duration when an accessory never confirms.
     public static int PATH_VALIDATION_MS = 1000;
 
     // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
@@ -55,17 +56,21 @@ public class Layout
     // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
     public static boolean PATH_INTEGRITY_VALIDATION = true;
 
-    // Every path validation failure is logged, but a UI popup is only raised once this many failures have
-    // accumulated (then the counter resets).  Failures are expected to be rare and self-correcting - the
-    // loco is released and autonomy re-attempts the path organically - so we do not alarm the user over a
-    // one-off; a run of failures instead points to a real network/configuration problem.  Tunable.
+    // Every path validation failure is always logged to the console.  A UI popup is only raised once this
+    // many failures have accumulated, and - unlike the console log - at most ONCE per Layout instance:
+    // after that first popup, the console is considered sufficient and we do not keep interrupting the
+    // user with repeated popups for the rest of this session.  Tunable.
     public static int PATH_VALIDATION_ALERT_THRESHOLD = 3;
 
-    // Running count of path validation failures since the last UI alert; reset whenever an alert fires.
-    // Per-instance (not static) so a re-created Layout - e.g. after the user loads a different autonomy
-    // configuration or edits the layout - starts clean and never confounds old failures with new state.
-    // Guarded by this Layout since its locomotives validate paths concurrently.
+    // Running count of path validation failures on this Layout.  Never reset - purely informational /
+    // used by tests.  Per-instance (not static) so a re-created Layout - e.g. after the user loads a
+    // different autonomy configuration or edits the layout - starts clean and never confounds old
+    // failures with new state.  Guarded by this Layout since its locomotives validate paths concurrently.
     private int pathValidationFailureCount = 0;
+
+    // Whether the one-time UI alert has already been shown for this Layout instance.  Guarded by this
+    // Layout, same as pathValidationFailureCount.
+    private boolean pathValidationAlertShown = false;
 
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
@@ -1331,7 +1336,8 @@ public class Layout
     {
         // Lock the path and send the accessory commands under the Layout monitor.  Holding it here is
         // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
-        // locomotives' path checks are not blocked for up to PATH_VALIDATION_MS.
+        // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
+        // see validatePathActuation) validation wait.
         synchronized (this)
         {
             // Return if this path isn't clear
@@ -1372,11 +1378,12 @@ public class Layout
     }
 
     /**
-     * Waits (up to PATH_VALIDATION_MS) for every accessory on the path to reach its CS-confirmed
-     * commanded state.  Waits on Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on
-     * each confirmed actuation) rather than busy-polling, and returns as soon as all are confirmed - the
-     * full timeout only elapses when an accessory never confirms.  Must be called WITHOUT holding the
-     * Layout monitor so concurrent path checks are not blocked.
+     * Waits (up to PATH_VALIDATION_MS * (accessories on the path + 1), so longer paths get proportionally
+     * more time) for every accessory on the path to reach its CS-confirmed commanded state.  Waits on
+     * Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on each confirmed actuation)
+     * rather than busy-polling, and returns as soon as all are confirmed - the full timeout only elapses
+     * when an accessory never confirms.  Must be called WITHOUT holding the Layout monitor so concurrent
+     * path checks are not blocked.
      * @param path
      * @return true if all accessories on the path are confirmed at their commanded state
      */
@@ -1507,18 +1514,19 @@ public class Layout
         // Always log every failure to the console.
         control.logf("autolayout.errorPathMisconfigured", loc.getName(), accList);
 
-        // Only raise a UI popup once failures cross the threshold (then reset), to avoid alarming the user
-        // over a transient that autonomy will recover from on its own.
+        // Only raise a UI popup once failures cross the threshold, and at most once per Layout instance -
+        // after that, the console log above is considered sufficient, so we do not keep interrupting the
+        // user with popups for the rest of this session.
         boolean alert;
 
         synchronized (this)
         {
             pathValidationFailureCount++;
-            alert = pathValidationFailureCount >= PATH_VALIDATION_ALERT_THRESHOLD;
+            alert = !pathValidationAlertShown && pathValidationFailureCount >= PATH_VALIDATION_ALERT_THRESHOLD;
 
             if (alert)
             {
-                pathValidationFailureCount = 0;
+                pathValidationAlertShown = true;
             }
         }
 
@@ -1531,8 +1539,8 @@ public class Layout
     }
 
     /**
-     * Current number of path validation failures accumulated on this Layout since the last UI alert
-     * (exposed for tests).
+     * Current number of path validation failures accumulated on this Layout (never reset; exposed for
+     * tests).
      * @return the failure count
      */
     public int getPathValidationFailureCount()
@@ -1540,6 +1548,18 @@ public class Layout
         synchronized (this)
         {
             return pathValidationFailureCount;
+        }
+    }
+
+    /**
+     * Whether the one-time UI alert has already been shown for this Layout instance (exposed for tests).
+     * @return true if the alert has fired
+     */
+    public boolean hasShownPathValidationAlert()
+    {
+        synchronized (this)
+        {
+            return pathValidationAlertShown;
         }
     }
 

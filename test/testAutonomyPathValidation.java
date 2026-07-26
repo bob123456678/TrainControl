@@ -19,7 +19,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * Central Station confirms the path's accessories reached their commanded state.  On a mismatch the guard
  * stops the locomotive and releases its locks (returning false so executePath does not run it); power is
  * deliberately left on so other locomotives are unaffected, and autonomy re-attempts the path organically.
- * A UI popup is only raised once failures reach PATH_VALIDATION_ALERT_THRESHOLD.
+ * A UI popup is only raised once failures reach PATH_VALIDATION_ALERT_THRESHOLD, and at most once per
+ * Layout instance - further failures keep being logged and counted but do not re-trigger it.
  *
  * The tests run disconnected with DEBUG_SIMULATE_PACKETS = true so exec() echoes each accessory command
  * back (simulating a working CS), letting the accessories confirm.  A fault is forced by asynchronously
@@ -259,13 +260,13 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Every failure is counted and logged, but the UI popup is suppressed until the failure count reaches
-     * PATH_VALIDATION_ALERT_THRESHOLD, at which point the counter resets.  The counter is per-Layout, so a
-     * single fresh layout starts at zero.  (The popup itself is a no-op without a view; this verifies the
-     * counting/threshold logic that gates it.)
+     * The UI popup is suppressed until the failure count reaches PATH_VALIDATION_ALERT_THRESHOLD, and then
+     * fires at most ONCE per Layout instance: further failures past the threshold keep being logged and
+     * counted (the count never resets), but must not re-trigger the popup - the console log is considered
+     * sufficient after the first alert.
      */
     @Test
-    public void testUiAlertSuppressedUntilThreshold() throws Exception
+    public void testUiAlertFiresAtMostOncePerLayout() throws Exception
     {
         model.go();
         waitForPower(true, 1000);
@@ -281,26 +282,40 @@ public class testAutonomyPathValidation
             try
             {
                 // The path is released after each failure, so it can be re-attempted on the same layout.
-                // Below the threshold the counter simply climbs (no reset, i.e. no alert).
+                // Below the threshold the count climbs but the alert must not have fired yet.
                 for (int i = 1; i < Layout.PATH_VALIDATION_ALERT_THRESHOLD; i++)
                 {
                     tp.layout.configureAndLockPath(tp.path, dummyLoc());
                     assertTrue(tp.layout.getPathValidationFailureCount() == i,
                         "Failure " + i + " should accumulate without alerting");
+                    assertFalse(tp.layout.hasShownPathValidationAlert(),
+                        "Alert must not fire before the threshold is reached (failure " + i + ")");
                 }
 
-                // The failure that reaches the threshold fires the alert and resets the counter.
+                // The failure that reaches the threshold fires the one-time alert.
                 tp.layout.configureAndLockPath(tp.path, dummyLoc());
-                assertTrue(tp.layout.getPathValidationFailureCount() == 0,
-                    "Reaching the threshold must reset the counter (alert fired)");
+                assertTrue(tp.layout.hasShownPathValidationAlert(),
+                    "Alert must fire once the threshold is reached");
+
+                // Further failures keep accumulating (the count is never reset) but must not re-alert -
+                // the latch stays true and no second popup is raised.
+                for (int i = 0; i < 3; i++)
+                {
+                    tp.layout.configureAndLockPath(tp.path, dummyLoc());
+                }
+
+                assertTrue(tp.layout.getPathValidationFailureCount() == Layout.PATH_VALIDATION_ALERT_THRESHOLD + 3,
+                    "The failure count must keep accumulating past the threshold");
+                assertTrue(tp.layout.hasShownPathValidationAlert(),
+                    "The alert latch must remain set (no reset, no repeat popups)");
             }
             finally
             {
                 corrupting[0] = false;
             }
 
-            // Keep the UI up briefly so the operator can actually read the popup before the suite tears
-            // it down (the alert is shown asynchronously on the EDT).
+            // Keep the UI up briefly so the operator can actually read the single popup before the suite
+            // tears it down (the alert is shown asynchronously on the EDT).
             Thread.sleep(5000);
         }
         finally
