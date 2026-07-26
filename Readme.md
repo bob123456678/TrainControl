@@ -329,7 +329,13 @@ To make a backup, select "Backup TrainControl Data" from the File menu.
 
 All of your data is stored in `LocDB.data`, `UIState.data`, and `autonomy.json`, in the same directory as the JAR file.  To restore a backup, close TrainControl, replace these files with the copies from your backup, then start TrainControl again.
 
-**Building the project from source:**
+## Support TrainControl
+
+**TrainControl is free — no ads, no paywalls, and no locked features.**  It is built and maintained by one person, in his spare time.  If it has made your layout more fun to run, a coffee helps keep new features coming.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20TrainControl-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/traincontrol)
+
+## Building from Source
 
 Requires JDK 1.8+ and the following libraries:
 
@@ -343,10 +349,6 @@ Requires JDK 1.8+ and the following libraries:
 ## License & Contact
 
 TrainControl was created and is maintained by Adam Oest.
-
-**TrainControl is free — no ads, no paywalls, and no locked features.**  It is built and maintained by one person, in his spare time.  If it has made your layout more fun to run, a coffee helps keep new features coming.
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20TrainControl-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/traincontrol)
 
 Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
 
