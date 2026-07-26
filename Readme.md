@@ -367,9 +367,7 @@ Tab icons provided by Freepik.
         - Fixed bug where a DCC switch or signal used as a route condition was shown with the wrong protocol
         - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
         - Fixed bug where a route could stop responding if one of its commands failed
-        - Locomotives whose Central Station function list skips function numbers now import correctly, instead of cancelling the whole database sync
         - Track diagram tiles no longer occasionally stop refreshing
-        - Fixed bug where a route imported from a Central Station 2 could never fire if one of its s88 conditions expected a sensor to be clear
         - Fixed bug where a conditional route would stop firing for the rest of the session if one of its conditions referred to a locomotive that was not placed on the autonomy graph.  The route still showed as enabled
         - Autonomy: a path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Autonomy: fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off

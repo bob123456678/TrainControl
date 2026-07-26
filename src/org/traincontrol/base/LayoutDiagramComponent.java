@@ -334,8 +334,21 @@ public class LayoutDiagramComponent
     
     public Image getImage(int size, boolean ignoreState) throws IOException
     {  
-         Image img = ImageIO.read(LayoutDiagramComponent.class.getResource(getImageName(size, ignoreState)));
-         
+         String imageName = getImageName(size, ignoreState);
+         java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+
+         if (icon == null)
+         {
+             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+         }
+
+         Image img = ImageIO.read(icon);
+
+         if (img == null)
+         {
+             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+         }
+
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
          {
