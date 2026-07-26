@@ -700,8 +700,11 @@ public class LayoutDiagramComponent
     {
         StringBuilder builder = new StringBuilder();
 
-        // Empty text labels aren't saved
-        if (this.label == null || this.type == componentType.TEXT && this.label.isEmpty()) return "";
+        // Empty text labels aren't saved.  The null check belongs inside the TEXT test, guarding the
+        // isEmpty() call - as written before, && bound tighter than ||, so a null label dropped a
+        // component of ANY type from the export.  Unreachable today (the field starts as "" and both
+        // setLabel callers guard against null), but the guard did not mean what its comment says.
+        if (this.type == componentType.TEXT && (this.label == null || this.label.isEmpty())) return "";
         
         // Add "element"
         builder.append("element\n");

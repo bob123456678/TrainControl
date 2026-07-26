@@ -17,6 +17,8 @@ import java.io.ObjectStreamClass;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -574,7 +576,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset)
     {
-        long startDate = System.currentTimeMillis() - (offset * 86400000);
+        // Stepped a calendar day at a time rather than by a fixed 86400000 ms.  A day is 23 or 25 hours
+        // long across a DST transition, so a fixed step could land twice on one date - the TreeMap then
+        // silently overwrote the earlier entry, losing a day and duplicating another - or skip one.
+        LocalDate day = LocalDate.now().minusDays(offset);
 
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
 
@@ -584,14 +589,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (int i = 0; i < Math.abs(days); i++)
         {
-            final long date = startDate;
+            // ISO_LOCAL_DATE is yyyy-MM-dd, the same key Locomotive.getDate produces
+            final String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             stats.put(
-                Locomotive.getDate(startDate),
-                locs.stream().mapToLong(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date))).sum()
+                key,
+                locs.stream().mapToLong(loco -> loco.getRuntimeOnDay(key)).sum()
             );
 
-            startDate -= 86400000;
+            day = day.minusDays(1);
         }
 
         return stats;
@@ -606,7 +612,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset)
     {
-        long startDate = System.currentTimeMillis() - (offset * 86400000);
+        // Calendar days, not fixed 86400000 ms steps - see getDailyRuntimeStats
+        LocalDate day = LocalDate.now().minusDays(offset);
 
         TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
 
@@ -615,14 +622,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (int i = 0; i < Math.abs(days); i++)
         {
-            final long date = startDate;
+            final String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             stats.put(
-                Locomotive.getDate(startDate),
-                locs.stream().mapToInt(loco -> loco.getRuntimeOnDay(Locomotive.getDate(date)) > 0 ? 1 : 0).sum()
+                key,
+                locs.stream().mapToInt(loco -> loco.getRuntimeOnDay(key) > 0 ? 1 : 0).sum()
             );
 
-            startDate -= 86400000;
+            day = day.minusDays(1);
         }
 
         return stats;
@@ -637,7 +644,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public int getTotalLocStats(int days, long offset)
     {
-        long startDate = System.currentTimeMillis() - (offset * 86400000);
+        // Calendar days, not fixed 86400000 ms steps - see getDailyRuntimeStats.  Here a repeated date
+        // would not have overwritten anything (the result is a Set), but a skipped one still dropped a
+        // day's locomotives from the count.
+        LocalDate day = LocalDate.now().minusDays(offset);
 
         Set locs = new HashSet<>();
 
@@ -646,15 +656,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (int i = 0; i < Math.abs(days); i++)
         {
+            String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
             for (Locomotive l : allLocs)
             {
-                if (l.getRuntimeOnDay(Locomotive.getDate(startDate)) > 0)
+                if (l.getRuntimeOnDay(key) > 0)
                 {
                     locs.add(l);
                 }
             }
 
-            startDate -= 86400000;
+            day = day.minusDays(1);
         }
 
         return locs.size();
@@ -1200,15 +1212,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (MarklinLocomotive l : this.locDB.getItems())
         {
             // Do include MFX, but we will want to group these separately in the UI
+            // Two MFX entries on one address are worth reporting: the same physical locomotive can be
+            // duplicated in the UI for convenience, or left behind by a stale sync, and both entries
+            // then drive the same decoder.  Do not be tempted to filter MFX out here.
             //if (l.getDecoderType() != MarklinLocomotive.decoderType.MFX)
-            //{        
+            //{
                 if (!locs.containsKey(l.getAddress()))
                 {
                     locs.put(l.getAddress(), new HashSet<>());
                 }
 
                 locs.get(l.getAddress()).add(l);
-            //}            
+            //}
         }
           
         locs.keySet().removeIf(key -> locs.get(key).size() == 1);
@@ -1623,8 +1638,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                         for (String l : locs)
                         {
-                            locList.add(this.locDB.getById(l));
-                            ((MarklinLocomotive) locList.get(locList.size() - 1)).parseMessage(message);
+                            MarklinLocomotive loc = this.locDB.getById(l);
+
+                            // Null if the locomotive was deleted between locIdCache being read above
+                            // and this lookup.  The resulting NPE was captured by the executor's
+                            // Future and never surfaced anywhere, so the whole message was dropped in
+                            // silence - including the updates for any other locomotives on this UID.
+                            if (loc != null)
+                            {
+                                locList.add(loc);
+                                loc.parseMessage(message);
+                            }
                         }
 
                         if (this.view != null)

@@ -709,13 +709,15 @@ public class testRoutes
         System.out.println(newRoute.toVerboseString());
         model.newRoute(newRoute);
         
-        assert newRoute.equals(model.getRoute(newRoute.getName()));
-        
+        assertEquals(model.getRoute(newRoute.getName()), newRoute,
+            "the route must come back out of the model as it went in");
+
         model.deleteRoute(newRoute.getName());
-        
-        assert currentRouteNames.equals(model.getRouteList());
-        
-        assert null == model.getRoute(newRoute.getName());
+
+        assertEquals(model.getRouteList(), currentRouteNames,
+            "deleting the route must restore the original list");
+
+        assertNull(model.getRoute(newRoute.getName()), "the route must be gone after deletion");
         
         List<MarklinRoute> finalRoutes = new ArrayList<>(model.getRoutes());
 
@@ -941,15 +943,16 @@ public class testRoutes
         
         // Actually import the routes into the model
         model.importRoutes(json);
-        assert model.getRoutes().equals(finalRoutes);
-        
+        assertEquals(model.getRoutes(), finalRoutes, "importing must reproduce the exported routes");
+
         for (MarklinRoute r : newRoutes)
         {
             // All routes will be disabled because importRoutes first deletes all existing routes
             model.getRoute(r.getName()).disable();
-            
-            assert r.equals(model.getRoute(r.getName()));
-        }        
+
+            assertEquals(model.getRoute(r.getName()), r,
+                "each imported route must match the one that was exported");
+        }
         
         // Line export
         for (MarklinRoute r : newRoutes)
@@ -977,10 +980,11 @@ public class testRoutes
         
         for (MarklinRoute r : newRoutes)
         {
-            assert null == model.getRoute(r.getName());
-        }   
-                
-        assert model.getRouteList().equals(currentRouteNames);
+            assertNull(model.getRoute(r.getName()), "route " + r.getName() + " must be gone");
+        }
+
+        assertEquals(model.getRouteList(), currentRouteNames,
+            "the route list must be back to its original state");
     }
         
     /**

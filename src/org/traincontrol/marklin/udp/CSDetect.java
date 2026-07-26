@@ -177,10 +177,12 @@ public class CSDetect
     
     private static boolean checkWebServer(String host, String path)
     {
+        HttpURLConnection connection = null;
+
         try
         {
             URL url = new URL("http://" + host + path);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(WEB_TIMEOUT_MS);
             connection.setReadTimeout(WEB_TIMEOUT_MS);
@@ -205,6 +207,13 @@ public class CSDetect
         catch (Exception e)
         {
             // Ignore unreachable hosts
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                connection.disconnect();
+            }
         }
 
         return false;

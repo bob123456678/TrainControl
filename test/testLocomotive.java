@@ -3,6 +3,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -109,7 +110,11 @@ public class testLocomotive
         assertEquals(80, l.getAddress());
         
         l.setSpeed(10).delay(50).setSpeed(0);
-        assert l.getTotalRuntime() > 0;
+
+        // assertTrue rather than a bare assert: a Java assert only executes when the JVM is started
+        // with -ea, so it silently checks nothing under any runner that does not enable assertions,
+        // and it reports no message when it does fire
+        assertTrue(l.getTotalRuntime() > 0, "runtime must accumulate once the locomotive has run");
         assertEquals(Locomotive.getDate(System.currentTimeMillis()), l.getOperatingDate(true));
 
         l.functionsOff();
@@ -602,6 +607,62 @@ public class testLocomotive
         assertEquals(MarklinLocomotive.addressFromUID(MarklinLocomotive.DCC_BASE + 1), "DCC 1");
         assertEquals(MarklinLocomotive.addressFromUID(
             MarklinLocomotive.DCC_BASE + MarklinLocomotive.DCC_MAX_ADDR), "DCC 2048");
+    }
+
+    /**
+     * getF rejects an out-of-range index at both ends.  It used to test only fNumber < numF, so a
+     * negative index reached the array and threw ArrayIndexOutOfBoundsException - validF, the sibling
+     * check, has always had both bounds.
+     */
+    @Test
+    public void testGetFRejectsOutOfRangeIndexes()
+    {
+        assertFalse(l.getF(-1), "a negative function number must return false, not throw");
+        assertFalse(l.getF(-100));
+        assertFalse(l.getF(l.getNumF()), "numF is one past the last valid function");
+        assertFalse(l.getF(Integer.MIN_VALUE));
+        assertFalse(l.getF(Integer.MAX_VALUE));
+
+        // In-range indexes are covered by testLocFunctions; asserting a specific one here would
+        // couple this test to whatever order TestNG happens to run the mutating tests in
+    }
+
+    /**
+     * Locomotives sharing an address are all reported, whatever their decoder type - MFX included.
+     *
+     * MFX is deliberately not exempt.  The same physical locomotive can be duplicated in the UI for
+     * convenience, or left behind by a stale sync, and both entries then drive the same decoder -
+     * exactly what the operator needs to be told about.  This test exists because MFX was once
+     * filtered out here on the incorrect reasoning that its mfxuid makes its address unique.
+     */
+    @Test
+    public void testDuplicateAddressesIncludeMFX() throws Exception
+    {
+        // Deliberately does not hunt for an unused address.  The MM2 range is only 1-80 and a populated
+        // database can occupy all of it, so there may be no free one.  It does not matter: the question
+        // is whether each of these three is reported, not who else happens to share the address - so the
+        // assertions below ask about membership rather than the size of the group.
+        int address = Locomotive.MM2_MAX_ADDR;
+
+        MarklinLocomotive mm2 = model.newMM2Locomotive("C5 MM2", address);
+        MarklinLocomotive dcc = model.newDCCLocomotive("C5 DCC", address);
+        MarklinLocomotive mfx = model.newMFXLocomotive("C5 MFX", address);
+
+        try
+        {
+            Set<Locomotive> reported = model.getDuplicateLocAddresses().get(address);
+
+            assertNotNull(reported, "locomotives sharing an address must be reported");
+            assertTrue(reported.contains(mm2), "MM2 shares this address");
+            assertTrue(reported.contains(dcc), "DCC shares this address");
+            assertTrue(reported.contains(mfx), "MFX is not exempt - see the comment above");
+        }
+        finally
+        {
+            model.deleteLoc("C5 MM2");
+            model.deleteLoc("C5 DCC");
+            model.deleteLoc("C5 MFX");
+        }
     }
 
     @BeforeClass

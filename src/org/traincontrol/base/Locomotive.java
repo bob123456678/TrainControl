@@ -356,29 +356,45 @@ public abstract class Locomotive
      */
     synchronized public void notifyOfPowerStateChange(boolean powerOn)
     {
-        powerState = powerOn;
-        
-        // Locomotive was runnning - we need to stop the timer
-        if (this.speed > 0)
+        // speedMonitor - the same lock _setSpeed takes.  Both methods mutate speed, lastStartTime,
+        // powerState and historicalOperatingTime, but used to hold different locks: this one the
+        // locomotive itself, _setSpeed the global speedMonitor.  They therefore never excluded each
+        // other, and a power-off arriving while a speed change was in flight could either lose the
+        // running interval entirely - each method sees the other's half-applied state and skips its
+        // own accounting - or add it twice.  An emergency stop is exactly that situation, since the
+        // power-off handler loops over every locomotive while autonomy may be commanding speed 0.
+        //
+        // Reusing speedMonitor rather than adding a lock keeps the existing acquisition order:
+        // MarklinLocomotive.setSpeed already takes the locomotive and then speedMonitor, and nothing
+        // anywhere takes speedMonitor and then a locomotive, so no new ordering is introduced.  The
+        // two writers of historicalOperatingTime are now the only ones, and both hold this lock, so
+        // its getOrDefault/put read-modify-write is atomic as well.
+        synchronized (speedMonitor)
         {
-            String key = Locomotive.getDate();
-            
-            // Power on - reset the timer
-            if (powerOn)
-            {
-                this.lastStartTime = System.currentTimeMillis();
-            }
-            // Power off - stop the timer and store result
-            else
-            {
-                if (this.lastStartTime > 0)
-                {
-                    this.historicalOperatingTime.put(key, 
-                        this.historicalOperatingTime.getOrDefault(key, 0L) +
-                        (System.currentTimeMillis() - this.lastStartTime)
-                    );    
+            powerState = powerOn;
 
-                    this.lastStartTime = 0;
+            // Locomotive was runnning - we need to stop the timer
+            if (this.speed > 0)
+            {
+                String key = Locomotive.getDate();
+
+                // Power on - reset the timer
+                if (powerOn)
+                {
+                    this.lastStartTime = System.currentTimeMillis();
+                }
+                // Power off - stop the timer and store result
+                else
+                {
+                    if (this.lastStartTime > 0)
+                    {
+                        this.historicalOperatingTime.put(key,
+                            this.historicalOperatingTime.getOrDefault(key, 0L) +
+                            (System.currentTimeMillis() - this.lastStartTime)
+                        );
+
+                        this.lastStartTime = 0;
+                    }
                 }
             }
         }
@@ -919,11 +935,13 @@ public abstract class Locomotive
      */
     public boolean getF(int fNumber)
     {
-        if (fNumber < numF)
+        // validF checks both ends of the range.  This used to test only fNumber < numF, so a negative
+        // index reached the array and threw ArrayIndexOutOfBoundsException instead of returning false
+        if (validF(fNumber))
         {
             return functionState[fNumber];
         }
-        
+
         return false;
     }
     

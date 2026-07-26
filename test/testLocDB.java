@@ -38,20 +38,20 @@ public class testLocDB
         
         model.newMFXLocomotive(locName, address);
 
-        assert model.getLocByName(locName) != null;   
-        assert model.getLocList().size() == numLocs + 1;
-        assert model.getLocByName(locName).getAddress() == address;
-        assert model.getLocByName(locName).getName().equals(locName);
-        assert model.getLocList().contains(locName);
+        assertNotNull(model.getLocByName(locName), "the new locomotive must be in the database");
+        assertEquals(model.getLocList().size(), numLocs + 1, "the list must have grown by one");
+        assertEquals(model.getLocByName(locName).getAddress(), address);
+        assertEquals(model.getLocByName(locName).getName(), locName);
+        assertTrue(model.getLocList().contains(locName), "the new locomotive must be listed");
         assertEquals(MarklinLocomotive.validateNewAddress(MarklinLocomotive.decoderType.MFX, address), true);
         
         assertFalse(model.getLocByName(locName).hasLinkedLocomotives());
         
         model.deleteLoc(locName);
      
-        assert model.getLocByName(locName) == null;
-        assert model.getLocList().size() == numLocs;
-        assert !model.getLocList().contains(locName); 
+        assertNull(model.getLocByName(locName), "the locomotive must be gone after deletion");
+        assertEquals(model.getLocList().size(), numLocs, "the list must be back to its original size");
+        assertFalse(model.getLocList().contains(locName), "the deleted locomotive must not be listed");
     }
     
     /**
@@ -114,9 +114,9 @@ public class testLocDB
 
         model.renameLoc(locName, locName2);
                 
-        assert model.getLocByName(locName) == null;
-        assert model.getLocByName(locName2) != null;
-        assert locName2.equals(model.getLocByName(locName2).getName());
+        assertNull(model.getLocByName(locName), "the old name must not resolve after a rename");
+        assertNotNull(model.getLocByName(locName2), "the new name must resolve after a rename");
+        assertEquals(model.getLocByName(locName2).getName(), locName2);
     }
     
     @Test
