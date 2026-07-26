@@ -25,6 +25,8 @@ automate switch and signal commands while operating trains manually.
 Translations are now available:
 * Jetzt auf Deutsch verfügbar
 * Nu tilgængelig på dansk
+* Teraz również po polsku
+* Désormais disponible en français
 
 ## Overview
 
@@ -327,6 +329,10 @@ Requires JDK 1.8+ and the following libraries:
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
 
 ## Changelog
+
+* v2.7.5 [Beta]
+    - Added French and Polish translations
+    - Removed copy-to-next/previous page option from right-click menu
 
 * v2.7.4 [7/25/2026]   
     - Autonomy
