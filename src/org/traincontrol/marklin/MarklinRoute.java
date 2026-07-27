@@ -193,8 +193,12 @@ public class MarklinRoute extends Route
                     }
                     catch (Exception e)
                     {
+                        // Not "condition failed": this catch also covers execRoute, so the failure may
+                        // have nothing to do with the conditions.  It exists so that no exception can
+                        // silently end the monitor thread - naming the wrong cause defeats the point of
+                        // logging it.
                         this.network.logf(
-                            "route.s88ConditionFailed",
+                            "route.s88MonitorFailed",
                             this.getName()
                         );
 

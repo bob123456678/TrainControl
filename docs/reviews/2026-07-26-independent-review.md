@@ -1055,7 +1055,7 @@ methods it made redundant - completed rather than deferred.
 
 **D3 has since been fixed too** (2026-07-27, see its note), which closes the last open finding.
 
-Everything across all five review documents is now fixed, withdrawn, closed by decision, or
+Everything across all six review documents is now fixed, withdrawn, closed by decision, or
 informational. Nothing is outstanding.
 
 Subsequent work is recorded in [the full codebase review](2026-07-26-full-codebase-review.md), whose

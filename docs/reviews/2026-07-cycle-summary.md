@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across five documents and produced 92 findings - 52 in the main
-review, then 40 more across four later passes.
+The entry point for a cycle that ran across six documents and produced 98 findings - 52 in the main
+review, then 46 more across five later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -25,6 +25,7 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `IND` | [2026-07-26-independent-review.md](2026-07-26-independent-review.md) | N1-N4, B1-B4, M1-M4, T1-T4, D1-D6 |
 | `INT` | [2026-07-26-integration-review.md](2026-07-26-integration-review.md) | A1-A2, B1, D1-D2 |
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
+| `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
@@ -73,15 +74,30 @@ itself incomplete. Two of the six surfaced only because a test asserted its own 
 The root fix - identity `equals`/`hashCode` - was five lines, and made 181 lines of accumulated repairs
 dead. It is recorded under "Standing item" in `IND`.
 
-### A guard on one path, while a second path kept the behaviour alive
+### The same mistake, five times: fixing one of several identical entrances
 
-`IND-M2` was withdrawn because a UI guard made the scenario unreachable - then `IND-D6` showed the guard
-could be defeated by renaming first. `FCR-B3`: someone had already removed the expensive sync from the
-route editor's save path, but the same call survived inside `layoutEditingComplete`. `IND-D6` trigger B
-was withdrawn because renames are guarded - and `INT-A2` then reached the same state through an
-unguarded sync.
+This is the cycle's signature error. A defect is found at one call site, fixed there, and the identical
+call site next to it is left alone - so the defect survives with its report marked closed.
 
-The rule this produced: verifying the function is not enough; the hazard lives in its call graph.
+| # | The fix | The entrance it missed |
+|---|---|---|
+| 1 | `CR-C12` corrected the always-true `getAutoLayout() != null` in `deleteRoute` | `changeRouteId` and seven UI sites kept it - found later as `FCR-C1` |
+| 2 | `INT-A1` wired the consist re-key into `renameLoc` | `changeLocAddress` re-keys identically and was not wired - found in the same finding's amendment |
+| 3 | The route editor's edit branch dropped its `syncWithCS2` call | The same sync survived inside `layoutEditingComplete` - found much later as `FCR-B3` |
+| 4 | The `FCR-B3` follow-up serialised `refreshLayouts` on a lock | `syncWithCS2` reaches the same clear-and-repopulate unlocked - `RR-C2` |
+| 5 | `INT-D1` decided `setLinkedLocomotives` could stay unsynchronised | That decision was scoped to the multi-unit dialog; `INT-A2` then called it from an automatic sync - `RR-C1` |
+
+Instances 4 and 5 were produced *while fixing earlier instances of the same pattern*. Number 4 was
+introduced the day after number 3 was diagnosed.
+
+A related shape, twice: a finding withdrawn because a guard made it unreachable, where another path
+bypasses the guard. `IND-M2` was withdrawn on a UI guard, and `IND-D6` showed a rename defeats it;
+`IND-D6` trigger B was withdrawn because renames are guarded, and `INT-A2` reached the same state
+through an unguarded sync.
+
+The rule this produced: verifying the function is not enough; the hazard lives in its call graph. The
+count suggests the rule is necessary but not sufficient - what actually caught instances 1, 3 and 4 was
+someone reading the fix afterwards, not the person writing it.
 
 ### Making something faster removed a guarantee nobody had written down
 
@@ -136,7 +152,7 @@ Four items were closed by the author's decision rather than fixed, each with rea
 
 ## State
 
-**Nothing is open.** Every finding across the five documents is fixed, withdrawn as mistaken, closed by
+**Nothing is open.** Every finding across the six documents is fixed, withdrawn as mistaken, closed by
 decision, or informational.
 
 Test classes added during the cycle: `testLayoutBfs`, `testLayoutBfsEquivalence`, `testLayoutPickPath`,

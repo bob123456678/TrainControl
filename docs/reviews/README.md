@@ -30,7 +30,7 @@ referenced from commits, changelog notes and other reviews.
 
 **Declare a short prefix at the top of each document, and cite other documents' findings with it.**
 Identifiers are only unique within a document, and a cycle of any size will collide. *The July 2026
-cycle produced 92 findings across five documents, in which `B1` names three unrelated things and `D1`
+cycle produced 98 findings across six documents, in which `B1` names three unrelated things and `D1`
 another three - so "see B1" was ambiguous in exactly the place a reader needs precision. `INT-A1` and
 `FCR-B1` are not.* Keep numbering per-document; the prefix is for crossing between them.
 
@@ -107,6 +107,14 @@ regression. It now repeats twenty times.*
 **Re-read every caller before changing a signature or a semantic.** *Changing `RouteCommand.fromLine` to
 wrap unchecked exceptions was safe only because all three callers propagate `throws Exception`; one that
 caught `NumberFormatException` would have broken silently.*
+
+**When you fix a call site, grep for its twins before closing the finding.** *This was the July 2026
+cycle's most repeated mistake - five times, twice while fixing an earlier instance of it. A guard added
+to `deleteRoute` and not `changeRouteId`; a re-key wired into `renameLoc` and not `changeLocAddress`; a
+sync removed from the route editor and left in `layoutEditingComplete`; a lock put on `refreshLayouts`
+and not on the method `syncWithCS2` calls; a "safe to leave unsynchronised" decision scoped to a dialog
+and then inherited by an automatic sync.* The search is one command and it is faster than the review
+pass that will otherwise find it.
 
 **Prefer the smaller fix when the larger one changes behaviour.** *C17 suggested two changes. The
 container swap was pure cost; marking `visited` on enqueue would have broken the alternative-route

@@ -1062,11 +1062,29 @@ public class MarklinLocomotive extends Locomotive
     @Override
     public int setLinkedLocomotives() 
     {       
-        linkedLocomotives.clear();
-     
+        // Staged in a local map and swapped in one step, rather than clearing the live map and
+        // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
+        // locomotive's monitor; rebuilding it unsynchronised let a fan-out land mid-rebuild and either
+        // throw ConcurrentModificationException or command the head alone.  That was tolerable while
+        // only the multi-unit dialog rebuilt consists - a deliberate action on a consist the user is
+        // editing - but a Central Station sync now rebuilds them too, automatically, and a consist can
+        // be driven manually at the same time.
+        //
+        // The validation itself stays outside the lock: canBeLinkedTo logs through the UI, and holding
+        // a locomotive's monitor across that is its own hazard.
+        Map<Locomotive, Double> staged = new LinkedHashMap<>();
+
         // Multi-units defined in the Central Station cannot be linked to other locomotives
         if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map) 
-                || this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT) return -1;
+                || this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            synchronized (this)
+            {
+                this.linkedLocomotives.clear();
+            }
+
+            return -1;
+        }
         
         for (Map.Entry<String, Double> entry : preLinkedLocomotives.entrySet())
         {
@@ -1083,10 +1101,16 @@ public class MarklinLocomotive extends Locomotive
                 );
             }
             // Validate locomotive & configure
-            else if (this.canBeLinkedTo(loco, true))
+            else if (this.canBeLinkedTo(loco, true, staged.keySet()))
             {
-                linkedLocomotives.put(loco, value);
+                staged.put(loco, value);
             }
+        }
+        
+        synchronized (this)
+        {
+            this.linkedLocomotives.clear();
+            this.linkedLocomotives.putAll(staged);
         }
         
         // Ensure the correct direction - commands should automatically cascade
@@ -1095,7 +1119,7 @@ public class MarklinLocomotive extends Locomotive
             this.setDirection(this.getDirection());
         }
         
-        return linkedLocomotives.size();
+        return this.linkedLocomotives.size();
     }
     
     /**
@@ -1126,6 +1150,24 @@ public class MarklinLocomotive extends Locomotive
     @Override
     public boolean canBeLinkedTo(Locomotive other, boolean logError)
     {
+        return canBeLinkedTo(other, logError, this.linkedLocomotives.keySet());
+    }
+
+    /**
+     * As canBeLinkedTo, but checking the address-conflict rule against a supplied set of members
+     * rather than the live one.
+     *
+     * setLinkedLocomotives stages its rebuild in a local map so that the live map is replaced in one
+     * step - see there - and the conflict check has to see the members staged so far, not the ones
+     * still in the live map from the previous configuration.
+     *
+     * @param other
+     * @param logError
+     * @param existingMembers members to test the address-conflict rule against
+     * @return 
+     */
+    private boolean canBeLinkedTo(Locomotive other, boolean logError, java.util.Collection<Locomotive> existingMembers)
+    {
         String error = null;
 
         if (other == null || !(other instanceof MarklinLocomotive))
@@ -1150,7 +1192,7 @@ public class MarklinLocomotive extends Locomotive
         }
         else
         {
-            for (Locomotive l : this.getLinkedLocomotives().keySet())
+            for (Locomotive l : existingMembers)
             {
                 if (l.hasEquivalentAddress(other))
                 {

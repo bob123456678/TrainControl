@@ -11720,7 +11720,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.saveState(true);
             this.backupDataMenuItem.setEnabled(true);
 
-            String backupFolder = new File(Util.BACKUP_FOLDER).getAbsolutePath();
+            // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
+            // back to the working directory when the folder cannot be created, and naming the folder
+            // unconditionally pointed the user at a directory the backups are not in - in exactly the
+            // failure mode the fallback exists for.
+            String backupFolder = new File(Util.getBackupPath("x")).getAbsoluteFile().getParent();
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {

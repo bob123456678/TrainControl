@@ -310,52 +310,60 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private void syncLayoutsFromConfiguredSource() throws Exception
     {
-        String overrideLayoutPath = "";
+        // The lock lives here rather than in refreshLayouts so every entrance inherits it.  It was
+        // originally taken in refreshLayouts alone, which left syncWithCS2 reaching the same
+        // clearLayouts() + syncLayouts() unguarded: a diagram-edit refresh on one background thread
+        // could still interleave with a full sync on another, and layoutDB is backed by plain HashMaps.
+        // Intrinsic locks are reentrant, so a caller already holding it is harmless.
+        synchronized (this.layoutRefreshLock)
+        {
+            String overrideLayoutPath = "";
         
-        try
-        {
-            overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-        }
-        catch (Exception e)
-        {                
-            this.logf("error.prefLoadAdminHint");
-            
-            this.log(e);
-        }
-            
-        if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
-        {
-            fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
-            
-            this.logf("layout.loadingStaticFiles", overrideLayoutPath);
-            
-            if (debug)
-            {
-                this.logf("layout.configFolderStructureHint");
-            }
-            
             try
             {
-                this.clearLayouts();
-                
-                syncLayouts();
+                overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             }
             catch (Exception e)
-            {
+            {                
+                this.logf("error.prefLoadAdminHint");
+            
                 this.log(e);
-                   
-                this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
-                TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-                fileParser.setDefaultLayoutDataLoc();
-                syncLayouts();
             }
-        }
-        else
-        {      
-            if (this.layoutDB.getItemNames().isEmpty())
+            
+            if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
             {
-                syncLayouts();
-            }  
+                fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
+            
+                this.logf("layout.loadingStaticFiles", overrideLayoutPath);
+            
+                if (debug)
+                {
+                    this.logf("layout.configFolderStructureHint");
+                }
+            
+                try
+                {
+                    this.clearLayouts();
+                
+                    syncLayouts();
+                }
+                catch (Exception e)
+                {
+                    this.log(e);
+                   
+                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                    fileParser.setDefaultLayoutDataLoc();
+                    syncLayouts();
+                }
+            }
+            else
+            {      
+                if (this.layoutDB.getItemNames().isEmpty())
+                {
+                    syncLayouts();
+                }  
+            }
         }
     }
 
@@ -372,21 +380,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.fileParser == null) return;
 
-        // Serialised on its own lock, not the station's monitor.  The refresh empties the layout
-        // database and repopulates it, so two overlapping refreshes - two diagram edits saved in quick
-        // succession - could interleave and leave pages missing until the next one.  A dedicated lock
-        // keeps them in order without blocking the unrelated station operations that synchronize on
-        // `this`, several of which are called from the EDT and would then freeze for a whole parse.
-        synchronized (this.layoutRefreshLock)
+        // Serialisation lives inside syncLayoutsFromConfiguredSource, so that syncWithCS2 - which
+        // reaches the same clear-and-repopulate - is covered by the same lock.
+        try
         {
-            try
-            {
-                this.syncLayoutsFromConfiguredSource();
-            }
-            catch (Exception e)
-            {
-                this.log(e);
-            }
+            this.syncLayoutsFromConfiguredSource();
+        }
+        catch (Exception e)
+        {
+            this.log(e);
         }
     }
 
